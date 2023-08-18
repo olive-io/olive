@@ -50,6 +50,7 @@ type Definitions struct {
 	ResourceField               []Resource               `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resource"`
 	SignalField                 []Signal                 `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL signal"`
 	RelationshipField           []Relationship           `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL relationship"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 var defaultDefinitionsExpressionLanguageField AnyURI = "http://www.w3.org/1999/XPath"
@@ -127,8 +128,13 @@ type DefinitionsInterface interface {
 	SetResources(value []Resource)
 	SetSignals(value []Signal)
 	SetRelationships(value []Relationship)
+
+	TextPayload() *string
 }
 
+func (t *Definitions) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Definitions) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -613,9 +619,10 @@ func (t *Definitions) SetRelationships(value []Relationship) {
 }
 
 type Import struct {
-	NamespaceField  AnyURI `xml:"namespace,attr"`
-	LocationField   string `xml:"location,attr"`
-	ImportTypeField AnyURI `xml:"importType,attr"`
+	NamespaceField   AnyURI `xml:"namespace,attr"`
+	LocationField    string `xml:"location,attr"`
+	ImportTypeField  AnyURI `xml:"importType,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultImport() Import {
@@ -630,8 +637,13 @@ type ImportInterface interface {
 	SetNamespace(value AnyURI)
 	SetLocation(value string)
 	SetImportType(value AnyURI)
+
+	TextPayload() *string
 }
 
+func (t *Import) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Import) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -891,6 +903,7 @@ type AdHocSubProcess struct {
 	CancelRemainingInstancesField *bool          `xml:"cancelRemainingInstances,attr"`
 	OrderingField                 *AdHocOrdering `xml:"ordering,attr"`
 	CompletionConditionField      *AnExpression  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL completionCondition"`
+	TextPayloadField              string         `xml:",chardata"`
 }
 
 var defaultAdHocSubProcessCancelRemainingInstancesField bool = true
@@ -911,8 +924,13 @@ type AdHocSubProcessInterface interface {
 	SetCancelRemainingInstances(value *bool)
 	SetOrdering(value *AdHocOrdering)
 	SetCompletionCondition(value *AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *AdHocSubProcess) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *AdHocSubProcess) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -999,8 +1017,9 @@ func (t *Artifact) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type Assignment struct {
 	BaseElement
-	FromField AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL from"`
-	ToField   AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL to"`
+	FromField        AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL from"`
+	ToField          AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL to"`
+	TextPayloadField string       `xml:",chardata"`
 }
 
 func DefaultAssignment() Assignment {
@@ -1016,8 +1035,13 @@ type AssignmentInterface interface {
 	To() (result *AnExpression)
 	SetFrom(value AnExpression)
 	SetTo(value AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *Assignment) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Assignment) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1061,6 +1085,7 @@ type Association struct {
 	SourceRefField            QName                 `xml:"sourceRef,attr"`
 	TargetRefField            QName                 `xml:"targetRef,attr"`
 	AssociationDirectionField *AssociationDirection `xml:"associationDirection,attr"`
+	TextPayloadField          string                `xml:",chardata"`
 }
 
 var defaultAssociationAssociationDirectionField AssociationDirection = "None"
@@ -1081,8 +1106,13 @@ type AssociationInterface interface {
 	SetSourceRef(value QName)
 	SetTargetRef(value QName)
 	SetAssociationDirection(value *AssociationDirection)
+
+	TextPayload() *string
 }
 
+func (t *Association) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Association) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1126,6 +1156,7 @@ func (t *Association) SetAssociationDirection(value *AssociationDirection) {
 
 type Auditing struct {
 	BaseElement
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultAuditing() Auditing {
@@ -1137,8 +1168,13 @@ func DefaultAuditing() Auditing {
 type AuditingInterface interface {
 	Element
 	BaseElementInterface
+
+	TextPayload() *string
 }
 
+func (t *Auditing) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Auditing) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1301,8 +1337,9 @@ func (t *BaseElementWithMixedContent) SetExtensionElements(value *ExtensionEleme
 
 type BoundaryEvent struct {
 	CatchEvent
-	CancelActivityField *bool `xml:"cancelActivity,attr"`
-	AttachedToRefField  QName `xml:"attachedToRef,attr"`
+	CancelActivityField *bool  `xml:"cancelActivity,attr"`
+	AttachedToRefField  QName  `xml:"attachedToRef,attr"`
+	TextPayloadField    string `xml:",chardata"`
 }
 
 var defaultBoundaryEventCancelActivityField bool = true
@@ -1321,8 +1358,13 @@ type BoundaryEventInterface interface {
 	AttachedToRef() (result *QName)
 	SetCancelActivity(value *bool)
 	SetAttachedToRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *BoundaryEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *BoundaryEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1360,6 +1402,7 @@ func (t *BoundaryEvent) SetAttachedToRef(value QName) {
 type BusinessRuleTask struct {
 	Task
 	ImplementationField *Implementation `xml:"implementation,attr"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultBusinessRuleTaskImplementationField Implementation = "##unspecified"
@@ -1375,8 +1418,13 @@ type BusinessRuleTaskInterface interface {
 	TaskInterface
 	Implementation() (result *Implementation)
 	SetImplementation(value *Implementation)
+
+	TextPayload() *string
 }
 
+func (t *BusinessRuleTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *BusinessRuleTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1410,6 +1458,7 @@ type CallableElement struct {
 	SupportedInterfaceRefField []QName                   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL supportedInterfaceRef"`
 	IoSpecificationField       *InputOutputSpecification `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL ioSpecification"`
 	IoBindingField             []InputOutputBinding      `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL ioBinding"`
+	TextPayloadField           string                    `xml:",chardata"`
 }
 
 func DefaultCallableElement() CallableElement {
@@ -1429,8 +1478,13 @@ type CallableElementInterface interface {
 	SetSupportedInterfaceRefs(value []QName)
 	SetIoSpecification(value *InputOutputSpecification)
 	SetIoBindings(value []InputOutputBinding)
+
+	TextPayload() *string
 }
 
+func (t *CallableElement) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CallableElement) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1496,6 +1550,7 @@ func (t *CallableElement) SetIoBindings(value []InputOutputBinding) {
 type CallActivity struct {
 	Activity
 	CalledElementField *QName `xml:"calledElement,attr"`
+	TextPayloadField   string `xml:",chardata"`
 }
 
 func DefaultCallActivity() CallActivity {
@@ -1509,8 +1564,13 @@ type CallActivityInterface interface {
 	ActivityInterface
 	CalledElement() (result *QName, present bool)
 	SetCalledElement(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *CallActivity) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CallActivity) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1541,6 +1601,7 @@ type CallChoreography struct {
 	ChoreographyActivity
 	CalledChoreographyRefField  *QName                   `xml:"calledChoreographyRef,attr"`
 	ParticipantAssociationField []ParticipantAssociation `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL participantAssociation"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 func DefaultCallChoreography() CallChoreography {
@@ -1556,8 +1617,13 @@ type CallChoreographyInterface interface {
 	ParticipantAssociations() (result *[]ParticipantAssociation)
 	SetCalledChoreographyRef(value *QName)
 	SetParticipantAssociations(value []ParticipantAssociation)
+
+	TextPayload() *string
 }
 
+func (t *CallChoreography) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CallChoreography) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1601,6 +1667,7 @@ type CallConversation struct {
 	ConversationNode
 	CalledCollaborationRefField *QName                   `xml:"calledCollaborationRef,attr"`
 	ParticipantAssociationField []ParticipantAssociation `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL participantAssociation"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 func DefaultCallConversation() CallConversation {
@@ -1616,8 +1683,13 @@ type CallConversationInterface interface {
 	ParticipantAssociations() (result *[]ParticipantAssociation)
 	SetCalledCollaborationRef(value *QName)
 	SetParticipantAssociations(value []ParticipantAssociation)
+
+	TextPayload() *string
 }
 
+func (t *CallConversation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CallConversation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -1659,6 +1731,7 @@ func (t *CallConversation) SetParticipantAssociations(value []ParticipantAssocia
 
 type CancelEventDefinition struct {
 	EventDefinition
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultCancelEventDefinition() CancelEventDefinition {
@@ -1670,8 +1743,13 @@ func DefaultCancelEventDefinition() CancelEventDefinition {
 type CancelEventDefinitionInterface interface {
 	Element
 	EventDefinitionInterface
+
+	TextPayload() *string
 }
 
+func (t *CancelEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CancelEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -2007,6 +2085,7 @@ type Category struct {
 	RootElement
 	NameField          *string         `xml:"name,attr"`
 	CategoryValueField []CategoryValue `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL categoryValue"`
+	TextPayloadField   string          `xml:",chardata"`
 }
 
 func DefaultCategory() Category {
@@ -2022,8 +2101,13 @@ type CategoryInterface interface {
 	CategoryValues() (result *[]CategoryValue)
 	SetName(value *string)
 	SetCategoryValues(value []CategoryValue)
+
+	TextPayload() *string
 }
 
+func (t *Category) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Category) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -2065,7 +2149,8 @@ func (t *Category) SetCategoryValues(value []CategoryValue) {
 
 type CategoryValue struct {
 	BaseElement
-	ValueField *string `xml:"value,attr"`
+	ValueField       *string `xml:"value,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultCategoryValue() CategoryValue {
@@ -2079,8 +2164,13 @@ type CategoryValueInterface interface {
 	BaseElementInterface
 	Value() (result *string, present bool)
 	SetValue(value *string)
+
+	TextPayload() *string
 }
 
+func (t *CategoryValue) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CategoryValue) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -2140,6 +2230,7 @@ type Choreography struct {
 	TaskField                   []Task                   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL task"`
 	TransactionField            []Transaction            `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL transaction"`
 	UserTaskField               []UserTask               `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL userTask"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 func DefaultChoreography() Choreography {
@@ -2214,8 +2305,13 @@ type ChoreographyInterface interface {
 	SetTasks(value []Task)
 	SetTransactions(value []Transaction)
 	SetUserTasks(value []UserTask)
+
+	TextPayload() *string
 }
 
+func (t *Choreography) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Choreography) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -2850,7 +2946,8 @@ func (t *ChoreographyActivity) SetCorrelationKeys(value []CorrelationKey) {
 
 type ChoreographyTask struct {
 	ChoreographyActivity
-	MessageFlowRefField QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL messageFlowRef"`
+	MessageFlowRefField QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL messageFlowRef"`
+	TextPayloadField    string `xml:",chardata"`
 }
 
 func DefaultChoreographyTask() ChoreographyTask {
@@ -2864,8 +2961,13 @@ type ChoreographyTaskInterface interface {
 	ChoreographyActivityInterface
 	MessageFlowRef() (result *QName)
 	SetMessageFlowRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *ChoreographyTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ChoreographyTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -2907,6 +3009,7 @@ type Collaboration struct {
 	CorrelationKeyField          []CorrelationKey          `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL correlationKey"`
 	ChoreographyRefField         []QName                   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL choreographyRef"`
 	ConversationLinkField        []ConversationLink        `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL conversationLink"`
+	TextPayloadField             string                    `xml:",chardata"`
 }
 
 var defaultCollaborationIsClosedField bool = false
@@ -2955,8 +3058,13 @@ type CollaborationInterface interface {
 	SetCorrelationKeys(value []CorrelationKey)
 	SetChoreographyRefs(value []QName)
 	SetConversationLinks(value []ConversationLink)
+
+	TextPayload() *string
 }
 
+func (t *Collaboration) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Collaboration) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3208,6 +3316,7 @@ type CompensateEventDefinition struct {
 	EventDefinition
 	WaitForCompletionField *bool  `xml:"waitForCompletion,attr"`
 	ActivityRefField       *QName `xml:"activityRef,attr"`
+	TextPayloadField       string `xml:",chardata"`
 }
 
 func DefaultCompensateEventDefinition() CompensateEventDefinition {
@@ -3223,8 +3332,13 @@ type CompensateEventDefinitionInterface interface {
 	ActivityRef() (result *QName, present bool)
 	SetWaitForCompletion(value *bool)
 	SetActivityRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *CompensateEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CompensateEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3263,8 +3377,9 @@ func (t *CompensateEventDefinition) SetActivityRef(value *QName) {
 
 type ComplexBehaviorDefinition struct {
 	BaseElement
-	ConditionField FormalExpression    `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL condition"`
-	EventField     *ImplicitThrowEvent `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL event"`
+	ConditionField   FormalExpression    `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL condition"`
+	EventField       *ImplicitThrowEvent `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL event"`
+	TextPayloadField string              `xml:",chardata"`
 }
 
 func DefaultComplexBehaviorDefinition() ComplexBehaviorDefinition {
@@ -3280,8 +3395,13 @@ type ComplexBehaviorDefinitionInterface interface {
 	Event() (result *ImplicitThrowEvent, present bool)
 	SetCondition(value FormalExpression)
 	SetEvent(value *ImplicitThrowEvent)
+
+	TextPayload() *string
 }
 
+func (t *ComplexBehaviorDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ComplexBehaviorDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3329,6 +3449,7 @@ type ComplexGateway struct {
 	Gateway
 	DefaultField             *IdRef        `xml:"default,attr"`
 	ActivationConditionField *AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL activationCondition"`
+	TextPayloadField         string        `xml:",chardata"`
 }
 
 func DefaultComplexGateway() ComplexGateway {
@@ -3344,8 +3465,13 @@ type ComplexGatewayInterface interface {
 	ActivationCondition() (result *AnExpression, present bool)
 	SetDefault(value *IdRef)
 	SetActivationCondition(value *AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *ComplexGateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ComplexGateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3390,7 +3516,8 @@ func (t *ComplexGateway) SetActivationCondition(value *AnExpression) {
 
 type ConditionalEventDefinition struct {
 	EventDefinition
-	ConditionField AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL condition"`
+	ConditionField   AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL condition"`
+	TextPayloadField string       `xml:",chardata"`
 }
 
 func DefaultConditionalEventDefinition() ConditionalEventDefinition {
@@ -3404,8 +3531,13 @@ type ConditionalEventDefinitionInterface interface {
 	EventDefinitionInterface
 	Condition() (result *AnExpression)
 	SetCondition(value AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *ConditionalEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ConditionalEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3435,6 +3567,7 @@ func (t *ConditionalEventDefinition) SetCondition(value AnExpression) {
 
 type Conversation struct {
 	ConversationNode
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultConversation() Conversation {
@@ -3446,8 +3579,13 @@ func DefaultConversation() Conversation {
 type ConversationInterface interface {
 	Element
 	ConversationNodeInterface
+
+	TextPayload() *string
 }
 
+func (t *Conversation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Conversation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3466,8 +3604,9 @@ func (t *Conversation) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type ConversationAssociation struct {
 	BaseElement
-	InnerConversationNodeRefField QName `xml:"innerConversationNodeRef,attr"`
-	OuterConversationNodeRefField QName `xml:"outerConversationNodeRef,attr"`
+	InnerConversationNodeRefField QName  `xml:"innerConversationNodeRef,attr"`
+	OuterConversationNodeRefField QName  `xml:"outerConversationNodeRef,attr"`
+	TextPayloadField              string `xml:",chardata"`
 }
 
 func DefaultConversationAssociation() ConversationAssociation {
@@ -3483,8 +3622,13 @@ type ConversationAssociationInterface interface {
 	OuterConversationNodeRef() (result *QName)
 	SetInnerConversationNodeRef(value QName)
 	SetOuterConversationNodeRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *ConversationAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ConversationAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3517,9 +3661,10 @@ func (t *ConversationAssociation) SetOuterConversationNodeRef(value QName) {
 
 type ConversationLink struct {
 	BaseElement
-	NameField      *string `xml:"name,attr"`
-	SourceRefField QName   `xml:"sourceRef,attr"`
-	TargetRefField QName   `xml:"targetRef,attr"`
+	NameField        *string `xml:"name,attr"`
+	SourceRefField   QName   `xml:"sourceRef,attr"`
+	TargetRefField   QName   `xml:"targetRef,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultConversationLink() ConversationLink {
@@ -3537,8 +3682,13 @@ type ConversationLinkInterface interface {
 	SetName(value *string)
 	SetSourceRef(value QName)
 	SetTargetRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *ConversationLink) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ConversationLink) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3663,6 +3813,7 @@ type CorrelationKey struct {
 	BaseElement
 	NameField                   *string `xml:"name,attr"`
 	CorrelationPropertyRefField []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL correlationPropertyRef"`
+	TextPayloadField            string  `xml:",chardata"`
 }
 
 func DefaultCorrelationKey() CorrelationKey {
@@ -3678,8 +3829,13 @@ type CorrelationKeyInterface interface {
 	CorrelationPropertyRefs() (result *[]QName)
 	SetName(value *string)
 	SetCorrelationPropertyRefs(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *CorrelationKey) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CorrelationKey) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3718,6 +3874,7 @@ type CorrelationProperty struct {
 	NameField                                   *string                                  `xml:"name,attr"`
 	TypeField                                   *QName                                   `xml:"type,attr"`
 	CorrelationPropertyRetrievalExpressionField []CorrelationPropertyRetrievalExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL correlationPropertyRetrievalExpression"`
+	TextPayloadField                            string                                   `xml:",chardata"`
 }
 
 func DefaultCorrelationProperty() CorrelationProperty {
@@ -3735,8 +3892,13 @@ type CorrelationPropertyInterface interface {
 	SetName(value *string)
 	SetType(value *QName)
 	SetCorrelationPropertyRetrievalExpressions(value []CorrelationPropertyRetrievalExpression)
+
+	TextPayload() *string
 }
 
+func (t *CorrelationProperty) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CorrelationProperty) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3790,6 +3952,7 @@ type CorrelationPropertyBinding struct {
 	BaseElement
 	CorrelationPropertyRefField QName            `xml:"correlationPropertyRef,attr"`
 	DataPathField               FormalExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL dataPath"`
+	TextPayloadField            string           `xml:",chardata"`
 }
 
 func DefaultCorrelationPropertyBinding() CorrelationPropertyBinding {
@@ -3805,8 +3968,13 @@ type CorrelationPropertyBindingInterface interface {
 	DataPath() (result *FormalExpression)
 	SetCorrelationPropertyRef(value QName)
 	SetDataPath(value FormalExpression)
+
+	TextPayload() *string
 }
 
+func (t *CorrelationPropertyBinding) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CorrelationPropertyBinding) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3845,6 +4013,7 @@ type CorrelationPropertyRetrievalExpression struct {
 	BaseElement
 	MessageRefField  QName            `xml:"messageRef,attr"`
 	MessagePathField FormalExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL messagePath"`
+	TextPayloadField string           `xml:",chardata"`
 }
 
 func DefaultCorrelationPropertyRetrievalExpression() CorrelationPropertyRetrievalExpression {
@@ -3860,8 +4029,13 @@ type CorrelationPropertyRetrievalExpressionInterface interface {
 	MessagePath() (result *FormalExpression)
 	SetMessageRef(value QName)
 	SetMessagePath(value FormalExpression)
+
+	TextPayload() *string
 }
 
+func (t *CorrelationPropertyRetrievalExpression) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CorrelationPropertyRetrievalExpression) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3900,6 +4074,7 @@ type CorrelationSubscription struct {
 	BaseElement
 	CorrelationKeyRefField          QName                        `xml:"correlationKeyRef,attr"`
 	CorrelationPropertyBindingField []CorrelationPropertyBinding `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL correlationPropertyBinding"`
+	TextPayloadField                string                       `xml:",chardata"`
 }
 
 func DefaultCorrelationSubscription() CorrelationSubscription {
@@ -3915,8 +4090,13 @@ type CorrelationSubscriptionInterface interface {
 	CorrelationPropertyBindings() (result *[]CorrelationPropertyBinding)
 	SetCorrelationKeyRef(value QName)
 	SetCorrelationPropertyBindings(value []CorrelationPropertyBinding)
+
+	TextPayload() *string
 }
 
+func (t *CorrelationSubscription) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *CorrelationSubscription) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -3959,6 +4139,7 @@ type DataAssociation struct {
 	TargetRefField      IdRef             `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL targetRef"`
 	TransformationField *FormalExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL transformation"`
 	AssignmentField     []Assignment      `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL assignment"`
+	TextPayloadField    string            `xml:",chardata"`
 }
 
 func DefaultDataAssociation() DataAssociation {
@@ -3978,8 +4159,13 @@ type DataAssociationInterface interface {
 	SetTargetRef(value IdRef)
 	SetTransformation(value *FormalExpression)
 	SetAssignments(value []Assignment)
+
+	TextPayload() *string
 }
 
+func (t *DataAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4043,6 +4229,7 @@ type DataInput struct {
 	ItemAwareElement
 	NameField         *string `xml:"name,attr"`
 	IsCollectionField *bool   `xml:"isCollection,attr"`
+	TextPayloadField  string  `xml:",chardata"`
 }
 
 var defaultDataInputIsCollectionField bool = false
@@ -4061,8 +4248,13 @@ type DataInputInterface interface {
 	IsCollection() (result bool)
 	SetName(value *string)
 	SetIsCollection(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *DataInput) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataInput) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4102,6 +4294,7 @@ func (t *DataInput) SetIsCollection(value *bool) {
 
 type DataInputAssociation struct {
 	DataAssociation
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultDataInputAssociation() DataInputAssociation {
@@ -4113,8 +4306,13 @@ func DefaultDataInputAssociation() DataInputAssociation {
 type DataInputAssociationInterface interface {
 	Element
 	DataAssociationInterface
+
+	TextPayload() *string
 }
 
+func (t *DataInputAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataInputAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4134,7 +4332,8 @@ func (t *DataInputAssociation) FindBy(f ElementPredicate) (result Element, found
 type DataObject struct {
 	FlowElement
 	ItemAware
-	IsCollectionField *bool `xml:"isCollection,attr"`
+	IsCollectionField *bool  `xml:"isCollection,attr"`
+	TextPayloadField  string `xml:",chardata"`
 }
 
 var defaultDataObjectIsCollectionField bool = false
@@ -4153,8 +4352,13 @@ type DataObjectInterface interface {
 	ItemAwareInterface
 	IsCollection() (result bool)
 	SetIsCollection(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *DataObject) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataObject) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4189,6 +4393,7 @@ type DataObjectReference struct {
 	FlowElement
 	ItemAware
 	DataObjectRefField *IdRef `xml:"dataObjectRef,attr"`
+	TextPayloadField   string `xml:",chardata"`
 }
 
 func DefaultDataObjectReference() DataObjectReference {
@@ -4204,8 +4409,13 @@ type DataObjectReferenceInterface interface {
 	ItemAwareInterface
 	DataObjectRef() (result *IdRef, present bool)
 	SetDataObjectRef(value *IdRef)
+
+	TextPayload() *string
 }
 
+func (t *DataObjectReference) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataObjectReference) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4239,6 +4449,7 @@ type DataOutput struct {
 	ItemAwareElement
 	NameField         *string `xml:"name,attr"`
 	IsCollectionField *bool   `xml:"isCollection,attr"`
+	TextPayloadField  string  `xml:",chardata"`
 }
 
 var defaultDataOutputIsCollectionField bool = false
@@ -4257,8 +4468,13 @@ type DataOutputInterface interface {
 	IsCollection() (result bool)
 	SetName(value *string)
 	SetIsCollection(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *DataOutput) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataOutput) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4298,6 +4514,7 @@ func (t *DataOutput) SetIsCollection(value *bool) {
 
 type DataOutputAssociation struct {
 	DataAssociation
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultDataOutputAssociation() DataOutputAssociation {
@@ -4309,8 +4526,13 @@ func DefaultDataOutputAssociation() DataOutputAssociation {
 type DataOutputAssociationInterface interface {
 	Element
 	DataAssociationInterface
+
+	TextPayload() *string
 }
 
+func (t *DataOutputAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataOutputAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4329,7 +4551,8 @@ func (t *DataOutputAssociation) FindBy(f ElementPredicate) (result Element, foun
 
 type DataState struct {
 	BaseElement
-	NameField *string `xml:"name,attr"`
+	NameField        *string `xml:"name,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultDataState() DataState {
@@ -4343,8 +4566,13 @@ type DataStateInterface interface {
 	BaseElementInterface
 	Name() (result *string, present bool)
 	SetName(value *string)
+
+	TextPayload() *string
 }
 
+func (t *DataState) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataState) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4377,6 +4605,7 @@ type DataStore struct {
 	NameField        *string  `xml:"name,attr"`
 	CapacityField    *big.Int `xml:"capacity,attr"`
 	IsUnlimitedField *bool    `xml:"isUnlimited,attr"`
+	TextPayloadField string   `xml:",chardata"`
 }
 
 var defaultDataStoreIsUnlimitedField bool = true
@@ -4399,8 +4628,13 @@ type DataStoreInterface interface {
 	SetName(value *string)
 	SetCapacity(value *big.Int)
 	SetIsUnlimited(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *DataStore) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataStore) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4455,6 +4689,7 @@ type DataStoreReference struct {
 	FlowElement
 	ItemAware
 	DataStoreRefField *QName `xml:"dataStoreRef,attr"`
+	TextPayloadField  string `xml:",chardata"`
 }
 
 func DefaultDataStoreReference() DataStoreReference {
@@ -4470,8 +4705,13 @@ type DataStoreReferenceInterface interface {
 	ItemAwareInterface
 	DataStoreRef() (result *QName, present bool)
 	SetDataStoreRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *DataStoreReference) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *DataStoreReference) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4502,8 +4742,9 @@ func (t *DataStoreReference) SetDataStoreRef(value *QName) {
 }
 
 type Documentation struct {
-	IdField         *Id     `xml:"id,attr"`
-	TextFormatField *string `xml:"textFormat,attr"`
+	IdField          *Id     `xml:"id,attr"`
+	TextFormatField  *string `xml:"textFormat,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 var defaultDocumentationTextFormatField string = "text/plain"
@@ -4520,8 +4761,13 @@ type DocumentationInterface interface {
 	TextFormat() (result *string)
 	SetId(value *Id)
 	SetTextFormat(value *string)
+
+	TextPayload() *string
 }
 
+func (t *Documentation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Documentation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4558,6 +4804,7 @@ func (t *Documentation) SetTextFormat(value *string) {
 
 type EndEvent struct {
 	ThrowEvent
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultEndEvent() EndEvent {
@@ -4569,8 +4816,13 @@ func DefaultEndEvent() EndEvent {
 type EndEventInterface interface {
 	Element
 	ThrowEventInterface
+
+	TextPayload() *string
 }
 
+func (t *EndEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *EndEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4589,6 +4841,7 @@ func (t *EndEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type EndPoint struct {
 	RootElement
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultEndPoint() EndPoint {
@@ -4600,8 +4853,13 @@ func DefaultEndPoint() EndPoint {
 type EndPointInterface interface {
 	Element
 	RootElementInterface
+
+	TextPayload() *string
 }
 
+func (t *EndPoint) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *EndPoint) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4623,6 +4881,7 @@ type Error struct {
 	NameField         *string `xml:"name,attr"`
 	ErrorCodeField    *string `xml:"errorCode,attr"`
 	StructureRefField *QName  `xml:"structureRef,attr"`
+	TextPayloadField  string  `xml:",chardata"`
 }
 
 func DefaultError() Error {
@@ -4640,8 +4899,13 @@ type ErrorInterface interface {
 	SetName(value *string)
 	SetErrorCode(value *string)
 	SetStructureRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *Error) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Error) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4690,7 +4954,8 @@ func (t *Error) SetStructureRef(value *QName) {
 
 type ErrorEventDefinition struct {
 	EventDefinition
-	ErrorRefField *QName `xml:"errorRef,attr"`
+	ErrorRefField    *QName `xml:"errorRef,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultErrorEventDefinition() ErrorEventDefinition {
@@ -4704,8 +4969,13 @@ type ErrorEventDefinitionInterface interface {
 	EventDefinitionInterface
 	ErrorRef() (result *QName, present bool)
 	SetErrorRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *ErrorEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ErrorEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4737,6 +5007,7 @@ type Escalation struct {
 	NameField           *string `xml:"name,attr"`
 	EscalationCodeField *string `xml:"escalationCode,attr"`
 	StructureRefField   *QName  `xml:"structureRef,attr"`
+	TextPayloadField    string  `xml:",chardata"`
 }
 
 func DefaultEscalation() Escalation {
@@ -4754,8 +5025,13 @@ type EscalationInterface interface {
 	SetName(value *string)
 	SetEscalationCode(value *string)
 	SetStructureRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *Escalation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Escalation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4805,6 +5081,7 @@ func (t *Escalation) SetStructureRef(value *QName) {
 type EscalationEventDefinition struct {
 	EventDefinition
 	EscalationRefField *QName `xml:"escalationRef,attr"`
+	TextPayloadField   string `xml:",chardata"`
 }
 
 func DefaultEscalationEventDefinition() EscalationEventDefinition {
@@ -4818,8 +5095,13 @@ type EscalationEventDefinitionInterface interface {
 	EventDefinitionInterface
 	EscalationRef() (result *QName, present bool)
 	SetEscalationRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *EscalationEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *EscalationEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4897,6 +5179,7 @@ type EventBasedGateway struct {
 	Gateway
 	InstantiateField      *bool                  `xml:"instantiate,attr"`
 	EventGatewayTypeField *EventBasedGatewayType `xml:"eventGatewayType,attr"`
+	TextPayloadField      string                 `xml:",chardata"`
 }
 
 var defaultEventBasedGatewayInstantiateField bool = false
@@ -4917,8 +5200,13 @@ type EventBasedGatewayInterface interface {
 	EventGatewayType() (result *EventBasedGatewayType)
 	SetInstantiate(value *bool)
 	SetEventGatewayType(value *EventBasedGatewayType)
+
+	TextPayload() *string
 }
 
+func (t *EventBasedGateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *EventBasedGateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -4990,7 +5278,8 @@ func (t *EventDefinition) FindBy(f ElementPredicate) (result Element, found bool
 
 type ExclusiveGateway struct {
 	Gateway
-	DefaultField *IdRef `xml:"default,attr"`
+	DefaultField     *IdRef `xml:"default,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultExclusiveGateway() ExclusiveGateway {
@@ -5004,8 +5293,13 @@ type ExclusiveGatewayInterface interface {
 	GatewayInterface
 	Default() (result *IdRef, present bool)
 	SetDefault(value *IdRef)
+
+	TextPayload() *string
 }
 
+func (t *ExclusiveGateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ExclusiveGateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5046,8 +5340,13 @@ func DefaultExpression() Expression {
 type ExpressionInterface interface {
 	Element
 	BaseElementWithMixedContentInterface
+
+	TextPayload() *string
 }
 
+func (t *Expression) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Expression) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5068,6 +5367,7 @@ type Extension struct {
 	DefinitionField     *QName          `xml:"definition,attr"`
 	MustUnderstandField *bool           `xml:"mustUnderstand,attr"`
 	DocumentationField  []Documentation `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL documentation"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultExtensionMustUnderstandField bool = false
@@ -5086,8 +5386,13 @@ type ExtensionInterface interface {
 	SetDefinition(value *QName)
 	SetMustUnderstand(value *bool)
 	SetDocumentations(value []Documentation)
+
+	TextPayload() *string
 }
 
+func (t *Extension) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Extension) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5139,6 +5444,7 @@ type ExtensionElements struct {
 	TaskDefinitionField *TaskDefinition
 	TaskHeaderField     *TaskHeader
 	PropertiesField     *Properties
+	TextPayloadField    string `xml:",chardata"`
 }
 
 func DefaultExtensionElements() ExtensionElements {
@@ -5147,8 +5453,13 @@ func DefaultExtensionElements() ExtensionElements {
 
 type ExtensionElementsInterface interface {
 	Element
+
+	TextPayload() *string
 }
 
+func (t *ExtensionElements) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ExtensionElements) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5309,6 +5620,7 @@ type FormalExpression struct {
 	Expression
 	LanguageField           *AnyURI `xml:"language,attr"`
 	EvaluatesToTypeRefField *QName  `xml:"evaluatesToTypeRef,attr"`
+	TextPayloadField        string  `xml:",chardata"`
 }
 
 func DefaultFormalExpression() FormalExpression {
@@ -5324,8 +5636,13 @@ type FormalExpressionInterface interface {
 	EvaluatesToTypeRef() (result *QName, present bool)
 	SetLanguage(value *AnyURI)
 	SetEvaluatesToTypeRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *FormalExpression) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *FormalExpression) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5365,6 +5682,7 @@ func (t *FormalExpression) SetEvaluatesToTypeRef(value *QName) {
 type Gateway struct {
 	FlowNode
 	GatewayDirectionField *GatewayDirection `xml:"gatewayDirection,attr"`
+	TextPayloadField      string            `xml:",chardata"`
 }
 
 var defaultGatewayGatewayDirectionField GatewayDirection = "Unspecified"
@@ -5381,8 +5699,13 @@ type GatewayInterface interface {
 	FlowNodeInterface
 	GatewayDirection() (result *GatewayDirection)
 	SetGatewayDirection(value *GatewayDirection)
+
+	TextPayload() *string
 }
 
+func (t *Gateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Gateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5413,6 +5736,7 @@ func (t *Gateway) SetGatewayDirection(value *GatewayDirection) {
 type GlobalBusinessRuleTask struct {
 	GlobalTask
 	ImplementationField *Implementation `xml:"implementation,attr"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultGlobalBusinessRuleTaskImplementationField Implementation = "##unspecified"
@@ -5428,8 +5752,13 @@ type GlobalBusinessRuleTaskInterface interface {
 	GlobalTaskInterface
 	Implementation() (result *Implementation)
 	SetImplementation(value *Implementation)
+
+	TextPayload() *string
 }
 
+func (t *GlobalBusinessRuleTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalBusinessRuleTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5460,6 +5789,7 @@ func (t *GlobalBusinessRuleTask) SetImplementation(value *Implementation) {
 type GlobalChoreographyTask struct {
 	Choreography
 	InitiatingParticipantRefField *QName `xml:"initiatingParticipantRef,attr"`
+	TextPayloadField              string `xml:",chardata"`
 }
 
 func DefaultGlobalChoreographyTask() GlobalChoreographyTask {
@@ -5473,8 +5803,13 @@ type GlobalChoreographyTaskInterface interface {
 	ChoreographyInterface
 	InitiatingParticipantRef() (result *QName, present bool)
 	SetInitiatingParticipantRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *GlobalChoreographyTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalChoreographyTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5503,6 +5838,7 @@ func (t *GlobalChoreographyTask) SetInitiatingParticipantRef(value *QName) {
 
 type GlobalConversation struct {
 	Collaboration
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultGlobalConversation() GlobalConversation {
@@ -5514,8 +5850,13 @@ func DefaultGlobalConversation() GlobalConversation {
 type GlobalConversationInterface interface {
 	Element
 	CollaborationInterface
+
+	TextPayload() *string
 }
 
+func (t *GlobalConversation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalConversation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5534,6 +5875,7 @@ func (t *GlobalConversation) FindBy(f ElementPredicate) (result Element, found b
 
 type GlobalManualTask struct {
 	GlobalTask
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultGlobalManualTask() GlobalManualTask {
@@ -5545,8 +5887,13 @@ func DefaultGlobalManualTask() GlobalManualTask {
 type GlobalManualTaskInterface interface {
 	Element
 	GlobalTaskInterface
+
+	TextPayload() *string
 }
 
+func (t *GlobalManualTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalManualTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5567,6 +5914,7 @@ type GlobalScriptTask struct {
 	GlobalTask
 	ScriptLanguageField *AnyURI `xml:"scriptLanguage,attr"`
 	ScriptField         *Script `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL script"`
+	TextPayloadField    string  `xml:",chardata"`
 }
 
 func DefaultGlobalScriptTask() GlobalScriptTask {
@@ -5582,8 +5930,13 @@ type GlobalScriptTaskInterface interface {
 	Script() (result *Script, present bool)
 	SetScriptLanguage(value *AnyURI)
 	SetScript(value *Script)
+
+	TextPayload() *string
 }
 
+func (t *GlobalScriptTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalScriptTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5629,6 +5982,7 @@ func (t *GlobalScriptTask) SetScript(value *Script) {
 type GlobalTask struct {
 	CallableElement
 	ResourceRoleField []ResourceRole `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceRole"`
+	TextPayloadField  string         `xml:",chardata"`
 }
 
 func DefaultGlobalTask() GlobalTask {
@@ -5642,8 +5996,13 @@ type GlobalTaskInterface interface {
 	CallableElementInterface
 	ResourceRoles() (result *[]ResourceRole)
 	SetResourceRoles(value []ResourceRole)
+
+	TextPayload() *string
 }
 
+func (t *GlobalTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5677,6 +6036,7 @@ type GlobalUserTask struct {
 	GlobalTask
 	ImplementationField *Implementation `xml:"implementation,attr"`
 	RenderingField      []Rendering     `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL rendering"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultGlobalUserTaskImplementationField Implementation = "##unspecified"
@@ -5694,8 +6054,13 @@ type GlobalUserTaskInterface interface {
 	Renderings() (result *[]Rendering)
 	SetImplementation(value *Implementation)
 	SetRenderings(value []Rendering)
+
+	TextPayload() *string
 }
 
+func (t *GlobalUserTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *GlobalUserTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5739,6 +6104,7 @@ func (t *GlobalUserTask) SetRenderings(value []Rendering) {
 type Group struct {
 	Artifact
 	CategoryValueRefField *QName `xml:"categoryValueRef,attr"`
+	TextPayloadField      string `xml:",chardata"`
 }
 
 func DefaultGroup() Group {
@@ -5752,8 +6118,13 @@ type GroupInterface interface {
 	ArtifactInterface
 	CategoryValueRef() (result *QName, present bool)
 	SetCategoryValueRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *Group) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Group) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5782,6 +6153,7 @@ func (t *Group) SetCategoryValueRef(value *QName) {
 
 type HumanPerformer struct {
 	Performer
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultHumanPerformer() HumanPerformer {
@@ -5793,8 +6165,13 @@ func DefaultHumanPerformer() HumanPerformer {
 type HumanPerformerInterface interface {
 	Element
 	PerformerInterface
+
+	TextPayload() *string
 }
 
+func (t *HumanPerformer) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *HumanPerformer) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5813,6 +6190,7 @@ func (t *HumanPerformer) FindBy(f ElementPredicate) (result Element, found bool)
 
 type ImplicitThrowEvent struct {
 	ThrowEvent
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultImplicitThrowEvent() ImplicitThrowEvent {
@@ -5824,8 +6202,13 @@ func DefaultImplicitThrowEvent() ImplicitThrowEvent {
 type ImplicitThrowEventInterface interface {
 	Element
 	ThrowEventInterface
+
+	TextPayload() *string
 }
 
+func (t *ImplicitThrowEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ImplicitThrowEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5844,7 +6227,8 @@ func (t *ImplicitThrowEvent) FindBy(f ElementPredicate) (result Element, found b
 
 type InclusiveGateway struct {
 	Gateway
-	DefaultField *IdRef `xml:"default,attr"`
+	DefaultField     *IdRef `xml:"default,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultInclusiveGateway() InclusiveGateway {
@@ -5858,8 +6242,13 @@ type InclusiveGatewayInterface interface {
 	GatewayInterface
 	Default() (result *IdRef, present bool)
 	SetDefault(value *IdRef)
+
+	TextPayload() *string
 }
 
+func (t *InclusiveGateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *InclusiveGateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5893,6 +6282,7 @@ type InputSet struct {
 	OptionalInputRefsField       []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL optionalInputRefs"`
 	WhileExecutingInputRefsField []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL whileExecutingInputRefs"`
 	OutputSetRefsField           []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outputSetRefs"`
+	TextPayloadField             string  `xml:",chardata"`
 }
 
 func DefaultInputSet() InputSet {
@@ -5914,8 +6304,13 @@ type InputSetInterface interface {
 	SetOptionalInputRefses(value []IdRef)
 	SetWhileExecutingInputRefses(value []IdRef)
 	SetOutputSetRefses(value []IdRef)
+
+	TextPayload() *string
 }
 
+func (t *InputSet) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *InputSet) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -5975,6 +6370,7 @@ type Interface struct {
 	NameField              string      `xml:"name,attr"`
 	ImplementationRefField *QName      `xml:"implementationRef,attr"`
 	OperationField         []Operation `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL operation"`
+	TextPayloadField       string      `xml:",chardata"`
 }
 
 func DefaultInterface() Interface {
@@ -5992,8 +6388,13 @@ type InterfaceInterface interface {
 	SetName(value string)
 	SetImplementationRef(value *QName)
 	SetOperations(value []Operation)
+
+	TextPayload() *string
 }
 
+func (t *Interface) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Interface) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6042,6 +6443,7 @@ func (t *Interface) SetOperations(value []Operation) {
 
 type IntermediateCatchEvent struct {
 	CatchEvent
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultIntermediateCatchEvent() IntermediateCatchEvent {
@@ -6053,8 +6455,13 @@ func DefaultIntermediateCatchEvent() IntermediateCatchEvent {
 type IntermediateCatchEventInterface interface {
 	Element
 	CatchEventInterface
+
+	TextPayload() *string
 }
 
+func (t *IntermediateCatchEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *IntermediateCatchEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6073,6 +6480,7 @@ func (t *IntermediateCatchEvent) FindBy(f ElementPredicate) (result Element, fou
 
 type IntermediateThrowEvent struct {
 	ThrowEvent
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultIntermediateThrowEvent() IntermediateThrowEvent {
@@ -6084,8 +6492,13 @@ func DefaultIntermediateThrowEvent() IntermediateThrowEvent {
 type IntermediateThrowEventInterface interface {
 	Element
 	ThrowEventInterface
+
+	TextPayload() *string
 }
 
+func (t *IntermediateThrowEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *IntermediateThrowEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6104,9 +6517,10 @@ func (t *IntermediateThrowEvent) FindBy(f ElementPredicate) (result Element, fou
 
 type InputOutputBinding struct {
 	BaseElement
-	OperationRefField  QName `xml:"operationRef,attr"`
-	InputDataRefField  IdRef `xml:"inputDataRef,attr"`
-	OutputDataRefField IdRef `xml:"outputDataRef,attr"`
+	OperationRefField  QName  `xml:"operationRef,attr"`
+	InputDataRefField  IdRef  `xml:"inputDataRef,attr"`
+	OutputDataRefField IdRef  `xml:"outputDataRef,attr"`
+	TextPayloadField   string `xml:",chardata"`
 }
 
 func DefaultInputOutputBinding() InputOutputBinding {
@@ -6124,8 +6538,13 @@ type InputOutputBindingInterface interface {
 	SetOperationRef(value QName)
 	SetInputDataRef(value IdRef)
 	SetOutputDataRef(value IdRef)
+
+	TextPayload() *string
 }
 
+func (t *InputOutputBinding) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *InputOutputBinding) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6165,10 +6584,11 @@ func (t *InputOutputBinding) SetOutputDataRef(value IdRef) {
 
 type InputOutputSpecification struct {
 	BaseElement
-	DataInputField  []DataInput  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL dataInput"`
-	DataOutputField []DataOutput `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL dataOutput"`
-	InputSetField   []InputSet   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL inputSet"`
-	OutputSetField  []OutputSet  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outputSet"`
+	DataInputField   []DataInput  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL dataInput"`
+	DataOutputField  []DataOutput `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL dataOutput"`
+	InputSetField    []InputSet   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL inputSet"`
+	OutputSetField   []OutputSet  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outputSet"`
+	TextPayloadField string       `xml:",chardata"`
 }
 
 func DefaultInputOutputSpecification() InputOutputSpecification {
@@ -6188,8 +6608,13 @@ type InputOutputSpecificationInterface interface {
 	SetDataOutputs(value []DataOutput)
 	SetInputSets(value []InputSet)
 	SetOutputSets(value []OutputSet)
+
+	TextPayload() *string
 }
 
+func (t *InputOutputSpecification) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *InputOutputSpecification) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6356,6 +6781,7 @@ type ItemDefinition struct {
 	StructureRefField *QName    `xml:"structureRef,attr"`
 	IsCollectionField *bool     `xml:"isCollection,attr"`
 	ItemKindField     *ItemKind `xml:"itemKind,attr"`
+	TextPayloadField  string    `xml:",chardata"`
 }
 
 var defaultItemDefinitionIsCollectionField bool = false
@@ -6378,8 +6804,13 @@ type ItemDefinitionInterface interface {
 	SetStructureRef(value *QName)
 	SetIsCollection(value *bool)
 	SetItemKind(value *ItemKind)
+
+	TextPayload() *string
 }
 
+func (t *ItemDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ItemDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6435,6 +6866,7 @@ type Lane struct {
 	PartitionElementField    *BaseElement `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL partitionElement"`
 	FlowNodeRefField         []IdRef      `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL flowNodeRef"`
 	ChildLaneSetField        *LaneSet     `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL childLaneSet"`
+	TextPayloadField         string       `xml:",chardata"`
 }
 
 func DefaultLane() Lane {
@@ -6456,8 +6888,13 @@ type LaneInterface interface {
 	SetPartitionElement(value *BaseElement)
 	SetFlowNodeRefs(value []IdRef)
 	SetChildLaneSet(value *LaneSet)
+
+	TextPayload() *string
 }
 
+func (t *Lane) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Lane) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6535,8 +6972,9 @@ func (t *Lane) SetChildLaneSet(value *LaneSet) {
 
 type LaneSet struct {
 	BaseElement
-	NameField *string `xml:"name,attr"`
-	LaneField []Lane  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL lane"`
+	NameField        *string `xml:"name,attr"`
+	LaneField        []Lane  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL lane"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultLaneSet() LaneSet {
@@ -6552,8 +6990,13 @@ type LaneSetInterface interface {
 	Lanes() (result *[]Lane)
 	SetName(value *string)
 	SetLanes(value []Lane)
+
+	TextPayload() *string
 }
 
+func (t *LaneSet) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *LaneSet) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6595,9 +7038,10 @@ func (t *LaneSet) SetLanes(value []Lane) {
 
 type LinkEventDefinition struct {
 	EventDefinition
-	NameField   string  `xml:"name,attr"`
-	SourceField []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL source"`
-	TargetField *QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL target"`
+	NameField        string  `xml:"name,attr"`
+	SourceField      []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL source"`
+	TargetField      *QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL target"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultLinkEventDefinition() LinkEventDefinition {
@@ -6615,8 +7059,13 @@ type LinkEventDefinitionInterface interface {
 	SetName(value string)
 	SetSources(value []QName)
 	SetTarget(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *LinkEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *LinkEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6690,6 +7139,7 @@ func (t *LoopCharacteristics) FindBy(f ElementPredicate) (result Element, found 
 
 type ManualTask struct {
 	Task
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultManualTask() ManualTask {
@@ -6701,8 +7151,13 @@ func DefaultManualTask() ManualTask {
 type ManualTaskInterface interface {
 	Element
 	TaskInterface
+
+	TextPayload() *string
 }
 
+func (t *ManualTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ManualTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6721,8 +7176,9 @@ func (t *ManualTask) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type Message struct {
 	RootElement
-	NameField    *string `xml:"name,attr"`
-	ItemRefField *QName  `xml:"itemRef,attr"`
+	NameField        *string `xml:"name,attr"`
+	ItemRefField     *QName  `xml:"itemRef,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultMessage() Message {
@@ -6738,8 +7194,13 @@ type MessageInterface interface {
 	ItemRef() (result *QName, present bool)
 	SetName(value *string)
 	SetItemRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *Message) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Message) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6780,6 +7241,7 @@ type MessageEventDefinition struct {
 	EventDefinition
 	MessageRefField   *QName `xml:"messageRef,attr"`
 	OperationRefField *QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL operationRef"`
+	TextPayloadField  string `xml:",chardata"`
 }
 
 func DefaultMessageEventDefinition() MessageEventDefinition {
@@ -6795,8 +7257,13 @@ type MessageEventDefinitionInterface interface {
 	OperationRef() (result *QName, present bool)
 	SetMessageRef(value *QName)
 	SetOperationRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *MessageEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *MessageEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6835,10 +7302,11 @@ func (t *MessageEventDefinition) SetOperationRef(value *QName) {
 
 type MessageFlow struct {
 	BaseElement
-	NameField       *string `xml:"name,attr"`
-	SourceRefField  QName   `xml:"sourceRef,attr"`
-	TargetRefField  QName   `xml:"targetRef,attr"`
-	MessageRefField *QName  `xml:"messageRef,attr"`
+	NameField        *string `xml:"name,attr"`
+	SourceRefField   QName   `xml:"sourceRef,attr"`
+	TargetRefField   QName   `xml:"targetRef,attr"`
+	MessageRefField  *QName  `xml:"messageRef,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultMessageFlow() MessageFlow {
@@ -6858,8 +7326,13 @@ type MessageFlowInterface interface {
 	SetSourceRef(value QName)
 	SetTargetRef(value QName)
 	SetMessageRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *MessageFlow) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *MessageFlow) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6912,8 +7385,9 @@ func (t *MessageFlow) SetMessageRef(value *QName) {
 
 type MessageFlowAssociation struct {
 	BaseElement
-	InnerMessageFlowRefField QName `xml:"innerMessageFlowRef,attr"`
-	OuterMessageFlowRefField QName `xml:"outerMessageFlowRef,attr"`
+	InnerMessageFlowRefField QName  `xml:"innerMessageFlowRef,attr"`
+	OuterMessageFlowRefField QName  `xml:"outerMessageFlowRef,attr"`
+	TextPayloadField         string `xml:",chardata"`
 }
 
 func DefaultMessageFlowAssociation() MessageFlowAssociation {
@@ -6929,8 +7403,13 @@ type MessageFlowAssociationInterface interface {
 	OuterMessageFlowRef() (result *QName)
 	SetInnerMessageFlowRef(value QName)
 	SetOuterMessageFlowRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *MessageFlowAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *MessageFlowAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -6963,6 +7442,7 @@ func (t *MessageFlowAssociation) SetOuterMessageFlowRef(value QName) {
 
 type Monitoring struct {
 	BaseElement
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultMonitoring() Monitoring {
@@ -6974,8 +7454,13 @@ func DefaultMonitoring() Monitoring {
 type MonitoringInterface interface {
 	Element
 	BaseElementInterface
+
+	TextPayload() *string
 }
 
+func (t *Monitoring) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Monitoring) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7005,6 +7490,7 @@ type MultiInstanceLoopCharacteristics struct {
 	OutputDataItemField            *DataOutput                 `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outputDataItem"`
 	ComplexBehaviorDefinitionField []ComplexBehaviorDefinition `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL complexBehaviorDefinition"`
 	CompletionConditionField       *AnExpression               `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL completionCondition"`
+	TextPayloadField               string                      `xml:",chardata"`
 }
 
 var defaultMultiInstanceLoopCharacteristicsIsSequentialField bool = false
@@ -7043,8 +7529,13 @@ type MultiInstanceLoopCharacteristicsInterface interface {
 	SetOutputDataItem(value *DataOutput)
 	SetComplexBehaviorDefinitions(value []ComplexBehaviorDefinition)
 	SetCompletionCondition(value *AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *MultiInstanceLoopCharacteristics) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *MultiInstanceLoopCharacteristics) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7207,6 +7698,7 @@ type Operation struct {
 	InMessageRefField      QName   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL inMessageRef"`
 	OutMessageRefField     *QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outMessageRef"`
 	ErrorRefField          []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL errorRef"`
+	TextPayloadField       string  `xml:",chardata"`
 }
 
 func DefaultOperation() Operation {
@@ -7228,8 +7720,13 @@ type OperationInterface interface {
 	SetInMessageRef(value QName)
 	SetOutMessageRef(value *QName)
 	SetErrorRefs(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *Operation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Operation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7294,6 +7791,7 @@ type OutputSet struct {
 	OptionalOutputRefsField       []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL optionalOutputRefs"`
 	WhileExecutingOutputRefsField []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL whileExecutingOutputRefs"`
 	InputSetRefsField             []IdRef `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL inputSetRefs"`
+	TextPayloadField              string  `xml:",chardata"`
 }
 
 func DefaultOutputSet() OutputSet {
@@ -7315,8 +7813,13 @@ type OutputSetInterface interface {
 	SetOptionalOutputRefses(value []IdRef)
 	SetWhileExecutingOutputRefses(value []IdRef)
 	SetInputSetRefses(value []IdRef)
+
+	TextPayload() *string
 }
 
+func (t *OutputSet) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *OutputSet) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7373,6 +7876,7 @@ func (t *OutputSet) SetInputSetRefses(value []IdRef) {
 
 type ParallelGateway struct {
 	Gateway
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultParallelGateway() ParallelGateway {
@@ -7384,8 +7888,13 @@ func DefaultParallelGateway() ParallelGateway {
 type ParallelGatewayInterface interface {
 	Element
 	GatewayInterface
+
+	TextPayload() *string
 }
 
+func (t *ParallelGateway) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ParallelGateway) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7409,6 +7918,7 @@ type Participant struct {
 	InterfaceRefField            []QName                  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL interfaceRef"`
 	EndPointRefField             []QName                  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL endPointRef"`
 	ParticipantMultiplicityField *ParticipantMultiplicity `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL participantMultiplicity"`
+	TextPayloadField             string                   `xml:",chardata"`
 }
 
 func DefaultParticipant() Participant {
@@ -7430,8 +7940,13 @@ type ParticipantInterface interface {
 	SetInterfaceRefs(value []QName)
 	SetEndPointRefs(value []QName)
 	SetParticipantMultiplicity(value *ParticipantMultiplicity)
+
+	TextPayload() *string
 }
 
+func (t *Participant) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Participant) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7500,8 +8015,9 @@ func (t *Participant) SetParticipantMultiplicity(value *ParticipantMultiplicity)
 
 type ParticipantAssociation struct {
 	BaseElement
-	InnerParticipantRefField QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL innerParticipantRef"`
-	OuterParticipantRefField QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outerParticipantRef"`
+	InnerParticipantRefField QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL innerParticipantRef"`
+	OuterParticipantRefField QName  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL outerParticipantRef"`
+	TextPayloadField         string `xml:",chardata"`
 }
 
 func DefaultParticipantAssociation() ParticipantAssociation {
@@ -7517,8 +8033,13 @@ type ParticipantAssociationInterface interface {
 	OuterParticipantRef() (result *QName)
 	SetInnerParticipantRef(value QName)
 	SetOuterParticipantRef(value QName)
+
+	TextPayload() *string
 }
 
+func (t *ParticipantAssociation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ParticipantAssociation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7551,8 +8072,9 @@ func (t *ParticipantAssociation) SetOuterParticipantRef(value QName) {
 
 type ParticipantMultiplicity struct {
 	BaseElement
-	MinimumField *int32 `xml:"minimum,attr"`
-	MaximumField *int32 `xml:"maximum,attr"`
+	MinimumField     *int32 `xml:"minimum,attr"`
+	MaximumField     *int32 `xml:"maximum,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 var defaultParticipantMultiplicityMinimumField int32 = 0
@@ -7573,8 +8095,13 @@ type ParticipantMultiplicityInterface interface {
 	Maximum() (result int32)
 	SetMinimum(value *int32)
 	SetMaximum(value *int32)
+
+	TextPayload() *string
 }
 
+func (t *ParticipantMultiplicity) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ParticipantMultiplicity) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7617,6 +8144,7 @@ type PartnerEntity struct {
 	RootElement
 	NameField           *string `xml:"name,attr"`
 	ParticipantRefField []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL participantRef"`
+	TextPayloadField    string  `xml:",chardata"`
 }
 
 func DefaultPartnerEntity() PartnerEntity {
@@ -7632,8 +8160,13 @@ type PartnerEntityInterface interface {
 	ParticipantRefs() (result *[]QName)
 	SetName(value *string)
 	SetParticipantRefs(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *PartnerEntity) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *PartnerEntity) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7671,6 +8204,7 @@ type PartnerRole struct {
 	RootElement
 	NameField           *string `xml:"name,attr"`
 	ParticipantRefField []QName `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL participantRef"`
+	TextPayloadField    string  `xml:",chardata"`
 }
 
 func DefaultPartnerRole() PartnerRole {
@@ -7686,8 +8220,13 @@ type PartnerRoleInterface interface {
 	ParticipantRefs() (result *[]QName)
 	SetName(value *string)
 	SetParticipantRefs(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *PartnerRole) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *PartnerRole) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7723,6 +8262,7 @@ func (t *PartnerRole) SetParticipantRefs(value []QName) {
 
 type Performer struct {
 	ResourceRole
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultPerformer() Performer {
@@ -7734,8 +8274,13 @@ func DefaultPerformer() Performer {
 type PerformerInterface interface {
 	Element
 	ResourceRoleInterface
+
+	TextPayload() *string
 }
 
+func (t *Performer) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Performer) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7754,6 +8299,7 @@ func (t *Performer) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type PotentialOwner struct {
 	HumanPerformer
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultPotentialOwner() PotentialOwner {
@@ -7765,8 +8311,13 @@ func DefaultPotentialOwner() PotentialOwner {
 type PotentialOwnerInterface interface {
 	Element
 	HumanPerformerInterface
+
+	TextPayload() *string
 }
 
+func (t *PotentialOwner) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *PotentialOwner) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -7830,6 +8381,7 @@ type Process struct {
 	ResourceRoleField                 []ResourceRole            `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceRole"`
 	CorrelationSubscriptionField      []CorrelationSubscription `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL correlationSubscription"`
 	SupportsField                     []QName                   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL supports"`
+	TextPayloadField                  string                    `xml:",chardata"`
 }
 
 var defaultProcessProcessTypeField ProcessType = "None"
@@ -7938,8 +8490,13 @@ type ProcessInterface interface {
 	SetResourceRoles(value []ResourceRole)
 	SetCorrelationSubscriptions(value []CorrelationSubscription)
 	SetSupportses(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *Process) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Process) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8679,7 +9236,8 @@ func (t *Process) SetSupportses(value []QName) {
 
 type Property struct {
 	ItemAwareElement
-	NameField *string `xml:"name,attr"`
+	NameField        *string `xml:"name,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultProperty() Property {
@@ -8693,8 +9251,13 @@ type PropertyInterface interface {
 	ItemAwareElementInterface
 	Name() (result *string, present bool)
 	SetName(value *string)
+
+	TextPayload() *string
 }
 
+func (t *Property) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Property) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8727,6 +9290,7 @@ type ReceiveTask struct {
 	InstantiateField    *bool           `xml:"instantiate,attr"`
 	MessageRefField     *QName          `xml:"messageRef,attr"`
 	OperationRefField   *QName          `xml:"operationRef,attr"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultReceiveTaskImplementationField Implementation = "##WebService"
@@ -8750,8 +9314,13 @@ type ReceiveTaskInterface interface {
 	SetInstantiate(value *bool)
 	SetMessageRef(value *QName)
 	SetOperationRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *ReceiveTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ReceiveTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8812,10 +9381,11 @@ func (t *ReceiveTask) SetOperationRef(value *QName) {
 
 type Relationship struct {
 	BaseElement
-	TypeField      string                 `xml:"type,attr"`
-	DirectionField *RelationshipDirection `xml:"direction,attr"`
-	SourceField    []QName                `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL source"`
-	TargetField    []QName                `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL target"`
+	TypeField        string                 `xml:"type,attr"`
+	DirectionField   *RelationshipDirection `xml:"direction,attr"`
+	SourceField      []QName                `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL source"`
+	TargetField      []QName                `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL target"`
+	TextPayloadField string                 `xml:",chardata"`
 }
 
 func DefaultRelationship() Relationship {
@@ -8835,8 +9405,13 @@ type RelationshipInterface interface {
 	SetDirection(value *RelationshipDirection)
 	SetSources(value []QName)
 	SetTargets(value []QName)
+
+	TextPayload() *string
 }
 
+func (t *Relationship) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Relationship) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8886,6 +9461,7 @@ func (t *Relationship) SetTargets(value []QName) {
 
 type Rendering struct {
 	BaseElement
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultRendering() Rendering {
@@ -8897,8 +9473,13 @@ func DefaultRendering() Rendering {
 type RenderingInterface interface {
 	Element
 	BaseElementInterface
+
+	TextPayload() *string
 }
 
+func (t *Rendering) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Rendering) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8919,6 +9500,7 @@ type Resource struct {
 	RootElement
 	NameField              string              `xml:"name,attr"`
 	ResourceParameterField []ResourceParameter `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceParameter"`
+	TextPayloadField       string              `xml:",chardata"`
 }
 
 func DefaultResource() Resource {
@@ -8934,8 +9516,13 @@ type ResourceInterface interface {
 	ResourceParameters() (result *[]ResourceParameter)
 	SetName(value string)
 	SetResourceParameters(value []ResourceParameter)
+
+	TextPayload() *string
 }
 
+func (t *Resource) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Resource) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -8974,7 +9561,8 @@ func (t *Resource) SetResourceParameters(value []ResourceParameter) {
 
 type ResourceAssignmentExpression struct {
 	BaseElement
-	ExpressionField Expression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL expression"`
+	ExpressionField  Expression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL expression"`
+	TextPayloadField string     `xml:",chardata"`
 }
 
 func DefaultResourceAssignmentExpression() ResourceAssignmentExpression {
@@ -8988,8 +9576,13 @@ type ResourceAssignmentExpressionInterface interface {
 	BaseElementInterface
 	Expression() (result *Expression)
 	SetExpression(value Expression)
+
+	TextPayload() *string
 }
 
+func (t *ResourceAssignmentExpression) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ResourceAssignmentExpression) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9019,9 +9612,10 @@ func (t *ResourceAssignmentExpression) SetExpression(value Expression) {
 
 type ResourceParameter struct {
 	BaseElement
-	NameField       *string `xml:"name,attr"`
-	TypeField       *QName  `xml:"type,attr"`
-	IsRequiredField *bool   `xml:"isRequired,attr"`
+	NameField        *string `xml:"name,attr"`
+	TypeField        *QName  `xml:"type,attr"`
+	IsRequiredField  *bool   `xml:"isRequired,attr"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 func DefaultResourceParameter() ResourceParameter {
@@ -9039,8 +9633,13 @@ type ResourceParameterInterface interface {
 	SetName(value *string)
 	SetType(value *QName)
 	SetIsRequired(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *ResourceParameter) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ResourceParameter) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9091,6 +9690,7 @@ type ResourceParameterBinding struct {
 	BaseElement
 	ParameterRefField QName      `xml:"parameterRef,attr"`
 	ExpressionField   Expression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL expression"`
+	TextPayloadField  string     `xml:",chardata"`
 }
 
 func DefaultResourceParameterBinding() ResourceParameterBinding {
@@ -9106,8 +9706,13 @@ type ResourceParameterBindingInterface interface {
 	Expression() (result *Expression)
 	SetParameterRef(value QName)
 	SetExpression(value Expression)
+
+	TextPayload() *string
 }
 
+func (t *ResourceParameterBinding) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ResourceParameterBinding) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9148,6 +9753,7 @@ type ResourceRole struct {
 	ResourceRefField                  QName                         `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceRef"`
 	ResourceParameterBindingField     []ResourceParameterBinding    `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceParameterBinding"`
 	ResourceAssignmentExpressionField *ResourceAssignmentExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL resourceAssignmentExpression"`
+	TextPayloadField                  string                        `xml:",chardata"`
 }
 
 func DefaultResourceRole() ResourceRole {
@@ -9167,8 +9773,13 @@ type ResourceRoleInterface interface {
 	SetResourceRef(value QName)
 	SetResourceParameterBindings(value []ResourceParameterBinding)
 	SetResourceAssignmentExpression(value *ResourceAssignmentExpression)
+
+	TextPayload() *string
 }
 
+func (t *ResourceRole) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ResourceRole) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9266,6 +9877,7 @@ type ScriptTask struct {
 	Task
 	ScriptFormatField *string `xml:"scriptFormat,attr"`
 	ScriptField       *Script `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL script"`
+	TextPayloadField  string  `xml:",chardata"`
 }
 
 func DefaultScriptTask() ScriptTask {
@@ -9281,8 +9893,13 @@ type ScriptTaskInterface interface {
 	Script() (result *Script, present bool)
 	SetScriptFormat(value *string)
 	SetScript(value *Script)
+
+	TextPayload() *string
 }
 
+func (t *ScriptTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ScriptTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9325,7 +9942,9 @@ func (t *ScriptTask) SetScript(value *Script) {
 	t.ScriptField = value
 }
 
-type Script struct{}
+type Script struct {
+	TextPayloadField string `xml:",chardata"`
+}
 
 func DefaultScript() Script {
 	return Script{}
@@ -9333,8 +9952,13 @@ func DefaultScript() Script {
 
 type ScriptInterface interface {
 	Element
+
+	TextPayload() *string
 }
 
+func (t *Script) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Script) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9353,6 +9977,7 @@ type SendTask struct {
 	ImplementationField *Implementation `xml:"implementation,attr"`
 	MessageRefField     *QName          `xml:"messageRef,attr"`
 	OperationRefField   *QName          `xml:"operationRef,attr"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultSendTaskImplementationField Implementation = "##WebService"
@@ -9372,8 +9997,13 @@ type SendTaskInterface interface {
 	SetImplementation(value *Implementation)
 	SetMessageRef(value *QName)
 	SetOperationRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *SendTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SendTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9427,6 +10057,7 @@ type SequenceFlow struct {
 	TargetRefField           IdRef         `xml:"targetRef,attr"`
 	IsImmediateField         *bool         `xml:"isImmediate,attr"`
 	ConditionExpressionField *AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL conditionExpression"`
+	TextPayloadField         string        `xml:",chardata"`
 }
 
 func DefaultSequenceFlow() SequenceFlow {
@@ -9446,8 +10077,13 @@ type SequenceFlowInterface interface {
 	SetTargetRef(value IdRef)
 	SetIsImmediate(value *bool)
 	SetConditionExpression(value *AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *SequenceFlow) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SequenceFlow) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9508,6 +10144,7 @@ type ServiceTask struct {
 	Task
 	ImplementationField *Implementation `xml:"implementation,attr"`
 	OperationRefField   *QName          `xml:"operationRef,attr"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultServiceTaskImplementationField Implementation = "##WebService"
@@ -9525,8 +10162,13 @@ type ServiceTaskInterface interface {
 	OperationRef() (result *QName, present bool)
 	SetImplementation(value *Implementation)
 	SetOperationRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *ServiceTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *ServiceTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9568,6 +10210,7 @@ type Signal struct {
 	RootElement
 	NameField         *string `xml:"name,attr"`
 	StructureRefField *QName  `xml:"structureRef,attr"`
+	TextPayloadField  string  `xml:",chardata"`
 }
 
 func DefaultSignal() Signal {
@@ -9583,8 +10226,13 @@ type SignalInterface interface {
 	StructureRef() (result *QName, present bool)
 	SetName(value *string)
 	SetStructureRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *Signal) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Signal) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9623,7 +10271,8 @@ func (t *Signal) SetStructureRef(value *QName) {
 
 type SignalEventDefinition struct {
 	EventDefinition
-	SignalRefField *QName `xml:"signalRef,attr"`
+	SignalRefField   *QName `xml:"signalRef,attr"`
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultSignalEventDefinition() SignalEventDefinition {
@@ -9637,8 +10286,13 @@ type SignalEventDefinitionInterface interface {
 	EventDefinitionInterface
 	SignalRef() (result *QName, present bool)
 	SetSignalRef(value *QName)
+
+	TextPayload() *string
 }
 
+func (t *SignalEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SignalEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9670,6 +10324,7 @@ type StandardLoopCharacteristics struct {
 	TestBeforeField    *bool        `xml:"testBefore,attr"`
 	LoopMaximumField   *big.Int     `xml:"loopMaximum,attr"`
 	LoopConditionField AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL loopCondition"`
+	TextPayloadField   string       `xml:",chardata"`
 }
 
 var defaultStandardLoopCharacteristicsTestBeforeField bool = false
@@ -9690,8 +10345,13 @@ type StandardLoopCharacteristicsInterface interface {
 	SetTestBefore(value *bool)
 	SetLoopMaximum(value *big.Int)
 	SetLoopCondition(value AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *StandardLoopCharacteristics) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *StandardLoopCharacteristics) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9742,7 +10402,8 @@ func (t *StandardLoopCharacteristics) SetLoopCondition(value AnExpression) {
 
 type StartEvent struct {
 	CatchEvent
-	IsInterruptingField *bool `xml:"isInterrupting,attr"`
+	IsInterruptingField *bool  `xml:"isInterrupting,attr"`
+	TextPayloadField    string `xml:",chardata"`
 }
 
 var defaultStartEventIsInterruptingField bool = true
@@ -9759,8 +10420,13 @@ type StartEventInterface interface {
 	CatchEventInterface
 	IsInterrupting() (result bool)
 	SetIsInterrupting(value *bool)
+
+	TextPayload() *string
 }
 
+func (t *StartEvent) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *StartEvent) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -9824,6 +10490,7 @@ type SubChoreography struct {
 	AssociationField            []Association            `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL association"`
 	GroupField                  []Group                  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL group"`
 	TextAnnotationField         []TextAnnotation         `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL textAnnotation"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 func DefaultSubChoreography() SubChoreography {
@@ -9905,8 +10572,13 @@ type SubChoreographyInterface interface {
 	SetAssociations(value []Association)
 	SetGroups(value []Group)
 	SetTextAnnotations(value []TextAnnotation)
+
+	TextPayload() *string
 }
 
+func (t *SubChoreography) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SubChoreography) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -10516,6 +11188,7 @@ type SubConversation struct {
 	CallConversationField []CallConversation `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL callConversation"`
 	ConversationField     []Conversation     `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL conversation"`
 	SubConversationField  []SubConversation  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL subConversation"`
+	TextPayloadField      string             `xml:",chardata"`
 }
 
 func DefaultSubConversation() SubConversation {
@@ -10534,8 +11207,13 @@ type SubConversationInterface interface {
 	SetCallConversations(value []CallConversation)
 	SetConversations(value []Conversation)
 	SetSubConversations(value []SubConversation)
+
+	TextPayload() *string
 }
 
+func (t *SubConversation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SubConversation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -10646,6 +11324,7 @@ type SubProcess struct {
 	AssociationField            []Association            `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL association"`
 	GroupField                  []Group                  `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL group"`
 	TextAnnotationField         []TextAnnotation         `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL textAnnotation"`
+	TextPayloadField            string                   `xml:",chardata"`
 }
 
 var defaultSubProcessTriggeredByEventField bool = false
@@ -10734,8 +11413,13 @@ type SubProcessInterface interface {
 	SetAssociations(value []Association)
 	SetGroups(value []Group)
 	SetTextAnnotations(value []TextAnnotation)
+
+	TextPayload() *string
 }
 
+func (t *SubProcess) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *SubProcess) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11366,6 +12050,7 @@ func (t *SubProcess) SetTextAnnotations(value []TextAnnotation) {
 
 type Task struct {
 	Activity
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultTask() Task {
@@ -11377,8 +12062,13 @@ func DefaultTask() Task {
 type TaskInterface interface {
 	Element
 	ActivityInterface
+
+	TextPayload() *string
 }
 
+func (t *Task) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Task) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11397,6 +12087,7 @@ func (t *Task) FindBy(f ElementPredicate) (result Element, found bool) {
 
 type TerminateEventDefinition struct {
 	EventDefinition
+	TextPayloadField string `xml:",chardata"`
 }
 
 func DefaultTerminateEventDefinition() TerminateEventDefinition {
@@ -11408,8 +12099,13 @@ func DefaultTerminateEventDefinition() TerminateEventDefinition {
 type TerminateEventDefinitionInterface interface {
 	Element
 	EventDefinitionInterface
+
+	TextPayload() *string
 }
 
+func (t *TerminateEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *TerminateEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11428,8 +12124,9 @@ func (t *TerminateEventDefinition) FindBy(f ElementPredicate) (result Element, f
 
 type TextAnnotation struct {
 	Artifact
-	TextFormatField *string `xml:"textFormat,attr"`
-	TextField       *Text   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL text"`
+	TextFormatField  *string `xml:"textFormat,attr"`
+	TextField        *Text   `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL text"`
+	TextPayloadField string  `xml:",chardata"`
 }
 
 var defaultTextAnnotationTextFormatField string = "text/plain"
@@ -11448,8 +12145,13 @@ type TextAnnotationInterface interface {
 	Text() (result *Text, present bool)
 	SetTextFormat(value *string)
 	SetText(value *Text)
+
+	TextPayload() *string
 }
 
+func (t *TextAnnotation) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *TextAnnotation) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11493,7 +12195,9 @@ func (t *TextAnnotation) SetText(value *Text) {
 	t.TextField = value
 }
 
-type Text struct{}
+type Text struct {
+	TextPayloadField string `xml:",chardata"`
+}
 
 func DefaultText() Text {
 	return Text{}
@@ -11501,8 +12205,13 @@ func DefaultText() Text {
 
 type TextInterface interface {
 	Element
+
+	TextPayload() *string
 }
 
+func (t *Text) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Text) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11819,6 +12528,7 @@ type TimerEventDefinition struct {
 	TimeDateField     *AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL timeDate"`
 	TimeDurationField *AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL timeDuration"`
 	TimeCycleField    *AnExpression `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL timeCycle"`
+	TextPayloadField  string        `xml:",chardata"`
 }
 
 func DefaultTimerEventDefinition() TimerEventDefinition {
@@ -11836,8 +12546,13 @@ type TimerEventDefinitionInterface interface {
 	SetTimeDate(value *AnExpression)
 	SetTimeDuration(value *AnExpression)
 	SetTimeCycle(value *AnExpression)
+
+	TextPayload() *string
 }
 
+func (t *TimerEventDefinition) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *TimerEventDefinition) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11904,7 +12619,8 @@ func (t *TimerEventDefinition) SetTimeCycle(value *AnExpression) {
 
 type Transaction struct {
 	SubProcess
-	MethodField *TransactionMethod `xml:"method,attr"`
+	MethodField      *TransactionMethod `xml:"method,attr"`
+	TextPayloadField string             `xml:",chardata"`
 }
 
 var defaultTransactionMethodField TransactionMethod = "##Compensate"
@@ -11920,8 +12636,13 @@ type TransactionInterface interface {
 	SubProcessInterface
 	Method() (result *TransactionMethod)
 	SetMethod(value *TransactionMethod)
+
+	TextPayload() *string
 }
 
+func (t *Transaction) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *Transaction) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return
@@ -11953,6 +12674,7 @@ type UserTask struct {
 	Task
 	ImplementationField *Implementation `xml:"implementation,attr"`
 	RenderingField      []Rendering     `xml:"http://www.omg.org/spec/BPMN/20100524/MODEL rendering"`
+	TextPayloadField    string          `xml:",chardata"`
 }
 
 var defaultUserTaskImplementationField Implementation = "##unspecified"
@@ -11970,8 +12692,13 @@ type UserTaskInterface interface {
 	Renderings() (result *[]Rendering)
 	SetImplementation(value *Implementation)
 	SetRenderings(value []Rendering)
+
+	TextPayload() *string
 }
 
+func (t *UserTask) TextPayload() *string {
+	return &t.TextPayloadField
+}
 func (t *UserTask) FindBy(f ElementPredicate) (result Element, found bool) {
 	if t == nil {
 		return

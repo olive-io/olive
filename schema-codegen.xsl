@@ -128,13 +128,13 @@
             <xsl:text xml:space="preserve">
             </xsl:text>
         </xsl:if>
-        <xsl:if test="local:struct-case($type/@name) = 'Expression'">
-            <xsl:text>TextPayloadField string `xml:",chardata"`</xsl:text>
-            <xsl:text xml:space="preserve">
-            </xsl:text>
-        </xsl:if>
-        <xsl:if test="not($type/@abstract)">
+<!--        <xsl:if test="local:struct-case($type/@name) = 'Expression'">-->
 <!--            <xsl:text>TextPayloadField string `xml:",chardata"`</xsl:text>-->
+<!--            <xsl:text xml:space="preserve">-->
+<!--            </xsl:text>-->
+<!--        </xsl:if>-->
+        <xsl:if test="not($type/@abstract)">
+            <xsl:text>TextPayloadField string `xml:",chardata"`</xsl:text>
         </xsl:if>
         <xsl:text xml:space="preserve"> }
         </xsl:text>
@@ -314,21 +314,21 @@
         </xsl:for-each>
         <!-- Text payload -->
         <xsl:if test="not($type/@abstract)">
-<!--            <xsl:text>-->
-<!--                TextPayload() *string-->
-<!--            </xsl:text>-->
+            <xsl:text>
+                TextPayload() *string
+            </xsl:text>
         </xsl:if>
 
         <xsl:text xml:space="preserve"> }
         </xsl:text>
         <!-- Interface implementation -->
         <xsl:if test="not($type/@abstract)">
-<!--            <xsl:text xml:space="preserve">-->
-<!--            func (t *</xsl:text><xsl:value-of select="local:struct-case($type/@name)"/>-->
-<!--            <xsl:text xml:space="preserve">) TextPayload() *string {-->
-<!--            return &amp;t.TextPayloadField-->
-<!--         }-->
-<!--        </xsl:text>-->
+            <xsl:text xml:space="preserve">
+            func (t *</xsl:text><xsl:value-of select="local:struct-case($type/@name)"/>
+            <xsl:text xml:space="preserve">) TextPayload() *string {
+            return &amp;t.TextPayloadField
+         }
+        </xsl:text>
         </xsl:if>
 
         <xsl:text xml:space="preserve">func (t *</xsl:text><xsl:value-of select="local:struct-case($type/@name)"/>

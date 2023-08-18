@@ -294,11 +294,11 @@ func MakeTimerEvent(instance DefinitionInstance) TimerEvent {
 	return TimerEvent{instance: instance}
 }
 
-func (ev *TimerEvent) MatchesEventInstance(instance DefinitionInstance) bool {
+func (ev TimerEvent) MatchesEventInstance(instance DefinitionInstance) bool {
 	return instance == ev.instance
 }
 
-func (ev *TimerEvent) Instance() DefinitionInstance {
+func (ev TimerEvent) Instance() DefinitionInstance {
 	return ev.instance
 }
 
