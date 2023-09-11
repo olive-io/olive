@@ -5,18 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/flow_node/gateway/exclusive"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/flow_node/gateway/exclusive"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/assert"
 
-	_ "github.com/oliveio/olive/engine/expression/expr"
+	_ "github.com/oliveio/olive/bpmn/expression/expr"
 )
 
-var testExclusiveGateway bpmn.Definitions
+var testExclusiveGateway schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/exclusive_gateway/exclusive_gateway.bpmn", &testExclusiveGateway)
@@ -65,7 +65,7 @@ func TestExclusiveGateway(t *testing.T) {
 	}
 }
 
-var testExclusiveGatewayWithDefault bpmn.Definitions
+var testExclusiveGatewayWithDefault schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/exclusive_gateway/exclusive_gateway_default.bpmn", &testExclusiveGatewayWithDefault)
@@ -115,7 +115,7 @@ func TestExclusiveGatewayWithDefault(t *testing.T) {
 	}
 }
 
-var testExclusiveGatewayWithNoDefault bpmn.Definitions
+var testExclusiveGatewayWithNoDefault schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/exclusive_gateway/exclusive_gateway_no_default.bpmn", &testExclusiveGatewayWithNoDefault)
@@ -167,7 +167,7 @@ func TestExclusiveGatewayWithNoDefault(t *testing.T) {
 	}
 }
 
-var testExclusiveGatewayIncompleteJoin bpmn.Definitions
+var testExclusiveGatewayIncompleteJoin schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/exclusive_gateway/exclusive_gateway_multiple_incoming.bpmn", &testExclusiveGatewayIncompleteJoin)

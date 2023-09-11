@@ -5,18 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	_ "github.com/oliveio/olive/engine/expression/expr"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/flow_node/gateway/inclusive"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/process/instance"
-	"github.com/oliveio/olive/engine/tracing"
+	_ "github.com/oliveio/olive/bpmn/expression/expr"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/flow_node/gateway/inclusive"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/process/instance"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/assert"
 )
 
-var testInclusiveGateway bpmn.Definitions
+var testInclusiveGateway schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/inclusive_gateway/inclusive_gateway.bpmn", &testInclusiveGateway)
@@ -72,7 +72,7 @@ func TestInclusiveGateway(t *testing.T) {
 	}
 }
 
-var testInclusiveGatewayDefault bpmn.Definitions
+var testInclusiveGatewayDefault schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/inclusive_gateway/inclusive_gateway_default.bpmn", &testInclusiveGatewayDefault)
@@ -129,7 +129,7 @@ func TestInclusiveGatewayDefault(t *testing.T) {
 	}
 }
 
-var testInclusiveGatewayNoDefault bpmn.Definitions
+var testInclusiveGatewayNoDefault schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/inclusive_gateway/inclusive_gateway_no_default.bpmn", &testInclusiveGatewayNoDefault)

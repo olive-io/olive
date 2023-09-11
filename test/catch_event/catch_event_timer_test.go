@@ -5,20 +5,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/clock"
-	"github.com/oliveio/olive/engine/event"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/flow_node/event/catch"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/process/instance"
-	"github.com/oliveio/olive/engine/timer"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/clock"
+	"github.com/oliveio/olive/bpmn/event"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/flow_node/event/catch"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/process/instance"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/timer"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/require"
 )
 
-var timerDoc bpmn.Definitions
+var timerDoc schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/catch_event/intermediate_catch_event_timer.bpmn", &timerDoc)

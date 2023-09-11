@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/event"
-	"github.com/oliveio/olive/engine/flow"
-	ev "github.com/oliveio/olive/engine/flow_node/event/catch"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/event"
+	"github.com/oliveio/olive/bpmn/flow"
+	ev "github.com/oliveio/olive/bpmn/flow_node/event/catch"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/assert"
 )
 
-var testDoc bpmn.Definitions
+var testDoc schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/event_based/event_based_gateway.bpmn", &testDoc)

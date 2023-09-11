@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/oliveio/olive/engine/expression/expr"
+	_ "github.com/oliveio/olive/bpmn/expression/expr"
 )
 
-var testCondExpr bpmn.Definitions
+var testCondExpr schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/flow/condexpr.bpmn", &testCondExpr)
@@ -53,7 +53,7 @@ func TestTrueFormalExpression(t *testing.T) {
 	}
 }
 
-var testCondExprFalse bpmn.Definitions
+var testCondExprFalse schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/flow/condexpr_false.bpmn", &testCondExprFalse)
@@ -93,7 +93,7 @@ func TestFalseFormalExpression(t *testing.T) {
 	}
 }
 
-var testCondDataObject bpmn.Definitions
+var testCondDataObject schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/flow/condexpr_dataobject.bpmn", &testCondDataObject)

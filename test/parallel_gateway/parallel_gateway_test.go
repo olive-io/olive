@@ -4,18 +4,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/flow_node/gateway/parallel"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/flow_node/gateway/parallel"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/assert"
 
-	_ "github.com/oliveio/olive/engine/expression/expr"
+	_ "github.com/oliveio/olive/bpmn/expression/expr"
 )
 
-var testParallelGateway bpmn.Definitions
+var testParallelGateway schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/parallel_gateway/parallel_gateway_fork_join.bpmn", &testParallelGateway)
@@ -65,7 +65,7 @@ func TestParallelGateway(t *testing.T) {
 	}
 }
 
-var testParallelGatewayMtoN bpmn.Definitions
+var testParallelGatewayMtoN schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/parallel_gateway/parallel_gateway_m_n.bpmn", &testParallelGatewayMtoN)
@@ -114,7 +114,7 @@ func TestParallelGatewayMtoN(t *testing.T) {
 	}
 }
 
-var testParallelGatewayNtoM bpmn.Definitions
+var testParallelGatewayNtoM schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/parallel_gateway/parallel_gateway_n_m.bpmn", &testParallelGatewayNtoM)
@@ -164,7 +164,7 @@ func TestParallelGatewayNtoM(t *testing.T) {
 	}
 }
 
-var testParallelGatewayIncompleteJoin bpmn.Definitions
+var testParallelGatewayIncompleteJoin schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/parallel_gateway/parallel_gateway_fork_incomplete_join.bpmn", &testParallelGatewayIncompleteJoin)

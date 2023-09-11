@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	_ "github.com/stretchr/testify/assert"
 )
 
-var testTask bpmn.Definitions
+var testTask schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/task/task.bpmn", &testTask)

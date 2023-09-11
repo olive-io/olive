@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package api;
+
+import "github.com/olive-io/olive/api/api.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/olive-io/olive/api;api";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+
+
+service DefinitionRPC {
+  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse);
+  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse);
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
+  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse);
+  rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse);
+}
+
+message DeployDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  string content = 3;
+}
+
+message DeployDefinitionResponse {
+  int64 version = 1;
+}
+
+message ListDefinitionRequest {}
+
+message ListDefinitionResponse {
+  repeated api.Definition definition = 1;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+  int64 version = 2;
+}
+
+message GetDefinitionResponse {
+  api.Definition definition = 1;
+}
+
+message RemoveDefinitionRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message RemoveDefinitionResponse {}
+
+message ExecuteDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  map<string, string> header = 3;
+}
+
+message ExecuteDefinitionResponse {
+  api.ProcessInstance instance = 1;
+}

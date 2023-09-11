@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package api;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/olive-io/olive/api;api";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+
+message Definition {
+  string id = 1;
+  string name = 2;
+  int64 version = 3;
+  bytes content = 4;
+}
+
+message ProcessInstance {
+
+}

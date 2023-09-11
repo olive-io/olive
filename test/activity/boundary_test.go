@@ -4,23 +4,23 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/event"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/flow_node"
-	"github.com/oliveio/olive/engine/flow_node/activity"
-	"github.com/oliveio/olive/engine/flow_node/activity/task"
-	"github.com/oliveio/olive/engine/flow_node/event/catch"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/process/instance"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/event"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/flow_node"
+	"github.com/oliveio/olive/bpmn/flow_node/activity"
+	"github.com/oliveio/olive/bpmn/flow_node/activity/task"
+	"github.com/oliveio/olive/bpmn/flow_node/event/catch"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/process/instance"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/stretchr/testify/assert"
 )
 
-var testDoc bpmn.Definitions
+var testDoc schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/activity/boundary_event.bpmn", &testDoc)
@@ -53,9 +53,9 @@ func testBoundaryEvent(t *testing.T, boundary string, test func(visited map[stri
 	traces := tracer.SubscribeChannel(make(chan tracing.Trace, 32))
 
 	if inst, err := proc.Instantiate(instance.WithTracer(tracer)); err == nil {
-		if node, found := testDoc.FindBy(bpmn.ExactId("task")); found {
+		if node, found := testDoc.FindBy(schema.ExactId("task")); found {
 			if taskNode, found := inst.FlowNodeMapping().
-				ResolveElementToFlowNode(node.(bpmn.FlowNodeInterface)); found {
+				ResolveElementToFlowNode(node.(schema.FlowNodeInterface)); found {
 				harness := taskNode.(*activity.Harness)
 				aTask := harness.Activity().(*task.Task)
 				aTask.SetBody(func(task *task.Task, ctx context.Context) flow_node.Action {

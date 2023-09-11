@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/olive-io/olive/api;api";
+
+import "github.com/olive-io/olive/api/api.proto";
+
+service RaftService {
+  rpc Join(JoinRequest) returns (JoinResponse);
+}
+
+message JoinRequest {}
+
+message JoinResponse {}

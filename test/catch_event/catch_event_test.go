@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/event"
-	"github.com/oliveio/olive/engine/flow"
-	ev "github.com/oliveio/olive/engine/flow_node/event/catch"
-	"github.com/oliveio/olive/engine/process"
-	"github.com/oliveio/olive/engine/process/instance"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/event"
+	"github.com/oliveio/olive/bpmn/flow"
+	ev "github.com/oliveio/olive/bpmn/flow_node/event/catch"
+	"github.com/oliveio/olive/bpmn/process"
+	"github.com/oliveio/olive/bpmn/process/instance"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 
 	"github.com/stretchr/testify/assert"
@@ -44,19 +44,19 @@ type eventInstance struct {
 	id string
 }
 
-func (e eventInstance) EventDefinition() bpmn.EventDefinitionInterface {
-	definition := bpmn.DefaultEventDefinition()
+func (e eventInstance) EventDefinition() schema.EventDefinitionInterface {
+	definition := schema.DefaultEventDefinition()
 	return &definition
 }
 
 type eventDefinitionInstanceBuilder struct{}
 
-func (e eventDefinitionInstanceBuilder) NewEventDefinitionInstance(def bpmn.EventDefinitionInterface) (event.DefinitionInstance, error) {
+func (e eventDefinitionInstanceBuilder) NewEventDefinitionInstance(def schema.EventDefinitionInterface) (event.DefinitionInstance, error) {
 	switch d := def.(type) {
-	case *bpmn.TimerEventDefinition:
+	case *schema.TimerEventDefinition:
 		id, _ := d.Id()
 		return eventInstance{id: *id}, nil
-	case *bpmn.ConditionalEventDefinition:
+	case *schema.ConditionalEventDefinition:
 		id, _ := d.Id()
 		return eventInstance{id: *id}, nil
 	default:
@@ -77,7 +77,7 @@ func TestConditionalEvent(t *testing.T) {
 }
 
 func testEvent(t *testing.T, filename string, nodeId string, eventDefinitionInstanceBuilder event.DefinitionInstanceBuilder, eventObservationOnly bool, events ...event.Event) {
-	var testDoc bpmn.Definitions
+	var testDoc schema.Definitions
 	test.LoadTestFile(filename, &testDoc)
 	processElement := (*testDoc.Processes())[0]
 	proc := process.New(&processElement, &testDoc, process.WithEventDefinitionInstanceBuilder(eventDefinitionInstanceBuilder))

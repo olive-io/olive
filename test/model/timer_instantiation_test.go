@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oliveio/olive/bpmn"
-	"github.com/oliveio/olive/engine/clock"
-	"github.com/oliveio/olive/engine/flow"
-	"github.com/oliveio/olive/engine/model"
-	"github.com/oliveio/olive/engine/tracing"
+	"github.com/oliveio/olive/bpmn/clock"
+	"github.com/oliveio/olive/bpmn/flow"
+	"github.com/oliveio/olive/bpmn/model"
+	"github.com/oliveio/olive/bpmn/schema"
+	"github.com/oliveio/olive/bpmn/tracing"
 	"github.com/oliveio/olive/test"
 	"github.com/stretchr/testify/require"
 )
 
-var testTimerStartEventInstantiation bpmn.Definitions
+var testTimerStartEventInstantiation schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/model/instantiate_timer_start_event.bpmn", &testTimerStartEventInstantiation)
@@ -58,7 +58,7 @@ loop1:
 	}
 }
 
-var testRecurringTimerStartEventInstantiation bpmn.Definitions
+var testRecurringTimerStartEventInstantiation schema.Definitions
 
 func init() {
 	test.LoadTestFile("sample/model/instantiate_recurring_timer_start_event.bpmn", &testRecurringTimerStartEventInstantiation)
