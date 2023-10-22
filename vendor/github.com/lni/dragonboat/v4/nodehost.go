@@ -256,9 +256,9 @@ type ReadonlyLogReader interface {
 var DefaultSnapshotOption SnapshotOption
 
 // Target is the type used to specify where a node is running. Target is remote
-// NodeHost's RaftAddress value when NodeHostConfig.AddressByNodeHostID is not
+// NodeHost's RaftAddress value when NodeHostConfig.DefaultNodeRegistryEnabled is not
 // set. Target will use NodeHost's ID value when
-// NodeHostConfig.AddressByNodeHostID is set.
+// NodeHostConfig.DefaultNodeRegistryEnabled is set.
 type Target = string
 
 // NodeHost manages Raft shards and enables them to share resources such as
@@ -279,7 +279,7 @@ type NodeHost struct {
 		sys         *sysEventListener
 	}
 	registry     INodeHostRegistry
-	nodes        registry.INodeRegistry
+	nodes        raftio.INodeRegistry
 	fs           vfs.IFS
 	transport    transport.ITransport
 	id           *id.UUID
@@ -461,7 +461,7 @@ func (nh *NodeHost) ID() string {
 // GetNodeHostRegistry returns the NodeHostRegistry instance that can be used
 // to query NodeHost details shared between NodeHost instances by gossip.
 func (nh *NodeHost) GetNodeHostRegistry() (INodeHostRegistry, bool) {
-	return nh.registry, nh.nhConfig.AddressByNodeHostID
+	return nh.registry, nh.nhConfig.DefaultNodeRegistryEnabled
 }
 
 // StartReplica adds the specified Raft replica node to the NodeHost and starts
@@ -472,7 +472,7 @@ func (nh *NodeHost) GetNodeHostRegistry() (INodeHostRegistry, bool) {
 // The input parameter initialMembers is a map of replica ID to replica target for all
 // Raft shard's initial member nodes. By default, the target is the
 // RaftAddress value of the NodeHost where the node will be running. When running
-// in the AddressByNodeHostID mode, target should be set to the NodeHostID value
+// in the DefaultNodeRegistryEnabled mode, target should be set to the NodeHostID value
 // of the NodeHost where the node will be running. See the godoc of NodeHost's ID
 // method for the full definition of NodeHostID. For the same Raft shard, the
 // same initialMembers map should be specified when starting its initial member
@@ -493,7 +493,7 @@ func (nh *NodeHost) GetNodeHostRegistry() (INodeHostRegistry, bool) {
 //   - joining a new node to an existing Raft shard, set join to true and leave
 //     the initialMembers map empty. This requires the joining node to have already
 //     been added as a member node of the Raft shard.
-//   - restarting an crashed or stopped node, set join to false and leave the
+//   - restarting a crashed or stopped node, set join to false and leave the
 //     initialMembers map to be empty. This applies to both initial member nodes
 //     and those joined later.
 func (nh *NodeHost) StartReplica(initialMembers map[uint64]Target,
@@ -556,7 +556,7 @@ func (nh *NodeHost) StopReplica(shardID uint64, replicaID uint64) error {
 }
 
 // SyncPropose makes a synchronous proposal on the Raft shard specified by
-// the input client session object. The specified context parameter must has
+// the input client session object. The specified context parameter must have
 // the timeout value set.
 //
 // SyncPropose returns the result returned by IStateMachine or
@@ -592,7 +592,7 @@ func (nh *NodeHost) SyncPropose(ctx context.Context,
 }
 
 // SyncRead performs a synchronous linearizable read on the specified Raft
-// shard. The specified context parameter must has the timeout value set. The
+// shard. The specified context parameter must have the timeout value set. The
 // query interface{} specifies what to query, it will be passed to the Lookup
 // method of the IStateMachine or IOnDiskStateMachine after the system
 // determines that it is safe to perform the local read. It returns the query
@@ -646,9 +646,9 @@ type Membership struct {
 	Removed map[uint64]struct{}
 }
 
-// SyncGetShardMembership is a rsynchronous method that queries the membership
+// SyncGetShardMembership is a synchronous method that queries the membership
 // information from the specified Raft shard. The specified context parameter
-// must has the timeout value set.
+// must have the timeout value set.
 func (nh *NodeHost) SyncGetShardMembership(ctx context.Context,
 	shardID uint64) (*Membership, error) {
 	v, err := nh.linearizableRead(ctx, shardID,
@@ -711,7 +711,7 @@ func (nh *NodeHost) GetNoOPSession(shardID uint64) *client.Session {
 
 // SyncGetSession starts a synchronous proposal to create, register and return
 // a new client session object for the specified Raft shard. The specified
-// context parameter must has the timeout value set.
+// context parameter must have the timeout value set.
 //
 // A client session object is used to ensure that a retried proposal, e.g.
 // proposal retried after timeout, will not be applied more than once into the
@@ -747,7 +747,7 @@ func (nh *NodeHost) SyncGetSession(ctx context.Context,
 
 // SyncCloseSession closes the specified client session by unregistering it
 // from the system in a synchronous manner. The specified context parameter
-// must has the timeout value set.
+// must have the timeout value set.
 //
 // Closed client session should not be used in future proposals.
 func (nh *NodeHost) SyncCloseSession(ctx context.Context,
@@ -919,7 +919,7 @@ func (nh *NodeHost) StaleRead(shardID uint64,
 // SyncRequestSnapshot is the synchronous variant of the RequestSnapshot
 // method. See RequestSnapshot for more details.
 //
-// The input context object must has deadline set.
+// The input context object must have deadline set.
 //
 // SyncRequestSnapshot returns the index of the created snapshot or the error
 // encountered.
@@ -1145,7 +1145,7 @@ func (nh *NodeHost) RequestDeleteReplica(shardID uint64,
 // By default, the target parameter is the RaftAddress of the NodeHost instance
 // where the new Raft node will be running. Note that fixed IP or static DNS
 // name should be used in RaftAddress in such default mode. When running in the
-// AddressByNodeHostID mode, target should be set to NodeHost's ID value which
+// DefaultNodeRegistryEnabled mode, target should be set to NodeHost's ID value which
 // can be obtained by calling the ID() method.
 //
 // When the Raft shard is created with the OrderedConfigChange config flag
@@ -1534,79 +1534,98 @@ func (nh *NodeHost) startShard(initialMembers map[uint64]Target,
 			return ErrInvalidTarget
 		}
 	}
-	nh.mu.Lock()
-	defer nh.mu.Unlock()
-	if atomic.LoadInt32(&nh.closed) != 0 {
-		return ErrClosed
+
+	doStart := func() (*node, error) {
+		nh.mu.Lock()
+		defer nh.mu.Unlock()
+
+		if atomic.LoadInt32(&nh.closed) != 0 {
+			return nil, ErrClosed
+		}
+		if _, ok := nh.mu.shards.Load(shardID); ok {
+			return nil, ErrShardAlreadyExist
+		}
+		if nh.engine.nodeLoaded(shardID, replicaID) {
+			// node is still loaded in the execution engine, e.g. processing snapshot
+			return nil, ErrShardAlreadyExist
+		}
+		if join && len(initialMembers) > 0 {
+			return nil, ErrInvalidShardSettings
+		}
+		peers, im, err := nh.bootstrapShard(initialMembers, join, cfg, smType)
+		if errors.Is(err, ErrInvalidShardSettings) {
+			return nil, err
+		}
+		if err != nil {
+			panicNow(err)
+		}
+		for k, v := range peers {
+			if k != replicaID {
+				nh.nodes.Add(shardID, k, v)
+			}
+		}
+		did := nh.nhConfig.GetDeploymentID()
+		if err := nh.env.CreateSnapshotDir(did, shardID, replicaID); err != nil {
+			if errors.Is(err, server.ErrDirMarkedAsDeleted) {
+				return nil, ErrReplicaRemoved
+			}
+			panicNow(err)
+		}
+		getSnapshotDir := func(cid uint64, nid uint64) string {
+			return nh.env.GetSnapshotDir(did, cid, nid)
+		}
+		logReader := logdb.NewLogReader(shardID, replicaID, nh.mu.logdb)
+		ss := newSnapshotter(shardID, replicaID,
+			getSnapshotDir, nh.mu.logdb, logReader, nh.fs)
+		logReader.SetCompactor(ss)
+		if err := ss.processOrphans(); err != nil {
+			panicNow(err)
+		}
+		p := server.NewDoubleFixedPartitioner(nh.nhConfig.Expert.Engine.ExecShards,
+			nh.nhConfig.Expert.LogDB.Shards)
+		shard := p.GetPartitionID(shardID)
+		rn, err := newNode(peers,
+			im,
+			cfg,
+			nh.nhConfig,
+			createStateMachine,
+			ss,
+			logReader,
+			nh.engine,
+			nh.events.leaderInfoQ,
+			nh.transport.GetStreamSink,
+			nh.msgHandler.HandleSnapshotStatus,
+			nh.sendMessage,
+			nh.nodes,
+			nh.requestPools[replicaID%requestPoolShards],
+			nh.mu.logdb,
+			nh.getLogDBMetrics(shard),
+			nh.events.sys)
+		if err != nil {
+			panicNow(err)
+		}
+		rn.loaded()
+		nh.mu.shards.Store(shardID, rn)
+		nh.mu.cci++
+		nh.cciUpdated()
+		nh.engine.setCCIReady(shardID)
+		nh.engine.setApplyReady(shardID)
+
+		return rn, nil
 	}
-	if _, ok := nh.mu.shards.Load(shardID); ok {
-		return ErrShardAlreadyExist
-	}
-	if nh.engine.nodeLoaded(shardID, replicaID) {
-		// node is still loaded in the execution engine, e.g. processing snapshot
-		return ErrShardAlreadyExist
-	}
-	if join && len(initialMembers) > 0 {
-		return ErrInvalidShardSettings
-	}
-	peers, im, err := nh.bootstrapShard(initialMembers, join, cfg, smType)
-	if errors.Is(err, ErrInvalidShardSettings) {
+
+	rn, err := doStart()
+	if err != nil {
 		return err
 	}
-	if err != nil {
-		panicNow(err)
-	}
-	for k, v := range peers {
-		if k != replicaID {
-			nh.nodes.Add(shardID, k, v)
+
+	if cfg.WaitReady {
+		select {
+		case <-rn.initializedC:
+		case <-rn.stopC:
 		}
 	}
-	did := nh.nhConfig.GetDeploymentID()
-	if err := nh.env.CreateSnapshotDir(did, shardID, replicaID); err != nil {
-		if errors.Is(err, server.ErrDirMarkedAsDeleted) {
-			return ErrReplicaRemoved
-		}
-		panicNow(err)
-	}
-	getSnapshotDir := func(cid uint64, nid uint64) string {
-		return nh.env.GetSnapshotDir(did, cid, nid)
-	}
-	logReader := logdb.NewLogReader(shardID, replicaID, nh.mu.logdb)
-	ss := newSnapshotter(shardID, replicaID,
-		getSnapshotDir, nh.mu.logdb, logReader, nh.fs)
-	logReader.SetCompactor(ss)
-	if err := ss.processOrphans(); err != nil {
-		panicNow(err)
-	}
-	p := server.NewDoubleFixedPartitioner(nh.nhConfig.Expert.Engine.ExecShards,
-		nh.nhConfig.Expert.LogDB.Shards)
-	shard := p.GetPartitionID(shardID)
-	rn, err := newNode(peers,
-		im,
-		cfg,
-		nh.nhConfig,
-		createStateMachine,
-		ss,
-		logReader,
-		nh.engine,
-		nh.events.leaderInfoQ,
-		nh.transport.GetStreamSink,
-		nh.msgHandler.HandleSnapshotStatus,
-		nh.sendMessage,
-		nh.nodes,
-		nh.requestPools[replicaID%requestPoolShards],
-		nh.mu.logdb,
-		nh.getLogDBMetrics(shard),
-		nh.events.sys)
-	if err != nil {
-		panicNow(err)
-	}
-	rn.loaded()
-	nh.mu.shards.Store(shardID, rn)
-	nh.mu.cci++
-	nh.cciUpdated()
-	nh.engine.setCCIReady(shardID)
-	nh.engine.setApplyReady(shardID)
+
 	return nil
 }
 
@@ -1727,14 +1746,26 @@ func (nh *NodeHost) createNodeRegistry() error {
 	validator := nh.nhConfig.GetTargetValidator()
 	// TODO:
 	// more tests here required
-	if nh.nhConfig.AddressByNodeHostID {
-		plog.Infof("AddressByNodeHostID: true, use gossip based node registry")
+	if nh.nhConfig.DefaultNodeRegistryEnabled {
+		// DefaultNodeRegistryEnabled should not be set if a Expert.NodeRegistryFactory
+		// is also set.
+		if nh.nhConfig.Expert.NodeRegistryFactory != nil {
+			return errors.New("DefaultNodeRegistryEnabled and Expert.NodeRegistryFactory should not both be set")
+		}
+		plog.Infof("DefaultNodeRegistryEnabled: true, use gossip based node registry")
 		r, err := registry.NewGossipRegistry(nh.ID(), nh.getShardInfo,
 			nh.nhConfig, streamConnections, validator)
 		if err != nil {
 			return err
 		}
 		nh.registry = r.GetNodeHostRegistry()
+		nh.nodes = r
+	} else if nh.nhConfig.Expert.NodeRegistryFactory != nil {
+		plog.Infof("Expert.NodeRegistryFactory was set: using custom registry")
+		r, err := nh.nhConfig.Expert.NodeRegistryFactory.Create(nh.ID(), streamConnections, validator)
+		if err != nil {
+			return err
+		}
 		nh.nodes = r
 	} else {
 		plog.Infof("using regular node registry")

@@ -32,23 +32,13 @@ var (
 	ErrUnknownTarget = errors.New("target address unknown")
 )
 
-// IResolver converts the (shard id, node id) tuple to network address.
+// IResolver converts the (shard id, replica id) tuple to network address.
 type IResolver interface {
 	Resolve(uint64, uint64) (string, string, error)
 	Add(uint64, uint64, string)
 }
 
-// INodeRegistry is the local registry interface used to keep all known
-// nodes in the system.
-type INodeRegistry interface {
-	Close() error
-	Add(shardID uint64, replicaID uint64, url string)
-	Remove(shardID uint64, replicaID uint64)
-	RemoveShard(shardID uint64)
-	Resolve(shardID uint64, replicaID uint64) (string, string, error)
-}
-
-var _ INodeRegistry = (*Registry)(nil)
+var _ raftio.INodeRegistry = (*Registry)(nil)
 var _ IResolver = (*Registry)(nil)
 
 // Registry is used to manage all known node addresses in the multi raft system.
@@ -68,10 +58,10 @@ func NewNodeRegistry(streamConnections uint64, v config.TargetValidator) *Regist
 	return n
 }
 
-// Close closes the node registry.
+// Close closes the registry.
 func (n *Registry) Close() error { return nil }
 
-// Add adds the specified node and its target info to the registry.
+// Add adds the specified replica and its target info to the registry.
 func (n *Registry) Add(shardID uint64, replicaID uint64, target string) {
 	if n.validate != nil && !n.validate(target) {
 		plog.Panicf("invalid target %s", target)
@@ -98,7 +88,7 @@ func (n *Registry) Remove(shardID uint64, replicaID uint64) {
 	n.addr.Delete(raftio.GetNodeInfo(shardID, replicaID))
 }
 
-// RemoveShard removes all nodes info associated with the specified shard
+// RemoveShard removes info associated with the specified shard.
 func (n *Registry) RemoveShard(shardID uint64) {
 	var toRemove []raftio.NodeInfo
 	n.addr.Range(func(k, v interface{}) bool {
@@ -113,7 +103,7 @@ func (n *Registry) RemoveShard(shardID uint64) {
 	}
 }
 
-// Resolve looks up the Addr of the specified node.
+// Resolve looks up the address of the specified node.
 func (n *Registry) Resolve(shardID uint64, replicaID uint64) (string, string, error) {
 	key := raftio.GetNodeInfo(shardID, replicaID)
 	addr, ok := n.addr.Load(key)

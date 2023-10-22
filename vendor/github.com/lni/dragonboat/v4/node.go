@@ -26,7 +26,6 @@ import (
 	"github.com/lni/dragonboat/v4/internal/fileutil"
 	"github.com/lni/dragonboat/v4/internal/logdb"
 	"github.com/lni/dragonboat/v4/internal/raft"
-	"github.com/lni/dragonboat/v4/internal/registry"
 	"github.com/lni/dragonboat/v4/internal/rsm"
 	"github.com/lni/dragonboat/v4/internal/server"
 	"github.com/lni/dragonboat/v4/internal/settings"
@@ -77,7 +76,7 @@ type leaderInfo struct {
 type node struct {
 	shardInfo             atomic.Value
 	leaderInfo            atomic.Value
-	nodeRegistry          registry.INodeRegistry
+	nodeRegistry          raftio.INodeRegistry
 	logdb                 raftio.ILogDB
 	pipeline              pipeline
 	getStreamSink         func(uint64, uint64) *transport.Sink
@@ -146,7 +145,7 @@ func newNode(peers map[uint64]string,
 	getStreamSink func(uint64, uint64) *transport.Sink,
 	handleSnapshotStatus func(uint64, uint64, bool),
 	sendMessage func(pb.Message),
-	nodeRegistry registry.INodeRegistry,
+	nodeRegistry raftio.INodeRegistry,
 	pool *sync.Pool,
 	ldb raftio.ILogDB,
 	metrics *logDBMetrics,
@@ -1500,7 +1499,6 @@ func (n *node) processStatusTransition() bool {
 func (n *node) processUninitializedNodeStatus() bool {
 	if !n.initialized() {
 		plog.Debugf("%s checking initial snapshot", n.id())
-		n.ss.setRecovering()
 		n.reportRecoverSnapshot(rsm.Task{
 			Recover: true,
 			Initial: true,
@@ -1601,7 +1599,7 @@ func (n *node) notifyConfigChange() {
 		IsNonVoting:       isNonVoting,
 		IsWitness:         isWitness,
 		ConfigChangeIndex: m.ConfigChangeId,
-		Nodes:             m.Addresses,
+		Replicas:          m.Addresses,
 	}
 	n.shardInfo.Store(ci)
 	n.sysEvents.Publish(server.SystemEvent{
@@ -1621,7 +1619,7 @@ func (n *node) getShardInfo() ShardInfo {
 			StateMachineType: sm.Type(n.sm.Type()),
 		}
 	}
-	ci := v.(*ShardInfo)
+	info := v.(*ShardInfo)
 
 	leaderID := uint64(0)
 	term := uint64(0)
@@ -1633,13 +1631,13 @@ func (n *node) getShardInfo() ShardInfo {
 	}
 
 	return ShardInfo{
-		ShardID:           ci.ShardID,
-		ReplicaID:         ci.ReplicaID,
+		ShardID:           info.ShardID,
+		ReplicaID:         info.ReplicaID,
 		LeaderID:          leaderID,
 		Term:              term,
-		IsNonVoting:       ci.IsNonVoting,
-		ConfigChangeIndex: ci.ConfigChangeIndex,
-		Nodes:             ci.Nodes,
+		IsNonVoting:       info.IsNonVoting,
+		ConfigChangeIndex: info.ConfigChangeIndex,
+		Replicas:          info.Replicas,
 		StateMachineType:  sm.Type(n.sm.Type()),
 	}
 }

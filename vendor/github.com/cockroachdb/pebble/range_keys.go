@@ -17,7 +17,7 @@ import (
 func (i *Iterator) constructRangeKeyIter() {
 	i.rangeKey.rangeKeyIter = i.rangeKey.iterConfig.Init(
 		&i.comparer, i.seqNum, i.opts.LowerBound, i.opts.UpperBound,
-		&i.hasPrefix, &i.prefixOrFullSeekKey)
+		&i.hasPrefix, &i.prefixOrFullSeekKey, true /* onlySets */, &i.rangeKey.rangeKeyBuffers.internal)
 
 	// If there's an indexed batch with range keys, include it.
 	if i.batch != nil {
@@ -36,40 +36,59 @@ func (i *Iterator) constructRangeKeyIter() {
 	}
 
 	// Next are the flushables: memtables and large batches.
-	for j := len(i.readState.memtables) - 1; j >= 0; j-- {
-		mem := i.readState.memtables[j]
-		// We only need to read from memtables which contain sequence numbers older
-		// than seqNum.
-		if logSeqNum := mem.logSeqNum; logSeqNum >= i.seqNum {
-			continue
-		}
-		if rki := mem.newRangeKeyIter(&i.opts); rki != nil {
-			i.rangeKey.iterConfig.AddLevel(rki)
+	if i.readState != nil {
+		for j := len(i.readState.memtables) - 1; j >= 0; j-- {
+			mem := i.readState.memtables[j]
+			// We only need to read from memtables which contain sequence numbers older
+			// than seqNum.
+			if logSeqNum := mem.logSeqNum; logSeqNum >= i.seqNum {
+				continue
+			}
+			if rki := mem.newRangeKeyIter(&i.opts); rki != nil {
+				i.rangeKey.iterConfig.AddLevel(rki)
+			}
 		}
 	}
 
-	current := i.readState.current
+	current := i.version
+	if current == nil {
+		current = i.readState.current
+	}
 	// Next are the file levels: L0 sub-levels followed by lower levels.
+
+	// Add file-specific iterators for L0 files containing range keys. We
+	// maintain a separate manifest.LevelMetadata for each level containing only
+	// files that contain range keys, however we don't compute a separate
+	// L0Sublevels data structure too.
 	//
-	// Add file-specific iterators for L0 files containing range keys. This is less
-	// efficient than using levelIters for sublevels of L0 files containing
-	// range keys, but range keys are expected to be sparse anyway, reducing the
-	// cost benefit of maintaining a separate L0Sublevels instance for range key
-	// files and then using it here.
-	//
-	// NB: We iterate L0's files in reverse order. They're sorted by
-	// LargestSeqNum ascending, and we need to add them to the merging iterator
-	// in LargestSeqNum descending to preserve the merging iterator's invariants
-	// around Key Trailer order.
-	iter := current.RangeKeyLevels[0].Iter()
-	for f := iter.Last(); f != nil; f = iter.Prev() {
-		spanIterOpts := &keyspan.SpanIterOptions{RangeKeyFilters: i.opts.RangeKeyFilters}
-		spanIter, err := i.newIterRangeKey(f, spanIterOpts)
-		if err != nil {
-			i.rangeKey.iterConfig.AddLevel(&errorKeyspanIter{err: err})
-			continue
+	// We first use L0's LevelMetadata to peek and see whether L0 contains any
+	// range keys at all. If it does, we create a range key level iterator per
+	// level that contains range keys using the information from L0Sublevels.
+	// Some sublevels may not contain any range keys, and we need to iterate
+	// through the fileMetadata to determine that. Since L0's file count should
+	// not significantly exceed ~1000 files (see L0CompactionFileThreshold),
+	// this should be okay.
+	if !current.RangeKeyLevels[0].Empty() {
+		// L0 contains at least 1 file containing range keys.
+		// Add level iterators for the L0 sublevels, iterating from newest to
+		// oldest.
+		for j := len(current.L0SublevelFiles) - 1; j >= 0; j-- {
+			iter := current.L0SublevelFiles[j].Iter()
+			if !containsAnyRangeKeys(iter) {
+				continue
+			}
+
+			li := i.rangeKey.iterConfig.NewLevelIter()
+			li.Init(
+				i.opts.SpanIterOptions(),
+				i.cmp,
+				i.newIterRangeKey,
+				iter.Filter(manifest.KeyTypeRange),
+				manifest.L0Sublevel(j),
+				manifest.KeyTypeRange,
+			)
+			i.rangeKey.iterConfig.AddLevel(li)
 		}
-		i.rangeKey.iterConfig.AddLevel(spanIter)
 	}
 
 	// Add level iterators for the non-empty non-L0 levels.
@@ -78,11 +97,20 @@ func (i *Iterator) constructRangeKeyIter() {
 			continue
 		}
 		li := i.rangeKey.iterConfig.NewLevelIter()
-		spanIterOpts := keyspan.SpanIterOptions{RangeKeyFilters: i.opts.RangeKeyFilters}
+		spanIterOpts := i.opts.SpanIterOptions()
 		li.Init(spanIterOpts, i.cmp, i.newIterRangeKey, current.RangeKeyLevels[level].Iter(),
 			manifest.Level(level), manifest.KeyTypeRange)
 		i.rangeKey.iterConfig.AddLevel(li)
 	}
+}
+
+func containsAnyRangeKeys(iter manifest.LevelIterator) bool {
+	for f := iter.First(); f != nil; f = iter.Next() {
+		if f.HasRangeKeys {
+			return true
+		}
+	}
+	return false
 }
 
 // Range key masking
@@ -266,24 +294,24 @@ func (m *rangeKeyMasking) SpanChanged(s *keyspan.Span) {
 // _t_, and there exists a span with suffix _r_ covering a point key with suffix
 // _p_, and
 //
-//     _t_ ≤ _r_ < _p_
+//	_t_ ≤ _r_ < _p_
 //
 // then the point key is elided. Consider the following rendering, where using
 // integer suffixes with higher integers sort before suffixes with lower
 // integers, (for example @7 ≤ @6 < @5):
 //
-//          ^
-//       @9 |        •―――――――――――――――○ [e,m)@9
-//     s  8 |                      • l@8
-//     u  7 |------------------------------------ @7 RangeKeyMasking.Suffix
-//     f  6 |      [h,q)@6 •―――――――――――――――――○            (threshold)
-//     f  5 |              • h@5
-//     f  4 |                          • n@4
-//     i  3 |          •―――――――――――○ [f,l)@3
-//     x  2 |  • b@2
-//        1 |
-//        0 |___________________________________
-//           a b c d e f g h i j k l m n o p q
+//	     ^
+//	  @9 |        •―――――――――――――――○ [e,m)@9
+//	s  8 |                      • l@8
+//	u  7 |------------------------------------ @7 RangeKeyMasking.Suffix
+//	f  6 |      [h,q)@6 •―――――――――――――――――○            (threshold)
+//	f  5 |              • h@5
+//	f  4 |                          • n@4
+//	i  3 |          •―――――――――――○ [f,l)@3
+//	x  2 |  • b@2
+//	   1 |
+//	   0 |___________________________________
+//	      a b c d e f g h i j k l m n o p q
 //
 // An iterator scanning the entire keyspace with the masking threshold set to @7
 // will observe point keys b@2 and l@8. The span keys [h,q)@6 and [f,l)@3 serve
@@ -297,6 +325,7 @@ func (m *rangeKeyMasking) SpanChanged(s *keyspan.Span) {
 // Invariant: The userKey is within the user key bounds of the span most
 // recently provided to `SpanChanged`.
 func (m *rangeKeyMasking) SkipPoint(userKey []byte) bool {
+	m.parent.stats.RangeKeyStats.ContainedPoints++
 	if m.maskSpan == nil {
 		// No range key is currently acting as a mask, so don't skip.
 		return false
@@ -309,7 +338,11 @@ func (m *rangeKeyMasking) SkipPoint(userKey []byte) bool {
 	// the InterleavingIter). Skip the point key if the range key's suffix is
 	// greater than the point key's suffix.
 	pointSuffix := userKey[m.split(userKey):]
-	return len(pointSuffix) > 0 && m.cmp(m.maskActiveSuffix, pointSuffix) < 0
+	if len(pointSuffix) > 0 && m.cmp(m.maskActiveSuffix, pointSuffix) < 0 {
+		m.parent.stats.RangeKeyStats.SkippedPoints++
+		return true
+	}
+	return false
 }
 
 // The iteratorRangeKeyState type implements the sstable package's
@@ -322,9 +355,9 @@ func (m *rangeKeyMasking) SkipPoint(userKey []byte) bool {
 // Consider the range key [a,m)@10, and an iterator positioned just before the
 // below block, bounded by index separators `c` and `z`:
 //
-//                 c                          z
-//          x      |  c@9 c@5 c@1 d@7 e@4 y@4 | ...
-//       iter pos
+//	          c                          z
+//	   x      |  c@9 c@5 c@1 d@7 e@4 y@4 | ...
+//	iter pos
 //
 // The next block cannot be skipped, despite the range key suffix @10 is greater
 // than all the block's keys' suffixes, because it contains a key (y@4) outside
@@ -361,24 +394,24 @@ func (m *rangeKeyMasking) Intersects(prop []byte) (bool, error) {
 // KeyIsWithinLowerBound implements the limitedBlockPropertyFilter interface
 // defined in the sstable package. It's used to restrict the masking block
 // property filter to only applying within the bounds of the active range key.
-func (m *rangeKeyMasking) KeyIsWithinLowerBound(ik *InternalKey) bool {
+func (m *rangeKeyMasking) KeyIsWithinLowerBound(key []byte) bool {
 	// Invariant: m.maskSpan != nil
 	//
-	// The provided `ik` is an inclusive lower bound of the block we're
+	// The provided `key` is an inclusive lower bound of the block we're
 	// considering skipping.
-	return m.cmp(m.maskSpan.Start, ik.UserKey) <= 0
+	return m.cmp(m.maskSpan.Start, key) <= 0
 }
 
 // KeyIsWithinUpperBound implements the limitedBlockPropertyFilter interface
 // defined in the sstable package. It's used to restrict the masking block
 // property filter to only applying within the bounds of the active range key.
-func (m *rangeKeyMasking) KeyIsWithinUpperBound(ik *InternalKey) bool {
+func (m *rangeKeyMasking) KeyIsWithinUpperBound(key []byte) bool {
 	// Invariant: m.maskSpan != nil
 	//
-	// The provided `ik` is an *inclusive* upper bound of the block we're
+	// The provided `key` is an *inclusive* upper bound of the block we're
 	// considering skipping, so the range key's end must be strictly greater
 	// than the block bound for the block to be within bounds.
-	return m.cmp(m.maskSpan.End, ik.UserKey) > 0
+	return m.cmp(m.maskSpan.End, key) > 0
 }
 
 // lazyCombinedIter implements the internalIterator interface, wrapping a
@@ -438,8 +471,8 @@ var _ internalIterator = (*lazyCombinedIter)(nil)
 // operations that land in the middle of a range key and must truncate to the
 // user-provided seek key.
 func (i *lazyCombinedIter) initCombinedIteration(
-	dir int8, pointKey *InternalKey, pointValue []byte, seekKey []byte,
-) (*InternalKey, []byte) {
+	dir int8, pointKey *InternalKey, pointValue base.LazyValue, seekKey []byte,
+) (*InternalKey, base.LazyValue) {
 	// Invariant: i.parent.rangeKey is nil.
 	// Invariant: !i.combinedIterState.initialized.
 	if invariants.Enabled {
@@ -496,24 +529,6 @@ func (i *lazyCombinedIter) initCombinedIteration(
 		}
 	}
 
-	if i.parent.hasPrefix {
-		si := i.parent.comparer.Split(seekKey)
-		if i.parent.cmp(seekKey[:si], i.parent.prefixOrFullSeekKey) > 0 {
-			// The earliest possible range key has a start key with a prefix
-			// greater than the current iteration prefix. There's no need to
-			// switch to combined iteration, because there are not any range
-			// keys within the bounds of the prefix. Additionally, using a seek
-			// key that is outside the scope of the prefix can violate
-			// invariants within the range key iterator stack. Optimizations
-			// that exit early due to exhausting the prefix may result in
-			// `seekKey` being larger than the next range key's start key.
-			//
-			// See the testdata/rangekeys test case associated with #1893.
-			i.combinedIterState = combinedIterState{initialized: false}
-			return pointKey, pointValue
-		}
-	}
-
 	// An operation on the point iterator observed a file containing range keys,
 	// so we must switch to combined interleaving iteration. First, construct
 	// the range key iterator stack. It must not exist, otherwise we'd already
@@ -525,7 +540,11 @@ func (i *lazyCombinedIter) initCombinedIteration(
 	// Initialize the Iterator's interleaving iterator.
 	i.parent.rangeKey.iiter.Init(
 		&i.parent.comparer, i.parent.pointIter, i.parent.rangeKey.rangeKeyIter,
-		&i.parent.rangeKeyMasking, i.parent.opts.LowerBound, i.parent.opts.UpperBound)
+		keyspan.InterleavingIterOpts{
+			Mask:       &i.parent.rangeKeyMasking,
+			LowerBound: i.parent.opts.LowerBound,
+			UpperBound: i.parent.opts.UpperBound,
+		})
 
 	// Set the parent's primary iterator to point to the combined, interleaving
 	// iterator that's now initialized with our current state.
@@ -556,7 +575,9 @@ func (i *lazyCombinedIter) initCombinedIteration(
 	return i.parent.rangeKey.iiter.InitSeekLT(seekKey, pointKey, pointValue)
 }
 
-func (i *lazyCombinedIter) SeekGE(key []byte, flags base.SeekGEFlags) (*InternalKey, []byte) {
+func (i *lazyCombinedIter) SeekGE(
+	key []byte, flags base.SeekGEFlags,
+) (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.SeekGE(key, flags)
 	}
@@ -569,7 +590,7 @@ func (i *lazyCombinedIter) SeekGE(key []byte, flags base.SeekGEFlags) (*Internal
 
 func (i *lazyCombinedIter) SeekPrefixGE(
 	prefix, key []byte, flags base.SeekGEFlags,
-) (*InternalKey, []byte) {
+) (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.SeekPrefixGE(prefix, key, flags)
 	}
@@ -580,7 +601,9 @@ func (i *lazyCombinedIter) SeekPrefixGE(
 	return k, v
 }
 
-func (i *lazyCombinedIter) SeekLT(key []byte, flags base.SeekLTFlags) (*InternalKey, []byte) {
+func (i *lazyCombinedIter) SeekLT(
+	key []byte, flags base.SeekLTFlags,
+) (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.SeekLT(key, flags)
 	}
@@ -591,7 +614,7 @@ func (i *lazyCombinedIter) SeekLT(key []byte, flags base.SeekLTFlags) (*Internal
 	return k, v
 }
 
-func (i *lazyCombinedIter) First() (*InternalKey, []byte) {
+func (i *lazyCombinedIter) First() (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.First()
 	}
@@ -602,7 +625,7 @@ func (i *lazyCombinedIter) First() (*InternalKey, []byte) {
 	return k, v
 }
 
-func (i *lazyCombinedIter) Last() (*InternalKey, []byte) {
+func (i *lazyCombinedIter) Last() (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.Last()
 	}
@@ -613,7 +636,7 @@ func (i *lazyCombinedIter) Last() (*InternalKey, []byte) {
 	return k, v
 }
 
-func (i *lazyCombinedIter) Next() (*InternalKey, []byte) {
+func (i *lazyCombinedIter) Next() (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.Next()
 	}
@@ -624,7 +647,18 @@ func (i *lazyCombinedIter) Next() (*InternalKey, []byte) {
 	return k, v
 }
 
-func (i *lazyCombinedIter) Prev() (*InternalKey, []byte) {
+func (i *lazyCombinedIter) NextPrefix(succKey []byte) (*InternalKey, base.LazyValue) {
+	if i.combinedIterState.initialized {
+		return i.parent.rangeKey.iiter.NextPrefix(succKey)
+	}
+	k, v := i.pointIter.NextPrefix(succKey)
+	if i.combinedIterState.triggered {
+		return i.initCombinedIteration(+1, k, v, nil)
+	}
+	return k, v
+}
+
+func (i *lazyCombinedIter) Prev() (*InternalKey, base.LazyValue) {
 	if i.combinedIterState.initialized {
 		return i.parent.rangeKey.iiter.Prev()
 	}

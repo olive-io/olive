@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -216,7 +215,7 @@ func getCurrentDBDirName(dir string) (string, error) {
 			panic(err)
 		}
 	}()
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return "", err
 	}
@@ -248,7 +247,7 @@ func cleanupNodeDataDir(dir string) error {
 	if err != nil {
 		return err
 	}
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
@@ -442,7 +441,7 @@ func iteratorIsValid(iter *pebble.Iterator) bool {
 // As an example, we use the most straight forward way to implement this.
 func (d *DiskKV) saveToWriter(db *pebbledb,
 	ss *pebble.Snapshot, w io.Writer) error {
-	iter := ss.NewIter(db.ro)
+	iter, _ := ss.NewIter(db.ro)
 	defer iter.Close()
 	values := make([]*KVData, 0)
 	for iter.First(); iteratorIsValid(iter); iter.Next() {

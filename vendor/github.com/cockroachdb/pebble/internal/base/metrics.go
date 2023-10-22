@@ -29,6 +29,13 @@ func (tm *ThroughputMetric) Merge(x ThroughputMetric) {
 	tm.IdleDuration += x.IdleDuration
 }
 
+// Subtract subtracts the information from another ThroughputMetric
+func (tm *ThroughputMetric) Subtract(x ThroughputMetric) {
+	tm.Bytes -= x.Bytes
+	tm.WorkDuration -= x.WorkDuration
+	tm.IdleDuration -= x.IdleDuration
+}
+
 // PeakRate returns the approximate peak rate if there was no idling.
 func (tm *ThroughputMetric) PeakRate() int64 {
 	if tm.Bytes == 0 {
@@ -44,6 +51,15 @@ func (tm *ThroughputMetric) Rate() int64 {
 	}
 	return int64((float64(tm.Bytes) / float64(tm.WorkDuration+tm.IdleDuration)) *
 		float64(time.Second))
+}
+
+// Utilization returns a percent [0, 1.0] indicating the percent of time
+// work was performed.
+func (tm *ThroughputMetric) Utilization() float64 {
+	if tm.WorkDuration == 0 {
+		return 0
+	}
+	return float64(tm.WorkDuration) / float64(tm.WorkDuration+tm.IdleDuration)
 }
 
 // GaugeSampleMetric is used to measure a gauge value (e.g. queue length) by
@@ -65,6 +81,12 @@ func (gsm *GaugeSampleMetric) AddSample(sample int64) {
 func (gsm *GaugeSampleMetric) Merge(x GaugeSampleMetric) {
 	gsm.sampleSum += x.sampleSum
 	gsm.count += x.count
+}
+
+// Subtract subtracts the information from another gauge metric.
+func (gsm *GaugeSampleMetric) Subtract(x GaugeSampleMetric) {
+	gsm.sampleSum -= x.sampleSum
+	gsm.count -= x.count
 }
 
 // Mean returns the mean value.

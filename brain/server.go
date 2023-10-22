@@ -17,7 +17,7 @@ package brain
 import (
 	"context"
 
-	"github.com/lni/dragonboat/v4"
+	dragonboat "github.com/lni/dragonboat/v4"
 	"github.com/oliveio/olive/api"
 )
 

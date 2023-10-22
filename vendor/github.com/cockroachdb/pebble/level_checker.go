@@ -5,10 +5,10 @@
 package pebble
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
-	"sync/atomic"
 
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble/internal/base"
@@ -52,14 +52,14 @@ type simpleMergingIterLevel struct {
 	levelIterBoundaryContext
 
 	iterKey   *InternalKey
-	iterValue []byte
+	iterValue base.LazyValue
 	tombstone *keyspan.Span
 }
 
 type simpleMergingIter struct {
 	levels   []simpleMergingIterLevel
 	snapshot uint64
-	heap     mergingIterHeap
+	heap     simpleMergingIterHeap
 	// The last point's key and level. For validation.
 	lastKey     InternalKey
 	lastLevel   int
@@ -86,12 +86,12 @@ func (m *simpleMergingIter) init(
 	m.snapshot = snapshot
 	m.lastLevel = -1
 	m.heap.cmp = cmp
-	m.heap.items = make([]mergingIterItem, 0, len(levels))
+	m.heap.items = make([]simpleMergingIterItem, 0, len(levels))
 	for i := range m.levels {
 		l := &m.levels[i]
 		l.iterKey, l.iterValue = l.iter.First()
 		if l.iterKey != nil {
-			item := mergingIterItem{
+			item := simpleMergingIterItem{
 				index: i,
 				value: l.iterValue,
 			}
@@ -117,7 +117,7 @@ func (m *simpleMergingIter) positionRangeDels() {
 		if l.rangeDelIter == nil {
 			continue
 		}
-		l.tombstone = keyspan.SeekGE(m.heap.cmp, l.rangeDelIter, item.key.UserKey)
+		l.tombstone = l.rangeDelIter.SeekGE(item.key.UserKey)
 	}
 }
 
@@ -157,10 +157,15 @@ func (m *simpleMergingIter) step() bool {
 			}
 			m.valueMerger = nil
 		}
+		itemValue, _, err := item.value.Value(nil)
+		if err != nil {
+			m.err = err
+			return false
+		}
 		if m.valueMerger != nil {
 			// Ongoing series of MERGE records.
 			switch item.key.Kind() {
-			case InternalKeyKindSingleDelete, InternalKeyKindDelete:
+			case InternalKeyKindSingleDelete, InternalKeyKindDelete, InternalKeyKindDeleteSized:
 				var closer io.Closer
 				_, closer, m.err = m.valueMerger.Finish(true /* includesBase */)
 				if m.err == nil && closer != nil {
@@ -168,7 +173,7 @@ func (m *simpleMergingIter) step() bool {
 				}
 				m.valueMerger = nil
 			case InternalKeyKindSet, InternalKeyKindSetWithDelete:
-				m.err = m.valueMerger.MergeOlder(item.value)
+				m.err = m.valueMerger.MergeOlder(itemValue)
 				if m.err == nil {
 					var closer io.Closer
 					_, closer, m.err = m.valueMerger.Finish(true /* includesBase */)
@@ -178,7 +183,7 @@ func (m *simpleMergingIter) step() bool {
 				}
 				m.valueMerger = nil
 			case InternalKeyKindMerge:
-				m.err = m.valueMerger.MergeOlder(item.value)
+				m.err = m.valueMerger.MergeOlder(itemValue)
 			default:
 				m.err = errors.Errorf("pebble: invalid internal key kind %s in %s",
 					item.key.Pretty(m.formatKey),
@@ -187,7 +192,7 @@ func (m *simpleMergingIter) step() bool {
 			}
 		} else if item.key.Kind() == InternalKeyKindMerge && m.err == nil {
 			// New series of MERGE records.
-			m.valueMerger, m.err = m.merge(item.key.UserKey, item.value)
+			m.valueMerger, m.err = m.merge(item.key.UserKey, itemValue)
 		}
 		if m.err != nil {
 			m.err = errors.Wrapf(m.err, "merge processing error on key %s in %s",
@@ -340,7 +345,7 @@ func iterateAndCheckTombstones(
 
 type checkConfig struct {
 	logger    Logger
-	cmp       Compare
+	comparer  *Comparer
 	readState *readState
 	newIters  tableNewIters
 	seqNum    uint64
@@ -348,6 +353,9 @@ type checkConfig struct {
 	merge     Merge
 	formatKey base.FormatKey
 }
+
+// cmp is shorthand for comparer.Compare.
+func (c *checkConfig) cmp(a, b []byte) int { return c.comparer.Compare(a, b) }
 
 func checkRangeTombstones(c *checkConfig) error {
 	var level int
@@ -373,7 +381,8 @@ func checkRangeTombstones(c *checkConfig) error {
 			lf := files.Take()
 			atomicUnit, _ := expandToAtomicUnit(c.cmp, lf.Slice(), true /* disableIsCompacting */)
 			lower, upper := manifest.KeyRange(c.cmp, atomicUnit.Iter())
-			iterToClose, iter, err := c.newIters(lf.FileMetadata, nil, internalIterOpts{})
+			iterToClose, iter, err := c.newIters(
+				context.Background(), lf.FileMetadata, &IterOptions{level: manifest.Level(lsmLevel)}, internalIterOpts{})
 			if err != nil {
 				return err
 			}
@@ -549,11 +558,11 @@ type CheckLevelsStats struct {
 }
 
 // CheckLevels checks:
-// - Every entry in the DB is consistent with the level invariant. See the
-//   comment at the top of the file.
-// - Point keys in sstables are ordered.
-// - Range delete tombstones in sstables are ordered and fragmented.
-// - Successful processing of all MERGE records.
+//   - Every entry in the DB is consistent with the level invariant. See the
+//     comment at the top of the file.
+//   - Point keys in sstables are ordered.
+//   - Range delete tombstones in sstables are ordered and fragmented.
+//   - Successful processing of all MERGE records.
 func (d *DB) CheckLevels(stats *CheckLevelsStats) error {
 	// Grab and reference the current readState.
 	readState := d.loadReadState()
@@ -561,11 +570,11 @@ func (d *DB) CheckLevels(stats *CheckLevelsStats) error {
 
 	// Determine the seqnum to read at after grabbing the read state (current and
 	// memtables) above.
-	seqNum := atomic.LoadUint64(&d.mu.versions.atomic.visibleSeqNum)
+	seqNum := d.mu.versions.visibleSeqNum.Load()
 
 	checkConfig := &checkConfig{
 		logger:    d.opts.Logger,
-		cmp:       d.cmp,
+		comparer:  d.opts.Comparer,
 		readState: readState,
 		newIters:  d.newIters,
 		seqNum:    seqNum,
@@ -633,7 +642,7 @@ func checkLevelsInternal(c *checkConfig) (err error) {
 		manifestIter := current.L0SublevelFiles[sublevel].Iter()
 		iterOpts := IterOptions{logger: c.logger}
 		li := &levelIter{}
-		li.init(iterOpts, c.cmp, nil /* split */, c.newIters, manifestIter,
+		li.init(context.Background(), iterOpts, c.comparer, c.newIters, manifestIter,
 			manifest.L0Sublevel(sublevel), internalIterOpts{})
 		li.initRangeDel(&mlevelAlloc[0].rangeDelIter)
 		li.initBoundaryContext(&mlevelAlloc[0].levelIterBoundaryContext)
@@ -647,7 +656,7 @@ func checkLevelsInternal(c *checkConfig) (err error) {
 
 		iterOpts := IterOptions{logger: c.logger}
 		li := &levelIter{}
-		li.init(iterOpts, c.cmp, nil /* split */, c.newIters,
+		li.init(context.Background(), iterOpts, c.comparer, c.newIters,
 			current.Levels[level].Iter(), manifest.Level(level), internalIterOpts{})
 		li.initRangeDel(&mlevelAlloc[0].rangeDelIter)
 		li.initBoundaryContext(&mlevelAlloc[0].levelIterBoundaryContext)
@@ -668,4 +677,93 @@ func checkLevelsInternal(c *checkConfig) (err error) {
 
 	// Phase 2: Check that the tombstones are mutually consistent.
 	return checkRangeTombstones(c)
+}
+
+type simpleMergingIterItem struct {
+	index int
+	key   InternalKey
+	value base.LazyValue
+}
+
+type simpleMergingIterHeap struct {
+	cmp     Compare
+	reverse bool
+	items   []simpleMergingIterItem
+}
+
+func (h *simpleMergingIterHeap) len() int {
+	return len(h.items)
+}
+
+func (h *simpleMergingIterHeap) less(i, j int) bool {
+	ikey, jkey := h.items[i].key, h.items[j].key
+	if c := h.cmp(ikey.UserKey, jkey.UserKey); c != 0 {
+		if h.reverse {
+			return c > 0
+		}
+		return c < 0
+	}
+	if h.reverse {
+		return ikey.Trailer < jkey.Trailer
+	}
+	return ikey.Trailer > jkey.Trailer
+}
+
+func (h *simpleMergingIterHeap) swap(i, j int) {
+	h.items[i], h.items[j] = h.items[j], h.items[i]
+}
+
+// init, fix, up and down are copied from the go stdlib.
+func (h *simpleMergingIterHeap) init() {
+	// heapify
+	n := h.len()
+	for i := n/2 - 1; i >= 0; i-- {
+		h.down(i, n)
+	}
+}
+
+func (h *simpleMergingIterHeap) fix(i int) {
+	if !h.down(i, h.len()) {
+		h.up(i)
+	}
+}
+
+func (h *simpleMergingIterHeap) pop() *simpleMergingIterItem {
+	n := h.len() - 1
+	h.swap(0, n)
+	h.down(0, n)
+	item := &h.items[n]
+	h.items = h.items[:n]
+	return item
+}
+
+func (h *simpleMergingIterHeap) up(j int) {
+	for {
+		i := (j - 1) / 2 // parent
+		if i == j || !h.less(j, i) {
+			break
+		}
+		h.swap(i, j)
+		j = i
+	}
+}
+
+func (h *simpleMergingIterHeap) down(i0, n int) bool {
+	i := i0
+	for {
+		j1 := 2*i + 1
+		if j1 >= n || j1 < 0 { // j1 < 0 after int overflow
+			break
+		}
+		j := j1 // left child
+		if j2 := j1 + 1; j2 < n && h.less(j2, j1) {
+			j = j2 // = 2*i + 2  // right child
+		}
+		if !h.less(j, i) {
+			break
+		}
+		h.swap(i, j)
+		i = j
+	}
+	return i > i0
 }

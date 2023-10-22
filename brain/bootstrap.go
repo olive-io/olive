@@ -18,7 +18,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/lni/dragonboat/v4"
+	dragonboat "github.com/lni/dragonboat/v4"
 	"github.com/oliveio/olive/api"
 	"google.golang.org/grpc"
 )
@@ -39,6 +39,7 @@ func Bootstrap(ctx context.Context, option Option) error {
 	if err = nh.StartOnDiskReplica(initialMembers, join, NewDiskKV, option.Node); err != nil {
 		return err
 	}
+	//nh.SyncPropose()
 
 	s := &Server{
 		Option: option,
