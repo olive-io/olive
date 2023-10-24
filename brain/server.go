@@ -17,7 +17,7 @@ package brain
 import (
 	"context"
 
-	dragonboat "github.com/lni/dragonboat/v4"
+	"github.com/lni/dragonboat/v4"
 	"github.com/oliveio/olive/api"
 )
 
@@ -32,7 +32,7 @@ type Server struct {
 	exit chan struct{}
 }
 
-func (s Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (*api.DeployDefinitionResponse, error) {
+func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (*api.DeployDefinitionResponse, error) {
 	//shareID := s.Option.Node.ShardID
 	//var query any
 	//session := s.nh.GetNoOPSession(shareID)
@@ -46,7 +46,7 @@ func (s Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionR
 	panic("implement me")
 }
 
-func (s Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (*api.ListDefinitionResponse, error) {
+func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (*api.ListDefinitionResponse, error) {
 	//TODO implement me
 	//shareID := s.Option.Node.ShardID
 	//var query any
@@ -57,17 +57,17 @@ func (s Server) ListDefinition(ctx context.Context, req *api.ListDefinitionReque
 	panic("implement me")
 }
 
-func (s Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
+func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (*api.RemoveDefinitionResponse, error) {
+func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (*api.RemoveDefinitionResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s Server) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
+func (s *Server) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }

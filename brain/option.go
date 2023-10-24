@@ -83,6 +83,7 @@ func (opt *Option) discoveryMembers() map[uint64]string {
 	return initialMembers
 }
 
+// digitize converts string to uint32
 func digitize(name string) uint32 {
 	h := fnv.New32()
 	h.Write([]byte(name))

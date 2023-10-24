@@ -42,13 +42,10 @@ const (
 	updatingDBFilename string = "current.updating"
 )
 
-//
 // Note: this is an example demonstrating how to use the on disk state machine
 // feature in Dragonboat. it assumes the underlying db only supports Get, Put
 // and TakeSnapshot operations. this is not a demonstration on how to build a
 // distributed key-value database.
-//
-
 func syncDir(dir string) (err error) {
 	if runtime.GOOS == "windows" {
 		return nil
@@ -95,6 +92,7 @@ func (r *pebbledb) lookup(query []byte) ([]byte, error) {
 	if r.closed {
 		return nil, errors.New("db already closed")
 	}
+
 	val, closer, err := r.db.Get(query)
 	if err != nil {
 		return nil, err
@@ -340,6 +338,7 @@ func (d *DiskKV) Open(stopc <-chan struct{}) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	atomic.SwapPointer(&d.db, unsafe.Pointer(db))
 	appliedIndex, err := d.queryAppliedIndex(db)
 	if err != nil {
@@ -439,8 +438,7 @@ func iteratorIsValid(iter *pebble.Iterator) bool {
 
 // saveToWriter saves all existing key-value pairs to the provided writer.
 // As an example, we use the most straight forward way to implement this.
-func (d *DiskKV) saveToWriter(db *pebbledb,
-	ss *pebble.Snapshot, w io.Writer) error {
+func (d *DiskKV) saveToWriter(db *pebbledb, ss *pebble.Snapshot, w io.Writer) error {
 	iter, _ := ss.NewIter(db.ro)
 	defer iter.Close()
 	values := make([]*KVData, 0)
@@ -476,8 +474,7 @@ func (d *DiskKV) saveToWriter(db *pebbledb,
 // SaveSnapshot saves the state machine state identified by the state
 // identifier provided by the input ctx parameter. Note that SaveSnapshot
 // is not suppose to save the latest state.
-func (d *DiskKV) SaveSnapshot(ctx interface{},
-	w io.Writer, done <-chan struct{}) error {
+func (d *DiskKV) SaveSnapshot(ctx interface{}, w io.Writer, done <-chan struct{}) error {
 	if d.closed {
 		panic("prepare snapshot called after Close()")
 	}
@@ -496,8 +493,7 @@ func (d *DiskKV) SaveSnapshot(ctx interface{},
 // RecoverFromSnapshot recovers the state machine state from snapshot. The
 // snapshot is recovered into a new DB first and then atomically swapped with
 // the existing DB to complete the recovery.
-func (d *DiskKV) RecoverFromSnapshot(r io.Reader,
-	done <-chan struct{}) error {
+func (d *DiskKV) RecoverFromSnapshot(r io.Reader, done <-chan struct{}) error {
 	if d.closed {
 		panic("recover from snapshot called after Close()")
 	}
@@ -515,6 +511,7 @@ func (d *DiskKV) RecoverFromSnapshot(r io.Reader,
 	if _, err := io.ReadFull(r, sz); err != nil {
 		return err
 	}
+
 	total := binary.LittleEndian.Uint64(sz)
 	wb := db.db.NewBatch()
 	defer wb.Close()
@@ -533,13 +530,13 @@ func (d *DiskKV) RecoverFromSnapshot(r io.Reader,
 		}
 		wb.Set([]byte(dataKv.Key), []byte(dataKv.Val), db.wo)
 	}
-	if err := db.db.Apply(wb, db.syncwo); err != nil {
+	if err = db.db.Apply(wb, db.syncwo); err != nil {
 		return err
 	}
-	if err := saveCurrentDBDirName(dir, dbdir); err != nil {
+	if err = saveCurrentDBDirName(dir, dbdir); err != nil {
 		return err
 	}
-	if err := replaceCurrentDBFile(dir); err != nil {
+	if err = replaceCurrentDBFile(dir); err != nil {
 		return err
 	}
 	newLastApplied, err := d.queryAppliedIndex(db)

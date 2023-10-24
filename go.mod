@@ -7,7 +7,10 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
+	go.etcd.io/etcd/client/pkg/v3 v3.5.9
+	go.uber.org/zap v1.26.0
 	google.golang.org/grpc v1.59.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
@@ -20,6 +23,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
+	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -52,6 +56,7 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/net v0.15.0 // indirect

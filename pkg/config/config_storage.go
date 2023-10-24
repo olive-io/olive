@@ -12,4 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logger
+package config
+
+type StorageConfig struct {
+	Dir       string `json:"storage-dir"`
+	CacheSize int64  `json:"storage-cache-size"`
+}
+
+func NewStorageConfig() *StorageConfig {
+	cfg := &StorageConfig{
+		Dir:       DefaultStorageDir,
+		CacheSize: DefaultStorageCacheSize,
+	}
+
+	return cfg
+}

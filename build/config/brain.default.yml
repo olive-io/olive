@@ -1,0 +1,16 @@
+# grpc
+grpc:
+
+
+# embed storage
+storage:
+
+# internal logger
+logger:
+  # DEBUG | INFO | WARN | ERROR | CRITICAL
+  level: INFO
+  packages:
+    raft: INFO
+    transport: INFO
+    rsm: INFO
+    grpc: INFO
