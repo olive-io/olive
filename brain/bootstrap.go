@@ -18,7 +18,7 @@ import (
 	"context"
 	"net"
 
-	dragonboat "github.com/lni/dragonboat/v4"
+	"github.com/lni/dragonboat/v4"
 	"github.com/oliveio/olive/api"
 	"google.golang.org/grpc"
 )

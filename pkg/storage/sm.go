@@ -16,13 +16,12 @@ package storage
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
-	"path"
 	"sync/atomic"
 
 	"github.com/cockroachdb/pebble"
 	sm "github.com/lni/dragonboat/v4/statemachine"
+	"github.com/oliveio/olive/pkg/bytesutil"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +29,7 @@ const (
 	lastIndexKey = "applied_index"
 )
 
-type KV struct {
+type diskKV struct {
 	lg *zap.Logger
 
 	getDB GetDB
@@ -47,7 +46,7 @@ func (es *EmbedStorage) NewDiskKV(clusterID uint64, nodeID uint64) sm.IOnDiskSta
 		lg = zap.NewExample()
 	}
 
-	kv := &KV{
+	kv := &diskKV{
 		lg:        lg,
 		getDB:     es.NewSession,
 		clusterID: clusterID,
@@ -56,13 +55,13 @@ func (es *EmbedStorage) NewDiskKV(clusterID uint64, nodeID uint64) sm.IOnDiskSta
 	return kv
 }
 
-func (kv *KV) Open(stopc <-chan struct{}) (uint64, error) {
+func (kv *diskKV) Open(stopc <-chan struct{}) (uint64, error) {
 	db, cancel := kv.getDB()
 	defer cancel()
 
-	key := path.Join(kv.prefix(), lastIndexKey)
+	key := bytesutil.PathJoin(kv.prefix(), []byte(lastIndexKey))
 
-	value, closer, err := db.Get([]byte(key))
+	value, closer, err := db.Get(key)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +72,7 @@ func (kv *KV) Open(stopc <-chan struct{}) (uint64, error) {
 	return applied, nil
 }
 
-func (kv *KV) Update(entries []sm.Entry) ([]sm.Entry, error) {
+func (kv *diskKV) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	db, cancel := kv.getDB()
 	defer cancel()
 
@@ -91,8 +90,8 @@ func (kv *KV) Update(entries []sm.Entry) ([]sm.Entry, error) {
 		panic("last applied not moving forward")
 	}
 
-	appliedKey := path.Join(kv.prefix(), lastIndexKey)
-	if err := batch.Set([]byte(appliedKey), kv.putIntByte(lastIdx), wo); err != nil {
+	appliedKey := bytesutil.PathJoin(kv.prefix(), []byte(lastIndexKey))
+	if err := batch.Set(appliedKey, kv.putIntByte(lastIdx), wo); err != nil {
 		kv.lg.Error("update applied index", zap.Uint64("index", lastIdx), zap.Error(err))
 	}
 
@@ -105,36 +104,36 @@ func (kv *KV) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	return entries, nil
 }
 
-func (kv *KV) Lookup(query interface{}) (interface{}, error) {
+func (kv *diskKV) Lookup(query interface{}) (interface{}, error) {
 	return query, nil
 }
 
-func (kv *KV) Sync() error {
+func (kv *diskKV) Sync() error {
 	return nil
 }
 
-func (kv *KV) PrepareSnapshot() (interface{}, error) {
+func (kv *diskKV) PrepareSnapshot() (interface{}, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (kv *KV) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
+func (kv *diskKV) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	return nil
 }
 
-func (kv *KV) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
+func (kv *diskKV) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
 	return nil
 }
 
-func (kv *KV) Close() error {
+func (kv *diskKV) Close() error {
 	return nil
 }
 
-func (kv *KV) prefix() string {
-	return fmt.Sprintf("/%d/%d", kv.clusterID, kv.nodeID)
+func (kv *diskKV) prefix() []byte {
+	return bytesutil.PathJoin([]byte("/"), kv.putIntByte(kv.clusterID), kv.putIntByte(kv.nodeID))
 }
 
-func (kv *KV) putIntByte(i uint64) []byte {
+func (kv *diskKV) putIntByte(i uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, i)
 	return b

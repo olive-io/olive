@@ -15,22 +15,66 @@
 package storage
 
 import (
+	"time"
+
 	"github.com/cockroachdb/pebble"
-	"github.com/oliveio/olive/pkg/config"
+	"github.com/oliveio/olive/pkg/storage/backend"
 	"go.uber.org/zap"
 )
+
+const (
+	defaultStorageDir       = "default"
+	defaultStorageCacheSize = 1024 * 1024 * 10
+
+	defaultBatchLimit    = 10000
+	defaultBatchInterval = 100 * time.Millisecond
+)
+
+type IStorage interface {
+}
+
+type StorageConfig struct {
+	// Dir is the file path to the storage file.
+	Dir string
+	// CacheSize is the size to pebble cache
+	CacheSize int64
+	// BatchInterval is the maximum time before flushing the BatchTx.
+	BatchInterval time.Duration
+	// BatchLimit is the maximum puts before flushing the BatchTx.
+	BatchLimit int
+	// Logger logs backend-side operations.
+	Logger *zap.Logger
+	// UnsafeNoFsync disables all uses of fsync.
+	UnsafeNoFsync bool `json:"unsafe-no-fsync"`
+	// Mlock prevents backend database file to be swapped
+	Mlock bool
+
+	// Hooks are getting executed during lifecycle of Backend's transactions.
+	Hooks backend.IHooks
+}
+
+func NewStorageConfig() *StorageConfig {
+	cfg := &StorageConfig{
+		Dir:           defaultStorageDir,
+		CacheSize:     defaultStorageCacheSize,
+		BatchInterval: defaultBatchInterval,
+		BatchLimit:    defaultBatchLimit,
+	}
+
+	return cfg
+}
 
 type GetDB func() (*pebble.DB, func())
 
 type EmbedStorage struct {
-	*config.StorageConfig
-
 	lg *zap.Logger
 
 	db *pebble.DB
+
+	closeCh chan struct{}
 }
 
-func NewEmbedStorage(lg *zap.Logger, cfg *config.StorageConfig) (*EmbedStorage, error) {
+func NewEmbedStorage(cfg StorageConfig) (*EmbedStorage, error) {
 	options := &pebble.Options{
 		Cache: pebble.NewCache(cfg.CacheSize),
 	}
@@ -40,9 +84,9 @@ func NewEmbedStorage(lg *zap.Logger, cfg *config.StorageConfig) (*EmbedStorage, 
 	}
 
 	es := &EmbedStorage{
-		StorageConfig: cfg,
-		lg:            lg,
-		db:            db,
+		lg:      cfg.Logger,
+		db:      db,
+		closeCh: make(chan struct{}, 1),
 	}
 
 	return es, nil
@@ -54,5 +98,11 @@ func (es *EmbedStorage) NewSession() (*pebble.DB, func()) {
 }
 
 func (es *EmbedStorage) Close() error {
-	return es.db.Close()
+	select {
+	case <-es.closeCh:
+		return nil
+	default:
+		close(es.closeCh)
+		return es.db.Close()
+	}
 }

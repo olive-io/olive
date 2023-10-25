@@ -31,9 +31,6 @@ const (
 	// LocalTime  = false // use computers local time, UTC by default
 	// Compress   = false // compress the rotated log in gzip format
 	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
-
-	DefaultStorageDir       = "default"
-	DefaultStorageCacheSize = 1024 * 1024 * 10
 )
 
 var (
