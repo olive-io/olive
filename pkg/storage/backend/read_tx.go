@@ -85,7 +85,7 @@ func unsafeForEach(tx *pebble.Batch, bucket IBucket, visitor func(k, v []byte) e
 	defer iter.Close()
 
 	prefix := bytesutil.PathJoin(bucket.Name())
-	for iter.SeekPrefixGE(prefix); iteratorIsValid(iter); iter.Next() {
+	for iter.SeekGE(prefix); iteratorIsValid(iter); iter.Next() {
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
 		var value []byte
 		if value, err = iter.ValueAndErr(); err != nil {

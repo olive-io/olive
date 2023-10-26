@@ -6,9 +6,11 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20231020221949-babd592d2360
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gogo/protobuf v1.3.2
+	github.com/google/btree v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
 	github.com/prometheus/client_golang v1.12.0
+	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9
 	go.uber.org/zap v1.26.0
@@ -31,7 +33,6 @@ require (
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
@@ -52,7 +53,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect

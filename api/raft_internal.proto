@@ -30,3 +30,18 @@ message RaftInternalKV {
   bytes key = 1;
   bytes value = 2;
 }
+
+message KeyValue {
+  // key is the key in bytes. An empty key is not allowed.
+  bytes key = 1;
+  // create_revision is the revision of last creation on this key.
+  int64 create_revision = 2;
+  // mod_revision is the revision of last modification on this key.
+  int64 mod_revision = 3;
+  // version is the version of the key. A deletion resets
+  // the version to zero and any modification of the key
+  // increases its version.
+  int64 version = 4;
+  // value is the value held by the key, in bytes.
+  bytes value = 5;
+}
