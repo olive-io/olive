@@ -69,10 +69,10 @@ func TestLockVerify(t *testing.T) {
 			expectPanic: false,
 		},
 	}
-	env := os.Getenv("ETCD_VERIFY")
-	os.Setenv("ETCD_VERIFY", "lock")
+	env := os.Getenv("OLIVE_VERIFY")
+	os.Setenv("OLIVE_VERIFY", "lock")
 	defer func() {
-		os.Setenv("ETCD_VERIFY", env)
+		os.Setenv("OLIVE_VERIFY", env)
 	}()
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {

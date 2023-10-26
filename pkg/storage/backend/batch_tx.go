@@ -18,6 +18,7 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/oliveio/olive/pkg/bytesutil"
@@ -41,6 +42,8 @@ type IBatchTx interface {
 
 type batchTx struct {
 	sync.Mutex
+
+	pwo     *pebble.WriteOptions
 	tx      *pebble.Batch
 	backend *backend
 
@@ -136,8 +139,7 @@ func (t *batchTx) unsafePut(bucketType IBucket, key []byte, value []byte, seq bo
 	}
 
 	key = bytesutil.PathJoin(bucketType.Name(), key)
-	wo := &pebble.WriteOptions{}
-	if err := t.tx.Set(key, value, wo); err != nil {
+	if err := t.tx.Set(key, value, t.pwo); err != nil {
 		t.backend.lg.Fatal(
 			"failed to write to a bucket",
 			zap.Stringer("bucket-name", bucketType),
@@ -157,13 +159,7 @@ func (t *batchTx) UnsafeRange(bucket IBucket, key, endKey []byte, limit int64) (
 	//		zap.Stack("stack"),
 	//	)
 	//}
-
-	options := &pebble.IterOptions{}
-	iter, err := t.tx.NewIter(options)
-	if err != nil {
-		return nil, nil, err
-	}
-	return unsafeRange(iter, bucket, key, endKey, limit)
+	return unsafeRange(t.tx, bucket, key, endKey, limit)
 }
 
 // UnsafeDelete must be called holding the lock on the tx.
@@ -213,24 +209,26 @@ func (t *batchTx) commit(stop bool) {
 			return
 		}
 
-		//start := time.Now()
+		start := time.Now()
 
 		// gofail: var beforeCommit struct{}
-		wo := &pebble.WriteOptions{Sync: true}
-		err := t.tx.Commit(wo)
+		err := t.tx.Commit(t.pwo)
 		// gofail: var afterCommit struct{}
 
-		//rebalanceSec.Observe(t.tx.Stats().RebalanceTime.Seconds())
-		//spillSec.Observe(t.tx.Stats().SpillTime.Seconds())
-		//writeSec.Observe(t.tx.Stats().WriteTime.Seconds())
-		//commitSec.Observe(time.Since(start).Seconds())
+		//writeSec.Observe(t.tx.CommitStats().TotalDuration.Seconds())
+		commitSec.Observe(time.Since(start).Seconds())
 		atomic.AddInt64(&t.backend.commits, 1)
 
 		t.pending = 0
 		if err != nil {
 			t.backend.lg.Fatal("failed to commit tx", zap.Error(err))
 		}
+
+		if err = t.tx.Close(); err != nil {
+			t.backend.lg.Fatal("failed to stop tx", zap.Error(err))
+		}
 	}
+
 	if !stop {
 		t.tx = t.backend.begin(true)
 	}

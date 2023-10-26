@@ -25,3 +25,8 @@ message RaftInternalRequest {
 }
 
 message EmptyResponse {}
+
+message RaftInternalKV {
+  bytes key = 1;
+  bytes value = 2;
+}

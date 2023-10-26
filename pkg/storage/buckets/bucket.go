@@ -12,10 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bucket
+package buckets
 
 import (
 	"github.com/oliveio/olive/pkg/storage/backend"
+)
+
+var (
+	keyBucketName = []byte("key")
+
+	testBucketName = []byte("test")
+)
+
+var (
+	Key = backend.IBucket(bucket{id: 1, name: keyBucketName, safeRangeBucket: true})
+
+	Test = backend.IBucket(bucket{id: 100, name: testBucketName, safeRangeBucket: false})
 )
 
 type bucket struct {

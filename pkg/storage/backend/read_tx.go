@@ -34,31 +34,39 @@ type IReadTx interface {
 	UnsafeForEach(bucket IBucket, visitor func(k, v []byte) error) error
 }
 
-func unsafeRange(iter *pebble.Iterator, bucket IBucket, key, endKey []byte, limit int64) (keys [][]byte, vs [][]byte, err error) {
+func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limit int64) (keys [][]byte, vs [][]byte, err error) {
 	if limit <= 0 {
 		limit = math.MaxInt64
 	}
 
-	key = bytesutil.PathJoin(bucket.Name(), key)
-	endKey = bytesutil.PathJoin(bucket.Name(), endKey)
+	options := &pebble.IterOptions{}
+	iter, err := tx.NewIter(options)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer iter.Close()
+
+	startKey = bytesutil.PathJoin(bucket.Name(), startKey)
 
 	var isMatch func(b []byte) bool
 	if len(endKey) > 0 {
+		endKey = bytesutil.PathJoin(bucket.Name(), endKey)
 		isMatch = func(b []byte) bool { return bytes.Compare(b, endKey) < 0 }
 	} else {
-		isMatch = func(b []byte) bool { return bytes.Equal(b, key) }
+		isMatch = func(b []byte) bool { return bytes.Equal(b, startKey) }
 		limit = 1
 	}
 
-	for iter.SeekGE(key); iteratorIsValid(iter) && isMatch(iter.Key()); iter.Next() {
+	for iter.SeekGE(startKey); iteratorIsValid(iter) && isMatch(iter.Key()); iter.Next() {
 		var value []byte
 		value, err = iter.ValueAndErr()
 		if err != nil {
 			return
 		}
 
-		keys = append(keys, iter.Key())
-		vs = append(vs, value)
+		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
+		keys = append(keys, key)
+		vs = append(vs, bytes.Clone(value))
 
 		if limit == int64(len(keys)) {
 			break
@@ -74,16 +82,17 @@ func unsafeForEach(tx *pebble.Batch, bucket IBucket, visitor func(k, v []byte) e
 	if err != nil {
 		return err
 	}
+	defer iter.Close()
 
 	prefix := bytesutil.PathJoin(bucket.Name())
 	for iter.SeekPrefixGE(prefix); iteratorIsValid(iter); iter.Next() {
-		key := iter.Key()
+		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
 		var value []byte
 		if value, err = iter.ValueAndErr(); err != nil {
 			return err
 		}
 
-		if err = visitor(key, value); err != nil {
+		if err = visitor(key, bytes.Clone(value)); err != nil {
 			return err
 		}
 	}
@@ -181,15 +190,8 @@ func (tx *baseReadTx) UnsafeRange(bucketType IBucket, key, endKey []byte, limit 
 		tx.txMu.Lock()
 	}
 
-	options := &pebble.IterOptions{}
-	c, err := tx.tx.NewIter(options)
-	if err != nil {
-		tx.txMu.Unlock()
-		return nil, nil, err
-	}
 	tx.txMu.Unlock()
-
-	k2, v2, err := unsafeRange(c, bucket, key, endKey, limit-int64(len(keys)))
+	k2, v2, err := unsafeRange(tx.tx, bucket, key, endKey, limit-int64(len(keys)))
 	if err != nil {
 		return nil, nil, err
 	}
