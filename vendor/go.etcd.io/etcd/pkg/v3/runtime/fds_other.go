@@ -1,4 +1,4 @@
-// Copyright 2023 Lack (xingyys@gmail.com).
+// Copyright 2015 The etcd Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,4 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package brain
+//go:build !linux
+// +build !linux
+
+package runtime
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func FDLimit() (uint64, error) {
+	return 0, fmt.Errorf("cannot get FDLimit on %s", runtime.GOOS)
+}
+
+func FDUsage() (uint64, error) {
+	return 0, fmt.Errorf("cannot get FDUsage on %s", runtime.GOOS)
+}

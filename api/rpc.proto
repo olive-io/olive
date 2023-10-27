@@ -23,7 +23,7 @@ service DefinitionRPC {
 message DeployDefinitionRequest {
   string id = 1;
   string name = 2;
-  string content = 3;
+  bytes content = 3;
 }
 
 message DeployDefinitionResponse {

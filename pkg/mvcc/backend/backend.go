@@ -134,6 +134,12 @@ func New(cfg BackendConfig) IBackend {
 	return newBackend(cfg)
 }
 
+func NewDefaultBackend(dir string) IBackend {
+	bcfg := DefaultBackendConfig()
+	bcfg.Dir = dir
+	return newBackend(bcfg)
+}
+
 func newBackend(cfg BackendConfig) *backend {
 	if cfg.Logger == nil {
 		cfg.Logger = zap.NewNop()

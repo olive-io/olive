@@ -38,7 +38,7 @@ type LoggerConfig struct {
 	loggerMu *sync.RWMutex
 	logger   *zap.Logger
 
-	pkgLoggers map[string]*pkgLogger
+	pkgLoggers map[string]*dragonboatLogger
 
 	// ZapLoggerBuilder is used to build the zap logger.
 	ZapLoggerBuilder func(*LoggerConfig) error
@@ -63,7 +63,7 @@ func NewLoggerConfig() *LoggerConfig {
 	cfg := &LoggerConfig{
 		loggerMu:              new(sync.RWMutex),
 		logger:                nil,
-		pkgLoggers:            map[string]*pkgLogger{},
+		pkgLoggers:            map[string]*dragonboatLogger{},
 		ZapLoggerBuilder:      nil,
 		LogLevel:              logutil.DefaultLogLevel,
 		Pkgs:                  DefaultLogPkgs,
@@ -175,7 +175,7 @@ func (cfg *LoggerConfig) Apply() error {
 		return err
 	}
 
-	cfg.setupPkgLoggers()
+	cfg.adaptDragonboatLoggers()
 
 	return nil
 }
@@ -268,21 +268,22 @@ func setupLogRotation(logOutputs []string, logRotateConfigJSON string) error {
 	return nil
 }
 
-func (cfg *LoggerConfig) setupPkgLoggers() {
-	lgs := map[string]*pkgLogger{}
+// AdaptDragonboatLoggers adapt the Dragonboat library Logger
+func (cfg *LoggerConfig) adaptDragonboatLoggers() {
+	lgs := map[string]*dragonboatLogger{}
 	pkgs := map[string]string{}
 	_ = json.Unmarshal([]byte(cfg.Pkgs), &pkgs)
 	for name, pkgLevel := range pkgs {
 		level := cfg.convertToPkgLevel(pkgLevel)
 		dlg.GetLogger(name).SetLevel(level)
-		lgs[name] = &pkgLogger{lg: cfg.GetLogger(), level: level}
+		lgs[name] = &dragonboatLogger{lg: cfg.GetLogger(), level: level}
 	}
 	cfg.pkgLoggers = lgs
 
 	dlg.SetLoggerFactory(func(pkgName string) dlg.ILogger {
 		rl, ok := cfg.pkgLoggers[pkgName]
 		if !ok {
-			return &pkgLogger{lg: cfg.GetLogger(), level: cfg.convertToPkgLevel(cfg.LogLevel)}
+			return &dragonboatLogger{lg: cfg.GetLogger(), level: cfg.convertToPkgLevel(cfg.LogLevel)}
 		}
 		return rl
 	})
@@ -308,44 +309,44 @@ func (cfg *LoggerConfig) convertToPkgLevel(pkgLevel string) dlg.LogLevel {
 	return level
 }
 
-type pkgLogger struct {
+type dragonboatLogger struct {
 	lg    *zap.Logger
 	level dlg.LogLevel
 }
 
-func (lg *pkgLogger) SetLevel(level dlg.LogLevel) {
+func (lg *dragonboatLogger) SetLevel(level dlg.LogLevel) {
 	lg.level = level
 }
 
-func (lg *pkgLogger) Debugf(format string, args ...interface{}) {
+func (lg *dragonboatLogger) Debugf(format string, args ...interface{}) {
 	if lg.level < dlg.DEBUG {
 		return
 	}
 	lg.lg.Sugar().Debugf(format, args...)
 }
 
-func (lg *pkgLogger) Infof(format string, args ...interface{}) {
+func (lg *dragonboatLogger) Infof(format string, args ...interface{}) {
 	if lg.level < dlg.INFO {
 		return
 	}
 	lg.lg.Sugar().Infof(format, args...)
 }
 
-func (lg *pkgLogger) Warningf(format string, args ...interface{}) {
+func (lg *dragonboatLogger) Warningf(format string, args ...interface{}) {
 	if lg.level < dlg.WARNING {
 		return
 	}
 	lg.lg.Sugar().Warnf(format, args...)
 }
 
-func (lg *pkgLogger) Errorf(format string, args ...interface{}) {
+func (lg *dragonboatLogger) Errorf(format string, args ...interface{}) {
 	if lg.level < dlg.ERROR {
 		return
 	}
 	lg.lg.Sugar().Errorf(format, args...)
 }
 
-func (lg *pkgLogger) Panicf(format string, args ...interface{}) {
+func (lg *dragonboatLogger) Panicf(format string, args ...interface{}) {
 	if lg.level < dlg.CRITICAL {
 		return
 	}

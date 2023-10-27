@@ -272,7 +272,10 @@ go.etcd.io/etcd/client/pkg/v3/systemd
 go.etcd.io/etcd/client/pkg/v3/testutil
 # go.etcd.io/etcd/pkg/v3 v3.5.9
 ## explicit; go 1.19
+go.etcd.io/etcd/pkg/v3/idutil
+go.etcd.io/etcd/pkg/v3/runtime
 go.etcd.io/etcd/pkg/v3/traceutil
+go.etcd.io/etcd/pkg/v3/wait
 # go.uber.org/multierr v1.10.0
 ## explicit; go 1.19
 go.uber.org/multierr

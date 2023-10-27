@@ -6,6 +6,7 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20231020221949-babd592d2360
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gogo/protobuf v1.3.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/btree v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
@@ -32,7 +33,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect

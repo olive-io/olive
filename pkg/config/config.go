@@ -14,7 +14,10 @@
 
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	DefaultLogOutput = "default"
@@ -37,6 +40,25 @@ var (
 	ErrLogRotationInvalidLogOutput = fmt.Errorf("--log-outputs requires a single file path when --log-rotate-config-json is defined")
 )
 
-type BrainConfig struct {
+type ServerConfig struct {
 	Logger *LoggerConfig
+
+	// MaxRequestBytes is the maximum request size to send over raft.
+	MaxRequestBytes uint
+
+	TickMs        uint
+	ElectionTicks int
+
+	WarningApplyDuration time.Duration
+
+	// ExperimentalTxnModeWriteWithSharedBuffer enable write transaction to use
+	// a shared buffer in its readonly check operations.
+	ExperimentalTxnModeWriteWithSharedBuffer bool `json:"experimental-txn-mode-write-with-shared-buffer"`
+}
+
+// ReqTimeout returns timeout for request to finish.
+func (c *ServerConfig) ReqTimeout() time.Duration {
+	// 5s for queue waiting, computation and disk IO delay
+	// + 2 * election timeout for possible leader election
+	return 5*time.Second + 2*time.Duration(c.ElectionTicks*int(c.TickMs))*time.Millisecond
 }
