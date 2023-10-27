@@ -13,6 +13,7 @@ require (
 	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9
+	go.etcd.io/etcd/pkg/v3 v3.5.9
 	go.uber.org/zap v1.26.0
 	google.golang.org/grpc v1.59.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
