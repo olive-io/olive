@@ -16,14 +16,19 @@ package server
 
 import (
 	"context"
+
+	"github.com/lni/dragonboat/v4"
 )
 
 func Bootstrap(ctx context.Context, option Option) error {
 
-	//nh, err := dragonboat.NewNodeHost(option.NodeHost)
-	//if err != nil {
-	//	return err
-	//}
+	nh, err := dragonboat.NewNodeHost(option.NodeHost)
+	if err != nil {
+		return err
+	}
+
+	reader, _ := nh.GetLogReader(1)
+	reader.GetRange()
 	//
 	//join := false
 	//if option.InitialClusterState == ExistingCluster {
