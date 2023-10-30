@@ -17,38 +17,41 @@ package server
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/lni/dragonboat/v4"
-	sm "github.com/lni/dragonboat/v4/statemachine"
-	"github.com/oliveio/olive/api"
-	"github.com/oliveio/olive/pkg/cindex"
-	"github.com/oliveio/olive/pkg/config"
-	errs "github.com/oliveio/olive/pkg/errors"
-	"github.com/oliveio/olive/pkg/mvcc"
-	"github.com/oliveio/olive/pkg/mvcc/backend"
+	dbc "github.com/lni/dragonboat/v4/config"
+	errs "github.com/olive-io/olive/pkg/errors"
+	"github.com/olive-io/olive/server/config"
+	"github.com/olive-io/olive/server/mvcc"
+	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
+const (
+	DefaultSnapshotCount = 100000
+
+	recommendedMaxRequestBytes = 10
+)
+
+var (
+	recommendedMaxRequestBytesString = humanize.Bytes(uint64(recommendedMaxRequestBytes))
+)
+
 type OliveServer struct {
 
 	// inflightSnapshots holds count the number of snapshots currently inflight.
-	inflightSnapshots int64  // must use atomic operations to access; keep 64-bit aligned.
-	appliedIndex      uint64 // must use atomic operations to access; keep 64-bit aligned.
-	committedIndex    uint64 // must use atomic operations to access; keep 64-bit aligned.
-	term              uint64 // must use atomic operations to access; keep 64-bit aligned.
-	lead              uint64 // must use atomic operations to access; keep 64-bit aligned.
-
-	consistIndex cindex.IConsistentIndexer
-
-	clusterID uint64
+	inflightSnapshots int64 // must use atomic operations to access; keep 64-bit aligned.
 
 	nh *dragonboat.NodeHost
 
 	Cfg config.ServerConfig
+
+	shardMu   sync.RWMutex
+	ShardCfgs map[uint64]config.SharedConfig
 
 	lgMu *sync.RWMutex
 	lg   *zap.Logger
@@ -72,17 +75,101 @@ type OliveServer struct {
 
 	reqIDGen *idutil.Generator
 
+	smu sync.RWMutex
+	sms map[uint64]*stateMachine
+
 	apply applier
-	// applyV3Base is the core applier without auth or quotas
-	applyBase applier
-	// applyV3Internal is the applier for internal request
-	//applyInternal applierV3Internal
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
 	// wg is used to wait for the goroutines that depends on the server state
 	// to exit when stopping the server.
 	wg sync.WaitGroup
+}
+
+func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
+
+	lg := cfg.Logger.GetLogger()
+	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
+		lg.Warn(
+			"exceeded recommended request limit",
+			zap.Uint("max-request-bytes", cfg.MaxRequestBytes),
+			zap.String("max-request-size", humanize.Bytes(uint64(cfg.MaxRequestBytes))),
+			zap.Int("recommended-request-bytes", recommendedMaxRequestBytes),
+			zap.String("recommended-request-size", recommendedMaxRequestBytesString),
+		)
+	}
+
+	bepath := cfg.BackendPath()
+	be := openBackend(cfg, nil)
+
+	nhc := dbc.NodeHostConfig{
+		WALDir:              cfg.WALPath(),
+		NodeHostDir:         bepath,
+		RTTMillisecond:      cfg.RTTMillisecond,
+		EnableMetrics:       true,
+		RaftEventListener:   nil,
+		SystemEventListener: nil,
+	}
+
+	nh, err := dragonboat.NewNodeHost(nhc)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &OliveServer{
+		inflightSnapshots: 0,
+		nh:                nh,
+		Cfg:               cfg,
+		ShardCfgs:         map[uint64]config.SharedConfig{},
+		lgMu:              nil,
+		lg:                nil,
+		w:                 nil,
+		stop:              nil,
+		stopping:          nil,
+		done:              nil,
+		kv:                nil,
+		ctx:               nil,
+		cancel:            nil,
+		bemu:              sync.Mutex{},
+		be:                be,
+		reqIDGen:          nil,
+		sms:               map[uint64]*stateMachine{},
+		apply:             nil,
+		wgMu:              sync.RWMutex{},
+		wg:                sync.WaitGroup{},
+	}
+
+	return s, nil
+}
+
+func (s *OliveServer) StartReplica(sharedCfg config.SharedConfig) error {
+
+	rc := dbc.Config{
+		ReplicaID:          sharedCfg.ClusterID,
+		ShardID:            sharedCfg.SharedID,
+		CheckQuorum:        true,
+		PreVote:            s.Cfg.PreVote,
+		ElectionRTT:        s.Cfg.ElectionTicks,
+		HeartbeatRTT:       s.Cfg.TickMs,
+		SnapshotEntries:    10,
+		CompactionOverhead: 5,
+		WaitReady:          true,
+	}
+
+	join := sharedCfg.NewCluster
+
+	s.shardMu.Lock()
+	s.ShardCfgs[sharedCfg.SharedID] = sharedCfg
+	s.shardMu.Unlock()
+
+	members := map[uint64]string{}
+	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *OliveServer) Logger() *zap.Logger {
@@ -132,100 +219,11 @@ func (s *OliveServer) Backend() backend.IBackend {
 	return s.be
 }
 
-// applyEntryNormal apples an EntryNormal type raftpb request to the OliveServer
-func (s *OliveServer) applyEntryNormal(ent *sm.Entry) {
-	var ar *applyResult
-	index := s.consistIndex.ConsistentIndex()
-	if ent.Index > index {
-		// set the consistent index of current executing entry
-		s.consistIndex.SetConsistentApplyingIndex(ent.Index)
-		defer func() {
-			// The txPostLockInsideApplyHook will not get called in some cases,
-			// in which we should move the consistent index forward directly.
-			newIndex := s.consistIndex.ConsistentIndex()
-			if newIndex < ent.Index {
-				s.consistIndex.SetConsistentIndex(ent.Index)
-			}
-		}()
-	}
-	s.lg.Debug("apply entry normal",
-		zap.Uint64("consistent-index", index),
-		zap.Uint64("entry-index", ent.Index))
-
-	raftReq := api.InternalRaftRequest{}
-	if err := raftReq.Unmarshal(ent.Cmd); err != nil {
-		s.lg.Error("unmarshal raft entry",
-			zap.Uint64("entry-index", ent.Index))
-		return
-	}
-	s.lg.Debug("applyEntryNormal", zap.Stringer("raftReq", &raftReq))
-
-	id := raftReq.Header.ID
-	needResult := s.w.IsRegistered(id)
-	if needResult || !noSideEffect(&raftReq) {
-		ar = s.apply.Apply(&raftReq)
-	}
-
-	if ar == nil {
-		return
-	}
-
-	s.w.Trigger(id, ar)
-
-	//if !errors.Is(ar.err, errs.ErrNoSpace) || len(s.alarmStore.Get(pb.AlarmType_NOSPACE)) > 0 {
-	//	s.w.Trigger(id, ar)
-	//	return
-	//}
-	//
-	//lg := sm.s.Logger()
-	//lg.Warn(
-	//	"message exceeded backend quota; raising alarm",
-	//	zap.Int64("quota-size-bytes", sm.s.Cfg.QuotaBackendBytes),
-	//	zap.String("quota-size", humanize.Bytes(uint64(sm.s.Cfg.QuotaBackendBytes))),
-	//	zap.Error(ar.err),
-	//)
-	//
-	//s.GoAttach(func() {
-	//	//a := &pb.AlarmRequest{
-	//	//	MemberID: uint64(s.ID()),
-	//	//	Action:   pb.AlarmRequest_ACTIVATE,
-	//	//	Alarm:    pb.AlarmType_NOSPACE,
-	//	//}
-	//	//s.raftRequest(s.ctx, pb.InternalRaftRequest{Alarm: a})
-	//	s.w.Trigger(id, ar)
-	//})
-}
-
-func (s *OliveServer) setCommittedIndex(v uint64) {
-	atomic.StoreUint64(&s.committedIndex, v)
-}
-
-func (s *OliveServer) getCommittedIndex() uint64 {
-	return atomic.LoadUint64(&s.committedIndex)
-}
-
-func (s *OliveServer) setAppliedIndex(v uint64) {
-	atomic.StoreUint64(&s.appliedIndex, v)
-}
-
-func (s *OliveServer) getAppliedIndex() uint64 {
-	return atomic.LoadUint64(&s.appliedIndex)
-}
-
-func (s *OliveServer) setTerm(v uint64) {
-	atomic.StoreUint64(&s.term, v)
-}
-
-func (s *OliveServer) getTerm() uint64 {
-	return atomic.LoadUint64(&s.term)
-}
-
-func (s *OliveServer) setLead(v uint64) {
-	atomic.StoreUint64(&s.lead, v)
-}
-
-func (s *OliveServer) getLead() uint64 {
-	return atomic.LoadUint64(&s.lead)
+func (s *OliveServer) getShard(shardID uint64) (*stateMachine, bool) {
+	s.shardMu.RLock()
+	defer s.shardMu.RUnlock()
+	ssm, ok := s.sms[shardID]
+	return ssm, ok
 }
 
 // GoAttach creates a goroutine on a given function and tracks it using

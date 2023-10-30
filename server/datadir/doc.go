@@ -12,20 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api_test
+package datadir
 
-import (
-	"testing"
-
-	"github.com/olive-io/olive/api"
-)
-
-// TestInvalidGoTypeIntPanic tests conditions that caused
-// panic: invalid Go type int for field k8s_io.kubernetes.vendor.go_etcd_io.etcd.etcdserver.etcdserverpb.loggablePutRequest.value_size
-// See https://github.com/kubernetes/kubernetes/issues/91937 for more details
-func TestInvalidGoTypeIntPanic(t *testing.T) {
-	result := api.NewLoggablePutRequest(&api.PutRequest{}).String()
-	if result != "" {
-		t.Errorf("Got result: %s, expected empty string", result)
-	}
-}
+// datadir contains functions to navigate file-layout of olive data-directory.

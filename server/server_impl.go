@@ -22,8 +22,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/lni/dragonboat/v4"
-	"github.com/oliveio/olive/api"
-	errs "github.com/oliveio/olive/pkg/errors"
+	"github.com/olive-io/olive/api"
+	errs "github.com/olive-io/olive/pkg/errors"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.uber.org/zap"
 )
@@ -60,7 +60,7 @@ func (s *OliveServer) DeployDefinition(ctx context.Context, req *api.DeployDefin
 	}
 
 	var rsp *api.PutResponse
-	rsp, err = s.Put(ctx, putReq)
+	rsp, err = s.Put(ctx, 0, putReq)
 	if err != nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (s *OliveServer) ListDefinition(ctx context.Context, req *api.ListDefinitio
 	}
 
 	var rsp *api.RangeResponse
-	rsp, err = s.Range(ctx, rangeReq)
+	rsp, err = s.Range(ctx, 0, rangeReq)
 	if err != nil {
 		return
 	}
@@ -105,7 +105,7 @@ func (s *OliveServer) RemoveDefinition(ctx context.Context, req *api.RemoveDefin
 	}
 
 	var rsp *api.DeleteRangeResponse
-	rsp, err = s.DeleteRange(ctx, deleteReq)
+	rsp, err = s.DeleteRange(ctx, 0, deleteReq)
 	if err != nil {
 		return
 	}
@@ -119,7 +119,12 @@ func (s *OliveServer) ExecuteDefinition(ctx context.Context, req *api.ExecuteDef
 	panic("implement me")
 }
 
-func (s *OliveServer) Range(ctx context.Context, r *api.RangeRequest) (*api.RangeResponse, error) {
+func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeRequest) (*api.RangeResponse, error) {
+	_, exists := s.getShard(shardID)
+	if !exists {
+		return nil, errs.ErrShardNotFound
+	}
+
 	trace := traceutil.New("range",
 		s.Logger(),
 		traceutil.Field{Key: "range_begin", Value: string(r.Key)},
@@ -146,20 +151,18 @@ func (s *OliveServer) Range(ctx context.Context, r *api.RangeRequest) (*api.Rang
 		get = func() {
 			var result any
 			var ok bool
-			result, err = s.nh.StaleRead(s.clusterID, r)
+			result, err = s.nh.StaleRead(shardID, r)
 			resp, ok = result.(*api.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
 			}
 		}
 		trace.Step("agreement among raft nodes before linearized reading")
-
 	} else {
-
 		get = func() {
 			var result any
 			var ok bool
-			result, err = s.nh.SyncRead(ctx, s.clusterID, r)
+			result, err = s.nh.SyncRead(ctx, shardID, r)
 			resp, ok = result.(*api.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
@@ -177,24 +180,24 @@ func (s *OliveServer) Range(ctx context.Context, r *api.RangeRequest) (*api.Rang
 	return resp, err
 }
 
-func (s *OliveServer) Put(ctx context.Context, r *api.PutRequest) (*api.PutResponse, error) {
+func (s *OliveServer) Put(ctx context.Context, shardID uint64, r *api.PutRequest) (*api.PutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, api.InternalRaftRequest{Put: r})
+	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Put: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*api.PutResponse), nil
 }
 
-func (s *OliveServer) DeleteRange(ctx context.Context, r *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
-	resp, err := s.raftRequest(ctx, api.InternalRaftRequest{DeleteRange: r})
+func (s *OliveServer) DeleteRange(ctx context.Context, shardID uint64, r *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
+	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{DeleteRange: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*api.DeleteRangeResponse), nil
 }
 
-func (s *OliveServer) Txn(ctx context.Context, r *api.TxnRequest) (*api.TxnResponse, error) {
+func (s *OliveServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (*api.TxnResponse, error) {
 	if isTxnReadonly(r) {
 		trace := traceutil.New("transaction",
 			s.Logger(),
@@ -209,7 +212,7 @@ func (s *OliveServer) Txn(ctx context.Context, r *api.TxnRequest) (*api.TxnRespo
 		if !isTxnSerializable(r) {
 			var result any
 			var ok bool
-			result, err = s.nh.StaleRead(s.clusterID, r)
+			result, err = s.nh.StaleRead(shardID, r)
 			resp, ok = result.(*api.TxnResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
@@ -220,7 +223,7 @@ func (s *OliveServer) Txn(ctx context.Context, r *api.TxnRequest) (*api.TxnRespo
 			get = func() {
 				var result any
 				var ok bool
-				result, err = s.nh.SyncRead(ctx, s.clusterID, r)
+				result, err = s.nh.SyncRead(ctx, shardID, r)
 				resp, ok = result.(*api.TxnResponse)
 				if !ok {
 					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
@@ -243,7 +246,7 @@ func (s *OliveServer) Txn(ctx context.Context, r *api.TxnRequest) (*api.TxnRespo
 	}
 
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, api.InternalRaftRequest{Txn: r})
+	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Txn: r})
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +281,9 @@ func isTxnReadonly(r *api.TxnRequest) bool {
 	return true
 }
 
-func (s *OliveServer) Compact(ctx context.Context, r *api.CompactionRequest) (*api.CompactionResponse, error) {
+func (s *OliveServer) Compact(ctx context.Context, shardID uint64, r *api.CompactionRequest) (*api.CompactionResponse, error) {
 	startTime := time.Now()
-	result, err := s.processInternalRaftRequestOnce(ctx, api.InternalRaftRequest{Compaction: r})
+	result, err := s.processInternalRaftRequestOnce(ctx, shardID, api.InternalRaftRequest{Compaction: r})
 	trace := traceutil.TODO()
 	if result != nil && result.trace != nil {
 		trace = result.trace
@@ -319,8 +322,8 @@ func (s *OliveServer) Compact(ctx context.Context, r *api.CompactionRequest) (*a
 	return resp, nil
 }
 
-func (s *OliveServer) raftRequestOnce(ctx context.Context, r api.InternalRaftRequest) (proto.Message, error) {
-	result, err := s.processInternalRaftRequestOnce(ctx, r)
+func (s *OliveServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+	result, err := s.processInternalRaftRequestOnce(ctx, shardID, r)
 	if err != nil {
 		return nil, err
 	}
@@ -339,8 +342,8 @@ func (s *OliveServer) raftRequestOnce(ctx context.Context, r api.InternalRaftReq
 	return result.resp, nil
 }
 
-func (s *OliveServer) raftRequest(ctx context.Context, r api.InternalRaftRequest) (proto.Message, error) {
-	return s.raftRequestOnce(ctx, r)
+func (s *OliveServer) raftRequest(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+	return s.raftRequestOnce(ctx, shardID, r)
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
@@ -372,9 +375,14 @@ func (s *OliveServer) doSerialize(
 	return nil
 }
 
-func (s *OliveServer) processInternalRaftRequestOnce(ctx context.Context, r api.InternalRaftRequest) (*applyResult, error) {
-	ai := s.getAppliedIndex()
-	ci := s.getCommittedIndex()
+func (s *OliveServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (*applyResult, error) {
+	ssm, exists := s.getShard(shardID)
+	if !exists {
+		return nil, errs.ErrShardNotFound
+	}
+
+	ai := ssm.getAppliedIndex()
+	ci := ssm.getCommittedIndex()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
 		return nil, errs.ErrTooManyRequests
 	}
@@ -412,7 +420,7 @@ func (s *OliveServer) processInternalRaftRequestOnce(ctx context.Context, r api.
 
 	start := time.Now()
 
-	session := s.nh.GetNoOPSession(s.clusterID)
+	session := s.nh.GetNoOPSession(shardID)
 	_, err = s.nh.SyncPropose(cctx, session, data)
 	if err != nil {
 		proposalsFailed.Inc()

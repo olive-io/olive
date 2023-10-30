@@ -16,12 +16,13 @@ package server
 
 import (
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/oliveio/olive/api"
+	"github.com/olive-io/olive/api"
 	"go.uber.org/zap"
 )
 
@@ -103,4 +104,10 @@ func warnOfExpensiveGenericRequest(lg *zap.Logger, warningApplyDuration time.Dur
 
 func isNil(msg proto.Message) bool {
 	return msg == nil || reflect.ValueOf(msg).IsNil()
+}
+
+func hash(name []byte) uint64 {
+	h := fnv.New64a()
+	h.Write(name)
+	return h.Sum64()
 }

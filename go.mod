@@ -1,4 +1,4 @@
-module github.com/oliveio/olive
+module github.com/olive-io/olive
 
 go 1.20
 

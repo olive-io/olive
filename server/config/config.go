@@ -1,0 +1,109 @@
+// Copyright 2023 Lack (xingyys@gmail.com).
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package config
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/olive-io/olive/server/datadir"
+	"go.etcd.io/etcd/client/pkg/v3/types"
+)
+
+const (
+	DefaultLogOutput = "default"
+	JournalLogOutput = "systemd/journal"
+	StdErrLogOutput  = "stderr"
+	StdOutLogOutput  = "stdout"
+
+	DefaultLogPkgs = `{"transport": "warning","rsm": "warning", "raft": "error", "grpc": "warning"}`
+	// DefaultLogRotationConfig is the default configuration used for log rotation.
+	// Log rotation is disabled by default.
+	// MaxSize    = 100 // MB
+	// MaxAge     = 0 // days (no limit)
+	// MaxBackups = 0 // no limit
+	// LocalTime  = false // use computers local time, UTC by default
+	// Compress   = false // compress the rotated log in gzip format
+	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
+)
+
+var (
+	ErrLogRotationInvalidLogOutput = fmt.Errorf("--log-outputs requires a single file path when --log-rotate-config-json is defined")
+)
+
+type ServerConfig struct {
+	Logger *LoggerConfig
+
+	Name string
+
+	CacheSize      int64
+	DataDir        string
+	WALDir         string
+	RTTMillisecond uint64
+
+	SnapshotCount uint64
+
+	// SnapshotCatchUpEntries is the number of entries for a slow follower
+	// to catch-up after compacting the raft storage entries.
+	// We expect the follower has a millisecond level latency with the leader.
+	// The max throughput is around 10K. Keep a 5K entries is enough for helping
+	// follower to catch up.
+	// WARNING: only change this for tests. Always use "DefaultSnapshotCatchUpEntries"
+	SnapshotCatchUpEntries uint64
+
+	// BackendBatchInterval is the maximum time before commit the backend transaction.
+	BackendBatchInterval time.Duration
+	// BackendBatchLimit is the maximum operations before commit the backend transaction.
+	BackendBatchLimit int
+
+	TickMs        uint64
+	ElectionTicks uint64
+
+	// PreVote is true to enable Raft Pre-Vote.
+	PreVote bool
+
+	// MaxRequestBytes is the maximum request size to send over raft.
+	MaxRequestBytes uint
+
+	WarningApplyDuration time.Duration
+
+	// ExperimentalTxnModeWriteWithSharedBuffer enable write transaction to use
+	// a shared buffer in its readonly check operations.
+	ExperimentalTxnModeWriteWithSharedBuffer bool `json:"experimental-txn-mode-write-with-shared-buffer"`
+}
+
+func (c *ServerConfig) BackendPath() string { return datadir.ToBackendFileName(c.DataDir) }
+
+func (c *ServerConfig) WALPath() string {
+	if c.WALDir != "" {
+		return c.WALDir
+	}
+	return datadir.ToWalDir(c.DataDir)
+}
+
+// ReqTimeout returns timeout for request to finish.
+func (c *ServerConfig) ReqTimeout() time.Duration {
+	// 5s for queue waiting, computation and disk IO delay
+	// + 2 * election timeout for possible leader election
+	return 5*time.Second + 2*time.Duration(c.ElectionTicks*c.TickMs)*time.Millisecond
+}
+
+type SharedConfig struct {
+	ClusterID uint64
+	SharedID  uint64
+
+	PeerURLs   types.URLsMap
+	NewCluster bool
+}

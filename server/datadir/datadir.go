@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api_test
+package datadir
 
-import (
-	"testing"
+import "path/filepath"
 
-	"github.com/olive-io/olive/api"
+const (
+	snapDirSegment     = "snap"
+	walDirSegment      = "wal"
+	backendFileSegment = "db"
 )
 
-// TestInvalidGoTypeIntPanic tests conditions that caused
-// panic: invalid Go type int for field k8s_io.kubernetes.vendor.go_etcd_io.etcd.etcdserver.etcdserverpb.loggablePutRequest.value_size
-// See https://github.com/kubernetes/kubernetes/issues/91937 for more details
-func TestInvalidGoTypeIntPanic(t *testing.T) {
-	result := api.NewLoggablePutRequest(&api.PutRequest{}).String()
-	if result != "" {
-		t.Errorf("Got result: %s, expected empty string", result)
-	}
+func ToBackendFileName(dataDir string) string {
+	return filepath.Join(dataDir, backendFileSegment)
+}
+
+func ToSnapDir(dataDir string) string {
+	return filepath.Join(dataDir, snapDirSegment)
+}
+
+func ToWalDir(dataDir string) string {
+	return filepath.Join(dataDir, walDirSegment)
 }

@@ -18,7 +18,7 @@ import (
 	goruntime "runtime"
 	"time"
 
-	"github.com/oliveio/olive/pkg/version"
+	"github.com/olive-io/olive/pkg/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.etcd.io/etcd/pkg/v3/runtime"
 	"go.uber.org/zap"

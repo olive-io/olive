@@ -18,6 +18,7 @@ import "errors"
 
 var (
 	ErrUnknownMethod                 = errors.New("olive: unknown method")
+	ErrShardNotFound                 = errors.New("olive: shard not found")
 	ErrStopped                       = errors.New("olive: server stopped")
 	ErrCanceled                      = errors.New("olive: request cancelled")
 	ErrTimeout                       = errors.New("olive: request timed out")

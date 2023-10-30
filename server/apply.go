@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/oliveio/olive/api"
-	errs "github.com/oliveio/olive/pkg/errors"
-	"github.com/oliveio/olive/pkg/mvcc"
+	"github.com/olive-io/olive/api"
+	errs "github.com/olive-io/olive/pkg/errors"
+	"github.com/olive-io/olive/server/mvcc"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.uber.org/zap"
 )
