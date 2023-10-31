@@ -33,13 +33,16 @@ const (
 	testAddress3 = "localhost:60003"
 )
 
-func newServer(t *testing.T, dirname, address string) *server.OliveServer {
+func newServer(t *testing.T, dirname, address string) *server.KVServer {
 	dir, err := os.MkdirTemp(t.TempDir(), dirname)
 	if err != nil {
 		panic(err)
 	}
 
 	cfg := config.NewServiceConfig("test", dir, address)
+	if err = cfg.Apply(); err != nil {
+		panic(err)
+	}
 
 	s, err := server.NewServer(cfg)
 	if !assert.NoError(t, err) {
@@ -51,7 +54,7 @@ func newServer(t *testing.T, dirname, address string) *server.OliveServer {
 }
 
 func TestNewServer(t *testing.T) {
-	s := newServer(t, "olive_server_test", testAddress1)
+	s := newServer(t, "olive_kv_server_test", testAddress1)
 
 	scfg := config.ShardConfig{
 		Name:       "r0",
@@ -82,9 +85,9 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestNewCluster(t *testing.T) {
-	s1 := newServer(t, "olive_server_test1", testAddress1)
-	s2 := newServer(t, "olive_server_test2", testAddress2)
-	s3 := newServer(t, "olive_server_test3", testAddress3)
+	s1 := newServer(t, "olive_kv_server_test1", testAddress1)
+	s2 := newServer(t, "olive_kv_server_test2", testAddress2)
+	s3 := newServer(t, "olive_kv_server_test3", testAddress3)
 
 	scfg := config.ShardConfig{
 		Name:       "r0",

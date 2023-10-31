@@ -55,13 +55,13 @@ type applier interface {
 type checkReqFunc func(mvcc.IReadView, *api.RequestOp) error
 
 type applierBackend struct {
-	s *OliveServer
+	s *KVServer
 
 	checkPut   checkReqFunc
 	checkRange checkReqFunc
 }
 
-func (s *OliveServer) newApplierBackend() applier {
+func (s *KVServer) newApplierBackend() applier {
 	base := &applierBackend{s: s}
 	base.checkPut = func(rv mvcc.IReadView, req *api.RequestOp) error {
 		return base.checkRequestPut(rv, req)

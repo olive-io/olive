@@ -41,8 +41,7 @@ const (
 	applyTimeout = time.Second
 )
 
-//
-//func (s *OliveServer) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
+//func (s *KVServer) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
 //	definitions := &api.Definition{
 //		Id:      req.Id,
 //		Name:    req.Name,
@@ -70,7 +69,7 @@ const (
 //	return
 //}
 //
-//func (s *OliveServer) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
+//func (s *KVServer) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
 //	key := path.Join("/definitions")
 //	rangeReq := &api.RangeRequest{
 //		Key:          []byte(key),
@@ -94,12 +93,12 @@ const (
 //	return
 //}
 //
-//func (s *OliveServer) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
+//func (s *KVServer) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
 //	//TODO implement me
 //	panic("implement me")
 //}
 //
-//func (s *OliveServer) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
+//func (s *KVServer) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
 //	key := path.Join("/definitions", req.Id)
 //	deleteReq := &api.DeleteRangeRequest{
 //		Key: []byte(key),
@@ -115,12 +114,12 @@ const (
 //	return
 //}
 //
-//func (s *OliveServer) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
+//func (s *KVServer) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
 //	//TODO implement me
 //	panic("implement me")
 //}
 
-func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeRequest) (*api.RangeResponse, error) {
+func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeRequest) (*api.RangeResponse, error) {
 	_, exists := s.getShard(shardID)
 	if !exists {
 		return nil, errs.ErrShardNotFound
@@ -183,7 +182,7 @@ func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeReq
 	return resp, err
 }
 
-func (s *OliveServer) Put(ctx context.Context, shardID uint64, r *api.PutRequest) (*api.PutResponse, error) {
+func (s *KVServer) Put(ctx context.Context, shardID uint64, r *api.PutRequest) (*api.PutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
 	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Put: r})
 	if err != nil {
@@ -192,7 +191,7 @@ func (s *OliveServer) Put(ctx context.Context, shardID uint64, r *api.PutRequest
 	return resp.(*api.PutResponse), nil
 }
 
-func (s *OliveServer) DeleteRange(ctx context.Context, shardID uint64, r *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
+func (s *KVServer) DeleteRange(ctx context.Context, shardID uint64, r *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
 	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{DeleteRange: r})
 	if err != nil {
 		return nil, err
@@ -200,7 +199,7 @@ func (s *OliveServer) DeleteRange(ctx context.Context, shardID uint64, r *api.De
 	return resp.(*api.DeleteRangeResponse), nil
 }
 
-func (s *OliveServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (*api.TxnResponse, error) {
+func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (*api.TxnResponse, error) {
 	if isTxnReadonly(r) {
 		trace := traceutil.New("transaction",
 			s.Logger(),
@@ -285,7 +284,7 @@ func isTxnReadonly(tr *api.TxnRequest) bool {
 	return true
 }
 
-func (s *OliveServer) Compact(ctx context.Context, shardID uint64, r *api.CompactionRequest) (*api.CompactionResponse, error) {
+func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *api.CompactionRequest) (*api.CompactionResponse, error) {
 	startTime := time.Now()
 	result, err := s.processInternalRaftRequestOnce(ctx, shardID, api.InternalRaftRequest{Compaction: r})
 	trace := traceutil.TODO()
@@ -327,7 +326,7 @@ func (s *OliveServer) Compact(ctx context.Context, shardID uint64, r *api.Compac
 	return resp, nil
 }
 
-func (s *OliveServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
 	result, err := s.processInternalRaftRequestOnce(ctx, shardID, r)
 	if err != nil {
 		return nil, err
@@ -347,12 +346,12 @@ func (s *OliveServer) raftRequestOnce(ctx context.Context, shardID uint64, r api
 	return result.resp, nil
 }
 
-func (s *OliveServer) raftRequest(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
 	return s.raftRequestOnce(ctx, shardID, r)
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
-func (s *OliveServer) doSerialize(
+func (s *KVServer) doSerialize(
 	ctx context.Context,
 	//chk func(*auth.AuthInfo) error,
 	get func(),
@@ -380,7 +379,7 @@ func (s *OliveServer) doSerialize(
 	return nil
 }
 
-func (s *OliveServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (*applyResult, error) {
+func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (*applyResult, error) {
 	ssm, exists := s.getShard(shardID)
 	if !exists {
 		return nil, errs.ErrShardNotFound

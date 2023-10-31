@@ -61,7 +61,7 @@ type shard struct {
 	lead           uint64 // must use atomic operations to access; keep 64-bit aligned.
 }
 
-func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
+func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	ci := cindex.NewConsistentIndex(s.Backend(), shardID, nodeID)
 	cindex.CreateMetaBucket(s.Backend().BatchTx())
@@ -232,7 +232,7 @@ func (m *shard) parseProposeCtxErr(err error, start time.Time) error {
 	}
 }
 
-// applyEntryNormal apples an EntryNormal type raftpb request to the OliveServer
+// applyEntryNormal apples an EntryNormal type raftpb request to the KVServer
 func (m *shard) applyEntryNormal(ent *sm.Entry) {
 	var ar *applyResult
 	index := m.consistIndex.ConsistentIndex()

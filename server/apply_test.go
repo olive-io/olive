@@ -21,7 +21,7 @@ package server
 //	defer s.Close()
 //
 //	// setup minimal server to get access to applier
-//	srv := &OliveServer{lgMu: new(sync.RWMutex), lg: zap.NewExample(), r: *newRaftNode(raftNodeConfig{lg: zap.NewExample(), Node: newNodeRecorder()})}
+//	srv := &KVServer{lgMu: new(sync.RWMutex), lg: zap.NewExample(), r: *newRaftNode(raftNodeConfig{lg: zap.NewExample(), Node: newNodeRecorder()})}
 //	srv.kv = s
 //	srv.be = b
 //
@@ -60,7 +60,7 @@ package server
 //	defer s.Close()
 //
 //	// setup minimal server to get access to applier
-//	srv := &OliveServer{lgMu: new(sync.RWMutex), lg: zap.NewExample(), r: *newRaftNode(raftNodeConfig{lg: zap.NewExample(), Node: newNodeRecorder()})}
+//	srv := &KVServer{lgMu: new(sync.RWMutex), lg: zap.NewExample(), r: *newRaftNode(raftNodeConfig{lg: zap.NewExample(), Node: newNodeRecorder()})}
 //	srv.kv = s
 //	srv.be = b
 //

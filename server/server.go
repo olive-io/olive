@@ -41,7 +41,7 @@ var (
 	recommendedMaxRequestBytesString = humanize.Bytes(uint64(recommendedMaxRequestBytes))
 )
 
-type OliveServer struct {
+type KVServer struct {
 	nh *dragonboat.NodeHost
 
 	Cfg config.ServerConfig
@@ -80,7 +80,7 @@ type OliveServer struct {
 	wg sync.WaitGroup
 }
 
-func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
+func NewServer(cfg config.ServerConfig) (*KVServer, error) {
 
 	lg := cfg.Logger.GetLogger()
 	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
@@ -119,7 +119,7 @@ func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
 	kv := mvcc.NewStore(lg, be, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s := &OliveServer{
+	s := &KVServer{
 		nh:          nh,
 		Cfg:         cfg,
 		lgMu:        new(sync.RWMutex),
@@ -143,11 +143,11 @@ func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
 	return s, nil
 }
 
-func (s *OliveServer) Start() {
+func (s *KVServer) Start() {
 	s.GoAttach(s.processRaftEvent)
 }
 
-func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
+func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 
 	shardID := GenHash([]byte(cfg.Name))
 	rc := dbc.Config{
@@ -185,14 +185,14 @@ func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
 	return nil
 }
 
-func (s *OliveServer) Logger() *zap.Logger {
+func (s *KVServer) Logger() *zap.Logger {
 	s.lgMu.RLock()
 	l := s.lg
 	s.lgMu.RUnlock()
 	return l
 }
 
-func (s *OliveServer) parseProposeCtxErr(err error, start time.Time) error {
+func (s *KVServer) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
 		return errs.ErrCanceled
@@ -225,15 +225,15 @@ func (s *OliveServer) parseProposeCtxErr(err error, start time.Time) error {
 	}
 }
 
-func (s *OliveServer) KV() mvcc.IKV { return s.kv }
-func (s *OliveServer) Backend() backend.IBackend {
+func (s *KVServer) KV() mvcc.IKV { return s.kv }
+func (s *KVServer) Backend() backend.IBackend {
 	s.bemu.Lock()
 	defer s.bemu.Unlock()
 	return s.be
 }
 
 // HardStop stops the server without coordination with other raft group in the server.
-func (s *OliveServer) HardStop() {
+func (s *KVServer) HardStop() {
 	select {
 	case s.stop <- struct{}{}:
 	case <-s.done:
@@ -244,13 +244,13 @@ func (s *OliveServer) HardStop() {
 
 // StopNotify returns a channel that receives an empty struct
 // when the server is stopped.
-func (s *OliveServer) StopNotify() <-chan struct{} { return s.done }
+func (s *KVServer) StopNotify() <-chan struct{} { return s.done }
 
 // StoppingNotify returns a channel that receives an empty struct
 // when the server is being stopped.
-func (s *OliveServer) StoppingNotify() <-chan struct{} { return s.stopping }
+func (s *KVServer) StoppingNotify() <-chan struct{} { return s.stopping }
 
-func (s *OliveServer) processRaftEvent() {
+func (s *KVServer) processRaftEvent() {
 	for {
 		select {
 		case <-s.stop:
@@ -266,7 +266,7 @@ func (s *OliveServer) processRaftEvent() {
 	}
 }
 
-func (s *OliveServer) getShard(shardID uint64) (*shard, bool) {
+func (s *KVServer) getShard(shardID uint64) (*shard, bool) {
 	s.smu.RLock()
 	defer s.smu.RUnlock()
 	ssm, ok := s.sms[shardID]
@@ -276,7 +276,7 @@ func (s *OliveServer) getShard(shardID uint64) (*shard, bool) {
 // GoAttach creates a goroutine on a given function and tracks it using
 // the etcdserver waitgroup.
 // The passed function should interrupt on s.StoppingNotify().
-func (s *OliveServer) GoAttach(f func()) {
+func (s *KVServer) GoAttach(f func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
 	defer s.wgMu.RUnlock()
 	select {

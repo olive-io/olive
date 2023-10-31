@@ -100,7 +100,6 @@ type ServerConfig struct {
 
 func NewServiceConfig(Name, dataDir, RaftAddress string) ServerConfig {
 	lg := NewLoggerConfig()
-	_ = lg.Apply()
 	cfg := ServerConfig{
 		Logger:                                   lg,
 		Name:                                     Name,
@@ -137,6 +136,14 @@ func (c *ServerConfig) ReqTimeout() time.Duration {
 	// 5s for queue waiting, computation and disk IO delay
 	// + 2 * election timeout for possible leader election
 	return 5*time.Second + 2*time.Duration(c.ElectionTicks*c.TickMs)*time.Millisecond
+}
+
+func (c *ServerConfig) Apply() error {
+	if err := c.Logger.Apply(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type ShardConfig struct {
