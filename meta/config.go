@@ -12,8 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package meta
 
-func main() {
+import "github.com/olive-io/olive/server/config"
 
+type Config struct {
+	ServerConfig config.ServerConfig
+
+	ShardConfig config.ShardConfig
+
+	ListenerAddress string
+}
+
+func (cfg *Config) Apply() (err error) {
+	if err = cfg.ServerConfig.Apply(); err != nil {
+		return err
+	}
+
+	return
 }

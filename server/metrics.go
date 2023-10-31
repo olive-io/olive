@@ -15,10 +15,8 @@
 package server
 
 import (
-	goruntime "runtime"
 	"time"
 
-	"github.com/olive-io/olive/pkg/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.etcd.io/etcd/pkg/v3/runtime"
 	"go.uber.org/zap"
@@ -129,20 +127,6 @@ var (
 		Name:      "quota_backend_bytes",
 		Help:      "Current backend storage quota size in bytes.",
 	})
-	currentVersion = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "server",
-		Name:      "version",
-		Help:      "Which version is running. 1 for 'server_version' label with current version.",
-	},
-		[]string{"server_version"})
-	currentGoVersion = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "server",
-		Name:      "go_version",
-		Help:      "Which Go version server is running with. 1 for 'server_go_version' label with current version.",
-	},
-		[]string{"server_go_version"})
 	serverID = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "olive",
 		Subsystem: "server",
@@ -191,8 +175,6 @@ func init() {
 	prometheus.MustRegister(readIndexFailed)
 	prometheus.MustRegister(leaseExpired)
 	prometheus.MustRegister(quotaBackendBytes)
-	prometheus.MustRegister(currentVersion)
-	prometheus.MustRegister(currentGoVersion)
 	prometheus.MustRegister(serverID)
 	prometheus.MustRegister(isLearner)
 	prometheus.MustRegister(learnerPromoteSucceed)
@@ -200,13 +182,6 @@ func init() {
 	prometheus.MustRegister(fdUsed)
 	prometheus.MustRegister(fdLimit)
 	prometheus.MustRegister(applySec)
-
-	currentVersion.With(prometheus.Labels{
-		"server_version": version.GoV(),
-	}).Set(1)
-	currentGoVersion.With(prometheus.Labels{
-		"server_go_version": goruntime.Version(),
-	}).Set(1)
 }
 
 func monitorFileDescriptor(lg *zap.Logger, done <-chan struct{}) {
