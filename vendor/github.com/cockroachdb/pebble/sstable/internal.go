@@ -21,10 +21,7 @@ const (
 	InternalKeyKindSet             = base.InternalKeyKindSet
 	InternalKeyKindMerge           = base.InternalKeyKindMerge
 	InternalKeyKindLogData         = base.InternalKeyKindLogData
-	InternalKeyKindSingleDelete    = base.InternalKeyKindSingleDelete
 	InternalKeyKindRangeDelete     = base.InternalKeyKindRangeDelete
-	InternalKeyKindSetWithDelete   = base.InternalKeyKindSetWithDelete
-	InternalKeyKindDeleteSized     = base.InternalKeyKindDeleteSized
 	InternalKeyKindMax             = base.InternalKeyKindMax
 	InternalKeyKindInvalid         = base.InternalKeyKindInvalid
 	InternalKeySeqNumBatch         = base.InternalKeySeqNumBatch

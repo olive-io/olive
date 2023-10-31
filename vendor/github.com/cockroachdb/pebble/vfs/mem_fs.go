@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -37,23 +36,22 @@ func NewMem() *MemFS {
 // at which point they are discarded and no longer visible.
 //
 // Expected usage:
-//
-//	strictFS := NewStrictMem()
-//	db := Open(..., &Options{FS: strictFS})
-//	// Do and commit various operations.
-//	...
-//	// Prevent any more changes to finalized state.
-//	strictFS.SetIgnoreSyncs(true)
-//	// This will finish any ongoing background flushes, compactions but none of these writes will
-//	// be finalized since syncs are being ignored.
-//	db.Close()
-//	// Discard unsynced state.
-//	strictFS.ResetToSyncedState()
-//	// Allow changes to finalized state.
-//	strictFS.SetIgnoreSyncs(false)
-//	// Open the DB. This DB should have the same state as if the earlier strictFS operations and
-//	// db.Close() were not called.
-//	db := Open(..., &Options{FS: strictFS})
+//  strictFS := NewStrictMem()
+//  db := Open(..., &Options{FS: strictFS})
+//  // Do and commit various operations.
+//  ...
+//  // Prevent any more changes to finalized state.
+//  strictFS.SetIgnoreSyncs(true)
+//  // This will finish any ongoing background flushes, compactions but none of these writes will
+//  // be finalized since syncs are being ignored.
+//  db.Close()
+//  // Discard unsynced state.
+//  strictFS.ResetToSyncedState()
+//  // Allow changes to finalized state.
+//  strictFS.SetIgnoreSyncs(false)
+//  // Open the DB. This DB should have the same state as if the earlier strictFS operations and
+//  // db.Close() were not called.
+//  db := Open(..., &Options{FS: strictFS})
 func NewStrictMem() *MemFS {
 	return &MemFS{
 		root:   newRootMemNode(),
@@ -64,8 +62,7 @@ func NewStrictMem() *MemFS {
 // NewMemFile returns a memory-backed File implementation. The memory-backed
 // file takes ownership of data.
 func NewMemFile(data []byte) File {
-	n := &memNode{}
-	n.refs.Store(1)
+	n := &memNode{refs: 1}
 	n.mu.data = data
 	n.mu.modTime = time.Now()
 	return &memFile{
@@ -79,29 +76,11 @@ type MemFS struct {
 	mu   sync.Mutex
 	root *memNode
 
-	// lockFiles holds a map of open file locks. Presence in this map indicates
-	// a file lock is currently held. Keys are strings holding the path of the
-	// locked file. The stored value is untyped and  unused; only presence of
-	// the key within the map is significant.
-	lockedFiles sync.Map
 	strict      bool
 	ignoreSyncs bool
-	// Windows has peculiar semantics with respect to hard links and deleting
-	// open files. In tests meant to exercise this behavior, this flag can be
-	// set to error if removing an open file.
-	windowsSemantics bool
 }
 
 var _ FS = &MemFS{}
-
-// UseWindowsSemantics configures whether the MemFS implements Windows-style
-// semantics, in particular with respect to whether any of an open file's links
-// may be removed. Windows semantics default to off.
-func (y *MemFS) UseWindowsSemantics(windowsSemantics bool) {
-	y.mu.Lock()
-	defer y.mu.Unlock()
-	y.windowsSemantics = windowsSemantics
-}
 
 // String dumps the contents of the MemFS.
 func (y *MemFS) String() string {
@@ -149,7 +128,6 @@ func (y *MemFS) ResetToSyncedState() {
 //   - "/", "foo", false
 //   - "/foo/", "bar", false
 //   - "/foo/bar/", "x", true
-//
 // Similarly, walking "/y/z/", with a trailing slash, will result in 3 calls to f:
 //   - "/", "y", false
 //   - "/y/", "z", false
@@ -215,7 +193,6 @@ func (y *MemFS) Create(fullname string) (File, error) {
 			ret = &memFile{
 				n:     n,
 				fs:    y,
-				read:  true,
 				write: true,
 			}
 		}
@@ -224,7 +201,7 @@ func (y *MemFS) Create(fullname string) (File, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.n.refs.Add(1)
+	atomic.AddInt32(&ret.n.refs, 1)
 	return ret, nil
 }
 
@@ -270,7 +247,7 @@ func (y *MemFS) Link(oldname, newname string) error {
 	})
 }
 
-func (y *MemFS) open(fullname string, openForWrite bool) (File, error) {
+func (y *MemFS) open(fullname string) (File, error) {
 	var ret *memFile
 	err := y.walk(fullname, func(dir *memNode, frag string, final bool) error {
 		if final {
@@ -283,10 +260,9 @@ func (y *MemFS) open(fullname string, openForWrite bool) (File, error) {
 			}
 			if n := dir.children[frag]; n != nil {
 				ret = &memFile{
-					n:     n,
-					fs:    y,
-					read:  true,
-					write: openForWrite,
+					n:    n,
+					fs:   y,
+					read: true,
 				}
 			}
 		}
@@ -302,28 +278,18 @@ func (y *MemFS) open(fullname string, openForWrite bool) (File, error) {
 			Err:  oserror.ErrNotExist,
 		}
 	}
-	ret.n.refs.Add(1)
+	atomic.AddInt32(&ret.n.refs, 1)
 	return ret, nil
 }
 
 // Open implements FS.Open.
 func (y *MemFS) Open(fullname string, opts ...OpenOption) (File, error) {
-	return y.open(fullname, false /* openForWrite */)
-}
-
-// OpenReadWrite implements FS.OpenReadWrite.
-func (y *MemFS) OpenReadWrite(fullname string, opts ...OpenOption) (File, error) {
-	f, err := y.open(fullname, true /* openForWrite */)
-	pathErr, ok := err.(*os.PathError)
-	if ok && pathErr.Err == oserror.ErrNotExist {
-		return y.Create(fullname)
-	}
-	return f, err
+	return y.open(fullname)
 }
 
 // OpenDir implements FS.OpenDir.
 func (y *MemFS) OpenDir(fullname string) (File, error) {
-	return y.open(fullname, false /* openForWrite */)
+	return y.open(fullname)
 }
 
 // Remove implements FS.Remove.
@@ -337,14 +303,11 @@ func (y *MemFS) Remove(fullname string) error {
 			if !ok {
 				return oserror.ErrNotExist
 			}
-			if y.windowsSemantics {
-				// Disallow removal of open files/directories which implements
-				// Windows semantics. This ensures that we don't regress in the
-				// ordering of operations and try to remove a file while it is
-				// still open.
-				if n := child.refs.Load(); n > 0 {
-					return oserror.ErrInvalid
-				}
+			// Disallow removal of open files/directories which implements Windows
+			// semantics. This ensures that we don't regress in the ordering of
+			// operations and try to remove a file while it is still open.
+			if n := atomic.LoadInt32(&child.refs); n > 0 {
+				return oserror.ErrInvalid
 			}
 			if len(child.children) > 0 {
 				return errNotEmpty
@@ -463,31 +426,9 @@ func (y *MemFS) MkdirAll(dirname string, perm os.FileMode) error {
 // Lock implements FS.Lock.
 func (y *MemFS) Lock(fullname string) (io.Closer, error) {
 	// FS.Lock excludes other processes, but other processes cannot see this
-	// process' memory. However some uses (eg, Cockroach tests) may open and
-	// close the same MemFS-backed database multiple times. We want mutual
-	// exclusion in this case too. See cockroachdb/cockroach#110645.
-	_, loaded := y.lockedFiles.Swap(fullname, nil /* the value itself is insignificant */)
-	if loaded {
-		// This file lock has already been acquired. On unix, this results in
-		// either EACCES or EAGAIN so we mimic.
-		return nil, syscall.EAGAIN
-	}
-	// Otherwise, we successfully acquired the lock. Locks are visible in the
-	// parent directory listing, and they also must be created under an existent
-	// directory. Create the path so that we have the normal detection of
-	// non-existent directory paths, and make the lock visible when listing
-	// directory entries.
-	f, err := y.Create(fullname)
-	if err != nil {
-		// "Release" the lock since we failed.
-		y.lockedFiles.Delete(fullname)
-		return nil, err
-	}
-	return &memFileLock{
-		y:        y,
-		f:        f,
-		fullname: fullname,
-	}, nil
+	// process' memory. We translate Lock into Create so that have the normal
+	// detection of non-existent directory paths.
+	return y.Create(fullname)
 }
 
 // List implements FS.List.
@@ -554,7 +495,7 @@ func (*MemFS) GetDiskUsage(string) (DiskUsage, error) {
 type memNode struct {
 	name  string
 	isDir bool
-	refs  atomic.Int32
+	refs  int32
 
 	// Mutable state.
 	// - For a file: data, syncedDate, modTime: A file is only being mutated by a single goroutine,
@@ -667,10 +608,8 @@ type memFile struct {
 	read, write bool
 }
 
-var _ File = (*memFile)(nil)
-
 func (f *memFile) Close() error {
-	if n := f.n.refs.Add(-1); n < 0 {
+	if n := atomic.AddInt32(&f.n.refs, -1); n < 0 {
 		panic(fmt.Sprintf("pebble: close of unopened file: %d", n))
 	}
 	f.n = nil
@@ -706,11 +645,7 @@ func (f *memFile) ReadAt(p []byte, off int64) (int, error) {
 	if off >= int64(len(f.n.mu.data)) {
 		return 0, io.EOF
 	}
-	n := copy(p, f.n.mu.data[off:])
-	if n < len(p) {
-		return n, io.EOF
-	}
-	return n, nil
+	return copy(p, f.n.mu.data[off:]), nil
 }
 
 func (f *memFile) Write(p []byte) (int, error) {
@@ -743,32 +678,6 @@ func (f *memFile) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (f *memFile) WriteAt(p []byte, ofs int64) (int, error) {
-	if !f.write {
-		return 0, errors.New("pebble/vfs: file was not created for writing")
-	}
-	if f.n.isDir {
-		return 0, errors.New("pebble/vfs: cannot write a directory")
-	}
-	f.n.mu.Lock()
-	defer f.n.mu.Unlock()
-	f.n.mu.modTime = time.Now()
-
-	for len(f.n.mu.data) < int(ofs)+len(p) {
-		f.n.mu.data = append(f.n.mu.data, 0)
-	}
-
-	n := copy(f.n.mu.data[int(ofs):int(ofs)+len(p)], p)
-	if n != len(p) {
-		panic("stuff")
-	}
-
-	return len(p), nil
-}
-
-func (f *memFile) Prefetch(offset int64, length int64) error { return nil }
-func (f *memFile) Preallocate(offset, length int64) error    { return nil }
-
 func (f *memFile) Stat() (os.FileInfo, error) {
 	return f.n, nil
 }
@@ -794,39 +703,8 @@ func (f *memFile) Sync() error {
 	return nil
 }
 
-func (f *memFile) SyncData() error {
-	return f.Sync()
-}
-
-func (f *memFile) SyncTo(length int64) (fullSync bool, err error) {
-	// NB: This SyncTo implementation lies, with its return values claiming it
-	// synced the data up to `length`. When fullSync=false, SyncTo provides no
-	// durability guarantees, so this can help surface bugs where we improperly
-	// rely on SyncTo providing durability.
-	return false, nil
-}
-
-func (f *memFile) Fd() uintptr {
-	return InvalidFd
-}
-
 // Flush is a no-op and present only to prevent buffering at higher levels
 // (e.g. it prevents sstable.Writer from using a bufio.Writer).
 func (f *memFile) Flush() error {
 	return nil
-}
-
-type memFileLock struct {
-	y        *MemFS
-	f        File
-	fullname string
-}
-
-func (l *memFileLock) Close() error {
-	if l.y == nil {
-		return nil
-	}
-	l.y.lockedFiles.Delete(l.fullname)
-	l.y = nil
-	return l.f.Close()
 }

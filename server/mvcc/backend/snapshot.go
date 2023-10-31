@@ -38,10 +38,7 @@ type snapshot struct {
 
 func (s *snapshot) WriteTo(prefix []byte, w io.Writer) (n int64, err error) {
 	ro := &pebble.IterOptions{}
-	iter, err := s.sn.NewIter(ro)
-	if err != nil {
-		return 0, err
-	}
+	iter := s.sn.NewIter(ro)
 	defer iter.Close()
 
 	values := make([]*api.RaftInternalKV, 0)
@@ -54,10 +51,7 @@ func (s *snapshot) WriteTo(prefix []byte, w io.Writer) (n int64, err error) {
 		if len(prefix) != 0 && !bytes.HasPrefix(key, prefix) {
 			continue
 		}
-		val, e1 := iter.ValueAndErr()
-		if e1 != nil {
-			return 0, e1
-		}
+		val := iter.Value()
 		rkv := &api.RaftInternalKV{
 			Key:   bytes.Clone(key),
 			Value: bytes.Clone(val),

@@ -16,7 +16,6 @@ import "github.com/cockroachdb/pebble/internal/base"
 // keyspan.FragmentIterator with point keys.
 type InternalIteratorShim struct {
 	miter   MergingIter
-	mbufs   MergingBuffers
 	span    *Span
 	iterKey base.InternalKey
 }
@@ -27,7 +26,7 @@ var _ base.InternalIterator = &InternalIteratorShim{}
 // Init initializes the internal iterator shim to merge the provided fragment
 // iterators.
 func (i *InternalIteratorShim) Init(cmp base.Compare, iters ...FragmentIterator) {
-	i.miter.Init(cmp, noopTransform, &i.mbufs, iters...)
+	i.miter.Init(cmp, noopTransform, iters...)
 }
 
 // Span returns the span containing the full set of keys over the key span at
@@ -39,62 +38,57 @@ func (i *InternalIteratorShim) Span() *Span {
 // SeekGE implements (base.InternalIterator).SeekGE.
 func (i *InternalIteratorShim) SeekGE(
 	key []byte, flags base.SeekGEFlags,
-) (*base.InternalKey, base.LazyValue) {
+) (*base.InternalKey, []byte) {
 	panic("unimplemented")
 }
 
 // SeekPrefixGE implements (base.InternalIterator).SeekPrefixGE.
 func (i *InternalIteratorShim) SeekPrefixGE(
 	prefix, key []byte, flags base.SeekGEFlags,
-) (*base.InternalKey, base.LazyValue) {
+) (*base.InternalKey, []byte) {
 	panic("unimplemented")
 }
 
 // SeekLT implements (base.InternalIterator).SeekLT.
 func (i *InternalIteratorShim) SeekLT(
 	key []byte, flags base.SeekLTFlags,
-) (*base.InternalKey, base.LazyValue) {
+) (*base.InternalKey, []byte) {
 	panic("unimplemented")
 }
 
 // First implements (base.InternalIterator).First.
-func (i *InternalIteratorShim) First() (*base.InternalKey, base.LazyValue) {
+func (i *InternalIteratorShim) First() (*base.InternalKey, []byte) {
 	i.span = i.miter.First()
 	for i.span != nil && i.span.Empty() {
 		i.span = i.miter.Next()
 	}
 	if i.span == nil {
-		return nil, base.LazyValue{}
+		return nil, nil
 	}
 	i.iterKey = base.InternalKey{UserKey: i.span.Start, Trailer: i.span.Keys[0].Trailer}
-	return &i.iterKey, base.MakeInPlaceValue(i.span.End)
+	return &i.iterKey, i.span.End
 }
 
 // Last implements (base.InternalIterator).Last.
-func (i *InternalIteratorShim) Last() (*base.InternalKey, base.LazyValue) {
+func (i *InternalIteratorShim) Last() (*base.InternalKey, []byte) {
 	panic("unimplemented")
 }
 
 // Next implements (base.InternalIterator).Next.
-func (i *InternalIteratorShim) Next() (*base.InternalKey, base.LazyValue) {
+func (i *InternalIteratorShim) Next() (*base.InternalKey, []byte) {
 	i.span = i.miter.Next()
 	for i.span != nil && i.span.Empty() {
 		i.span = i.miter.Next()
 	}
 	if i.span == nil {
-		return nil, base.LazyValue{}
+		return nil, nil
 	}
 	i.iterKey = base.InternalKey{UserKey: i.span.Start, Trailer: i.span.Keys[0].Trailer}
-	return &i.iterKey, base.MakeInPlaceValue(i.span.End)
-}
-
-// NextPrefix implements (base.InternalIterator).NextPrefix.
-func (i *InternalIteratorShim) NextPrefix([]byte) (*base.InternalKey, base.LazyValue) {
-	panic("unimplemented")
+	return &i.iterKey, i.span.End
 }
 
 // Prev implements (base.InternalIterator).Prev.
-func (i *InternalIteratorShim) Prev() (*base.InternalKey, base.LazyValue) {
+func (i *InternalIteratorShim) Prev() (*base.InternalKey, []byte) {
 	panic("unimplemented")
 }
 

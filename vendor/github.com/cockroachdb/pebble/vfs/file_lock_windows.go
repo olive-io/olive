@@ -9,30 +9,29 @@ package vfs
 
 import (
 	"io"
-
-	"golang.org/x/sys/windows"
+	"syscall"
 )
 
-// lockCloser hides all of an windows.Handle's methods, except for Close.
+// lockCloser hides all of an syscall.Handle's methods, except for Close.
 type lockCloser struct {
-	fd windows.Handle
+	fd syscall.Handle
 }
 
 func (l lockCloser) Close() error {
-	return windows.Close(l.fd)
+	return syscall.Close(l.fd)
 }
 
 // Lock locks the given file. On Windows, Locking will fail if the file is
 // already open by the current process.
 func (defaultFS) Lock(name string) (io.Closer, error) {
-	p, err := windows.UTF16PtrFromString(name)
+	p, err := syscall.UTF16PtrFromString(name)
 	if err != nil {
 		return nil, err
 	}
-	fd, err := windows.CreateFile(p,
-		windows.GENERIC_READ|windows.GENERIC_WRITE,
-		0, nil, windows.CREATE_ALWAYS,
-		windows.FILE_ATTRIBUTE_NORMAL,
+	fd, err := syscall.CreateFile(p,
+		syscall.GENERIC_READ|syscall.GENERIC_WRITE,
+		0, nil, syscall.CREATE_ALWAYS,
+		syscall.FILE_ATTRIBUTE_NORMAL,
 		0,
 	)
 	if err != nil {

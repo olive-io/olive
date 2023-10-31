@@ -17,7 +17,7 @@ package server
 import (
 	"context"
 	"errors"
-	"path"
+	"fmt"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -41,83 +41,84 @@ const (
 	applyTimeout = time.Second
 )
 
-func (s *OliveServer) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
-	definitions := &api.Definition{
-		Id:      req.Id,
-		Name:    req.Name,
-		Version: 0,
-		Content: req.Content,
-	}
-
-	data, _ := definitions.Marshal()
-
-	key := path.Join("/definitions", req.Id)
-	putReq := &api.PutRequest{
-		Key:         []byte(key),
-		Value:       data,
-		PrevKv:      false,
-		IgnoreValue: false,
-	}
-
-	var rsp *api.PutResponse
-	rsp, err = s.Put(ctx, 0, putReq)
-	if err != nil {
-		return
-	}
-
-	resp.Version = rsp.Header.Revision
-	return
-}
-
-func (s *OliveServer) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
-	key := path.Join("/definitions")
-	rangeReq := &api.RangeRequest{
-		Key:          []byte(key),
-		Serializable: true,
-	}
-
-	var rsp *api.RangeResponse
-	rsp, err = s.Range(ctx, 0, rangeReq)
-	if err != nil {
-		return
-	}
-
-	resp.Definition = make([]*api.Definition, 0)
-	for _, kv := range rsp.Kvs {
-		definitions := &api.Definition{}
-		if err = definitions.Unmarshal(kv.Value); err == nil {
-			resp.Definition = append(resp.Definition, definitions)
-		}
-	}
-
-	return
-}
-
-func (s *OliveServer) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *OliveServer) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
-	key := path.Join("/definitions", req.Id)
-	deleteReq := &api.DeleteRangeRequest{
-		Key: []byte(key),
-	}
-
-	var rsp *api.DeleteRangeResponse
-	rsp, err = s.DeleteRange(ctx, 0, deleteReq)
-	if err != nil {
-		return
-	}
-
-	_ = rsp
-	return
-}
-
-func (s *OliveServer) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
+//
+//func (s *OliveServer) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
+//	definitions := &api.Definition{
+//		Id:      req.Id,
+//		Name:    req.Name,
+//		Version: 0,
+//		Content: req.Content,
+//	}
+//
+//	data, _ := definitions.Marshal()
+//
+//	key := path.Join("/definitions", req.Id)
+//	putReq := &api.PutRequest{
+//		Key:         []byte(key),
+//		Value:       data,
+//		PrevKv:      false,
+//		IgnoreValue: false,
+//	}
+//
+//	var rsp *api.PutResponse
+//	rsp, err = s.Put(ctx, 0, putReq)
+//	if err != nil {
+//		return
+//	}
+//
+//	resp.Version = rsp.Header.Revision
+//	return
+//}
+//
+//func (s *OliveServer) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
+//	key := path.Join("/definitions")
+//	rangeReq := &api.RangeRequest{
+//		Key:          []byte(key),
+//		Serializable: true,
+//	}
+//
+//	var rsp *api.RangeResponse
+//	rsp, err = s.Range(ctx, 0, rangeReq)
+//	if err != nil {
+//		return
+//	}
+//
+//	resp.Definition = make([]*api.Definition, 0)
+//	for _, kv := range rsp.Kvs {
+//		definitions := &api.Definition{}
+//		if err = definitions.Unmarshal(kv.Value); err == nil {
+//			resp.Definition = append(resp.Definition, definitions)
+//		}
+//	}
+//
+//	return
+//}
+//
+//func (s *OliveServer) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (*api.GetDefinitionResponse, error) {
+//	//TODO implement me
+//	panic("implement me")
+//}
+//
+//func (s *OliveServer) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
+//	key := path.Join("/definitions", req.Id)
+//	deleteReq := &api.DeleteRangeRequest{
+//		Key: []byte(key),
+//	}
+//
+//	var rsp *api.DeleteRangeResponse
+//	rsp, err = s.DeleteRange(ctx, 0, deleteReq)
+//	if err != nil {
+//		return
+//	}
+//
+//	_ = rsp
+//	return
+//}
+//
+//func (s *OliveServer) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (*api.ExecuteDefinitionResponse, error) {
+//	//TODO implement me
+//	panic("implement me")
+//}
 
 func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeRequest) (*api.RangeResponse, error) {
 	_, exists := s.getShard(shardID)
@@ -129,6 +130,7 @@ func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeReq
 		s.Logger(),
 		traceutil.Field{Key: "range_begin", Value: string(r.Key)},
 		traceutil.Field{Key: "range_end", Value: string(r.RangeEnd)},
+		traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
 	)
 	ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
@@ -140,6 +142,7 @@ func (s *OliveServer) Range(ctx context.Context, shardID uint64, r *api.RangeReq
 			trace.AddField(
 				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
 				traceutil.Field{Key: "response_revision", Value: resp.Header.Revision},
+				traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
 			)
 		}
 		trace.LogIfLong(traceThreshold)
@@ -202,6 +205,7 @@ func (s *OliveServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest
 		trace := traceutil.New("transaction",
 			s.Logger(),
 			traceutil.Field{Key: "read_only", Value: true},
+			traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
 		)
 		ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
@@ -253,13 +257,13 @@ func (s *OliveServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest
 	return resp.(*api.TxnResponse), nil
 }
 
-func isTxnSerializable(r *api.TxnRequest) bool {
-	for _, u := range r.Success {
+func isTxnSerializable(rt *api.TxnRequest) bool {
+	for _, u := range rt.Success {
 		if r := u.GetRequestRange(); r == nil || !r.Serializable {
 			return false
 		}
 	}
-	for _, u := range r.Failure {
+	for _, u := range rt.Failure {
 		if r := u.GetRequestRange(); r == nil || !r.Serializable {
 			return false
 		}
@@ -267,13 +271,13 @@ func isTxnSerializable(r *api.TxnRequest) bool {
 	return true
 }
 
-func isTxnReadonly(r *api.TxnRequest) bool {
-	for _, u := range r.Success {
+func isTxnReadonly(tr *api.TxnRequest) bool {
+	for _, u := range tr.Success {
 		if r := u.GetRequestRange(); r == nil {
 			return false
 		}
 	}
-	for _, u := range r.Failure {
+	for _, u := range tr.Failure {
 		if r := u.GetRequestRange(); r == nil {
 			return false
 		}
@@ -319,6 +323,7 @@ func (s *OliveServer) Compact(ctx context.Context, shardID uint64, r *api.Compac
 	}
 	resp.Header.Revision = s.kv.Rev()
 	trace.AddField(traceutil.Field{Key: "response_revision", Value: resp.Header.Revision})
+	trace.AddField(traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)})
 	return resp, nil
 }
 
@@ -388,7 +393,7 @@ func (s *OliveServer) processInternalRaftRequestOnce(ctx context.Context, shardI
 	}
 
 	r.Header = &api.RequestHeader{
-		ID: s.reqIDGen.Next(),
+		ID: ssm.reqIDGen.Next(),
 	}
 
 	// check authinfo if it is not InternalAuthenticateRequest

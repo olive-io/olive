@@ -40,10 +40,7 @@ func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limi
 	}
 
 	options := &pebble.IterOptions{}
-	iter, err := tx.NewIter(options)
-	if err != nil {
-		return nil, nil, err
-	}
+	iter := tx.NewIter(options)
 	defer iter.Close()
 
 	startKey = bytesutil.PathJoin(bucket.Name(), startKey)
@@ -58,11 +55,7 @@ func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limi
 	}
 
 	for iter.SeekGE(startKey); iteratorIsValid(iter) && isMatch(iter.Key()); iter.Next() {
-		var value []byte
-		value, err = iter.ValueAndErr()
-		if err != nil {
-			return
-		}
+		value := iter.Value()
 
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
 		keys = append(keys, key)
@@ -78,21 +71,15 @@ func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limi
 
 func unsafeForEach(tx *pebble.Batch, bucket IBucket, visitor func(k, v []byte) error) error {
 	options := &pebble.IterOptions{}
-	iter, err := tx.NewIter(options)
-	if err != nil {
-		return err
-	}
+	iter := tx.NewIter(options)
 	defer iter.Close()
 
 	prefix := bytesutil.PathJoin(bucket.Name())
 	for iter.SeekGE(prefix); iteratorIsValid(iter); iter.Next() {
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
-		var value []byte
-		if value, err = iter.ValueAndErr(); err != nil {
-			return err
-		}
+		value := iter.Value()
 
-		if err = visitor(key, bytes.Clone(value)); err != nil {
+		if err := visitor(key, bytes.Clone(value)); err != nil {
 			return err
 		}
 	}

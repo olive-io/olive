@@ -16,25 +16,25 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/lni/dragonboat/v4"
 	dbc "github.com/lni/dragonboat/v4/config"
+	"github.com/lni/dragonboat/v4/raftio"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/config"
 	"github.com/olive-io/olive/server/mvcc"
 	"github.com/olive-io/olive/server/mvcc/backend"
-	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
 const (
-	DefaultSnapshotCount = 100000
-
-	recommendedMaxRequestBytes = 10
+	recommendedMaxRequestBytes = 10 * 1024 * 1024
 )
 
 var (
@@ -42,16 +42,9 @@ var (
 )
 
 type OliveServer struct {
-
-	// inflightSnapshots holds count the number of snapshots currently inflight.
-	inflightSnapshots int64 // must use atomic operations to access; keep 64-bit aligned.
-
 	nh *dragonboat.NodeHost
 
 	Cfg config.ServerConfig
-
-	shardMu   sync.RWMutex
-	ShardCfgs map[uint64]config.SharedConfig
 
 	lgMu *sync.RWMutex
 	lg   *zap.Logger
@@ -73,10 +66,10 @@ type OliveServer struct {
 	bemu sync.Mutex
 	be   backend.IBackend
 
-	reqIDGen *idutil.Generator
+	raftEventCh chan raftio.LeaderInfo
 
 	smu sync.RWMutex
-	sms map[uint64]*stateMachine
+	sms map[uint64]*shard
 
 	apply applier
 
@@ -103,13 +96,19 @@ func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
 	bepath := cfg.BackendPath()
 	be := openBackend(cfg, nil)
 
+	relCh := make(chan raftio.LeaderInfo, 10)
+	rel := newRaftEventListener(relCh)
+
+	sel := newSystemEventListener()
+
 	nhc := dbc.NodeHostConfig{
 		WALDir:              cfg.WALPath(),
 		NodeHostDir:         bepath,
 		RTTMillisecond:      cfg.RTTMillisecond,
+		RaftAddress:         cfg.RaftAddress,
 		EnableMetrics:       true,
-		RaftEventListener:   nil,
-		SystemEventListener: nil,
+		RaftEventListener:   rel,
+		SystemEventListener: sel,
 	}
 
 	nh, err := dragonboat.NewNodeHost(nhc)
@@ -117,37 +116,42 @@ func NewServer(cfg config.ServerConfig) (*OliveServer, error) {
 		return nil, err
 	}
 
+	kv := mvcc.NewStore(lg, be, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
+
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &OliveServer{
-		inflightSnapshots: 0,
-		nh:                nh,
-		Cfg:               cfg,
-		ShardCfgs:         map[uint64]config.SharedConfig{},
-		lgMu:              nil,
-		lg:                nil,
-		w:                 nil,
-		stop:              nil,
-		stopping:          nil,
-		done:              nil,
-		kv:                nil,
-		ctx:               nil,
-		cancel:            nil,
-		bemu:              sync.Mutex{},
-		be:                be,
-		reqIDGen:          nil,
-		sms:               map[uint64]*stateMachine{},
-		apply:             nil,
-		wgMu:              sync.RWMutex{},
-		wg:                sync.WaitGroup{},
+		nh:          nh,
+		Cfg:         cfg,
+		lgMu:        new(sync.RWMutex),
+		lg:          lg,
+		w:           wait.New(),
+		stop:        make(chan struct{}),
+		stopping:    make(chan struct{}, 1),
+		done:        make(chan struct{}),
+		kv:          kv,
+		ctx:         ctx,
+		cancel:      cancel,
+		bemu:        sync.Mutex{},
+		be:          be,
+		raftEventCh: relCh,
+		sms:         map[uint64]*shard{},
+		wgMu:        sync.RWMutex{},
+		wg:          sync.WaitGroup{},
 	}
+	s.apply = s.newApplierBackend()
 
 	return s, nil
 }
 
-func (s *OliveServer) StartReplica(sharedCfg config.SharedConfig) error {
+func (s *OliveServer) Start() {
+	s.GoAttach(s.processRaftEvent)
+}
 
+func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
+
+	shardID := GenHash([]byte(cfg.Name))
 	rc := dbc.Config{
-		ReplicaID:          sharedCfg.ClusterID,
-		ShardID:            sharedCfg.SharedID,
+		ShardID:            shardID,
 		CheckQuorum:        true,
 		PreVote:            s.Cfg.PreVote,
 		ElectionRTT:        s.Cfg.ElectionTicks,
@@ -157,13 +161,22 @@ func (s *OliveServer) StartReplica(sharedCfg config.SharedConfig) error {
 		WaitReady:          true,
 	}
 
-	join := sharedCfg.NewCluster
-
-	s.shardMu.Lock()
-	s.ShardCfgs[sharedCfg.SharedID] = sharedCfg
-	s.shardMu.Unlock()
+	join := cfg.NewCluster
 
 	members := map[uint64]string{}
+	for key, urlText := range cfg.PeerURLs {
+		URL, err := url.Parse(urlText.String())
+		if err != nil {
+			return fmt.Errorf("invalid url: %v", urlText.String())
+		}
+		replicaID := GenHash([]byte(key))
+		raftAddress := URL.Host
+		if raftAddress == s.Cfg.RaftAddress {
+			rc.ReplicaID = replicaID
+		}
+		members[replicaID] = raftAddress
+	}
+
 	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
 	if err != nil {
 		return err
@@ -219,9 +232,43 @@ func (s *OliveServer) Backend() backend.IBackend {
 	return s.be
 }
 
-func (s *OliveServer) getShard(shardID uint64) (*stateMachine, bool) {
-	s.shardMu.RLock()
-	defer s.shardMu.RUnlock()
+// HardStop stops the server without coordination with other raft group in the server.
+func (s *OliveServer) HardStop() {
+	select {
+	case s.stop <- struct{}{}:
+	case <-s.done:
+		return
+	}
+	<-s.done
+}
+
+// StopNotify returns a channel that receives an empty struct
+// when the server is stopped.
+func (s *OliveServer) StopNotify() <-chan struct{} { return s.done }
+
+// StoppingNotify returns a channel that receives an empty struct
+// when the server is being stopped.
+func (s *OliveServer) StoppingNotify() <-chan struct{} { return s.stopping }
+
+func (s *OliveServer) processRaftEvent() {
+	for {
+		select {
+		case <-s.stop:
+			return
+		case ch := <-s.raftEventCh:
+			sm, ok := s.getShard(ch.ShardID)
+			if ok {
+				sm.setLead(ch.LeaderID)
+				sm.setTerm(ch.Term)
+				sm.ChangeNotify()
+			}
+		}
+	}
+}
+
+func (s *OliveServer) getShard(shardID uint64) (*shard, bool) {
+	s.smu.RLock()
+	defer s.smu.RUnlock()
 	ssm, ok := s.sms[shardID]
 	return ssm, ok
 }

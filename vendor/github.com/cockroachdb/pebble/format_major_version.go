@@ -28,13 +28,10 @@ import (
 // FormatVersion that the default corresponds to may change with time.
 type FormatMajorVersion uint64
 
-// SafeValue implements redact.SafeValue.
-func (v FormatMajorVersion) SafeValue() {}
-
 // String implements fmt.Stringer.
 func (v FormatMajorVersion) String() string {
-	// NB: This must not change. It's used as the value for the on-disk
-	// version marker file.
+	// NB: This must not change. It's used as the value for the the
+	// on-disk version marker file.
 	//
 	// Specifically, this value must always parse as a base 10 integer
 	// that fits in a uint64. We format it as zero-padded, 3-digit
@@ -113,69 +110,18 @@ const (
 
 	// 23.1 versions.
 
-	// FormatUnusedPrePebblev1MarkedCompacted is an unused format major version.
-	// This format major version was originally intended to ship in the 23.1
-	// release. It was later decided that this should be deferred until a
-	// subsequent release. The original ordering is preserved so as not to
-	// introduce breaking changes in Cockroach.
-	FormatUnusedPrePebblev1MarkedCompacted
-
-	// FormatSSTableValueBlocks is a format major version that adds support for
-	// storing values in value blocks in the sstable. Value block support is not
-	// necessarily enabled when writing sstables, when running with this format
-	// major version.
-	//
-	// WARNING: In development, so no production code should upgrade to this
-	// format, since a DB with this format major version will not actually
-	// interoperate correctly with another DB with the same format major
-	// version. This format major version is introduced so that tests can start
-	// being executed up to this version. Note that these tests succeed despite
-	// the incomplete support since they do not enable value blocks and use
-	// TableFormatPebblev2.
-	FormatSSTableValueBlocks
-
-	// FormatFlushableIngest is a format major version that enables lazy
-	// addition of ingested sstables into the LSM structure. When an ingest
-	// overlaps with a memtable, a record of the ingest is written to the WAL
-	// without waiting for a flush. Subsequent reads treat the ingested files as
-	// a level above the overlapping memtable. Once the memtable is flushed, the
-	// ingested files are moved into the lowest possible levels.
-	//
-	// This feature is behind a format major version because it required
-	// breaking changes to the WAL format.
-	FormatFlushableIngest
-
-	// 23.2 versions.
-
-	// FormatPrePebblev1MarkedCompacted is a format major version that guarantees
-	// that all sstables explicitly marked for compaction in the manifest (see
-	// FormatPrePebblev1Marked) have been compacted. Ratcheting to this format
-	// version will block (without holding mutexes) until all necessary
-	// compactions for files marked for compaction are complete.
+	// FormatPrePebblev1MarkedCompacted is a format major version that
+	// guarantees that all sstables explicitly marked for compaction in the
+	// manifest have been compacted. Ratcheting to this format version will block
+	// (without holding mutexes) until all necessary compactions for files marked
+	// for compaction are complete.
 	FormatPrePebblev1MarkedCompacted
 
-	// FormatDeleteSizedAndObsolete is a format major version that adds support
-	// for deletion tombstones that encode the size of the value they're
-	// expected to delete. This format major version is required before the
-	// associated key kind may be committed through batch applications or
-	// ingests. It also adds support for keys that are marked obsolete (see
-	// sstable/format.go for details).
-	FormatDeleteSizedAndObsolete
-
-	// FormatVirtualSSTables is a format major version that adds support for
-	// virtual sstables that can reference a sub-range of keys in an underlying
-	// physical sstable. This information is persisted through new,
-	// backward-incompatible fields in the Manifest, and therefore requires
-	// a format major version.
-	FormatVirtualSSTables
-
-	// internalFormatNewest holds the newest format major version, including
-	// experimental ones excluded from the exported FormatNewest constant until
-	// they've stabilized. Used in tests.
-	internalFormatNewest FormatMajorVersion = iota - 1
-
 	// FormatNewest always contains the most recent format major version.
-	FormatNewest FormatMajorVersion = internalFormatNewest
+	// NB: When adding new versions, the MaxTableFormat method should also be
+	// updated to return the maximum allowable version for the new
+	// FormatMajorVersion.
+	FormatNewest FormatMajorVersion = FormatPrePebblev1MarkedCompacted
 )
 
 // MaxTableFormat returns the maximum sstable.TableFormat that can be used at
@@ -189,12 +135,8 @@ func (v FormatMajorVersion) MaxTableFormat() sstable.TableFormat {
 		FormatSplitUserKeysMarkedCompacted:
 		return sstable.TableFormatPebblev1
 	case FormatRangeKeys, FormatMinTableFormatPebblev1, FormatPrePebblev1Marked,
-		FormatUnusedPrePebblev1MarkedCompacted:
+		FormatPrePebblev1MarkedCompacted:
 		return sstable.TableFormatPebblev2
-	case FormatSSTableValueBlocks, FormatFlushableIngest, FormatPrePebblev1MarkedCompacted:
-		return sstable.TableFormatPebblev3
-	case FormatDeleteSizedAndObsolete, FormatVirtualSSTables:
-		return sstable.TableFormatPebblev4
 	default:
 		panic(fmt.Sprintf("pebble: unsupported format major version: %s", v))
 	}
@@ -210,9 +152,7 @@ func (v FormatMajorVersion) MinTableFormat() sstable.TableFormat {
 		FormatRangeKeys:
 		return sstable.TableFormatLevelDB
 	case FormatMinTableFormatPebblev1, FormatPrePebblev1Marked,
-		FormatUnusedPrePebblev1MarkedCompacted, FormatSSTableValueBlocks,
-		FormatFlushableIngest, FormatPrePebblev1MarkedCompacted,
-		FormatDeleteSizedAndObsolete, FormatVirtualSSTables:
+		FormatPrePebblev1MarkedCompacted:
 		return sstable.TableFormatPebblev1
 	default:
 		panic(fmt.Sprintf("pebble: unsupported format major version: %s", v))
@@ -282,7 +222,7 @@ var formatMajorVersionMigrations = map[FormatMajorVersion]func(*DB) error{
 		// version that does not know about format major versions
 		// attempts to open the database, it will error avoiding
 		// accidental corruption.
-		if err := setCurrentFile(d.mu.versions.dirname, d.mu.versions.fs, base.FileNum(0).DiskFileNum()); err != nil {
+		if err := setCurrentFile(d.mu.versions.dirname, d.mu.versions.fs, 0); err != nil {
 			return err
 		}
 		return d.finalizeFormatVersUpgrade(FormatVersioned)
@@ -326,16 +266,6 @@ var formatMajorVersionMigrations = map[FormatMajorVersion]func(*DB) error{
 		}
 		return d.finalizeFormatVersUpgrade(FormatPrePebblev1Marked)
 	},
-	FormatUnusedPrePebblev1MarkedCompacted: func(d *DB) error {
-		// Intentional no-op.
-		return d.finalizeFormatVersUpgrade(FormatUnusedPrePebblev1MarkedCompacted)
-	},
-	FormatSSTableValueBlocks: func(d *DB) error {
-		return d.finalizeFormatVersUpgrade(FormatSSTableValueBlocks)
-	},
-	FormatFlushableIngest: func(d *DB) error {
-		return d.finalizeFormatVersUpgrade(FormatFlushableIngest)
-	},
 	FormatPrePebblev1MarkedCompacted: func(d *DB) error {
 		// Before finalizing the format major version, rewrite any sstables
 		// still marked for compaction. Note all format major versions
@@ -344,12 +274,6 @@ var formatMajorVersionMigrations = map[FormatMajorVersion]func(*DB) error{
 			return err
 		}
 		return d.finalizeFormatVersUpgrade(FormatPrePebblev1MarkedCompacted)
-	},
-	FormatDeleteSizedAndObsolete: func(d *DB) error {
-		return d.finalizeFormatVersUpgrade(FormatDeleteSizedAndObsolete)
-	},
-	FormatVirtualSSTables: func(d *DB) error {
-		return d.finalizeFormatVersUpgrade(FormatVirtualSSTables)
 	},
 }
 
@@ -373,7 +297,7 @@ func lookupFormatMajorVersion(
 	if vers == FormatDefault {
 		return 0, nil, errors.Newf("pebble: default format major version should not persisted", vers)
 	}
-	if vers > internalFormatNewest {
+	if vers > FormatNewest {
 		return 0, nil, errors.Newf("pebble: database %q written in format major version %d", dirname, vers)
 	}
 	return vers, m, nil
@@ -384,7 +308,9 @@ func lookupFormatMajorVersion(
 // provided in Options when the database was opened if the existing
 // database was written with a higher format version.
 func (d *DB) FormatMajorVersion() FormatMajorVersion {
-	return FormatMajorVersion(d.mu.formatVers.vers.Load())
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.mu.formatVers.vers
 }
 
 // RatchetFormatMajorVersion ratchets the opened database's format major
@@ -407,13 +333,13 @@ func (d *DB) ratchetFormatMajorVersionLocked(formatVers FormatMajorVersion) erro
 	if d.opts.ReadOnly {
 		return ErrReadOnly
 	}
-	if formatVers > internalFormatNewest {
-		// Guard against accidentally forgetting to update internalFormatNewest.
+	if formatVers > FormatNewest {
+		// Guard against accidentally forgetting to update FormatNewest.
 		return errors.Errorf("pebble: unknown format version %d", formatVers)
 	}
-	if currentVers := d.FormatMajorVersion(); currentVers > formatVers {
+	if d.mu.formatVers.vers > formatVers {
 		return errors.Newf("pebble: database already at format major version %d; cannot reduce to %d",
-			currentVers, formatVers)
+			d.mu.formatVers.vers, formatVers)
 	}
 	if d.mu.formatVers.ratcheting {
 		return errors.Newf("pebble: database format major version upgrade is in-progress")
@@ -421,7 +347,7 @@ func (d *DB) ratchetFormatMajorVersionLocked(formatVers FormatMajorVersion) erro
 	d.mu.formatVers.ratcheting = true
 	defer func() { d.mu.formatVers.ratcheting = false }()
 
-	for nextVers := d.FormatMajorVersion() + 1; nextVers <= formatVers; nextVers++ {
+	for nextVers := d.mu.formatVers.vers + 1; nextVers <= formatVers; nextVers++ {
 		if err := formatMajorVersionMigrations[nextVers](d); err != nil {
 			return errors.Wrapf(err, "migrating to version %d", nextVers)
 		}
@@ -432,7 +358,7 @@ func (d *DB) ratchetFormatMajorVersionLocked(formatVers FormatMajorVersion) erro
 		// update in-memory state (without ever dropping locks) after
 		// the upgrade is finalized. Here we assert that the upgrade
 		// did occur.
-		if d.FormatMajorVersion() != nextVers {
+		if d.mu.formatVers.vers != nextVers {
 			d.opts.Logger.Fatalf("pebble: successful migration to format version %d never finalized the upgrade", nextVers)
 		}
 	}
@@ -451,7 +377,7 @@ func (d *DB) finalizeFormatVersUpgrade(formatVers FormatMajorVersion) error {
 	if err := d.mu.formatVers.marker.Move(formatVers.String()); err != nil {
 		return err
 	}
-	d.mu.formatVers.vers.Store(uint64(formatVers))
+	d.mu.formatVers.vers = formatVers
 	d.opts.EventListener.FormatUpgrade(formatVers)
 	return nil
 }
@@ -550,24 +476,17 @@ var markFilesPrePebblev1 = func(tc *tableCacheContainer) findFilesFunc {
 		for l := numLevels - 1; l > 0; l-- {
 			iter := v.Levels[l].Iter()
 			for f := iter.First(); f != nil; f = iter.Next() {
-				if f.Virtual {
-					// Any physical sstable which has been virtualized must
-					// have already undergone this migration, and we don't
-					// need to worry about the virtual sstable themselves.
-					panic("pebble: unexpected virtual sstable during migration")
-				}
-				err = tc.withReader(
-					f.PhysicalMeta(), func(r *sstable.Reader) error {
-						tf, err := r.TableFormat()
-						if err != nil {
-							return err
-						}
-						if tf < sstable.TableFormatPebblev1 {
-							found = true
-							files[l] = append(files[l], f)
-						}
-						return nil
-					})
+				err = tc.withReader(f, func(r *sstable.Reader) error {
+					tf, err := r.TableFormat()
+					if err != nil {
+						return err
+					}
+					if tf < sstable.TableFormatPebblev1 {
+						found = true
+						files[l] = append(files[l], f)
+					}
+					return nil
+				})
 				if err != nil {
 					return
 				}
@@ -583,24 +502,31 @@ func (d *DB) markFilesLocked(findFn findFilesFunc) error {
 	jobID := d.mu.nextJobID
 	d.mu.nextJobID++
 
-	// Acquire a read state to have a view of the LSM and a guarantee that none
-	// of the referenced files will be deleted until we've unreferenced the read
-	// state. Some findFilesFuncs may read the files, requiring they not be
-	// deleted.
-	rs := d.loadReadState()
+	vers := d.mu.versions.currentVersion()
 	var (
 		found bool
 		files [numLevels][]*fileMetadata
 		err   error
 	)
 	func() {
-		defer rs.unrefLocked()
+		// Disable file deletions. Some migrations that mark files may need to
+		// read the files themselves. The LSM may be changing while the
+		// migration is determining which files to mark. That's ok, because
+		// after re-acquiring the mutex and acquiring the manifest lock, we'll
+		// discard any sstables that have been removed from the LSM. However, we
+		// also need to make sure that the files we try to open during the scan
+		// are not removed before we read them. This is preferable over
+		// gracefully handling nonexistent files because some environments (eg,
+		// Windows) error if you attempt to remove an open file.
+		d.disableFileDeletions()
+		defer d.enableFileDeletions()
+
 		// Note the unusual locking: unlock, defer Lock(). The scan of the files in
 		// the version does not need to block other operations that require the
 		// DB.mu. Drop it for the scan, before re-acquiring it.
 		d.mu.Unlock()
 		defer d.mu.Lock()
-		found, files, err = findFn(rs.current)
+		found, files, err = findFn(vers)
 	}()
 	if err != nil {
 		return err
@@ -621,7 +547,7 @@ func (d *DB) markFilesLocked(findFn findFilesFunc) error {
 	// Lock the manifest for a coherent view of the LSM. The database lock has
 	// been re-acquired by the defer within the above anonymous function.
 	d.mu.versions.logLock()
-	vers := d.mu.versions.currentVersion()
+	vers = d.mu.versions.currentVersion()
 	for l, filesToMark := range files {
 		if len(filesToMark) == 0 {
 			continue

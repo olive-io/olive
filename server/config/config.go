@@ -37,6 +37,24 @@ const (
 	// LocalTime  = false // use computers local time, UTC by default
 	// Compress   = false // compress the rotated log in gzip format
 	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
+
+	DefaultCacheSize = 10 * 1024
+
+	DefaultRTTMillisecond = 200
+
+	DefaultSnapshotCount = 10
+
+	DefaultBackendBatchInterval = time.Second * 3
+	DefaultBatchLimit           = 100
+
+	DefaultElectionTicks = 10
+
+	DefaultTickMs = 1
+
+	DefaultCompactionBatchLimit = 100
+
+	DefaultMaxRequestBytes      = 10 * 1024 * 1024
+	DefaultWarningApplyDuration = time.Second * 5
 )
 
 var (
@@ -55,14 +73,6 @@ type ServerConfig struct {
 
 	SnapshotCount uint64
 
-	// SnapshotCatchUpEntries is the number of entries for a slow follower
-	// to catch-up after compacting the raft storage entries.
-	// We expect the follower has a millisecond level latency with the leader.
-	// The max throughput is around 10K. Keep a 5K entries is enough for helping
-	// follower to catch up.
-	// WARNING: only change this for tests. Always use "DefaultSnapshotCatchUpEntries"
-	SnapshotCatchUpEntries uint64
-
 	// BackendBatchInterval is the maximum time before commit the backend transaction.
 	BackendBatchInterval time.Duration
 	// BackendBatchLimit is the maximum operations before commit the backend transaction.
@@ -74,6 +84,8 @@ type ServerConfig struct {
 	// PreVote is true to enable Raft Pre-Vote.
 	PreVote bool
 
+	CompactionBatchLimit int
+
 	// MaxRequestBytes is the maximum request size to send over raft.
 	MaxRequestBytes uint
 
@@ -82,6 +94,33 @@ type ServerConfig struct {
 	// ExperimentalTxnModeWriteWithSharedBuffer enable write transaction to use
 	// a shared buffer in its readonly check operations.
 	ExperimentalTxnModeWriteWithSharedBuffer bool `json:"experimental-txn-mode-write-with-shared-buffer"`
+
+	RaftAddress string
+}
+
+func NewServiceConfig(Name, dataDir, RaftAddress string) ServerConfig {
+	lg := NewLoggerConfig()
+	_ = lg.Apply()
+	cfg := ServerConfig{
+		Logger:                                   lg,
+		Name:                                     Name,
+		CacheSize:                                DefaultCacheSize,
+		DataDir:                                  dataDir,
+		RTTMillisecond:                           DefaultRTTMillisecond,
+		SnapshotCount:                            DefaultSnapshotCount,
+		BackendBatchInterval:                     DefaultBackendBatchInterval,
+		BackendBatchLimit:                        DefaultBatchLimit,
+		TickMs:                                   DefaultTickMs,
+		ElectionTicks:                            DefaultElectionTicks,
+		PreVote:                                  false,
+		CompactionBatchLimit:                     DefaultCompactionBatchLimit,
+		MaxRequestBytes:                          DefaultMaxRequestBytes,
+		WarningApplyDuration:                     DefaultWarningApplyDuration,
+		ExperimentalTxnModeWriteWithSharedBuffer: false,
+		RaftAddress:                              RaftAddress,
+	}
+
+	return cfg
 }
 
 func (c *ServerConfig) BackendPath() string { return datadir.ToBackendFileName(c.DataDir) }
@@ -100,10 +139,10 @@ func (c *ServerConfig) ReqTimeout() time.Duration {
 	return 5*time.Second + 2*time.Duration(c.ElectionTicks*c.TickMs)*time.Millisecond
 }
 
-type SharedConfig struct {
-	ClusterID uint64
-	SharedID  uint64
+type ShardConfig struct {
+	Name string `json:"name"`
 
-	PeerURLs   types.URLsMap
+	PeerURLs types.URLsMap
+
 	NewCluster bool
 }

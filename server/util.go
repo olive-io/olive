@@ -106,8 +106,8 @@ func isNil(msg proto.Message) bool {
 	return msg == nil || reflect.ValueOf(msg).IsNil()
 }
 
-func hash(name []byte) uint64 {
-	h := fnv.New64a()
+func GenHash(name []byte) uint64 {
+	h := fnv.New32a()
 	h.Write(name)
-	return h.Sum64()
+	return uint64(h.Sum32())
 }

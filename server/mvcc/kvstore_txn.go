@@ -19,11 +19,12 @@ import (
 	"fmt"
 
 	"github.com/olive-io/olive/api"
-backend."github.com/olive-io/olive/server/mvcc/backend"
-"github.com/olive-io/olive/server/mvcc/buckets"
-"go.etcd.io/etcd/pkg/v3/traceutil"
-"go.uber.org/zap"
+	"github.com/olive-io/olive/server/mvcc/backend"
+	"github.com/olive-io/olive/server/mvcc/buckets"
+	"go.etcd.io/etcd/pkg/v3/traceutil"
+	"go.uber.org/zap"
 )
+
 type storeTxnRead struct {
 	s  *store
 	tx backend.IReadTx

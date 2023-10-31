@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	dlg "github.com/lni/dragonboat/v4/logger"
 	"go.etcd.io/etcd/client/pkg/v3/logutil"
@@ -32,6 +33,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	loggerOnce sync.Once
 )
 
 type LoggerConfig struct {
@@ -44,8 +49,11 @@ type LoggerConfig struct {
 	ZapLoggerBuilder func(*LoggerConfig) error
 
 	LogLevel string `json:"log-level"`
+
 	// Pkgs sets the Level for the packages of dragonboat
-	Pkgs string `json:"log-pkgs"`
+	Pkgs           string `json:"log-pkgs"`
+	dragonboatFlag int32
+
 	// LogOutputs is either:
 	//  - "default" as os.Stderr,
 	//  - "stderr" as os.Stderr,
@@ -270,22 +278,32 @@ func setupLogRotation(logOutputs []string, logRotateConfigJSON string) error {
 
 // AdaptDragonboatLoggers adapt the Dragonboat library Logger
 func (cfg *LoggerConfig) adaptDragonboatLoggers() {
+	if atomic.LoadInt32(&cfg.dragonboatFlag) > 0 {
+		return
+	}
+
+	defer atomic.StoreInt32(&cfg.dragonboatFlag, 1)
+
 	lgs := map[string]*dragonboatLogger{}
 	pkgs := map[string]string{}
 	_ = json.Unmarshal([]byte(cfg.Pkgs), &pkgs)
 	for name, pkgLevel := range pkgs {
 		level := cfg.convertToPkgLevel(pkgLevel)
 		dlg.GetLogger(name).SetLevel(level)
-		lgs[name] = &dragonboatLogger{lg: cfg.GetLogger(), level: level}
+		lg := cfg.GetLogger().WithOptions(zap.AddCallerSkip(2))
+		lgs[name] = &dragonboatLogger{lg: lg, level: level}
 	}
 	cfg.pkgLoggers = lgs
 
-	dlg.SetLoggerFactory(func(pkgName string) dlg.ILogger {
-		rl, ok := cfg.pkgLoggers[pkgName]
-		if !ok {
-			return &dragonboatLogger{lg: cfg.GetLogger(), level: cfg.convertToPkgLevel(cfg.LogLevel)}
-		}
-		return rl
+	loggerOnce.Do(func() {
+		dlg.SetLoggerFactory(func(pkgName string) dlg.ILogger {
+			rl, ok := cfg.pkgLoggers[pkgName]
+			if !ok {
+				lg := cfg.GetLogger().WithOptions(zap.AddCallerSkip(2))
+				return &dragonboatLogger{lg: lg, level: cfg.convertToPkgLevel(cfg.LogLevel)}
+			}
+			return rl
+		})
 	})
 }
 
@@ -322,33 +340,33 @@ func (lg *dragonboatLogger) Debugf(format string, args ...interface{}) {
 	if lg.level < dlg.DEBUG {
 		return
 	}
-	lg.lg.Sugar().Debugf(format, args...)
+	lg.lg.Debug(fmt.Sprintf(format, args...))
 }
 
 func (lg *dragonboatLogger) Infof(format string, args ...interface{}) {
 	if lg.level < dlg.INFO {
 		return
 	}
-	lg.lg.Sugar().Infof(format, args...)
+	lg.lg.Info(fmt.Sprintf(format, args...))
 }
 
 func (lg *dragonboatLogger) Warningf(format string, args ...interface{}) {
 	if lg.level < dlg.WARNING {
 		return
 	}
-	lg.lg.Sugar().Warnf(format, args...)
+	lg.lg.Warn(fmt.Sprintf(format, args...))
 }
 
 func (lg *dragonboatLogger) Errorf(format string, args ...interface{}) {
 	if lg.level < dlg.ERROR {
 		return
 	}
-	lg.lg.Sugar().Errorf(format, args...)
+	lg.lg.Error(fmt.Sprintf(format, args...))
 }
 
 func (lg *dragonboatLogger) Panicf(format string, args ...interface{}) {
 	if lg.level < dlg.CRITICAL {
 		return
 	}
-	lg.lg.Sugar().Panicf(format, args...)
+	lg.lg.Panic(fmt.Sprintf(format, args...))
 }

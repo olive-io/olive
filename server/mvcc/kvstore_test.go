@@ -34,13 +34,13 @@ import (
 
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/pkg/schedule"
-backend."github.com/olive-io/olive/server/mvcc/backend"
-"github.com/olive-io/olive/server/mvcc/backend/testing"
-"github.com/olive-io/olive/server/mvcc/buckets"
-"go.etcd.io/etcd/client/pkg/v3/testutil"
-"go.etcd.io/etcd/pkg/v3/traceutil"
+	"github.com/olive-io/olive/server/mvcc/backend"
+	"github.com/olive-io/olive/server/mvcc/backend/testing"
+	"github.com/olive-io/olive/server/mvcc/buckets"
+	"go.etcd.io/etcd/client/pkg/v3/testutil"
+	"go.etcd.io/etcd/pkg/v3/traceutil"
 
-"go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 func TestStoreRev(t *testing.T) {
@@ -916,6 +916,7 @@ func (b *fakeBackend) Recover(reader io.Reader) error                           
 func (b *fakeBackend) ForceCommit()                                               {}
 func (b *fakeBackend) Defrag() error                                              { return nil }
 func (b *fakeBackend) Close() error                                               { return nil }
+func (b *fakeBackend) AppendHooks(hook backend.IHooks)                            {}
 func (b *fakeBackend) SetTxPostLockInsideApplyHook(func())                        {}
 
 type indexGetResp struct {

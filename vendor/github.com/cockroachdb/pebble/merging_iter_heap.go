@@ -4,10 +4,16 @@
 
 package pebble
 
+type mergingIterItem struct {
+	index int
+	key   InternalKey
+	value []byte
+}
+
 type mergingIterHeap struct {
 	cmp     Compare
 	reverse bool
-	items   []*mergingIterLevel
+	items   []mergingIterItem
 }
 
 func (h *mergingIterHeap) len() int {
@@ -19,7 +25,7 @@ func (h *mergingIterHeap) clear() {
 }
 
 func (h *mergingIterHeap) less(i, j int) bool {
-	ikey, jkey := h.items[i].iterKey, h.items[j].iterKey
+	ikey, jkey := h.items[i].key, h.items[j].key
 	if c := h.cmp(ikey.UserKey, jkey.UserKey); c != 0 {
 		if h.reverse {
 			return c > 0
@@ -51,11 +57,11 @@ func (h *mergingIterHeap) fix(i int) {
 	}
 }
 
-func (h *mergingIterHeap) pop() *mergingIterLevel {
+func (h *mergingIterHeap) pop() *mergingIterItem {
 	n := h.len() - 1
 	h.swap(0, n)
 	h.down(0, n)
-	item := h.items[n]
+	item := &h.items[n]
 	h.items = h.items[:n]
 	return item
 }

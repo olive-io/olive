@@ -358,18 +358,10 @@ func (b *backend) Hash(ignores func(bucketName []byte, keyName []byte) bool) (ui
 
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-	iter, err := b.db.NewIter(&pebble.IterOptions{})
-	if err != nil {
-		return 0, err
-	}
-
+	iter := b.db.NewIter(&pebble.IterOptions{})
 	for iter.First(); iteratorIsValid(iter); iter.Next() {
 		k := iter.Key()
-		var v []byte
-		v, err = iter.ValueAndErr()
-		if err != nil {
-			return 0, err
-		}
+		v := iter.Value()
 
 		bn, _, _ := bytes.Cut(k, []byte("/"))
 		if ignores != nil && !ignores(bn, k) {

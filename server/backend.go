@@ -45,7 +45,9 @@ func newBackend(cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend 
 	}
 	bcfg.Logger = cfg.Logger.GetLogger()
 	be := backend.New(bcfg)
-	be.AppendHooks(hooks)
+	if hooks != nil {
+		be.AppendHooks(hooks)
+	}
 	return be
 }
 

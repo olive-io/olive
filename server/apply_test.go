@@ -14,7 +14,6 @@
 
 package server
 
-//
 //func TestReadonlyTxnError(t *testing.T) {
 //	b, _ := betesting.NewDefaultTmpBackend(t)
 //	defer betesting.Close(t, b)

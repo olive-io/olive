@@ -10,9 +10,7 @@
 // look like a checksum.
 //
 // To calculate the uint32 checksum of some data:
-//
 //	var u uint32 = crc.New(data).Value()
-//
 // In pebble, the uint32 value is then stored in little-endian format.
 package crc // import "github.com/cockroachdb/pebble/internal/crc"
 

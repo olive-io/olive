@@ -10,37 +10,33 @@ package cache
 import (
 	"fmt"
 	"sync/atomic"
-
-	"github.com/cockroachdb/redact"
 )
 
 // refcnt provides an atomic reference count. This version is used when the
 // "tracing" build tag is not enabled. See refcnt_tracing.go for the "tracing"
 // enabled version.
-type refcnt struct {
-	val atomic.Int32
-}
+type refcnt int32
 
 // initialize the reference count to the specified value.
 func (v *refcnt) init(val int32) {
-	v.val.Store(val)
+	*v = refcnt(val)
 }
 
 func (v *refcnt) refs() int32 {
-	return v.val.Load()
+	return atomic.LoadInt32((*int32)(v))
 }
 
 func (v *refcnt) acquire() {
-	switch v := v.val.Add(1); {
+	switch v := atomic.AddInt32((*int32)(v), 1); {
 	case v <= 1:
-		panic(redact.Safe(fmt.Sprintf("pebble: inconsistent reference count: %d", v)))
+		panic(fmt.Sprintf("pebble: inconsistent reference count: %d", v))
 	}
 }
 
 func (v *refcnt) release() bool {
-	switch v := v.val.Add(-1); {
+	switch v := atomic.AddInt32((*int32)(v), -1); {
 	case v < 0:
-		panic(redact.Safe(fmt.Sprintf("pebble: inconsistent reference count: %d", v)))
+		panic(fmt.Sprintf("pebble: inconsistent reference count: %d", v))
 	case v == 0:
 		return true
 	default:

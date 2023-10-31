@@ -1,6 +1,9 @@
 # github.com/DataDog/zstd v1.4.5
 ## explicit
 github.com/DataDog/zstd
+# github.com/HdrHistogram/hdrhistogram-go v1.1.2
+## explicit; go 1.14
+github.com/HdrHistogram/hdrhistogram-go
 # github.com/VictoriaMetrics/metrics v1.18.1
 ## explicit; go 1.12
 github.com/VictoriaMetrics/metrics
@@ -37,20 +40,18 @@ github.com/cockroachdb/errors/withstack
 # github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b
 ## explicit; go 1.16
 github.com/cockroachdb/logtags
-# github.com/cockroachdb/pebble v0.0.0-20231020221949-babd592d2360
-## explicit; go 1.20
+# github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
+## explicit; go 1.13
 github.com/cockroachdb/pebble
 github.com/cockroachdb/pebble/internal/arenaskl
 github.com/cockroachdb/pebble/internal/base
 github.com/cockroachdb/pebble/internal/batchskl
 github.com/cockroachdb/pebble/internal/bytealloc
 github.com/cockroachdb/pebble/internal/cache
-github.com/cockroachdb/pebble/internal/constants
 github.com/cockroachdb/pebble/internal/crc
 github.com/cockroachdb/pebble/internal/fastrand
 github.com/cockroachdb/pebble/internal/humanize
 github.com/cockroachdb/pebble/internal/intern
-github.com/cockroachdb/pebble/internal/invalidating
 github.com/cockroachdb/pebble/internal/invariants
 github.com/cockroachdb/pebble/internal/keyspan
 github.com/cockroachdb/pebble/internal/manifest
@@ -58,15 +59,9 @@ github.com/cockroachdb/pebble/internal/manual
 github.com/cockroachdb/pebble/internal/private
 github.com/cockroachdb/pebble/internal/rangedel
 github.com/cockroachdb/pebble/internal/rangekey
+github.com/cockroachdb/pebble/internal/rate
 github.com/cockroachdb/pebble/internal/rawalloc
 github.com/cockroachdb/pebble/internal/testkeys
-github.com/cockroachdb/pebble/objstorage
-github.com/cockroachdb/pebble/objstorage/objstorageprovider
-github.com/cockroachdb/pebble/objstorage/objstorageprovider/objiotracing
-github.com/cockroachdb/pebble/objstorage/objstorageprovider/remoteobjcat
-github.com/cockroachdb/pebble/objstorage/objstorageprovider/sharedcache
-github.com/cockroachdb/pebble/objstorage/remote
-github.com/cockroachdb/pebble/rangekey
 github.com/cockroachdb/pebble/record
 github.com/cockroachdb/pebble/sstable
 github.com/cockroachdb/pebble/vfs
@@ -83,9 +78,6 @@ github.com/cockroachdb/redact/internal/markers
 github.com/cockroachdb/redact/internal/redact
 github.com/cockroachdb/redact/internal/rfmt
 github.com/cockroachdb/redact/internal/rfmt/fmtsort
-# github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
-## explicit; go 1.19
-github.com/cockroachdb/tokenbucket
 # github.com/coreos/go-systemd/v22 v22.3.2
 ## explicit; go 1.12
 github.com/coreos/go-systemd/v22/journal
@@ -120,8 +112,8 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/golang/snappy v0.0.4
 ## explicit
 github.com/golang/snappy
-# github.com/google/btree v1.0.0
-## explicit
+# github.com/google/btree v1.1.2
+## explicit; go 1.18
 github.com/google/btree
 # github.com/google/uuid v1.3.1
 ## explicit
@@ -208,7 +200,7 @@ github.com/lni/goutils/syncutil
 # github.com/lni/vfs v0.2.1-0.20220616104132-8852fd867376
 ## explicit; go 1.17
 github.com/lni/vfs
-# github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
+# github.com/matttproud/golang_protobuf_extensions v1.0.4
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/miekg/dns v1.1.26
@@ -233,25 +225,25 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.12.0
-## explicit; go 1.13
+# github.com/prometheus/client_golang v1.17.0
+## explicit; go 1.19
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a
-## explicit; go 1.9
+# github.com/prometheus/client_model v0.5.0
+## explicit; go 1.19
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.32.1
-## explicit; go 1.13
+# github.com/prometheus/common v0.44.0
+## explicit; go 1.18
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.7.3
-## explicit; go 1.13
+# github.com/prometheus/procfs v0.11.1
+## explicit; go 1.19
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rogpeppe/go-internal v1.9.0
-## explicit; go 1.17
+# github.com/rogpeppe/go-internal v1.10.0
+## explicit; go 1.19
 github.com/rogpeppe/go-internal/fmtsort
 # github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 ## explicit
@@ -265,14 +257,14 @@ github.com/valyala/fastrand
 # github.com/valyala/histogram v1.2.0
 ## explicit; go 1.12
 github.com/valyala/histogram
-# go.etcd.io/etcd/client/pkg/v3 v3.5.9
-## explicit; go 1.19
+# go.etcd.io/etcd/client/pkg/v3 v3.5.10
+## explicit; go 1.20
 go.etcd.io/etcd/client/pkg/v3/logutil
 go.etcd.io/etcd/client/pkg/v3/systemd
 go.etcd.io/etcd/client/pkg/v3/testutil
 go.etcd.io/etcd/client/pkg/v3/types
-# go.etcd.io/etcd/pkg/v3 v3.5.9
-## explicit; go 1.19
+# go.etcd.io/etcd/pkg/v3 v3.5.10
+## explicit; go 1.20
 go.etcd.io/etcd/pkg/v3/idutil
 go.etcd.io/etcd/pkg/v3/runtime
 go.etcd.io/etcd/pkg/v3/traceutil
@@ -294,14 +286,13 @@ go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zapgrpc
 go.uber.org/zap/zaptest
-# golang.org/x/crypto v0.13.0
+# golang.org/x/crypto v0.14.0
 ## explicit; go 1.17
 golang.org/x/crypto/ed25519
 # golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
 ## explicit; go 1.20
-golang.org/x/exp/constraints
 golang.org/x/exp/rand
-# golang.org/x/net v0.15.0
+# golang.org/x/net v0.17.0
 ## explicit; go 1.17
 golang.org/x/net/bpf
 golang.org/x/net/http/httpguts
@@ -314,10 +305,9 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/trace
-# golang.org/x/sys v0.12.0
+# golang.org/x/sys v0.13.0
 ## explicit; go 1.17
 golang.org/x/sys/execabs
-golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.13.0

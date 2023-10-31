@@ -19,7 +19,6 @@
 // Neither Readers or Writers are safe to use concurrently.
 //
 // Example code:
-//
 //	func read(r io.Reader) ([]string, error) {
 //		var ss []string
 //		records := record.NewReader(r)
@@ -33,7 +32,7 @@
 //				r.Recover()
 //				continue
 //			}
-//			s, err := io.ReadAll(rec)
+//			s, err := ioutil.ReadAll(rec)
 //			if err != nil {
 //				log.Printf("recovering from %v", err)
 //				r.Recover()
@@ -66,9 +65,9 @@
 // A record maps to one or more chunks. There are two chunk formats: legacy and
 // recyclable. The legacy chunk format:
 //
-//	+----------+-----------+-----------+--- ... ---+
-//	| CRC (4B) | Size (2B) | Type (1B) | Payload   |
-//	+----------+-----------+-----------+--- ... ---+
+//   +----------+-----------+-----------+--- ... ---+
+//   | CRC (4B) | Size (2B) | Type (1B) | Payload   |
+//   +----------+-----------+-----------+--- ... ---+
 //
 // CRC is computed over the type and payload
 // Size is the length of the payload in bytes
@@ -85,9 +84,9 @@
 // metadata. Additionally, recycling log files is a prequisite for using direct
 // IO with log writing. The recyclyable format is:
 //
-//	+----------+-----------+-----------+----------------+--- ... ---+
-//	| CRC (4B) | Size (2B) | Type (1B) | Log number (4B)| Payload   |
-//	+----------+-----------+-----------+----------------+--- ... ---+
+//   +----------+-----------+-----------+----------------+--- ... ---+
+//   | CRC (4B) | Size (2B) | Type (1B) | Log number (4B)| Payload   |
+//   +----------+-----------+-----------+----------------+--- ... ---+
 //
 // Recyclable chunks are distinguished from legacy chunks by the addition of 4
 // extra "recyclable" chunk types that map directly to the legacy chunk types
@@ -187,7 +186,7 @@ type Reader struct {
 // NewReader returns a new reader. If the file contains records encoded using
 // the recyclable record format, then the log number in those records must
 // match the specified logNum.
-func NewReader(r io.Reader, logNum base.DiskFileNum) *Reader {
+func NewReader(r io.Reader, logNum base.FileNum) *Reader {
 	return &Reader{
 		r:        r,
 		logNum:   uint32(logNum),
@@ -248,7 +247,6 @@ func (r *Reader) nextChunk(wantFirst bool) error {
 			r.begin = r.end + headerSize
 			r.end = r.begin + int(length)
 			if r.end > r.n {
-				// The chunk straddles a 32KB boundary (or the end of file).
 				if r.recovering {
 					r.recover()
 					continue

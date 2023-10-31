@@ -26,7 +26,7 @@ import (
 )
 
 func NewTmpBackendFromCfg(t testing.TB, bcfg backend.BackendConfig) (backend.IBackend, string) {
-	dir, err := os.MkdirTemp(t.TempDir(), "etcd_backend_test")
+	dir, err := os.MkdirTemp(t.TempDir(), "olive_backend_test")
 	if err != nil {
 		panic(err)
 	}

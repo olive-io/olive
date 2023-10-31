@@ -4,13 +4,30 @@
 
 package pebble
 
-import "github.com/cockroachdb/pebble/internal/base"
+import (
+	"fmt"
+	"log"
+	"os"
+)
 
 // Logger defines an interface for writing log messages.
-type Logger = base.Logger
+type Logger interface {
+	Infof(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+}
+
+type defaultLogger struct{}
 
 // DefaultLogger logs to the Go stdlib logs.
-var DefaultLogger = base.DefaultLogger
+var DefaultLogger defaultLogger
 
-// LoggerAndTracer defines an interface for logging and tracing.
-type LoggerAndTracer = base.LoggerAndTracer
+// Infof implements the Logger.Infof interface.
+func (defaultLogger) Infof(format string, args ...interface{}) {
+	_ = log.Output(2, fmt.Sprintf(format, args...))
+}
+
+// Fatalf implements the Logger.Fatalf interface.
+func (defaultLogger) Fatalf(format string, args ...interface{}) {
+	_ = log.Output(2, fmt.Sprintf(format, args...))
+	os.Exit(1)
+}
