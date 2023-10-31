@@ -95,6 +95,9 @@ func (a *applierBackend) Apply(r *api.InternalRaftRequest) *applyResult {
 	case r.DeleteRange != nil:
 		op = "DeleteRange"
 		ar.resp, ar.err = a.s.apply.DeleteRange(nil, r.DeleteRange)
+	case r.Txn != nil:
+		op = "Txn"
+		ar.resp, ar.trace, ar.err = a.s.apply.Txn(context.TODO(), r.Txn)
 	default:
 		a.s.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
 	}
