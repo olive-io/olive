@@ -31,6 +31,9 @@ type Config struct {
 	ShardTimeout time.Duration
 
 	ListenerAddress string
+
+	MaxGRPCReceiveMessageSize int
+	MaxGRPCSendMessageSize    int
 }
 
 // TestConfig get Config for testing

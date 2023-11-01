@@ -30,6 +30,7 @@ import (
 	"github.com/olive-io/olive/server/config"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	grpccredentials "google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -71,12 +72,15 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 
 	var ts net.Listener
-	tc, isTls, err := cfg.Server.TLSConfig()
+	tc, isTLS, err := cfg.Server.TLSConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	if isTls {
+	opts := make([]grpc.ServerOption, 0)
+	cred := insecure.NewCredentials()
+	if isTLS {
+		cred = grpccredentials.NewTLS(tc)
 		ts, err = tls.Listen("tcp", cfg.ListenerAddress, tc)
 	} else {
 		ts, err = net.Listen("tcp", cfg.ListenerAddress)
@@ -84,9 +88,16 @@ func NewServer(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	opts = append(opts, grpc.Creds(cred))
 
-	cred := insecure.NewCredentials()
-	gs := grpc.NewServer(grpc.Creds(cred))
+	if cfg.MaxGRPCSendMessageSize != 0 {
+		opts = append(opts, grpc.MaxSendMsgSize(cfg.MaxGRPCSendMessageSize))
+	}
+	if cfg.MaxGRPCReceiveMessageSize != 0 {
+		opts = append(opts, grpc.MaxRecvMsgSize(cfg.MaxGRPCReceiveMessageSize))
+	}
+
+	gs := grpc.NewServer(opts...)
 
 	ctx, cancel := context.WithCancel(context.Background())
 

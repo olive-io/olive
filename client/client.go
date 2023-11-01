@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	grpccredentials "google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 )
@@ -191,7 +192,7 @@ func (c *Client) autoSync() {
 			ctx, cancel := context.WithTimeout(c.ctx, 5*time.Second)
 			err := c.Sync(ctx)
 			cancel()
-			if err != nil && err != c.ctx.Err() {
+			if err != nil && !errors.Is(err, c.ctx.Err()) {
 				c.lg.Info("Auto sync endpoints failed.", zap.Error(err))
 			}
 		}
@@ -210,11 +211,10 @@ func (c *Client) dialSetupOpts(creds grpccredentials.TransportCredentials, dopts
 	}
 	opts = append(opts, dopts...)
 
-	if creds != nil {
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
+	if creds == nil {
+		creds = insecure.NewCredentials()
 	}
+	opts = append(opts, grpc.WithTransportCredentials(creds))
 
 	// Interceptor retry and backoff.
 	// TODO: Replace all of client/retry.go with RetryPolicy:
@@ -569,7 +569,7 @@ func canceledByCaller(stopCtx context.Context, err error) bool {
 		return false
 	}
 
-	return err == context.Canceled || err == context.DeadlineExceeded
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 // IsConnCanceled returns true, if error is from a closed gRPC connection.
@@ -587,7 +587,7 @@ func IsConnCanceled(err error) bool {
 	}
 
 	// >= gRPC v1.10.x
-	if err == context.Canceled {
+	if errors.Is(err, context.Canceled) {
 		return true
 	}
 
