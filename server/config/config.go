@@ -152,4 +152,6 @@ type ShardConfig struct {
 	PeerURLs types.URLsMap
 
 	NewCluster bool
+
+	Timeout time.Duration
 }

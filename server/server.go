@@ -17,6 +17,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/url"
 	"sync"
 	"time"
@@ -177,9 +178,40 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 		members[replicaID] = raftAddress
 	}
 
+	start := time.Now()
 	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
 	if err != nil {
 		return err
+	}
+
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = time.Duration(math.MaxInt64)
+	}
+	after := time.NewTimer(timeout)
+	defer after.Stop()
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.stop:
+			return errs.ErrStopped
+		case <-after.C:
+			return fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
+		case <-ticker.C:
+		}
+
+		leaderID, term, ok, e1 := s.nh.GetLeaderID(shardID)
+		if ok {
+			s.lg.Info("start new shard",
+				zap.Uint64("leader", leaderID),
+				zap.Uint64("term", term),
+				zap.Duration("duration", time.Now().Sub(start)))
+			break
+		}
+		if e1 != nil {
+			return fmt.Errorf("get leader %v", e1)
+		}
 	}
 
 	return nil

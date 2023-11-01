@@ -36,6 +36,8 @@ const (
 	maxGapBetweenApplyAndCommitIndex = 5000
 	traceThreshold                   = 100 * time.Millisecond
 
+	queryTimeout = time.Second * 3
+
 	// The timeout for the node to catch up its applied index, and is used in
 	// lease related operations, such as LeaseRenew and LeaseTimeToLive.
 	applyTimeout = time.Second
@@ -76,6 +78,9 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 			var result any
 			var ok bool
 			result, err = s.nh.StaleRead(shardID, r)
+			if err != nil {
+				return
+			}
 			resp, ok = result.(*api.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
@@ -86,7 +91,13 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 		get = func() {
 			var result any
 			var ok bool
-			result, err = s.nh.SyncRead(ctx, shardID, r)
+
+			tctx, cancel := context.WithTimeout(ctx, queryTimeout)
+			defer cancel()
+			result, err = s.nh.SyncRead(tctx, shardID, r)
+			if err != nil {
+				return
+			}
 			resp, ok = result.(*api.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
@@ -135,20 +146,30 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 		var err error
 
 		if !isTxnSerializable(r) {
-			var result any
-			var ok bool
-			result, err = s.nh.StaleRead(shardID, r)
-			resp, ok = result.(*api.TxnResponse)
-			if !ok {
-				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
+			get = func() {
+				var result any
+				var ok bool
+				result, err = s.nh.StaleRead(shardID, r)
+				if err != nil {
+					return
+				}
+				resp, ok = result.(*api.TxnResponse)
+				if !ok {
+					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
+				}
 			}
 			trace.Step("agreement among raft nodes before linearized reading")
-
 		} else {
 			get = func() {
 				var result any
 				var ok bool
-				result, err = s.nh.SyncRead(ctx, shardID, r)
+
+				tctx, cancel := context.WithTimeout(ctx, queryTimeout)
+				defer cancel()
+				result, err = s.nh.SyncRead(tctx, shardID, r)
+				if err != nil {
+					return
+				}
 				resp, ok = result.(*api.TxnResponse)
 				if !ok {
 					s.Logger().Panic("not match raft read", zap.Stringer("request", r))

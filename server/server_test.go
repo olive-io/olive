@@ -18,7 +18,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/server"
@@ -40,6 +39,7 @@ func newServer(t *testing.T, dirname, address string) *server.KVServer {
 	}
 
 	cfg := config.NewServiceConfig("test", dir, address)
+	cfg.Logger.Pkgs = `{"transport": "debug","rsm": "debug", "raft": "debug", "grpc": "debug"}`
 	if err = cfg.Apply(); err != nil {
 		panic(err)
 	}
@@ -65,8 +65,6 @@ func TestNewServer(t *testing.T) {
 	if !assert.NoError(t, err) {
 		return
 	}
-
-	time.Sleep(time.Second * 5)
 
 	shard := server.GenHash([]byte(scfg.Name))
 	ctx := context.Background()
@@ -94,22 +92,24 @@ func TestNewCluster(t *testing.T) {
 		NewCluster: false,
 	}
 	scfg.PeerURLs, _ = types.NewURLsMap("test1=http://localhost:60001,test2=http://localhost:60002,test3=http://localhost:60003")
-	err := s1.StartReplica(scfg)
+	go func() {
+		err := s1.StartReplica(scfg)
+		if !assert.NoError(t, err) {
+			return
+		}
+	}()
+
+	go func() {
+		err := s2.StartReplica(scfg)
+		if !assert.NoError(t, err) {
+			return
+		}
+	}()
+
+	err := s3.StartReplica(scfg)
 	if !assert.NoError(t, err) {
 		return
 	}
-
-	err = s2.StartReplica(scfg)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = s3.StartReplica(scfg)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	time.Sleep(time.Second * 5)
 
 	shard := server.GenHash([]byte(scfg.Name))
 	ctx := context.Background()
@@ -119,7 +119,7 @@ func TestNewCluster(t *testing.T) {
 		return
 	}
 
-	rsp, err := s2.Range(ctx, shard, &api.RangeRequest{Key: []byte("foo"), Limit: 1})
+	rsp, err := s2.Range(ctx, shard, &api.RangeRequest{Key: []byte("foo"), Limit: 1, Serializable: true})
 	if !assert.NoError(t, err) {
 		return
 	}
