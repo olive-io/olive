@@ -12,48 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package meta
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	GitCommit = ""
-	GitTag    = ""
-	BuildDate = ""
+func TestNewOliveMetaServer(t *testing.T) {
+	cfg, cancel := TestConfig()
+	if !assert.NoError(t, cfg.Apply()) {
+		return
+	}
+	defer cancel()
 
-	APIVersion = "unknown"
-)
-
-func Version() string {
-	var vineVersion string
-
-	if GitTag != "" {
-		vineVersion = GitTag
+	s, err := NewServer(cfg)
+	if !assert.NoError(t, err) {
+		return
 	}
 
-	if GitCommit != "" {
-		vineVersion += fmt.Sprintf("-%s", GitCommit)
+	err = s.Start()
+	if !assert.NoError(t, err) {
+		return
 	}
 
-	if BuildDate != "" {
-		vineVersion += fmt.Sprintf("-%s", BuildDate)
+	err = s.GracefulStop()
+	if !assert.NoError(t, err) {
+		return
 	}
-
-	if vineVersion == "" {
-		vineVersion = "latest"
-	}
-
-	return vineVersion
-}
-
-func GoV() string {
-	v := strings.TrimPrefix(runtime.Version(), "go")
-	if strings.Count(v, ".") > 1 {
-		v = v[:strings.LastIndex(v, ".")]
-	}
-	return v
 }

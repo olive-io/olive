@@ -110,6 +110,10 @@ func NewServer(cfg config.ServerConfig) (*KVServer, error) {
 		EnableMetrics:       true,
 		RaftEventListener:   rel,
 		SystemEventListener: sel,
+		MutualTLS:           cfg.MutualTLS,
+		CAFile:              cfg.CAFile,
+		CertFile:            cfg.CertFile,
+		KeyFile:             cfg.KeyFile,
 	}
 
 	nh, err := dragonboat.NewNodeHost(nhc)
@@ -148,7 +152,7 @@ func (s *KVServer) Start() {
 	s.GoAttach(s.processRaftEvent)
 }
 
-func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
+func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 
 	shardID := GenHash([]byte(cfg.Name))
 	rc := dbc.Config{
@@ -168,7 +172,7 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 	for key, urlText := range cfg.PeerURLs {
 		URL, err := url.Parse(urlText.String())
 		if err != nil {
-			return fmt.Errorf("invalid url: %v", urlText.String())
+			return 0, fmt.Errorf("invalid url: %v", urlText.String())
 		}
 		replicaID := GenHash([]byte(key))
 		raftAddress := URL.Host
@@ -181,7 +185,7 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 	start := time.Now()
 	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	timeout := cfg.Timeout
@@ -195,9 +199,9 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 	for {
 		select {
 		case <-s.stop:
-			return errs.ErrStopped
+			return 0, errs.ErrStopped
 		case <-after.C:
-			return fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
+			return 0, fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
 		case <-ticker.C:
 		}
 
@@ -210,11 +214,11 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 			break
 		}
 		if e1 != nil {
-			return fmt.Errorf("get leader %v", e1)
+			return 0, fmt.Errorf("get leader %v", e1)
 		}
 	}
 
-	return nil
+	return shardID, nil
 }
 
 func (s *KVServer) Logger() *zap.Logger {

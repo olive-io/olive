@@ -15,9 +15,11 @@
 package config
 
 import (
+	"crypto/tls"
 	"fmt"
 	"time"
 
+	"github.com/lni/goutils/netutil"
 	"github.com/olive-io/olive/server/datadir"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 )
@@ -96,6 +98,21 @@ type ServerConfig struct {
 	ExperimentalTxnModeWriteWithSharedBuffer bool `json:"experimental-txn-mode-write-with-shared-buffer"`
 
 	RaftAddress string
+
+	// MutualTLS defines whether to use mutual TLS for authenticating servers
+	// and clients. Insecure communication is used when MutualTLS is set to
+	// False.
+	MutualTLS bool
+
+	// CAFile is the path of the CA certificate file. This field is ignored when
+	// MutualTLS is false.
+	CAFile string
+	// CertFile is the path of the node certificate file. This field is ignored
+	// when MutualTLS is false.
+	CertFile string
+	// KeyFile is the path of the node key file. This field is ignored when
+	// MutualTLS is false.
+	KeyFile string
 }
 
 func NewServiceConfig(Name, dataDir, RaftAddress string) ServerConfig {
@@ -138,9 +155,50 @@ func (c *ServerConfig) ReqTimeout() time.Duration {
 	return 5*time.Second + 2*time.Duration(c.ElectionTicks*c.TickMs)*time.Millisecond
 }
 
+// TLSConfig returns the tls.Config
+func (c *ServerConfig) TLSConfig() (*tls.Config, bool, error) {
+	if !c.MutualTLS {
+		return nil, false, nil
+	}
+
+	tc, err := netutil.GetServerTLSConfig(c.CAFile, c.CertFile, c.KeyFile)
+	return tc, true, err
+}
+
 func (c *ServerConfig) Apply() error {
 	if err := c.Logger.Apply(); err != nil {
 		return err
+	}
+
+	if c.CacheSize == 0 {
+		c.CacheSize = DefaultCacheSize
+	}
+	if c.RTTMillisecond == 0 {
+		c.RTTMillisecond = DefaultRTTMillisecond
+	}
+	if c.SnapshotCount == 0 {
+		c.SnapshotCount = DefaultSnapshotCount
+	}
+	if c.BackendBatchInterval == 0 {
+		c.BackendBatchInterval = DefaultBackendBatchInterval
+	}
+	if c.BackendBatchLimit == 0 {
+		c.BackendBatchLimit = DefaultBatchLimit
+	}
+	if c.TickMs == 0 {
+		c.TickMs = DefaultTickMs
+	}
+	if c.ElectionTicks == 0 {
+		c.ElectionTicks = DefaultElectionTicks
+	}
+	if c.CompactionBatchLimit == 0 {
+		c.CompactionBatchLimit = DefaultCompactionBatchLimit
+	}
+	if c.MaxRequestBytes == 0 {
+		c.MaxRequestBytes = DefaultMaxRequestBytes
+	}
+	if c.WarningApplyDuration == 0 {
+		c.WarningApplyDuration = DefaultWarningApplyDuration
 	}
 
 	return nil

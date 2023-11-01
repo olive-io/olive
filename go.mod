@@ -8,13 +8,14 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/protobuf v1.5.3
 	github.com/google/btree v1.1.2
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
+	github.com/lni/goutils v1.3.1-0.20220604063047-388d67b4dbc4
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
 	github.com/stretchr/testify v1.8.4
+	go.etcd.io/etcd/api/v3 v3.5.10
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10
 	go.etcd.io/etcd/pkg/v3 v3.5.10
 	go.uber.org/zap v1.26.0
@@ -35,6 +36,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
@@ -47,7 +49,6 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/lni/goutils v1.3.1-0.20220604063047-388d67b4dbc4 // indirect
 	github.com/lni/vfs v0.2.1-0.20220616104132-8852fd867376 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/miekg/dns v1.1.26 // indirect

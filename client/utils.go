@@ -12,48 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package client
 
 import (
-	"fmt"
-	"runtime"
-	"strings"
+	"math/rand"
+	"time"
 )
 
-var (
-	GitCommit = ""
-	GitTag    = ""
-	BuildDate = ""
-
-	APIVersion = "unknown"
-)
-
-func Version() string {
-	var vineVersion string
-
-	if GitTag != "" {
-		vineVersion = GitTag
-	}
-
-	if GitCommit != "" {
-		vineVersion += fmt.Sprintf("-%s", GitCommit)
-	}
-
-	if BuildDate != "" {
-		vineVersion += fmt.Sprintf("-%s", BuildDate)
-	}
-
-	if vineVersion == "" {
-		vineVersion = "latest"
-	}
-
-	return vineVersion
-}
-
-func GoV() string {
-	v := strings.TrimPrefix(runtime.Version(), "go")
-	if strings.Count(v, ".") > 1 {
-		v = v[:strings.LastIndex(v, ".")]
-	}
-	return v
+// jitterUp adds random jitter to the duration.
+//
+// This adds or subtracts time from the duration within a given jitter fraction.
+// For example for 10s and jitter 0.1, it will return a time within [9s, 11s])
+//
+// Reference: https://godoc.org/github.com/grpc-ecosystem/go-grpc-middleware/util/backoffutils
+func jitterUp(duration time.Duration, jitter float64) time.Duration {
+	multiplier := jitter * (rand.Float64()*2 - 1)
+	return time.Duration(float64(duration) * (1 + multiplier))
 }

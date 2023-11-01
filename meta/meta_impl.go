@@ -26,6 +26,8 @@ const (
 )
 
 func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
+	shardID := s.getShardID()
+
 	definitions := &api.Definition{
 		Id:      req.Id,
 		Name:    req.Name,
@@ -44,7 +46,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 	}
 
 	var rsp *api.PutResponse
-	rsp, err = s.kvs.Put(ctx, 0, putReq)
+	rsp, err = s.kvs.Put(ctx, shardID, putReq)
 	if err != nil {
 		return
 	}
@@ -54,6 +56,8 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 }
 
 func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
+	shardID := s.getShardID()
+
 	key := path.Join(definitionPrefix)
 	rangeReq := &api.RangeRequest{
 		Key:          []byte(key),
@@ -61,7 +65,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 	}
 
 	var rsp *api.RangeResponse
-	rsp, err = s.kvs.Range(ctx, 0, rangeReq)
+	rsp, err = s.kvs.Range(ctx, shardID, rangeReq)
 	if err != nil {
 		return
 	}
@@ -78,6 +82,8 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 }
 
 func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (resp *api.GetDefinitionResponse, err error) {
+	shardID := s.getShardID()
+
 	key := path.Join(definitionPrefix)
 	rangeReq := &api.RangeRequest{
 		Key:          []byte(key),
@@ -86,7 +92,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 	}
 
 	var rsp *api.RangeResponse
-	rsp, err = s.kvs.Range(ctx, 0, rangeReq)
+	rsp, err = s.kvs.Range(ctx, shardID, rangeReq)
 	if err != nil {
 		return
 	}
@@ -98,13 +104,15 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 }
 
 func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
+	shardID := s.getShardID()
+
 	key := path.Join(definitionPrefix, req.Id)
 	deleteReq := &api.DeleteRangeRequest{
 		Key: []byte(key),
 	}
 
 	var rsp *api.DeleteRangeResponse
-	rsp, err = s.kvs.DeleteRange(ctx, 0, deleteReq)
+	rsp, err = s.kvs.DeleteRange(ctx, shardID, deleteReq)
 	if err != nil {
 		return
 	}

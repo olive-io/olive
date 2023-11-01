@@ -14,19 +14,56 @@
 
 package meta
 
-import "github.com/olive-io/olive/server/config"
+import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/olive-io/olive/server/config"
+	"go.etcd.io/etcd/client/pkg/v3/types"
+)
 
 type Config struct {
-	ServerConfig config.ServerConfig
+	Server config.ServerConfig
 
-	ShardConfig config.ShardConfig
+	PeerURLs types.URLsMap
+
+	ShardTimeout time.Duration
 
 	ListenerAddress string
 }
 
+// TestConfig get Config for testing
+func TestConfig() (Config, func()) {
+	scfg := config.NewServiceConfig("test", config.DefaultLogOutput, "localhost:7380")
+	peer, _ := types.NewURLsMap("test=http://localhost:7380")
+	cfg := Config{
+		Server:          scfg,
+		PeerURLs:        peer,
+		ShardTimeout:    time.Second * 5,
+		ListenerAddress: "localhost:7379",
+	}
+
+	cancel := func() { os.RemoveAll("default") }
+
+	return cfg, cancel
+}
+
 func (cfg *Config) Apply() (err error) {
-	if err = cfg.ServerConfig.Apply(); err != nil {
+	if err = cfg.Server.Apply(); err != nil {
 		return err
+	}
+
+	if cfg.Server.Name == "" {
+		return fmt.Errorf("missing the name of server")
+	}
+
+	if cfg.ListenerAddress == "" {
+		return fmt.Errorf("missing the address of server")
+	}
+
+	if cfg.PeerURLs.Len() == 0 {
+		cfg.PeerURLs, _ = types.NewURLsMap(cfg.Server.Name + "=" + cfg.Server.RaftAddress)
 	}
 
 	return

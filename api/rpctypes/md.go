@@ -12,48 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
-
-import (
-	"fmt"
-	"runtime"
-	"strings"
-)
+package rpctypes
 
 var (
-	GitCommit = ""
-	GitTag    = ""
-	BuildDate = ""
+	MetadataRequireLeaderKey = "hasleader"
+	MetadataHasLeader        = "true"
 
-	APIVersion = "unknown"
+	MetadataClientAPIVersionKey = "client-api-version"
 )
-
-func Version() string {
-	var vineVersion string
-
-	if GitTag != "" {
-		vineVersion = GitTag
-	}
-
-	if GitCommit != "" {
-		vineVersion += fmt.Sprintf("-%s", GitCommit)
-	}
-
-	if BuildDate != "" {
-		vineVersion += fmt.Sprintf("-%s", BuildDate)
-	}
-
-	if vineVersion == "" {
-		vineVersion = "latest"
-	}
-
-	return vineVersion
-}
-
-func GoV() string {
-	v := strings.TrimPrefix(runtime.Version(), "go")
-	if strings.Count(v, ".") > 1 {
-		v = v[:strings.LastIndex(v, ".")]
-	}
-	return v
-}
