@@ -14,6 +14,7 @@ require (
 	github.com/lni/goutils v1.3.1-0.20220604063047-388d67b4dbc4
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
+	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10
 	go.etcd.io/etcd/pkg/v3 v3.5.10
@@ -45,6 +46,7 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/memberlist v0.3.1 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -60,6 +62,7 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect

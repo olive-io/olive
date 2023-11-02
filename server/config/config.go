@@ -21,6 +21,7 @@ import (
 
 	"github.com/lni/goutils/netutil"
 	"github.com/olive-io/olive/server/datadir"
+	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 )
 
@@ -30,7 +31,7 @@ const (
 	StdErrLogOutput  = "stderr"
 	StdOutLogOutput  = "stdout"
 
-	DefaultLogPkgs = `{"transport": "warning","rsm": "warning", "raft": "error", "grpc": "warning"}`
+	DefaultLogPkgsConfig = `{"transport": "warning","rsm": "warning", "raft": "error", "grpc": "warning"}`
 	// DefaultLogRotationConfig is the default configuration used for log rotation.
 	// Log rotation is disabled by default.
 	// MaxSize    = 100 // MB
@@ -40,103 +41,213 @@ const (
 	// Compress   = false // compress the rotated log in gzip format
 	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
 
-	DefaultCacheSize = 10 * 1024
+	DefaultCacheSize = 10 * 1024 * 1024
 
 	DefaultRTTMillisecond = 200
 
-	DefaultSnapshotCount = 10
+	DefaultBackendBatchInterval = 0
+	DefaultBatchLimit           = 0
 
-	DefaultBackendBatchInterval = time.Second * 3
-	DefaultBatchLimit           = 100
+	DefaultHeartBeatTTL = 2
 
-	DefaultElectionTicks = 10
+	DefaultElectionTTL = 10
 
-	DefaultTickMs = 1
-
-	DefaultCompactionBatchLimit = 100
+	DefaultCompactionBatchLimit = 1000
 
 	DefaultMaxRequestBytes      = 10 * 1024 * 1024
-	DefaultWarningApplyDuration = time.Second * 5
+	DefaultWarningApplyDuration = time.Millisecond * 100
+
+	DefaultListenerPeerAddress = ":7380"
 )
 
 var (
 	ErrLogRotationInvalidLogOutput = fmt.Errorf("--log-outputs requires a single file path when --log-rotate-config-json is defined")
+
+	serverFlagSet = pflag.NewFlagSet("server", pflag.ExitOnError)
 )
+
+func init() {
+	serverFlagSet.Uint64("cache-size", DefaultCacheSize, "Configures the size of cache of backend db")
+	serverFlagSet.String("data-dir", "default", "Path to the data directory.")
+	serverFlagSet.String("wal-dir", "", "Path to the dedicated wal directory.")
+	serverFlagSet.Uint64("node-rtt-millisecond", DefaultRTTMillisecond,
+		"the average Round Trip Time (RTT) in milliseconds between two NodeHost instances.")
+	serverFlagSet.Duration("backend-batch-interval", DefaultBackendBatchInterval,
+		"BackendBatchInterval is the maximum time before commit the backend transaction.")
+	serverFlagSet.Int("backend-batch-limit", DefaultBatchLimit,
+		"BackendBatchLimit is the maximum operations before commit the backend transaction.")
+	serverFlagSet.Int("compaction-batch-limit", DefaultCompactionBatchLimit,
+		"CompactionBatchLimit sets the maximum revisions deleted in each compaction batch.")
+	serverFlagSet.Uint64("max-request-bytes", DefaultMaxRequestBytes,
+		"Maximum client request size in bytes the server will accept.")
+	serverFlagSet.Duration("warning-apply-duration", DefaultWarningApplyDuration,
+		"Warning is generated if requests take more than this duration.")
+	serverFlagSet.String("listener-peer-address", DefaultListenerPeerAddress,
+		"Sets the address to listen on for peer traffic.")
+	serverFlagSet.Uint64("heartbeat-ttl", DefaultHeartBeatTTL,
+		"Sets the number of message RTT between heartbeats")
+	serverFlagSet.Uint64("election-ttl", DefaultElectionTTL,
+		"Sets the minimum number of message RTT between elections.")
+	serverFlagSet.Bool("pre-vote", true,
+		"PreVote is true to enable Raft Pre-Vote")
+	serverFlagSet.Bool("mutual-tls", false,
+		"MutualTLS defines whether to use mutual TLS for authenticating servers and clients.")
+	serverFlagSet.String("cert-file", "",
+		"Path to the client server TLS cert file.")
+	serverFlagSet.String("key-file", "",
+		"Path to the client server TLS key file.")
+	serverFlagSet.String("ca-file", "",
+		"Path to the client server TLS ca file.")
+}
+
+func AddServerFlagSet(flags *pflag.FlagSet) {
+	flags.AddFlagSet(serverFlagSet)
+}
 
 type ServerConfig struct {
 	Logger *LoggerConfig
 
-	Name string
+	CacheSize uint64 `json:"cache-size"`
+	DataDir   string `json:"data-dir"`
+	WALDir    string `json:"wal-dir"`
 
-	CacheSize      int64
-	DataDir        string
-	WALDir         string
-	RTTMillisecond uint64
-
-	SnapshotCount uint64
+	RTTMillisecond uint64 `json:"node-rtt-millisecond"`
 
 	// BackendBatchInterval is the maximum time before commit the backend transaction.
-	BackendBatchInterval time.Duration
+	BackendBatchInterval time.Duration `json:"backend-batch-interval"`
 	// BackendBatchLimit is the maximum operations before commit the backend transaction.
-	BackendBatchLimit int
+	BackendBatchLimit int `json:"backend-batch-limit"`
 
-	TickMs        uint64
-	ElectionTicks uint64
-
-	// PreVote is true to enable Raft Pre-Vote.
-	PreVote bool
-
-	CompactionBatchLimit int
+	CompactionBatchLimit int `json:"compaction-batch-limit"`
 
 	// MaxRequestBytes is the maximum request size to send over raft.
-	MaxRequestBytes uint
+	MaxRequestBytes uint64 `json:"max-request-bytes"`
 
-	WarningApplyDuration time.Duration
+	WarningApplyDuration time.Duration `json:"warning-apply-duration"`
 
-	// ExperimentalTxnModeWriteWithSharedBuffer enable write transaction to use
+	// TxnModeWriteWithSharedBuffer enable write transaction to use
 	// a shared buffer in its readonly check operations.
-	ExperimentalTxnModeWriteWithSharedBuffer bool `json:"experimental-txn-mode-write-with-shared-buffer"`
+	TxnModeWriteWithSharedBuffer bool `json:"txn-mode-write-with-shared-buffer"`
 
-	RaftAddress string
+	ListenerPeerAddress string `json:"listener-peer-address"`
+
+	HeartBeatTTL uint64 `json:"heartbeat-ttl"`
+	ElectionTTL  uint64 `json:"election-ttl"`
+
+	// PreVote is true to enable Raft Pre-Vote.
+	PreVote bool `json:"pre-vote"`
 
 	// MutualTLS defines whether to use mutual TLS for authenticating servers
 	// and clients. Insecure communication is used when MutualTLS is set to
 	// False.
-	MutualTLS bool
+	MutualTLS bool `json:"mutual-tls"`
 
 	// CAFile is the path of the CA certificate file. This field is ignored when
 	// MutualTLS is false.
-	CAFile string
+	CAFile string `json:"ca-file"`
 	// CertFile is the path of the node certificate file. This field is ignored
 	// when MutualTLS is false.
-	CertFile string
+	CertFile string `json:"cert-file"`
 	// KeyFile is the path of the node key file. This field is ignored when
 	// MutualTLS is false.
-	KeyFile string
+	KeyFile string `json:"key-file"`
 }
 
-func NewServiceConfig(Name, dataDir, RaftAddress string) ServerConfig {
+func NewServerConfig(dataDir, listenerAddress string) ServerConfig {
 	lg := NewLoggerConfig()
 	cfg := ServerConfig{
-		Logger:                                   lg,
-		Name:                                     Name,
-		CacheSize:                                DefaultCacheSize,
-		DataDir:                                  dataDir,
-		RTTMillisecond:                           DefaultRTTMillisecond,
-		SnapshotCount:                            DefaultSnapshotCount,
-		BackendBatchInterval:                     DefaultBackendBatchInterval,
-		BackendBatchLimit:                        DefaultBatchLimit,
-		TickMs:                                   DefaultTickMs,
-		ElectionTicks:                            DefaultElectionTicks,
-		PreVote:                                  false,
-		CompactionBatchLimit:                     DefaultCompactionBatchLimit,
-		MaxRequestBytes:                          DefaultMaxRequestBytes,
-		WarningApplyDuration:                     DefaultWarningApplyDuration,
-		ExperimentalTxnModeWriteWithSharedBuffer: false,
-		RaftAddress:                              RaftAddress,
+		Logger:                       lg,
+		CacheSize:                    DefaultCacheSize,
+		DataDir:                      dataDir,
+		RTTMillisecond:               DefaultRTTMillisecond,
+		BackendBatchInterval:         DefaultBackendBatchInterval,
+		BackendBatchLimit:            DefaultBatchLimit,
+		CompactionBatchLimit:         DefaultCompactionBatchLimit,
+		MaxRequestBytes:              DefaultMaxRequestBytes,
+		WarningApplyDuration:         DefaultWarningApplyDuration,
+		TxnModeWriteWithSharedBuffer: false,
+		ListenerPeerAddress:          listenerAddress,
+		HeartBeatTTL:                 DefaultHeartBeatTTL,
+		ElectionTTL:                  DefaultElectionTTL,
+		PreVote:                      false,
 	}
 
 	return cfg
+}
+
+func ServerConfigFromFlagSet(flags *pflag.FlagSet) (cfg ServerConfig, err error) {
+	cfg = NewServerConfig("default", DefaultListenerPeerAddress)
+
+	cfg.CacheSize, err = flags.GetUint64("cache-size")
+	if err != nil {
+		return
+	}
+	cfg.DataDir, err = flags.GetString("data-dir")
+	if err != nil {
+		return
+	}
+	cfg.WALDir, err = flags.GetString("wal-dir")
+	if err != nil {
+		return
+	}
+	cfg.RTTMillisecond, err = flags.GetUint64("node-rtt-millisecond")
+	if err != nil {
+		return
+	}
+	cfg.BackendBatchInterval, err = flags.GetDuration("backend-batch-interval")
+	if err != nil {
+		return
+	}
+	cfg.BackendBatchLimit, err = flags.GetInt("backend-batch-limit")
+	if err != nil {
+		return
+	}
+	cfg.CompactionBatchLimit, err = flags.GetInt("compaction-batch-limit")
+	if err != nil {
+		return
+	}
+	cfg.MaxRequestBytes, err = flags.GetUint64("max-request-bytes")
+	if err != nil {
+		return
+	}
+	cfg.WarningApplyDuration, err = flags.GetDuration("warning-apply-duration")
+	if err != nil {
+		return
+	}
+	cfg.ListenerPeerAddress, err = flags.GetString("listener-peer-address")
+	if err != nil {
+		return
+	}
+	cfg.HeartBeatTTL, err = flags.GetUint64("heartbeat-ttl")
+	if err != nil {
+		return
+	}
+	cfg.ElectionTTL, err = flags.GetUint64("election-ttl")
+	if err != nil {
+		return
+	}
+	cfg.PreVote, err = flags.GetBool("pre-vote")
+	if err != nil {
+		return
+	}
+	cfg.MutualTLS, err = flags.GetBool("mutual-tls")
+	if err != nil {
+		return
+	}
+	cfg.CertFile, err = flags.GetString("cert-file")
+	if err != nil {
+		return
+	}
+	cfg.KeyFile, err = flags.GetString("key-file")
+	if err != nil {
+		return
+	}
+	cfg.CAFile, err = flags.GetString("ca-file")
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (c *ServerConfig) BackendPath() string { return datadir.ToBackendFileName(c.DataDir) }
@@ -152,7 +263,7 @@ func (c *ServerConfig) WALPath() string {
 func (c *ServerConfig) ReqTimeout() time.Duration {
 	// 5s for queue waiting, computation and disk IO delay
 	// + 2 * election timeout for possible leader election
-	return 5*time.Second + 2*time.Duration(c.ElectionTicks*c.TickMs)*time.Millisecond
+	return 5*time.Second + 2*time.Duration(c.ElectionTTL*c.RTTMillisecond)*time.Millisecond
 }
 
 // TLSConfig returns the tls.Config
@@ -173,24 +284,7 @@ func (c *ServerConfig) Apply() error {
 	if c.CacheSize == 0 {
 		c.CacheSize = DefaultCacheSize
 	}
-	if c.RTTMillisecond == 0 {
-		c.RTTMillisecond = DefaultRTTMillisecond
-	}
-	if c.SnapshotCount == 0 {
-		c.SnapshotCount = DefaultSnapshotCount
-	}
-	if c.BackendBatchInterval == 0 {
-		c.BackendBatchInterval = DefaultBackendBatchInterval
-	}
-	if c.BackendBatchLimit == 0 {
-		c.BackendBatchLimit = DefaultBatchLimit
-	}
-	if c.TickMs == 0 {
-		c.TickMs = DefaultTickMs
-	}
-	if c.ElectionTicks == 0 {
-		c.ElectionTicks = DefaultElectionTicks
-	}
+
 	if c.CompactionBatchLimit == 0 {
 		c.CompactionBatchLimit = DefaultCompactionBatchLimit
 	}
@@ -199,6 +293,16 @@ func (c *ServerConfig) Apply() error {
 	}
 	if c.WarningApplyDuration == 0 {
 		c.WarningApplyDuration = DefaultWarningApplyDuration
+	}
+
+	if c.RTTMillisecond == 0 {
+		c.RTTMillisecond = DefaultRTTMillisecond
+	}
+	if c.HeartBeatTTL == 0 {
+		c.HeartBeatTTL = DefaultHeartBeatTTL
+	}
+	if c.ElectionTTL == 0 {
+		c.ElectionTTL = DefaultElectionTTL
 	}
 
 	return nil

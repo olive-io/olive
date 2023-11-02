@@ -28,7 +28,7 @@ func newBackend(cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend 
 	if cfg.CacheSize != 0 {
 		bcfg.CacheSize = cfg.CacheSize
 		if cfg.Logger != nil {
-			cfg.Logger.GetLogger().Info("setting backend cache size", zap.Int64("cache size", cfg.CacheSize))
+			cfg.Logger.GetLogger().Info("setting backend cache size", zap.Uint64("cache size", cfg.CacheSize))
 		}
 	}
 	if cfg.BackendBatchLimit != 0 {

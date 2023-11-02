@@ -697,7 +697,7 @@ func TestKVSnapshot(t *testing.T) {
 
 	snap := s.b.Snapshot()
 	defer snap.Close()
-	_, err = snap.WriteTo(f)
+	_, err = snap.WriteTo(nil, f)
 	if err != nil {
 		t.Fatal(err)
 	}

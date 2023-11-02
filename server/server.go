@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	recommendedMaxRequestBytes = 10 * 1024 * 1024
+	recommendedMaxRequestBytes = 100 * 1024 * 1024
 )
 
 var (
@@ -87,8 +87,8 @@ func NewServer(cfg config.ServerConfig) (*KVServer, error) {
 	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
 		lg.Warn(
 			"exceeded recommended request limit",
-			zap.Uint("max-request-bytes", cfg.MaxRequestBytes),
-			zap.String("max-request-size", humanize.Bytes(uint64(cfg.MaxRequestBytes))),
+			zap.Uint64("max-request-bytes", cfg.MaxRequestBytes),
+			zap.String("max-request-size", humanize.Bytes(cfg.MaxRequestBytes)),
 			zap.Int("recommended-request-bytes", recommendedMaxRequestBytes),
 			zap.String("recommended-request-size", recommendedMaxRequestBytesString),
 		)
@@ -106,7 +106,7 @@ func NewServer(cfg config.ServerConfig) (*KVServer, error) {
 		WALDir:              cfg.WALPath(),
 		NodeHostDir:         bepath,
 		RTTMillisecond:      cfg.RTTMillisecond,
-		RaftAddress:         cfg.RaftAddress,
+		RaftAddress:         cfg.ListenerPeerAddress,
 		EnableMetrics:       true,
 		RaftEventListener:   rel,
 		SystemEventListener: sel,
@@ -156,14 +156,15 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 
 	shardID := GenHash([]byte(cfg.Name))
 	rc := dbc.Config{
-		ShardID:            shardID,
-		CheckQuorum:        true,
-		PreVote:            s.Cfg.PreVote,
-		ElectionRTT:        s.Cfg.ElectionTicks,
-		HeartbeatRTT:       s.Cfg.TickMs,
-		SnapshotEntries:    10,
-		CompactionOverhead: 5,
-		WaitReady:          true,
+		ShardID:             shardID,
+		CheckQuorum:         true,
+		PreVote:             s.Cfg.PreVote,
+		ElectionRTT:         s.Cfg.ElectionTTL,
+		HeartbeatRTT:        s.Cfg.HeartBeatTTL,
+		SnapshotEntries:     10,
+		CompactionOverhead:  5,
+		OrderedConfigChange: true,
+		WaitReady:           true,
 	}
 
 	join := cfg.NewCluster
@@ -175,11 +176,11 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 			return 0, fmt.Errorf("invalid url: %v", urlText.String())
 		}
 		replicaID := GenHash([]byte(key))
-		raftAddress := URL.Host
-		if raftAddress == s.Cfg.RaftAddress {
+		peerAddress := URL.Host
+		if peerAddress == s.Cfg.ListenerPeerAddress {
 			rc.ReplicaID = replicaID
 		}
-		members[replicaID] = raftAddress
+		members[replicaID] = peerAddress
 	}
 
 	start := time.Now()

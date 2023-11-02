@@ -63,7 +63,7 @@ type BackendConfig struct {
 	// Dir is the file path to the storage file.
 	Dir string
 	// CacheSize is the size to pebble cache
-	CacheSize int64
+	CacheSize uint64
 	// BatchInterval is the maximum time before flushing the BatchTx.
 	BatchInterval time.Duration
 	// BatchLimit is the maximum puts before flushing the BatchTx.
@@ -146,6 +146,9 @@ func newBackend(cfg BackendConfig) *backend {
 	}
 
 	options := &pebble.Options{}
+	if cfg.CacheSize != 0 {
+		options.Cache = pebble.NewCache(int64(cfg.CacheSize))
+	}
 	db, err := pebble.Open(cfg.Dir, options)
 	if err != nil {
 		cfg.Logger.Panic("failed to open database", zap.String("dir", cfg.Dir), zap.Error(err))

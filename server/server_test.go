@@ -38,7 +38,7 @@ func newServer(t *testing.T, dirname, address string) *server.KVServer {
 		panic(err)
 	}
 
-	cfg := config.NewServiceConfig("test", dir, address)
+	cfg := config.NewServerConfig(dir, address)
 	cfg.Logger.Pkgs = `{"transport": "debug","rsm": "debug", "raft": "debug", "grpc": "debug"}`
 	if err = cfg.Apply(); err != nil {
 		panic(err)

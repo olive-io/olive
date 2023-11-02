@@ -91,10 +91,10 @@ func NewServer(cfg Config) (*Server, error) {
 	opts = append(opts, grpc.Creds(cred))
 
 	if cfg.MaxGRPCSendMessageSize != 0 {
-		opts = append(opts, grpc.MaxSendMsgSize(cfg.MaxGRPCSendMessageSize))
+		opts = append(opts, grpc.MaxSendMsgSize(int(cfg.MaxGRPCSendMessageSize)))
 	}
 	if cfg.MaxGRPCReceiveMessageSize != 0 {
-		opts = append(opts, grpc.MaxRecvMsgSize(cfg.MaxGRPCReceiveMessageSize))
+		opts = append(opts, grpc.MaxRecvMsgSize(int(cfg.MaxGRPCReceiveMessageSize)))
 	}
 
 	gs := grpc.NewServer(opts...)
@@ -135,7 +135,7 @@ func (s *Server) Start() error {
 
 	s.kvs.Start()
 
-	name := s.cfg.Server.Name
+	name := s.cfg.Name
 	scfg := config.ShardConfig{
 		Name:       name,
 		PeerURLs:   s.cfg.PeerURLs,

@@ -26,6 +26,7 @@ import (
 	"sync/atomic"
 
 	dlg "github.com/lni/dragonboat/v4/logger"
+	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/logutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -37,7 +38,25 @@ import (
 
 var (
 	loggerOnce sync.Once
+	lgFlagSet  = pflag.NewFlagSet("logging", pflag.ExitOnError)
 )
+
+func init() {
+	lgFlagSet.String("log-level", logutil.DefaultLogLevel,
+		"Configures log level. Only supports debug, info, warn, error, panic, or fatal.")
+	lgFlagSet.StringSlice("log-outputs", []string{DefaultLogOutput},
+		"Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.")
+	lgFlagSet.String("log-package-config-json", DefaultLogPkgsConfig,
+		"Configures the logger config of raft packages.")
+	lgFlagSet.Bool("enable-log-rotation", false,
+		"Enable log rotation of a single log-outputs file target.")
+	lgFlagSet.String("log-rotation-config-json", DefaultLogRotationConfig,
+		"Configures log rotation if enabled with a JSON logger config. MaxSize(MB), MaxAge(days,0=no limit), MaxBackups(0=no limit), LocalTime(use computers local time), Compress(gzip).")
+}
+
+func AddLogFlagSet(flags *pflag.FlagSet) {
+	flags.AddFlagSet(lgFlagSet)
+}
 
 type LoggerConfig struct {
 	loggerMu *sync.RWMutex
@@ -51,7 +70,7 @@ type LoggerConfig struct {
 	LogLevel string `json:"log-level"`
 
 	// Pkgs sets the Level for the packages of dragonboat
-	Pkgs           string `json:"log-pkgs"`
+	Pkgs           string `json:"log-package-config-json"`
 	dragonboatFlag int32
 
 	// LogOutputs is either:
@@ -74,13 +93,41 @@ func NewLoggerConfig() *LoggerConfig {
 		pkgLoggers:            map[string]*dragonboatLogger{},
 		ZapLoggerBuilder:      nil,
 		LogLevel:              logutil.DefaultLogLevel,
-		Pkgs:                  DefaultLogPkgs,
+		Pkgs:                  DefaultLogPkgsConfig,
 		LogOutputs:            []string{DefaultLogOutput},
 		EnableLogRotation:     false,
 		LogRotationConfigJSON: DefaultLogRotationConfig,
 	}
 
 	return cfg
+}
+
+func LoggerConfigFromFlagSet(flags *pflag.FlagSet) (cfg LoggerConfig, err error) {
+	cfg = *NewLoggerConfig()
+
+	cfg.LogLevel, err = flags.GetString("log-level")
+	if err != nil {
+		return
+	}
+
+	cfg.LogOutputs, err = flags.GetStringSlice("log-outputs")
+	if err != nil {
+		return
+	}
+
+	cfg.Pkgs, err = flags.GetString("log-package-config-json")
+	if err != nil {
+		return
+	}
+
+	cfg.EnableLogRotation, err = flags.GetBool("enable-log-rotation")
+	if err != nil {
+		return
+	}
+
+	cfg.LogRotationConfigJSON, err = flags.GetString("log-rotation-config-json")
+
+	return
 }
 
 func (cfg *LoggerConfig) Apply() error {
@@ -207,17 +254,7 @@ func NewZapLoggerBuilder(lg *zap.Logger) func(config *LoggerConfig) error {
 	}
 }
 
-// NewZapCoreLoggerBuilder - is a deprecated setter for the logger.
-// Deprecated: Use simpler NewZapLoggerBuilder. To be removed in etcd-3.6.
-func NewZapCoreLoggerBuilder(lg *zap.Logger, _ zapcore.Core, _ zapcore.WriteSyncer) func(config *LoggerConfig) error {
-	return NewZapLoggerBuilder(lg)
-}
-
 // SetupGlobalLoggers configures 'global' loggers (grpc, zapGlobal) based on the cfg.
-//
-// The method is not executed by embed server by default (since 3.5) to
-// enable setups where grpc/zap.Global logging is configured independently
-// or spans separate lifecycle (like in tests).
 func (cfg *LoggerConfig) SetupGlobalLoggers() {
 	lg := cfg.GetLogger()
 	if lg != nil {

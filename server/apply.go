@@ -289,7 +289,7 @@ func (a *applierBackend) Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnR
 	// When the transaction contains write operations, we use ReadTx instead of
 	// ConcurrentReadTx to avoid extra overhead of copying buffer.
 	var txn mvcc.ITxnWrite
-	if isWrite && a.s.Cfg.ExperimentalTxnModeWriteWithSharedBuffer {
+	if isWrite && a.s.Cfg.TxnModeWriteWithSharedBuffer {
 		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.SharedBufReadTxMode, trace))
 	} else {
 		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.ConcurrentReadTxMode, trace))

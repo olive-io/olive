@@ -20,11 +20,30 @@ import (
 	"time"
 
 	"github.com/olive-io/olive/server/config"
+	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 )
 
+const (
+	DefaultName = "default"
+)
+
+var (
+	metaFlagSet = pflag.NewFlagSet("meta", pflag.ExitOnError)
+)
+
+func init() {
+	metaFlagSet.String("name", DefaultName, "Human-readable name for this member.")
+}
+
+func AddFlagSet(flags *pflag.FlagSet) {
+	flags.AddFlagSet(metaFlagSet)
+}
+
 type Config struct {
 	Server config.ServerConfig
+
+	Name string
 
 	PeerURLs types.URLsMap
 
@@ -32,13 +51,13 @@ type Config struct {
 
 	ListenerAddress string
 
-	MaxGRPCReceiveMessageSize int
-	MaxGRPCSendMessageSize    int
+	MaxGRPCReceiveMessageSize int64
+	MaxGRPCSendMessageSize    int64
 }
 
 // TestConfig get Config for testing
 func TestConfig() (Config, func()) {
-	scfg := config.NewServiceConfig("test", config.DefaultLogOutput, "localhost:7380")
+	scfg := config.NewServerConfig(config.DefaultLogOutput, "localhost:7380")
 	peer, _ := types.NewURLsMap("test=http://localhost:7380")
 	cfg := Config{
 		Server:          scfg,
@@ -57,7 +76,7 @@ func (cfg *Config) Apply() (err error) {
 		return err
 	}
 
-	if cfg.Server.Name == "" {
+	if cfg.Name == "" {
 		return fmt.Errorf("missing the name of server")
 	}
 
@@ -66,7 +85,7 @@ func (cfg *Config) Apply() (err error) {
 	}
 
 	if cfg.PeerURLs.Len() == 0 {
-		cfg.PeerURLs, _ = types.NewURLsMap(cfg.Server.Name + "=" + cfg.Server.RaftAddress)
+		cfg.PeerURLs, _ = types.NewURLsMap(cfg.Name + "=" + cfg.Server.ListenerPeerAddress)
 	}
 
 	return
