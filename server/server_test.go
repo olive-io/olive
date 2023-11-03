@@ -38,13 +38,18 @@ func newServer(t *testing.T, dirname, address string) *server.KVServer {
 		panic(err)
 	}
 
+	lgCfg := config.NewLoggerConfig()
+	lgCfg.Pkgs = `{"transport": "debug","rsm": "debug", "raft": "debug", "grpc": "debug"}`
+	if err = lgCfg.Apply(); err != nil {
+		panic(err)
+	}
+
 	cfg := config.NewServerConfig(dir, address)
-	cfg.Logger.Pkgs = `{"transport": "debug","rsm": "debug", "raft": "debug", "grpc": "debug"}`
 	if err = cfg.Apply(); err != nil {
 		panic(err)
 	}
 
-	s, err := server.NewServer(cfg)
+	s, err := server.NewServer(lgCfg.GetLogger(), cfg)
 	if !assert.NoError(t, err) {
 		return nil
 	}

@@ -23,22 +23,15 @@ import (
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/server/config"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func NewMetaCommand() *cobra.Command {
 	app := &cobra.Command{
-		Use:     "olive-meta",
-		Short:   "a component of olive",
-		Version: version.GoV(),
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			//cfg, err := parseConfig(cmd)
-			//if err != nil {
-			//	return err
-			//}
-
-			//return setupMetaServer(cfg)
-			return nil
-		},
+		Use:           "olive-meta",
+		Short:         "a component of olive",
+		Version:       version.GoV(),
+		RunE:          runMeta,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -59,8 +52,36 @@ func parseConfig(cmd *cobra.Command) (meta.Config, error) {
 	return cfg, nil
 }
 
-func setupMetaServer(cfg meta.Config) error {
-	ms, err := meta.NewServer(cfg)
+func runMeta(cmd *cobra.Command, args []string) error {
+	flags := cmd.PersistentFlags()
+
+	lcfg, err := config.LoggerConfigFromFlagSet(flags)
+	if err != nil {
+		return err
+	}
+	if err = lcfg.Apply(); err != nil {
+		return err
+	}
+
+	logger := lcfg.GetLogger()
+
+	mcfg, err := meta.ConfigFromFlagSet(flags)
+	if err != nil {
+		return err
+	}
+	if err = mcfg.Apply(); err != nil {
+		return err
+	}
+
+	if err = setupMetaServer(logger, mcfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setupMetaServer(lg *zap.Logger, cfg meta.Config) error {
+	ms, err := meta.NewServer(lg, cfg)
 	if err != nil {
 		return err
 	}

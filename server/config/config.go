@@ -57,7 +57,7 @@ const (
 	DefaultMaxRequestBytes      = 10 * 1024 * 1024
 	DefaultWarningApplyDuration = time.Millisecond * 100
 
-	DefaultListenerPeerAddress = ":7380"
+	DefaultListenerPeerAddress = "localhost:7380"
 )
 
 var (
@@ -105,8 +105,6 @@ func AddServerFlagSet(flags *pflag.FlagSet) {
 }
 
 type ServerConfig struct {
-	Logger *LoggerConfig
-
 	CacheSize uint64 `json:"cache-size"`
 	DataDir   string `json:"data-dir"`
 	WALDir    string `json:"wal-dir"`
@@ -154,9 +152,7 @@ type ServerConfig struct {
 }
 
 func NewServerConfig(dataDir, listenerAddress string) ServerConfig {
-	lg := NewLoggerConfig()
 	cfg := ServerConfig{
-		Logger:                       lg,
 		CacheSize:                    DefaultCacheSize,
 		DataDir:                      dataDir,
 		RTTMillisecond:               DefaultRTTMillisecond,
@@ -277,10 +273,6 @@ func (c *ServerConfig) TLSConfig() (*tls.Config, bool, error) {
 }
 
 func (c *ServerConfig) Apply() error {
-	if err := c.Logger.Apply(); err != nil {
-		return err
-	}
-
 	if c.CacheSize == 0 {
 		c.CacheSize = DefaultCacheSize
 	}
@@ -315,5 +307,5 @@ type ShardConfig struct {
 
 	NewCluster bool
 
-	Timeout time.Duration
+	ElectionTimeout time.Duration
 }

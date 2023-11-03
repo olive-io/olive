@@ -25,7 +25,9 @@ import (
 )
 
 const (
-	DefaultName = "default"
+	DefaultName                  = "default"
+	DefaultListenerClientAddress = "localhost:7379"
+	DefaultElectionTimeout       = time.Second * 10
 )
 
 var (
@@ -34,36 +36,92 @@ var (
 
 func init() {
 	metaFlagSet.String("name", DefaultName, "Human-readable name for this member.")
+	metaFlagSet.String("initial-cluster", "",
+		"Initial cluster configuration for bootstrapping.")
+	metaFlagSet.String("initial-cluster-state", NewCluster,
+		"Initial cluster state ('new' or 'existing').")
+	metaFlagSet.String("listener-client-address", DefaultListenerClientAddress,
+		"Sets the address to listen on for client traffic.")
+	metaFlagSet.Duration("election-timeout", DefaultElectionTimeout,
+		"Sets the timeout to waiting for electing")
 }
 
 func AddFlagSet(flags *pflag.FlagSet) {
 	flags.AddFlagSet(metaFlagSet)
 }
 
+const (
+	NewCluster      string = "new"
+	ExistingCluster string = "existing"
+)
+
 type Config struct {
-	Server config.ServerConfig
+	config.ServerConfig
 
 	Name string
 
-	PeerURLs types.URLsMap
+	InitialCluster      types.URLsMap
+	InitialClusterState string
 
-	ShardTimeout time.Duration
+	ElectionTimeout time.Duration
 
-	ListenerAddress string
+	ListenerClientAddress string
 
 	MaxGRPCReceiveMessageSize int64
 	MaxGRPCSendMessageSize    int64
 }
 
+func ConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
+	var scfg config.ServerConfig
+	scfg, err = config.ServerConfigFromFlagSet(flags)
+	if err != nil {
+		return
+	}
+
+	cfg.ServerConfig = scfg
+	cfg.Name, err = flags.GetString("name")
+	if err != nil {
+		return
+	}
+
+	var peerString string
+	peerString, err = flags.GetString("initial-cluster")
+	if err != nil {
+		return
+	}
+	cfg.InitialCluster, err = types.NewURLsMap(peerString)
+	if err != nil {
+		return
+	}
+
+	cfg.InitialClusterState, err = flags.GetString("initial-cluster-state")
+	if err != nil {
+		return
+	}
+
+	cfg.ListenerClientAddress, err = flags.GetString("listener-client-address")
+	if err != nil {
+		return
+	}
+
+	cfg.ElectionTimeout, err = flags.GetDuration("election-timeout")
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 // TestConfig get Config for testing
 func TestConfig() (Config, func()) {
-	scfg := config.NewServerConfig(config.DefaultLogOutput, "localhost:7380")
-	peer, _ := types.NewURLsMap("test=http://localhost:7380")
+	scfg := config.NewServerConfig(config.DefaultLogOutput, config.DefaultListenerPeerAddress)
+	peer, _ := types.NewURLsMap("test=http://" + config.DefaultListenerPeerAddress)
 	cfg := Config{
-		Server:          scfg,
-		PeerURLs:        peer,
-		ShardTimeout:    time.Second * 5,
-		ListenerAddress: "localhost:7379",
+		ServerConfig:          scfg,
+		InitialCluster:        peer,
+		ElectionTimeout:       time.Second * 5,
+		ListenerClientAddress: DefaultListenerClientAddress,
+		InitialClusterState:   NewCluster,
 	}
 
 	cancel := func() { os.RemoveAll("default") }
@@ -72,7 +130,7 @@ func TestConfig() (Config, func()) {
 }
 
 func (cfg *Config) Apply() (err error) {
-	if err = cfg.Server.Apply(); err != nil {
+	if err = cfg.ServerConfig.Apply(); err != nil {
 		return err
 	}
 
@@ -80,12 +138,19 @@ func (cfg *Config) Apply() (err error) {
 		return fmt.Errorf("missing the name of server")
 	}
 
-	if cfg.ListenerAddress == "" {
-		return fmt.Errorf("missing the address of server")
+	if cfg.ListenerClientAddress == "" {
+		return fmt.Errorf("missing the address to listen on for client traffic")
 	}
 
-	if cfg.PeerURLs.Len() == 0 {
-		cfg.PeerURLs, _ = types.NewURLsMap(cfg.Name + "=" + cfg.Server.ListenerPeerAddress)
+	if cfg.InitialCluster.Len() == 0 {
+		cfg.InitialCluster, _ = types.NewURLsMap(cfg.Name + "=" + "http://" + cfg.ListenerPeerAddress)
+	}
+
+	if cfg.MaxGRPCReceiveMessageSize == 0 {
+		cfg.MaxGRPCReceiveMessageSize = int64(cfg.MaxRequestBytes)
+	}
+	if cfg.MaxGRPCSendMessageSize == 0 {
+		cfg.MaxGRPCSendMessageSize = int64(cfg.MaxRequestBytes)
 	}
 
 	return

@@ -22,28 +22,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func newBackend(cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
+func newBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
+	if lg == nil {
+		lg = zap.NewNop()
+	}
+
 	bcfg := backend.DefaultBackendConfig()
 	bcfg.Dir = cfg.BackendPath()
 	if cfg.CacheSize != 0 {
 		bcfg.CacheSize = cfg.CacheSize
-		if cfg.Logger != nil {
-			cfg.Logger.GetLogger().Info("setting backend cache size", zap.Uint64("cache size", cfg.CacheSize))
-		}
+		lg.Info("setting backend cache size", zap.Uint64("cache size", cfg.CacheSize))
 	}
 	if cfg.BackendBatchLimit != 0 {
 		bcfg.BatchLimit = cfg.BackendBatchLimit
-		if cfg.Logger != nil {
-			cfg.Logger.GetLogger().Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
-		}
+		lg.Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
 	}
 	if cfg.BackendBatchInterval != 0 {
 		bcfg.BatchInterval = cfg.BackendBatchInterval
-		if cfg.Logger != nil {
-			cfg.Logger.GetLogger().Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
-		}
+		lg.Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
 	}
-	bcfg.Logger = cfg.Logger.GetLogger()
+	bcfg.Logger = lg
 	be := backend.New(bcfg)
 	if hooks != nil {
 		be.AppendHooks(hooks)
@@ -52,21 +50,24 @@ func newBackend(cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend 
 }
 
 // openBackend returns a backend using the current etcd db.
-func openBackend(cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
+func openBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
+	if lg == nil {
+		lg = zap.NewNop()
+	}
 	fn := cfg.BackendPath()
 
 	now, beOpened := time.Now(), make(chan backend.IBackend)
 	go func() {
-		beOpened <- newBackend(cfg, hooks)
+		beOpened <- newBackend(lg, cfg, hooks)
 	}()
 
 	select {
 	case be := <-beOpened:
-		cfg.Logger.GetLogger().Info("opened backend db", zap.String("path", fn), zap.Duration("took", time.Since(now)))
+		lg.Info("opened backend db", zap.String("path", fn), zap.Duration("took", time.Since(now)))
 		return be
 
 	case <-time.After(10 * time.Second):
-		cfg.Logger.GetLogger().Info(
+		lg.Info(
 			"db file is flocked by another process, or taking too long",
 			zap.String("path", fn),
 			zap.Duration("took", time.Since(now)),

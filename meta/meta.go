@@ -62,17 +62,18 @@ type Server struct {
 	stopc  chan struct{}
 }
 
-func NewServer(cfg Config) (*Server, error) {
+func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
+	if lg == nil {
+		lg = zap.NewExample()
+	}
 
-	lg := cfg.Server.Logger.GetLogger()
-
-	kvs, err := server.NewServer(cfg.Server)
+	kvs, err := server.NewServer(lg, cfg.ServerConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	var ts net.Listener
-	tc, isTLS, err := cfg.Server.TLSConfig()
+	tc, isTLS, err := cfg.ServerConfig.TLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +82,9 @@ func NewServer(cfg Config) (*Server, error) {
 	cred := insecure.NewCredentials()
 	if isTLS {
 		cred = grpccredentials.NewTLS(tc)
-		ts, err = tls.Listen("tcp", cfg.ListenerAddress, tc)
+		ts, err = tls.Listen("tcp", cfg.ListenerClientAddress, tc)
 	} else {
-		ts, err = net.Listen("tcp", cfg.ListenerAddress)
+		ts, err = net.Listen("tcp", cfg.ListenerClientAddress)
 	}
 	if err != nil {
 		return nil, err
@@ -138,12 +139,12 @@ func (s *Server) Start() error {
 	name := s.cfg.Name
 	scfg := config.ShardConfig{
 		Name:       name,
-		PeerURLs:   s.cfg.PeerURLs,
+		PeerURLs:   s.cfg.InitialCluster,
 		NewCluster: false,
 	}
 
-	if s.cfg.ShardTimeout != 0 {
-		scfg.Timeout = s.cfg.ShardTimeout
+	if s.cfg.ElectionTimeout != 0 {
+		scfg.ElectionTimeout = s.cfg.ElectionTimeout
 	}
 
 	shardID, err := s.kvs.StartReplica(scfg)

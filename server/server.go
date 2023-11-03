@@ -81,9 +81,11 @@ type KVServer struct {
 	wg sync.WaitGroup
 }
 
-func NewServer(cfg config.ServerConfig) (*KVServer, error) {
+func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
+	if lg == nil {
+		lg = zap.NewExample()
+	}
 
-	lg := cfg.Logger.GetLogger()
 	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
 		lg.Warn(
 			"exceeded recommended request limit",
@@ -95,7 +97,7 @@ func NewServer(cfg config.ServerConfig) (*KVServer, error) {
 	}
 
 	bepath := cfg.BackendPath()
-	be := openBackend(cfg, nil)
+	be := openBackend(lg, cfg, nil)
 
 	relCh := make(chan raftio.LeaderInfo, 10)
 	rel := newRaftEventListener(relCh)
@@ -189,11 +191,11 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 		return 0, err
 	}
 
-	timeout := cfg.Timeout
-	if timeout == 0 {
-		timeout = time.Duration(math.MaxInt64)
+	electionTimeout := cfg.ElectionTimeout
+	if electionTimeout == 0 {
+		electionTimeout = time.Duration(math.MaxInt64)
 	}
-	after := time.NewTimer(timeout)
+	after := time.NewTimer(electionTimeout)
 	defer after.Stop()
 	ticker := time.NewTicker(time.Millisecond * 500)
 	defer ticker.Stop()
