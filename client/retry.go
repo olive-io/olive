@@ -15,7 +15,11 @@
 package client
 
 import (
+	"context"
+
+	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/rpctypes"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -84,4 +88,35 @@ func isSafeRetryMutableRPC(err error) bool {
 	}
 	desc := rpctypes.ErrorDesc(err)
 	return desc == "there is no address available" || desc == "there is no connection available"
+}
+
+type retryDefinitionClient struct {
+	kc api.DefinitionRPCClient
+}
+
+// RetryDefinitionClient implements a DefinitionClient.
+func RetryDefinitionClient(c *Client) api.DefinitionRPCClient {
+	return &retryDefinitionClient{
+		kc: api.NewDefinitionRPCClient(c.conn),
+	}
+}
+
+func (rc *retryDefinitionClient) DeployDefinition(ctx context.Context, in *api.DeployDefinitionRequest, opts ...grpc.CallOption) (resp *api.DeployDefinitionResponse, err error) {
+	return rc.kc.DeployDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rc *retryDefinitionClient) ListDefinition(ctx context.Context, in *api.ListDefinitionRequest, opts ...grpc.CallOption) (resp *api.ListDefinitionResponse, err error) {
+	return rc.kc.ListDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rc *retryDefinitionClient) GetDefinition(ctx context.Context, in *api.GetDefinitionRequest, opts ...grpc.CallOption) (resp *api.GetDefinitionResponse, err error) {
+	return rc.kc.GetDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rc *retryDefinitionClient) RemoveDefinition(ctx context.Context, in *api.RemoveDefinitionRequest, opts ...grpc.CallOption) (resp *api.RemoveDefinitionResponse, err error) {
+	return rc.kc.RemoveDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rc *retryDefinitionClient) ExecuteDefinition(ctx context.Context, in *api.ExecuteDefinitionRequest, opts ...grpc.CallOption) (resp *api.ExecuteDefinitionResponse, err error) {
+	return rc.kc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

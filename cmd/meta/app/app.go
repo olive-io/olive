@@ -45,14 +45,7 @@ func NewMetaCommand() *cobra.Command {
 	return app
 }
 
-func parseConfig(cmd *cobra.Command) (meta.Config, error) {
-	cfg := meta.Config{}
-	cmd.PersistentFlags()
-
-	return cfg, nil
-}
-
-func runMeta(cmd *cobra.Command, args []string) error {
+func runMeta(cmd *cobra.Command, _ []string) error {
 	flags := cmd.PersistentFlags()
 
 	lcfg, err := config.LoggerConfigFromFlagSet(flags)

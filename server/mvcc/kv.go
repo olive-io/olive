@@ -52,6 +52,8 @@ type IReadView interface {
 	// Limit limits the number of keys returned.
 	// If the required rev is compacted, ErrCompacted will be returned.
 	Range(ctx context.Context, key, end []byte, ro RangeOptions) (r *RangeResult, err error)
+
+	Versions(ctx context.Context, key []byte) ([]int64, error)
 }
 
 // ITxnRead represents a read-only transaction with operations that will not

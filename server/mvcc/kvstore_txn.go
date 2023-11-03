@@ -62,6 +62,10 @@ func (tr *storeTxnRead) Range(ctx context.Context, key, end []byte, ro RangeOpti
 	return tr.rangeKeys(ctx, key, end, tr.Rev(), ro)
 }
 
+func (tr *storeTxnRead) Versions(_ context.Context, key []byte) (revs []int64, err error) {
+	return tr.s.kvindex.Versions(key)
+}
+
 func (tr *storeTxnRead) End() {
 	tr.tx.RUnlock() // RUnlock signals the end of concurrentReadTx.
 	tr.s.mu.RUnlock()
@@ -160,7 +164,11 @@ func (tr *storeTxnRead) rangeKeys(ctx context.Context, key, end []byte, curRev i
 		default:
 		}
 		revToBytes(revpair, revBytes)
-		_, vs, _ := tr.tx.UnsafeRange(buckets.Key, revBytes, nil, 0)
+		_, vs, err := tr.tx.UnsafeRange(buckets.Key, revBytes, nil, 0)
+		if err != nil {
+			tr.s.lg.Fatal("unsafe range",
+				zap.Error(err))
+		}
 		if len(vs) != 1 {
 			tr.s.lg.Fatal(
 				"range failed to find revision pair",
@@ -175,14 +183,14 @@ func (tr *storeTxnRead) rangeKeys(ctx context.Context, key, end []byte, curRev i
 				zap.Int("len-values", len(vs)),
 			)
 		}
-		if err := kvs[i].Unmarshal(vs[0]); err != nil {
+		if err = kvs[i].Unmarshal(vs[0]); err != nil {
 			tr.s.lg.Fatal(
 				"failed to unmarshal api.KeyValue",
 				zap.Error(err),
 			)
 		}
 	}
-	tr.trace.Step("range keys from bolt db")
+	tr.trace.Step("range keys from pebble db")
 	return &RangeResult{KVs: kvs, Count: total, Rev: curRev}, nil
 }
 
@@ -222,9 +230,9 @@ func (tw *storeTxnWrite) put(key, value []byte) {
 	tw.tx.UnsafeSeqPut(buckets.Key, ibytes, d)
 	tw.s.kvindex.Put(key, idxRev)
 	tw.changes = append(tw.changes, kv)
-	tw.trace.Step("store kv pair into bolt db")
+	tw.trace.Step("store kv pair into pebble db")
 
-	tw.trace.Step("attach lease to kv pair")
+	//tw.trace.Step("attach lease to kv pair")
 }
 
 func (tw *storeTxnWrite) deleteRange(key, end []byte) int64 {

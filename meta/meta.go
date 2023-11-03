@@ -29,6 +29,8 @@ import (
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/config"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	grpccredentials "google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -216,17 +218,13 @@ func (s *Server) getShardID() uint64 {
 
 // grpcHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Given in gRPC docs.
-func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
-	if otherHandler == nil {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			grpcServer.ServeHTTP(w, r)
-		})
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func grpcHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
+	h2s := &http2.Server{}
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(w, r)
+			gh.ServeHTTP(w, r)
 		} else {
-			otherHandler.ServeHTTP(w, r)
+			hh.ServeHTTP(w, r)
 		}
-	})
+	}), h2s)
 }

@@ -40,6 +40,12 @@ func (rv *readView) Range(ctx context.Context, key, end []byte, ro RangeOptions)
 	return tr.Range(ctx, key, end, ro)
 }
 
+func (rv *readView) Versions(ctx context.Context, key []byte) (revs []int64, err error) {
+	tr := rv.kv.Read(ConcurrentReadTxMode, traceutil.TODO())
+	defer tr.End()
+	return tr.Versions(ctx, key)
+}
+
 type writeView struct{ kv IKV }
 
 func (wv *writeView) DeleteRange(key, end []byte) (n, rev int64) {

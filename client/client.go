@@ -547,7 +547,8 @@ func toErr(ctx context.Context, err error) error {
 		return nil
 	}
 	err = rpctypes.Error(err)
-	if _, ok := err.(rpctypes.OliveError); ok {
+	var oliveError rpctypes.OliveError
+	if errors.As(err, &oliveError) {
 		return err
 	}
 	if ev, ok := status.FromError(err); ok {

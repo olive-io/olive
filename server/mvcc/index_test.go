@@ -61,6 +61,21 @@ func TestIndexGet(t *testing.T) {
 	}
 }
 
+func TestIndexVersion(t *testing.T) {
+	ti := newTreeIndex(zap.NewExample())
+	ti.Put([]byte("foo"), revision{main: 1})
+	ti.Put([]byte("foo"), revision{main: 2})
+	ti.Put([]byte("foo"), revision{main: 3})
+	//ti.Tombstone([]byte("foo"), revision{main: 6})
+
+	revs, err := ti.Versions([]byte("foo"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(revs)
+}
+
 func TestIndexRange(t *testing.T) {
 	allKeys := [][]byte{[]byte("foo"), []byte("foo1"), []byte("foo2")}
 	allRevs := []revision{{main: 1}, {main: 2}, {main: 3}}

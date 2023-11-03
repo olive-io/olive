@@ -54,7 +54,7 @@ func benchmarkStoreRange(b *testing.B, n int) {
 	for i := range keys {
 		s.Put(keys[i], val[0])
 	}
-	// Force into boltdb tx instead of backend read tx.
+	// Force into pebble tx instead of backend read tx.
 	s.Commit()
 
 	var begin, end []byte

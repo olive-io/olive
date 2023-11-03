@@ -205,11 +205,11 @@ func (b *backend) BatchTx() IBatchTx { return b.batchTx }
 
 // ConcurrentReadTx creates and returns a new ReadTx, which:
 // A) creates and keeps a copy of backend.readTx.txReadBuffer,
-// B) references the boltdb read Tx (and its bucket cache) of current batch interval.
+// B) references the pebble read Tx (and its bucket cache) of current batch interval.
 func (b *backend) ConcurrentReadTx() IReadTx {
 	b.readTx.RLock()
 	defer b.readTx.RUnlock()
-	// prevent boltdb read Tx from been rolled back until store read Tx is done. Needs to be called when holding readTx.RLock().
+	// prevent pebble read Tx from been rolled back until store read Tx is done. Needs to be called when holding readTx.RLock().
 	b.readTx.txWg.Add(1)
 
 	// TODO: might want to copy the read buffer lazily - create copy when A) end of a write transaction B) end of a batch interval.

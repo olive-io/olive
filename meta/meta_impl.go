@@ -19,11 +19,14 @@ import (
 	"path"
 
 	"github.com/olive-io/olive/api"
+	errs "github.com/olive-io/olive/pkg/errors"
 )
 
 const (
 	definitionPrefix = "/definitions"
 )
+
+var noPrefixEnd = []byte{0}
 
 func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
 	shardID := s.getShardID()
@@ -31,7 +34,6 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 	definitions := &api.Definition{
 		Id:      req.Id,
 		Name:    req.Name,
-		Version: 0,
 		Content: req.Content,
 	}
 
@@ -51,7 +53,11 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 		return
 	}
 
-	resp.Version = rsp.Header.Revision
+	resp = &api.DeployDefinitionResponse{}
+	if rsp.Header != nil {
+		resp.Version = rsp.Header.Revision
+	}
+
 	return
 }
 
@@ -61,6 +67,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 	key := path.Join(definitionPrefix)
 	rangeReq := &api.RangeRequest{
 		Key:          []byte(key),
+		RangeEnd:     getPrefix([]byte(key)),
 		Serializable: true,
 	}
 
@@ -70,11 +77,12 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 		return
 	}
 
-	resp.Definition = make([]*api.Definition, 0)
+	resp = &api.ListDefinitionResponse{}
+	resp.Definitions = make([]*api.Definition, 0)
 	for _, kv := range rsp.Kvs {
 		definitions := &api.Definition{}
 		if err = definitions.Unmarshal(kv.Value); err == nil {
-			resp.Definition = append(resp.Definition, definitions)
+			resp.Definitions = append(resp.Definitions, definitions)
 		}
 	}
 
@@ -84,11 +92,13 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (resp *api.GetDefinitionResponse, err error) {
 	shardID := s.getShardID()
 
-	key := path.Join(definitionPrefix)
+	key := path.Join(definitionPrefix, req.Id)
 	rangeReq := &api.RangeRequest{
 		Key:          []byte(key),
 		Serializable: true,
 		Limit:        1,
+		Revision:     req.Version,
+		MultiVersion: true,
 	}
 
 	var rsp *api.RangeResponse
@@ -97,7 +107,13 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 		return
 	}
 
+	if len(rsp.Kvs) == 0 {
+		return nil, errs.ErrKeyNotFound
+	}
+
+	resp = &api.GetDefinitionResponse{}
 	resp.Definition = &api.Definition{}
+	resp.Definition.Versions = rsp.Versions
 	err = resp.Definition.Unmarshal(rsp.Kvs[0].Value)
 
 	return
@@ -116,12 +132,28 @@ func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinition
 	if err != nil {
 		return
 	}
-
 	_ = rsp
+
+	resp = &api.RemoveDefinitionResponse{}
 	return
 }
 
 func (s *Server) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (resp *api.ExecuteDefinitionResponse, err error) {
 	// TODO: select a runner
 	return
+}
+
+func getPrefix(key []byte) []byte {
+	end := make([]byte, len(key))
+	copy(end, key)
+	for i := len(end) - 1; i >= 0; i-- {
+		if end[i] < 0xff {
+			end[i] = end[i] + 1
+			end = end[:i+1]
+			return end
+		}
+	}
+	// next prefix does not exist (e.g., 0xffff);
+	// default to WithFromKey policy
+	return noPrefixEnd
 }

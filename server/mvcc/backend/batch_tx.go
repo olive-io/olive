@@ -276,7 +276,7 @@ func (t *batchTxBuffered) CommitAndStop() {
 }
 
 func (t *batchTxBuffered) commit(stop bool) {
-	// all read txs must be closed to acquire boltdb commit rwlock
+	// all read txs must be closed to acquire pebble commit rwlock
 	t.backend.readTx.Lock()
 	t.unsafeCommit(stop)
 	t.backend.readTx.Unlock()
@@ -290,8 +290,8 @@ func (t *batchTxBuffered) unsafeCommit(stop bool) {
 	}
 	t.backend.hmu.RUnlock()
 	if t.backend.readTx.tx != nil {
-		// wait all store read transactions using the current boltdb tx to finish,
-		// then close the boltdb tx
+		// wait all store read transactions using the current pebble tx to finish,
+		// then close the pebble tx
 		go func(tx *pebble.Batch, wg *sync.WaitGroup) {
 			wg.Wait()
 		}(t.backend.readTx.tx, t.backend.readTx.txWg)

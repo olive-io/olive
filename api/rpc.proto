@@ -33,7 +33,7 @@ message DeployDefinitionResponse {
 message ListDefinitionRequest {}
 
 message ListDefinitionResponse {
-  repeated api.Definition definition = 1;
+  repeated api.Definition definitions = 1;
 }
 
 message GetDefinitionRequest {

@@ -961,31 +961,42 @@ func (i *fakeIndex) Get(key []byte, atRev int64) (rev, created revision, ver int
 	r := <-i.indexGetRespc
 	return r.rev, r.created, r.ver, r.err
 }
+
+func (i *fakeIndex) Versions([]byte) (revs []int64, err error) {
+	return
+}
+
 func (i *fakeIndex) Range(key, end []byte, atRev int64) ([][]byte, []revision) {
 	i.Recorder.Record(testutil.Action{Name: "range", Params: []interface{}{key, end, atRev}})
 	r := <-i.indexRangeRespc
 	return r.keys, r.revs
 }
+
 func (i *fakeIndex) Put(key []byte, rev revision) {
 	i.Recorder.Record(testutil.Action{Name: "put", Params: []interface{}{key, rev}})
 }
+
 func (i *fakeIndex) Tombstone(key []byte, rev revision) error {
 	i.Recorder.Record(testutil.Action{Name: "tombstone", Params: []interface{}{key, rev}})
 	return nil
 }
+
 func (i *fakeIndex) RangeSince(key, end []byte, rev int64) []revision {
 	i.Recorder.Record(testutil.Action{Name: "rangeEvents", Params: []interface{}{key, end, rev}})
 	r := <-i.indexRangeEventsRespc
 	return r.revs
 }
+
 func (i *fakeIndex) Compact(rev int64) map[revision]struct{} {
 	i.Recorder.Record(testutil.Action{Name: "compact", Params: []interface{}{rev}})
 	return <-i.indexCompactRespc
 }
+
 func (i *fakeIndex) Keep(rev int64) map[revision]struct{} {
 	i.Recorder.Record(testutil.Action{Name: "keep", Params: []interface{}{rev}})
 	return <-i.indexCompactRespc
 }
+
 func (i *fakeIndex) Equal(b index) bool { return false }
 
 func (i *fakeIndex) Insert(ki *keyIndex) {

@@ -24,6 +24,7 @@ import (
 
 type index interface {
 	Get(key []byte, atRev int64) (rev, created revision, ver int64, err error)
+	Versions(key []byte) ([]int64, error)
 	Range(key, end []byte, atRev int64) ([][]byte, []revision)
 	Revisions(key, end []byte, atRev int64, limit int) ([]revision, int)
 	CountRevisions(key, end []byte, atRev int64) int
@@ -74,6 +75,27 @@ func (ti *treeIndex) Get(key []byte, atRev int64) (modified, created revision, v
 		return revision{}, revision{}, 0, ErrRevisionNotFound
 	}
 	return keyi.get(ti.lg, atRev)
+}
+
+func (ti *treeIndex) Versions(key []byte) (revs []int64, err error) {
+	keyi := &keyIndex{key: key}
+	ti.RLock()
+	defer ti.RUnlock()
+	if keyi = ti.keyIndex(keyi); keyi == nil {
+		return nil, ErrRevisionNotFound
+	}
+
+	if len(keyi.generations) == 0 {
+		return
+	}
+
+	g := keyi.generations[len(keyi.generations)-1]
+	revs = make([]int64, len(g.revs))
+	for i := range g.revs {
+		revs[i] = g.revs[i].main
+	}
+
+	return
 }
 
 func (ti *treeIndex) KeyIndex(keyi *keyIndex) *keyIndex {

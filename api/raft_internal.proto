@@ -42,16 +42,16 @@ message RaftEntry {
 message KeyValue {
   // key is the key in bytes. An empty key is not allowed.
   bytes key = 1;
+  // value is the value held by the key, in bytes.
+  bytes value = 2;
   // create_revision is the revision of last creation on this key.
-  int64 create_revision = 2;
+  int64 create_revision = 3;
   // mod_revision is the revision of last modification on this key.
-  int64 mod_revision = 3;
+  int64 mod_revision = 4;
   // version is the version of the key. A deletion resets
   // the version to zero and any modification of the key
   // increases its version.
-  int64 version = 4;
-  // value is the value held by the key, in bytes.
-  bytes value = 5;
+  int64 version = 5;
 }
 
 message ResponseHeader {
@@ -59,13 +59,13 @@ message ResponseHeader {
   uint64 cluster_id = 1;
   // node_id is the ID of the member which sent the response.
   uint64 node_id = 2;
+  // raft_term is the raft term when the request was applied.
+  uint64 raft_term = 3;
   // revision is the key-value store revision when the request was applied.
   // For watch progress responses, the header.revision indicates progress. All future events
   // recieved in this stream are guaranteed to have a higher revision number than the
   // header.revision number.
-  int64 revision = 3;
-  // raft_term is the raft term when the request was applied.
-  uint64 raft_term = 4;
+  int64 revision = 4;
 }
 
 message RangeRequest {
@@ -118,21 +118,24 @@ message RangeRequest {
   // count_only when set returns only the count of the keys in the range.
   bool count_only = 9;
 
+  // multi_version returns the versions of the given key, range_end must be not given.
+  bool multi_version = 10;
+
   // min_mod_revision is the lower bound for returned key mod revisions; all keys with
   // lesser mod revisions will be filtered away.
-  int64 min_mod_revision = 10;
+  int64 min_mod_revision = 11;
 
   // max_mod_revision is the upper bound for returned key mod revisions; all keys with
   // greater mod revisions will be filtered away.
-  int64 max_mod_revision = 11;
+  int64 max_mod_revision = 12;
 
   // min_create_revision is the lower bound for returned key create revisions; all keys with
   // lesser create revisions will be filtered away.
-  int64 min_create_revision = 12;
+  int64 min_create_revision = 13;
 
   // max_create_revision is the upper bound for returned key create revisions; all keys with
   // greater create revisions will be filtered away.
-  int64 max_create_revision = 13;
+  int64 max_create_revision = 14;
 }
 
 message RangeResponse {
@@ -140,10 +143,11 @@ message RangeResponse {
   // kvs is the list of key-value pairs matched by the range request.
   // kvs is empty when count is requested.
   repeated KeyValue kvs = 2;
+  repeated int64 versions = 3;
   // more indicates if there are more keys to return in the requested range.
-  bool more = 3;
+  bool more = 4;
   // count is set to the number of keys within the range when requested.
-  int64 count = 4;
+  int64 count = 5;
 }
 
 message PutRequest {

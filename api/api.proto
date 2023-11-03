@@ -13,8 +13,8 @@ option (gogoproto.goproto_getters_all) = false;
 message Definition {
   string id = 1;
   string name = 2;
-  int64 version = 3;
-  bytes content = 4;
+  bytes content = 3;
+  repeated int64 versions = 4;
 }
 
 message ProcessInstance {

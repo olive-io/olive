@@ -186,6 +186,14 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.Ra
 		return nil, err
 	}
 
+	if r.MultiVersion && len(r.RangeEnd) == 0 {
+		revs, err := txn.Versions(ctx, r.Key)
+		if err != nil {
+			return nil, err
+		}
+		resp.Versions = revs
+	}
+
 	if r.MaxModRevision != 0 {
 		f := func(kv *api.KeyValue) bool { return kv.ModRevision > r.MaxModRevision }
 		pruneKVs(rr, f)
