@@ -42,6 +42,8 @@ var (
 
 // Client provides and manages an olive client session.
 type Client struct {
+	IDefinitionKV
+
 	conn *grpc.ClientConn
 
 	cfg      Config
@@ -404,12 +406,7 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 	client.conn = conn
 
-	//client.Cluster = NewCluster(client)
-	//client.KV = NewKV(client)
-	//client.Lease = NewLease(client)
-	//client.Watcher = NewWatcher(client)
-	//client.Auth = NewAuth(client)
-	//client.Maintenance = NewMaintenance(client)
+	client.IDefinitionKV = NewDefinitionKV(client)
 
 	//get token with established connection
 	ctx, cancel = client.ctx, func() {}

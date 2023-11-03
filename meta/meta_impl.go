@@ -29,6 +29,7 @@ const (
 var noPrefixEnd = []byte{0}
 
 func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
+	resp = &api.DeployDefinitionResponse{}
 	shardID := s.getShardID()
 
 	definitions := &api.Definition{
@@ -53,7 +54,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 		return
 	}
 
-	resp = &api.DeployDefinitionResponse{}
+	resp.Header = rsp.Header
 	if rsp.Header != nil {
 		resp.Version = rsp.Header.Revision
 	}
@@ -62,6 +63,8 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 }
 
 func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
+	resp = &api.ListDefinitionResponse{}
+
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix)
@@ -69,6 +72,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 		Key:          []byte(key),
 		RangeEnd:     getPrefix([]byte(key)),
 		Serializable: true,
+		KeysOnly:     true,
 	}
 
 	var rsp *api.RangeResponse
@@ -77,8 +81,8 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 		return
 	}
 
-	resp = &api.ListDefinitionResponse{}
 	resp.Definitions = make([]*api.Definition, 0)
+	resp.Header = rsp.Header
 	for _, kv := range rsp.Kvs {
 		definitions := &api.Definition{}
 		if err = definitions.Unmarshal(kv.Value); err == nil {
@@ -90,6 +94,8 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 }
 
 func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (resp *api.GetDefinitionResponse, err error) {
+	resp = &api.GetDefinitionResponse{}
+
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix, req.Id)
@@ -111,7 +117,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 		return nil, errs.ErrKeyNotFound
 	}
 
-	resp = &api.GetDefinitionResponse{}
+	resp.Header = rsp.Header
 	resp.Definition = &api.Definition{}
 	resp.Definition.Versions = rsp.Versions
 	err = resp.Definition.Unmarshal(rsp.Kvs[0].Value)
@@ -120,6 +126,8 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 }
 
 func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
+	resp = &api.RemoveDefinitionResponse{}
+
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix, req.Id)
@@ -132,9 +140,9 @@ func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinition
 	if err != nil {
 		return
 	}
-	_ = rsp
 
-	resp = &api.RemoveDefinitionResponse{}
+	resp.Header = rsp.Header
+
 	return
 }
 
