@@ -27,7 +27,6 @@ import (
 const (
 	DefaultName                  = "default"
 	DefaultListenerClientAddress = "localhost:7379"
-	DefaultElectionTimeout       = time.Second * 10
 )
 
 var (
@@ -42,7 +41,7 @@ func init() {
 		"Initial cluster state ('new' or 'existing').")
 	metaFlagSet.String("listener-client-address", DefaultListenerClientAddress,
 		"Sets the address to listen on for client traffic.")
-	metaFlagSet.Duration("election-timeout", DefaultElectionTimeout,
+	metaFlagSet.Duration("election-timeout", 0,
 		"Sets the timeout to waiting for electing")
 }
 

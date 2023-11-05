@@ -48,7 +48,7 @@ const (
 	DefaultBackendBatchInterval = 0
 	DefaultBatchLimit           = 0
 
-	DefaultHeartBeatTTL = 2
+	DefaultHeartBeatTTL = 1
 
 	DefaultElectionTTL = 10
 
