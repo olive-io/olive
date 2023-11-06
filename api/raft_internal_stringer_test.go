@@ -21,8 +21,6 @@ import (
 )
 
 // TestInvalidGoTypeIntPanic tests conditions that caused
-// panic: invalid Go type int for field k8s_io.kubernetes.vendor.go_etcd_io.etcd.etcdserver.etcdserverpb.loggablePutRequest.value_size
-// See https://github.com/kubernetes/kubernetes/issues/91937 for more details
 func TestInvalidGoTypeIntPanic(t *testing.T) {
 	result := api.NewLoggablePutRequest(&api.PutRequest{}).String()
 	if result != "" {

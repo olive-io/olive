@@ -49,7 +49,7 @@ func newBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) b
 	return be
 }
 
-// openBackend returns a backend using the current etcd db.
+// openBackend returns a backend using the current olive db.
 func openBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
 	if lg == nil {
 		lg = zap.NewNop()

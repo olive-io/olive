@@ -244,7 +244,7 @@ func (cfg *LoggerConfig) GetLogger() *zap.Logger {
 }
 
 // NewZapLoggerBuilder generates a zap logger builder that sets given loger
-// for embedded etcd.
+// for embedded olive.
 func NewZapLoggerBuilder(lg *zap.Logger) func(config *LoggerConfig) error {
 	return func(cfg *LoggerConfig) error {
 		cfg.loggerMu.Lock()

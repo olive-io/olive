@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package credentials implements gRPC credential interface with etcd specific logic.
+// Package credentials implements gRPC credential interface with olive specific logic.
 // e.g., client handshake with custom authority parameter
 package credentials
 

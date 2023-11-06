@@ -325,7 +325,7 @@ func (a *applierBackend) Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnR
 	trace.Step("check requests")
 	txnResp, _ := newTxnResp(rt, txnPath)
 
-	// When executing mutable txn ops, etcd must hold the txn lock so
+	// When executing mutable txn ops, olive must hold the txn lock so
 	// readers do not see any intermediate results. Since writes are
 	// serialized on the raft loop, the revision in the read view will
 	// be the revision of the write txn.

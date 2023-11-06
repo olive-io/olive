@@ -75,7 +75,7 @@ func TestBackendSnapshot(t *testing.T) {
 
 	// bootstrap new backend from the snapshot
 	bcfg := backend.DefaultBackendConfig()
-	dir, err := os.MkdirTemp(t.TempDir(), "etcd_backend_test1")
+	dir, err := os.MkdirTemp(t.TempDir(), "olive_backend_test1")
 	if err != nil {
 		panic(err)
 	}

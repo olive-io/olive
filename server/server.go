@@ -311,8 +311,7 @@ func (s *KVServer) getShard(shardID uint64) (*shard, bool) {
 	return ssm, ok
 }
 
-// GoAttach creates a goroutine on a given function and tracks it using
-// the etcdserver waitgroup.
+// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
 // The passed function should interrupt on s.StoppingNotify().
 func (s *KVServer) GoAttach(f func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
