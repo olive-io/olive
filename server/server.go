@@ -154,11 +154,10 @@ func (s *KVServer) Start() {
 	s.GoAttach(s.processRaftEvent)
 }
 
-func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
+func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 
-	shardID := GenHash([]byte(cfg.Name))
 	rc := dbc.Config{
-		ShardID:             shardID,
+		ShardID:             cfg.ShardID,
 		CheckQuorum:         true,
 		PreVote:             s.Cfg.PreVote,
 		ElectionRTT:         s.Cfg.ElectionTTL,
@@ -175,7 +174,7 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 	for key, urlText := range cfg.PeerURLs {
 		URL, err := url.Parse(urlText.String())
 		if err != nil {
-			return 0, fmt.Errorf("invalid url: %v", urlText.String())
+			return fmt.Errorf("invalid url: %v", urlText.String())
 		}
 		replicaID := GenHash([]byte(key))
 		peerAddress := URL.Host
@@ -188,7 +187,7 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 	start := time.Now()
 	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	electionTimeout := cfg.ElectionTimeout
@@ -202,13 +201,13 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 	for {
 		select {
 		case <-s.stop:
-			return 0, errs.ErrStopped
+			return errs.ErrStopped
 		case <-after.C:
-			return 0, fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
+			return fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
 		case <-ticker.C:
 		}
 
-		leaderID, term, ok, e1 := s.nh.GetLeaderID(shardID)
+		leaderID, term, ok, e1 := s.nh.GetLeaderID(cfg.ShardID)
 		if ok {
 			s.lg.Info("start new shard",
 				zap.Uint64("leader", leaderID),
@@ -217,11 +216,11 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) (uint64, error) {
 			break
 		}
 		if e1 != nil {
-			return 0, fmt.Errorf("get leader %v", e1)
+			return fmt.Errorf("get leader %v", e1)
 		}
 	}
 
-	return shardID, nil
+	return nil
 }
 
 func (s *KVServer) Logger() *zap.Logger {

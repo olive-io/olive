@@ -42,6 +42,10 @@ var (
 	ErrServerStop     = errors.New("olive-meta: start stop")
 )
 
+const (
+	metaShard = uint64(128)
+)
+
 type Server struct {
 	cfg Config
 
@@ -141,6 +145,7 @@ func (s *Server) Start() error {
 	name := s.cfg.Name
 	scfg := config.ShardConfig{
 		Name:       name,
+		ShardID:    metaShard,
 		PeerURLs:   s.cfg.InitialCluster,
 		NewCluster: false,
 	}
@@ -149,11 +154,11 @@ func (s *Server) Start() error {
 		scfg.ElectionTimeout = s.cfg.ElectionTimeout
 	}
 
-	shardID, err := s.kvs.StartReplica(scfg)
+	err := s.kvs.StartReplica(scfg)
 	if err != nil {
 		return err
 	}
-	s.setShardID(shardID)
+	s.setShardID(scfg.ShardID)
 
 	mux := http.NewServeMux()
 

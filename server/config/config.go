@@ -303,9 +303,29 @@ func (c *ServerConfig) Apply() error {
 type ShardConfig struct {
 	Name string `json:"name"`
 
+	ShardID uint64 `json:"shardID"`
+
 	PeerURLs types.URLsMap
 
 	NewCluster bool
 
 	ElectionTimeout time.Duration
+}
+
+func (cfg *ShardConfig) Apply() error {
+	if len(cfg.PeerURLs) != 0 {
+		exists := false
+		for name, _ := range cfg.PeerURLs {
+			if name == cfg.Name {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			return fmt.Errorf("missing URL match with name")
+		}
+	}
+
+	return nil
 }

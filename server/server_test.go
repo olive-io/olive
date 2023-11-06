@@ -66,7 +66,7 @@ func TestNewServer(t *testing.T) {
 		NewCluster: false,
 	}
 	scfg.PeerURLs, _ = types.NewURLsMap("test=http://localhost:60001")
-	_, err := s.StartReplica(scfg)
+	err := s.StartReplica(scfg)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -98,20 +98,20 @@ func TestNewCluster(t *testing.T) {
 	}
 	scfg.PeerURLs, _ = types.NewURLsMap("test1=http://localhost:60001,test2=http://localhost:60002,test3=http://localhost:60003")
 	go func() {
-		_, err := s1.StartReplica(scfg)
+		err := s1.StartReplica(scfg)
 		if !assert.NoError(t, err) {
 			return
 		}
 	}()
 
 	go func() {
-		_, err := s2.StartReplica(scfg)
+		err := s2.StartReplica(scfg)
 		if !assert.NoError(t, err) {
 			return
 		}
 	}()
 
-	_, err := s3.StartReplica(scfg)
+	err := s3.StartReplica(scfg)
 	if !assert.NoError(t, err) {
 		return
 	}
