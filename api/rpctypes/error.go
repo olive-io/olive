@@ -21,6 +21,7 @@ import (
 
 // server-side error
 var (
+	ErrGRPCBadDefinition = status.New(codes.InvalidArgument, "olive-meta: content is bad").Err()
 	ErrGRPCEmptyKey      = status.New(codes.InvalidArgument, "oliveserver: key is not provided").Err()
 	ErrGRPCKeyNotFound   = status.New(codes.InvalidArgument, "oliveserver: key not found").Err()
 	ErrGRPCValueProvided = status.New(codes.InvalidArgument, "oliveserver: value is provided").Err()
@@ -91,6 +92,7 @@ var (
 	ErrGRPCDeadlineExceeded = status.New(codes.DeadlineExceeded, "oliveserver: context deadline exceeded").Err()
 
 	errStringToError = map[string]error{
+		ErrorDesc(ErrGRPCBadDefinition): ErrGRPCBadDefinition,
 		ErrorDesc(ErrGRPCEmptyKey):      ErrGRPCEmptyKey,
 		ErrorDesc(ErrGRPCKeyNotFound):   ErrGRPCKeyNotFound,
 		ErrorDesc(ErrGRPCValueProvided): ErrGRPCValueProvided,

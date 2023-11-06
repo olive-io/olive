@@ -16,9 +16,12 @@ package meta
 
 import (
 	"context"
+	"encoding/xml"
 	"path"
 
+	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/olive/api"
+	"github.com/olive-io/olive/api/rpctypes"
 	errs "github.com/olive-io/olive/pkg/errors"
 )
 
@@ -31,6 +34,13 @@ var noPrefixEnd = []byte{0}
 func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
 	resp = &api.DeployDefinitionResponse{}
 	shardID := s.getShardID()
+
+	var sd schema.Definitions
+	err = xml.Unmarshal(req.Content, &sd)
+	if err != nil {
+		err = rpctypes.ErrGRPCBadDefinition
+		return
+	}
 
 	definitions := &api.Definition{
 		Id:      req.Id,
