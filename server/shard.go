@@ -53,7 +53,9 @@ type shard struct {
 	consistIndex cindex.IConsistentIndexer
 	reqIDGen     *idutil.Generator
 
-	changec chan struct{}
+	stopping chan struct{}
+	done     chan struct{}
+	changec  chan struct{}
 
 	appliedIndex   uint64 // must use atomic operations to access; keep 64-bit aligned.
 	committedIndex uint64 // must use atomic operations to access; keep 64-bit aligned.
@@ -67,7 +69,7 @@ func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 	cindex.CreateMetaBucket(s.Backend().BatchTx())
 
 	ctx, cancel := context.WithCancel(s.ctx)
-	m := &shard{
+	ss := &shard{
 		lg: s.Logger(),
 
 		shardID: shardID,
@@ -84,21 +86,38 @@ func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 		reqIDGen: idutil.NewGenerator(uint16(nodeID), time.Now()),
 
-		changec: make(chan struct{}),
+		stopping: make(chan struct{}, 1),
+		done:     make(chan struct{}),
+		changec:  make(chan struct{}, 5),
 	}
 
 	s.smu.Lock()
-	s.sms[shardID] = m
+	s.sms[shardID] = ss
 	s.smu.Unlock()
 
-	go m.run()
-	return m
+	s.done = make(chan struct{}, 1)
+
+	go s.run()
+
+	go func() {
+		select {
+		case <-ss.stopping:
+			s.smu.Lock()
+			delete(s.sms, shardID)
+			s.smu.Unlock()
+		}
+	}()
+
+	return ss
 }
 
-func (m *shard) run() {
+func (s *shard) run() {
+	defer close(s.done)
 	for {
 		select {
-		case <-m.changec:
+		case <-s.stopping:
+			return
+		case <-s.changec:
 			// TODO: trigger raft group change
 		default:
 
@@ -106,14 +125,14 @@ func (m *shard) run() {
 	}
 }
 
-func (m *shard) Open(stopc <-chan struct{}) (uint64, error) {
-	ctx, cancel := context.WithCancel(m.ctx)
+func (s *shard) Open(done <-chan struct{}) (uint64, error) {
+	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 	r := &api.RangeRequest{
-		Key:   bytesutil.PathJoin(m.prefix(), lastAppliedIndex),
+		Key:   bytesutil.PathJoin(s.prefix(), lastAppliedIndex),
 		Limit: 1,
 	}
-	rsp, err := m.apply.Range(ctx, nil, r)
+	rsp, err := s.apply.Range(ctx, nil, r)
 	if err != nil {
 		return 0, err
 	}
@@ -122,31 +141,31 @@ func (m *shard) Open(stopc <-chan struct{}) (uint64, error) {
 	}
 
 	index := binary.LittleEndian.Uint64(rsp.Kvs[0].Value)
-	m.setAppliedIndex(index)
+	s.setAppliedIndex(index)
 	return index, nil
 }
 
-func (m *shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
-	if entries[0].Index < m.getAppliedIndex() {
+func (s *shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
+	if entries[0].Index < s.getAppliedIndex() {
 		return entries, nil
 	}
 
 	last := 0
 	for i := range entries {
 		entry := entries[i]
-		m.applyEntryNormal(&entry)
-		m.setAppliedIndex(entry.Index)
+		s.applyEntryNormal(&entry)
+		s.setAppliedIndex(entry.Index)
 		entry.Result = sm.Result{Value: uint64(len(entry.Cmd))}
 		last = i
 	}
 
 	lastIndex := entries[last].Index
-	ctx, cancel := context.WithCancel(m.ctx)
+	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
-	r := &api.PutRequest{Key: bytesutil.PathJoin(m.prefix(), lastAppliedIndex)}
+	r := &api.PutRequest{Key: bytesutil.PathJoin(s.prefix(), lastAppliedIndex)}
 	r.Value = make([]byte, 8)
 	binary.LittleEndian.PutUint64(r.Value, lastIndex)
-	_, _, err := m.apply.Put(ctx, nil, r)
+	_, _, err := s.apply.Put(ctx, nil, r)
 	if err != nil {
 		return entries, err
 	}
@@ -154,12 +173,12 @@ func (m *shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	return entries, nil
 }
 
-func (m *shard) Lookup(query interface{}) (interface{}, error) {
-	ctx, cancel := context.WithCancel(m.ctx)
+func (s *shard) Lookup(query interface{}) (interface{}, error) {
+	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	r := query.(*api.RangeRequest)
-	rsp, err := m.apply.Range(ctx, nil, r)
+	rsp, err := s.apply.Range(ctx, nil, r)
 	if err != nil {
 		return nil, err
 	}
@@ -167,18 +186,18 @@ func (m *shard) Lookup(query interface{}) (interface{}, error) {
 	return rsp, nil
 }
 
-func (m *shard) Sync() error {
+func (s *shard) Sync() error {
 	return nil
 }
 
-func (m *shard) PrepareSnapshot() (interface{}, error) {
-	snapshot := m.be.Snapshot()
+func (s *shard) PrepareSnapshot() (interface{}, error) {
+	snapshot := s.be.Snapshot()
 	return snapshot, nil
 }
 
-func (m *shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
+func (s *shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snapshot := ctx.(backend.ISnapshot)
-	_, err := snapshot.WriteTo(m.prefix(), writer)
+	_, err := snapshot.WriteTo(s.prefix(), writer)
 	if err != nil {
 		return err
 	}
@@ -186,8 +205,8 @@ func (m *shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan stru
 	return nil
 }
 
-func (m *shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
-	err := m.be.Recover(reader)
+func (s *shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
+	err := s.be.Recover(reader)
 	if err != nil {
 		return err
 	}
@@ -195,11 +214,11 @@ func (m *shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) erro
 	return nil
 }
 
-func (m *shard) prefix() []byte {
-	return []byte(fmt.Sprintf("/%d/%d", m.shardID, m.nodeID))
+func (s *shard) prefix() []byte {
+	return []byte(fmt.Sprintf("/%d/%d", s.shardID, s.nodeID))
 }
 
-func (m *shard) parseProposeCtxErr(err error, start time.Time) error {
+func (s *shard) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
 		return errs.ErrCanceled
@@ -233,46 +252,54 @@ func (m *shard) parseProposeCtxErr(err error, start time.Time) error {
 }
 
 // applyEntryNormal apples an EntryNormal type raftpb request to the KVServer
-func (m *shard) applyEntryNormal(ent *sm.Entry) {
+func (s *shard) applyEntryNormal(ent *sm.Entry) {
 	var ar *applyResult
-	index := m.consistIndex.ConsistentIndex()
+	index := s.consistIndex.ConsistentIndex()
 	if ent.Index > index {
 		// set the consistent index of current executing entry
-		m.consistIndex.SetConsistentApplyingIndex(ent.Index, m.term)
+		s.consistIndex.SetConsistentApplyingIndex(ent.Index, s.term)
 		defer func() {
 			// The txPostLockInsideApplyHook will not get called in some cases,
 			// in which we should move the consistent index forward directly.
-			newIndex := m.consistIndex.ConsistentIndex()
+			newIndex := s.consistIndex.ConsistentIndex()
 			if newIndex < ent.Index {
-				m.consistIndex.SetConsistentIndex(ent.Index, m.term)
+				s.consistIndex.SetConsistentIndex(ent.Index, s.term)
 			}
 		}()
 	}
-	m.lg.Debug("apply entry normal",
+	s.lg.Debug("apply entry normal",
 		zap.Uint64("consistent-index", index),
-		zap.Uint64("entry-term", m.term),
+		zap.Uint64("entry-term", s.term),
 		zap.Uint64("entry-index", ent.Index))
 
 	raftReq := api.InternalRaftRequest{}
 	if err := raftReq.Unmarshal(ent.Cmd); err != nil {
-		m.lg.Error("unmarshal raft entry",
-			zap.Uint64("entry-term", m.term),
+		s.lg.Error("unmarshal raft entry",
+			zap.Uint64("entry-term", s.term),
 			zap.Uint64("entry-index", ent.Index))
 		return
 	}
-	m.lg.Debug("applyEntryNormal", zap.Stringer("raftReq", &raftReq))
+	s.lg.Debug("applyEntryNormal", zap.Stringer("raftReq", &raftReq))
+
+	if raftReq.Execute != nil {
+		lr := raftReq.Execute
+		lr.Index = ent.Index
+		lr.Leader = s.getLead()
+		lr.Shard = s.shardID
+		lr.Node = s.nodeID
+	}
 
 	id := raftReq.Header.ID
-	needResult := m.w.IsRegistered(id)
+	needResult := s.w.IsRegistered(id)
 	if needResult || !noSideEffect(&raftReq) {
-		ar = m.apply.Apply(&raftReq)
+		ar = s.apply.Apply(&raftReq)
 	}
 
 	if ar == nil {
 		return
 	}
 
-	m.w.Trigger(id, ar)
+	s.w.Trigger(id, ar)
 
 	//if !errors.Is(ar.err, errs.ErrNoSpace) || len(s.alarmStore.Get(pb.AlarmType_NOSPACE)) > 0 {
 	//	s.w.Trigger(id, ar)
@@ -298,51 +325,60 @@ func (m *shard) applyEntryNormal(ent *sm.Entry) {
 	//})
 }
 
-func (m *shard) Close() error {
+func (s *shard) Close() error {
+	select {
+	case <-s.stopping:
+		return nil
+	default:
+		close(s.stopping)
+	}
+
+	<-s.done
+
 	return nil
 }
 
-func (m *shard) isLeader() bool {
-	leaderID := m.getLead()
-	return leaderID != 0 && leaderID == m.nodeID
+func (s *shard) isLeader() bool {
+	leaderID := s.getLead()
+	return leaderID != 0 && leaderID == s.nodeID
 }
 
-func (m *shard) isReady() bool {
-	return m.getLead() > 0 && m.getTerm() > 0
+func (s *shard) isReady() bool {
+	return s.getLead() > 0 && s.getTerm() > 0
 }
 
-func (m *shard) ChangeNotify() {
-	m.changec <- struct{}{}
+func (s *shard) ChangeNotify() {
+	s.changec <- struct{}{}
 }
 
-func (m *shard) setCommittedIndex(v uint64) {
-	atomic.StoreUint64(&m.committedIndex, v)
+func (s *shard) setCommittedIndex(v uint64) {
+	atomic.StoreUint64(&s.committedIndex, v)
 }
 
-func (m *shard) getCommittedIndex() uint64 {
-	return atomic.LoadUint64(&m.committedIndex)
+func (s *shard) getCommittedIndex() uint64 {
+	return atomic.LoadUint64(&s.committedIndex)
 }
 
-func (m *shard) setAppliedIndex(v uint64) {
-	atomic.StoreUint64(&m.appliedIndex, v)
+func (s *shard) setAppliedIndex(v uint64) {
+	atomic.StoreUint64(&s.appliedIndex, v)
 }
 
-func (m *shard) getAppliedIndex() uint64 {
-	return atomic.LoadUint64(&m.appliedIndex)
+func (s *shard) getAppliedIndex() uint64 {
+	return atomic.LoadUint64(&s.appliedIndex)
 }
 
-func (m *shard) setTerm(v uint64) {
-	atomic.StoreUint64(&m.term, v)
+func (s *shard) setTerm(v uint64) {
+	atomic.StoreUint64(&s.term, v)
 }
 
-func (m *shard) getTerm() uint64 {
-	return atomic.LoadUint64(&m.term)
+func (s *shard) getTerm() uint64 {
+	return atomic.LoadUint64(&s.term)
 }
 
-func (m *shard) setLead(v uint64) {
-	atomic.StoreUint64(&m.lead, v)
+func (s *shard) setLead(v uint64) {
+	atomic.StoreUint64(&s.lead, v)
 }
 
-func (m *shard) getLead() uint64 {
-	return atomic.LoadUint64(&m.lead)
+func (s *shard) getLead() uint64 {
+	return atomic.LoadUint64(&s.lead)
 }

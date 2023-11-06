@@ -60,9 +60,12 @@ func newServer(t *testing.T, dirname, address string) *server.KVServer {
 
 func TestNewServer(t *testing.T) {
 	s := newServer(t, "olive_kv_server_test", testAddress1)
+	defer s.Stop()
 
+	shard := uint64(128)
 	scfg := config.ShardConfig{
 		Name:       "r0",
+		ShardID:    shard,
 		NewCluster: false,
 	}
 	scfg.PeerURLs, _ = types.NewURLsMap("test=http://localhost:60001")
@@ -71,7 +74,6 @@ func TestNewServer(t *testing.T) {
 		return
 	}
 
-	shard := server.GenHash([]byte(scfg.Name))
 	ctx := context.Background()
 	req := &api.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
 	_, err = s.Put(ctx, shard, req)
@@ -92,8 +94,10 @@ func TestNewCluster(t *testing.T) {
 	s2 := newServer(t, "olive_kv_server_test2", testAddress2)
 	s3 := newServer(t, "olive_kv_server_test3", testAddress3)
 
+	shard := uint64(128)
 	scfg := config.ShardConfig{
 		Name:       "r0",
+		ShardID:    shard,
 		NewCluster: false,
 	}
 	scfg.PeerURLs, _ = types.NewURLsMap("test1=http://localhost:60001,test2=http://localhost:60002,test3=http://localhost:60003")
@@ -116,7 +120,8 @@ func TestNewCluster(t *testing.T) {
 		return
 	}
 
-	shard := server.GenHash([]byte(scfg.Name))
+	s3.ShardView(shard)
+
 	ctx := context.Background()
 	req := &api.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
 	_, err = s1.Put(ctx, shard, req)

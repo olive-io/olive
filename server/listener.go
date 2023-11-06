@@ -19,10 +19,10 @@ import (
 )
 
 type raftEventListener struct {
-	ch chan raftio.LeaderInfo
+	ch chan<- raftio.LeaderInfo
 }
 
-func newRaftEventListener(ch chan raftio.LeaderInfo) *raftEventListener {
+func newRaftEventListener(ch chan<- raftio.LeaderInfo) *raftEventListener {
 	rel := &raftEventListener{ch: ch}
 	return rel
 }

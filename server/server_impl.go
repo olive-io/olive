@@ -269,6 +269,15 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *api.Compactio
 	return resp, nil
 }
 
+func (s *KVServer) Execute(ctx context.Context, shardID uint64, r *api.ExecuteRequest) (*api.ExecuteResponse, error) {
+	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
+	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Execute: r})
+	if err != nil {
+		return nil, err
+	}
+	return resp.(*api.ExecuteResponse), nil
+}
+
 func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
 	result, err := s.processInternalRaftRequestOnce(ctx, shardID, r)
 	if err != nil {

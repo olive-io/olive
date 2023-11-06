@@ -21,6 +21,8 @@ import (
 
 	"github.com/lni/goutils/netutil"
 	"github.com/olive-io/olive/server/datadir"
+	"github.com/olive-io/olive/server/execute"
+	"github.com/olive-io/olive/server/hooks"
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 )
@@ -149,6 +151,10 @@ type ServerConfig struct {
 	// KeyFile is the path of the node key file. This field is ignored when
 	// MutualTLS is false.
 	KeyFile string `json:"key-file"`
+
+	ExecuteHooks []hooks.IExecuteHook
+
+	Executor execute.IExecutor
 }
 
 func NewServerConfig(dataDir, listenerAddress string) ServerConfig {

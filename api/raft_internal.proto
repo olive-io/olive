@@ -24,6 +24,8 @@ message InternalRaftRequest {
   DeleteRangeRequest delete_range = 102;
   TxnRequest txn = 103;
   CompactionRequest compaction = 104;
+
+  ExecuteRequest execute = 1000;
 }
 
 message EmptyResponse {}
@@ -302,4 +304,19 @@ message CompactionRequest {
 
 message CompactionResponse {
   ResponseHeader header = 1;
+}
+
+// ExecuteRequest handles the request only at the node which is leader in the shard
+message ExecuteRequest {
+  bytes body = 1;
+  uint64 index = 11;
+  uint64 shard = 12;
+  uint64 leader = 13;
+  uint64 node = 14;
+}
+
+message ExecuteResponse {
+  ResponseHeader header = 1;
+
+  bytes result = 2;
 }

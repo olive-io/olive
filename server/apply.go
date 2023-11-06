@@ -50,6 +50,8 @@ type applier interface {
 	DeleteRange(txn mvcc.ITxnWrite, dr *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error)
 	Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnResponse, *traceutil.Trace, error)
 	Compaction(compaction *api.CompactionRequest) (*api.CompactionResponse, <-chan struct{}, *traceutil.Trace, error)
+
+	Execute(ctx context.Context, er *api.ExecuteRequest) (*api.ExecuteResponse, *traceutil.Trace, error)
 }
 
 type checkReqFunc func(mvcc.IReadView, *api.RequestOp) error
@@ -98,6 +100,9 @@ func (a *applierBackend) Apply(r *api.InternalRaftRequest) *applyResult {
 	case r.Txn != nil:
 		op = "Txn"
 		ar.resp, ar.trace, ar.err = a.s.apply.Txn(context.TODO(), r.Txn)
+	case r.Execute != nil:
+		op = "Leader"
+		ar.resp, ar.trace, ar.err = a.s.apply.Execute(context.TODO(), r.Execute)
 	default:
 		a.s.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
 	}
@@ -552,6 +557,32 @@ func (a *applierBackend) Compaction(compaction *api.CompactionRequest) (*api.Com
 	rr, _ := a.s.KV().Range(context.TODO(), []byte("compaction"), nil, mvcc.RangeOptions{})
 	resp.Header.Revision = rr.Rev
 	return resp, ch, trace, err
+}
+
+func (a *applierBackend) Execute(ctx context.Context, er *api.ExecuteRequest) (*api.ExecuteResponse, *traceutil.Trace, error) {
+	resp := &api.ExecuteResponse{}
+	resp.Header = &api.ResponseHeader{}
+	trace := traceutil.New("do-leader",
+		a.s.Logger(),
+		traceutil.Field{Key: "leader", Value: er.Leader},
+		traceutil.Field{Key: "node", Value: er.Node},
+		traceutil.Field{Key: "body_size", Value: len(er.Body)})
+
+	if er.Leader != er.Node {
+		a.s.Logger().Debug("skip leader request")
+		return resp, trace, nil
+	}
+
+	for _, hk := range a.s.executeHooks {
+		go hk.OnPreExecute(er, a.s.StoppingNotify())
+	}
+
+	var err error
+	if executor := a.s.executor; executor != nil {
+		resp, err = executor.Execute(ctx, er)
+	}
+
+	return resp, trace, err
 }
 
 type kvSort struct{ kvs []api.KeyValue }

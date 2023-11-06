@@ -28,6 +28,8 @@ import (
 	"github.com/lni/dragonboat/v4/raftio"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/config"
+	"github.com/olive-io/olive/server/execute"
+	"github.com/olive-io/olive/server/hooks"
 	"github.com/olive-io/olive/server/mvcc"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/wait"
@@ -59,6 +61,8 @@ type KVServer struct {
 	// done is closed when all goroutines from start() complete.
 	done chan struct{}
 
+	errorc chan error
+
 	kv mvcc.IKV
 
 	ctx    context.Context
@@ -69,10 +73,15 @@ type KVServer struct {
 
 	raftEventCh chan raftio.LeaderInfo
 
+	// hooks
+	executeHooks []hooks.IExecuteHook
+
 	smu sync.RWMutex
 	sms map[uint64]*shard
 
 	apply applier
+
+	executor execute.IExecutor
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -99,8 +108,8 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 	bepath := cfg.BackendPath()
 	be := openBackend(lg, cfg, nil)
 
-	relCh := make(chan raftio.LeaderInfo, 10)
-	rel := newRaftEventListener(relCh)
+	raftChannel := make(chan raftio.LeaderInfo, 1)
+	rel := newRaftEventListener(raftChannel)
 
 	sel := newSystemEventListener()
 
@@ -125,33 +134,39 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 
 	kv := mvcc.NewStore(lg, be, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 
-	ctx, cancel := context.WithCancel(context.Background())
 	s := &KVServer{
 		nh:          nh,
 		Cfg:         cfg,
 		lgMu:        new(sync.RWMutex),
 		lg:          lg,
-		w:           wait.New(),
-		stop:        make(chan struct{}),
-		stopping:    make(chan struct{}, 1),
-		done:        make(chan struct{}),
 		kv:          kv,
-		ctx:         ctx,
-		cancel:      cancel,
 		bemu:        sync.Mutex{},
 		be:          be,
-		raftEventCh: relCh,
+		raftEventCh: raftChannel,
 		sms:         map[uint64]*shard{},
-		wgMu:        sync.RWMutex{},
-		wg:          sync.WaitGroup{},
 	}
 	s.apply = s.newApplierBackend()
+
+	s.executeHooks = cfg.ExecuteHooks
+	s.executor = cfg.Executor
 
 	return s, nil
 }
 
 func (s *KVServer) Start() {
+	s.start()
 	s.GoAttach(s.processRaftEvent)
+}
+
+func (s *KVServer) start() {
+	s.w = wait.New()
+	s.done = make(chan struct{})
+	s.stop = make(chan struct{})
+	s.stopping = make(chan struct{}, 1)
+	s.errorc = make(chan error, 1)
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+
+	go s.run()
 }
 
 func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
@@ -280,6 +295,20 @@ func (s *KVServer) HardStop() {
 	<-s.done
 }
 
+// Stop stops the server gracefully, and shuts down the running goroutine.
+// Stop should be called after a Start(s), otherwise it will block forever.
+// When stopping leader, Stop transfers its leadership to one of its peers
+// before stopping the server.
+// Stop terminates the Server and performs any necessary finalization.
+// Do and Process cannot be called after Stop has been invoked.
+func (s *KVServer) Stop() {
+	lg := s.Logger()
+	if err := s.TransferLeadership(); err != nil {
+		lg.Warn("leadership transfer failed", zap.Error(err))
+	}
+	s.HardStop()
+}
+
 // StopNotify returns a channel that receives an empty struct
 // when the server is stopped.
 func (s *KVServer) StopNotify() <-chan struct{} { return s.done }
@@ -291,7 +320,7 @@ func (s *KVServer) StoppingNotify() <-chan struct{} { return s.stopping }
 func (s *KVServer) processRaftEvent() {
 	for {
 		select {
-		case <-s.stop:
+		case <-s.stopping:
 			return
 		case ch := <-s.raftEventCh:
 			sm, ok := s.getShard(ch.ShardID)
@@ -309,6 +338,14 @@ func (s *KVServer) getShard(shardID uint64) (*shard, bool) {
 	defer s.smu.RUnlock()
 	ssm, ok := s.sms[shardID]
 	return ssm, ok
+}
+
+func (s *KVServer) ShardView(shard uint64) {
+	lg := s.Logger()
+	opt := dragonboat.DefaultNodeHostInfoOption
+	opt.SkipLogInfo = true
+	nhi := s.nh.GetNodeHostInfo(opt)
+	lg.Sugar().Infof("%+v", nhi)
 }
 
 // GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
@@ -330,4 +367,51 @@ func (s *KVServer) GoAttach(f func()) {
 		defer s.wg.Done()
 		f()
 	}()
+}
+
+func (s *KVServer) run() {
+	lg := s.Logger()
+
+	defer func() {
+		s.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
+		close(s.stopping)
+		s.wgMu.Unlock()
+		s.cancel()
+
+		// wait for gouroutines before closing raft so wal stays open
+		s.wg.Wait()
+
+		s.CleanUp()
+
+		close(s.done)
+	}()
+
+	for {
+		select {
+		case err := <-s.errorc:
+			lg.Warn("server error", zap.Error(err))
+			lg.Warn("data-dir used by this member must be removed")
+			return
+		case <-s.stop:
+			return
+		}
+	}
+}
+
+func (s *KVServer) CleanUp() {
+	lg := s.Logger()
+
+	s.bemu.Lock()
+	defer s.bemu.Unlock()
+
+	s.be.ForceCommit()
+	if err := s.be.Close(); err != nil {
+		lg.Error("close backend", zap.Error(err))
+	}
+}
+
+// TransferLeadership transfers the leader to the chosen transferee.
+func (s *KVServer) TransferLeadership() error {
+	// TODO: TransferLeadership
+	return nil
 }
