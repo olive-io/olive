@@ -232,7 +232,7 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.Compaction
 		// but the data is not necessarily committed. If there's a crash,
 		// the hash may revert to a hash prior to compaction completing
 		// if the compaction resumes. Force the finished compaction to
-		// commit so it won't resume following a crash.
+		// commit, so it won't resume following a crash.
 		s.be.ForceCommit()
 		trace.Step("physically apply compaction")
 	}
@@ -289,11 +289,7 @@ func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r pb.Interna
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
-func (s *KVServer) doSerialize(
-	ctx context.Context,
-	//chk func(*auth.AuthInfo) error,
-	get func(),
-) error {
+func (s *KVServer) doSerialize(ctx context.Context /* chk func(*auth.AuthInfo) error, */, get func()) error {
 	trace := traceutil.Get(ctx)
 	//ai, err := s.AuthInfoFromCtx(ctx)
 	//if err != nil {

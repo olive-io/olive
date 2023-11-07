@@ -6,6 +6,9 @@ import "github.com/olive-io/olive/api/serverpb/api.proto";
 import "github.com/olive-io/olive/api/serverpb/raft_internal.proto";
 import "gogoproto/gogo.proto";
 
+// for grpc-gateway
+import "google/api/annotations.proto";
+
 option go_package = "github.com/olive-io/olive/api/serverpb;serverpb";
 
 option (gogoproto.marshaler_all) = true;
@@ -14,28 +17,53 @@ option (gogoproto.unmarshaler_all) = true;
 
 service KV {
   // Range gets the keys in the range from the key-value store.
-  rpc Range(RangeRequest) returns (RangeResponse);
+  rpc Range(RangeRequest) returns (RangeResponse) {
+    option (google.api.http) = {
+      post: "/v1/kv/range"
+      body: "*"
+    };
+  }
 
   // Put puts the given key into the key-value store.
   // A put request increments the revision of the key-value store
   // and generates one event in the event history.
-  rpc Put(PutRequest) returns (PutResponse);
+  rpc Put(PutRequest) returns (PutResponse) {
+    option (google.api.http) = {
+      post: "/v1/kv/put"
+      body: "*"
+    };
+  }
 
   // DeleteRange deletes the given range from the key-value store.
   // A delete request increments the revision of the key-value store
   // and generates a delete event in the event history for every deleted key.
-  rpc DeleteRange(DeleteRangeRequest) returns (DeleteRangeResponse);
+  rpc DeleteRange(DeleteRangeRequest) returns (DeleteRangeResponse) {
+    option (google.api.http) = {
+      post: "/v1/kv/deleterange"
+      body: "*"
+    };
+  }
 
   // Txn processes multiple requests in a single transaction.
   // A txn request increments the revision of the key-value store
   // and generates events with the same revision for every completed request.
   // It is not allowed to modify the same key several times within one txn.
-  rpc Txn(TxnRequest) returns (TxnResponse);
+  rpc Txn(TxnRequest) returns (TxnResponse) {
+    option (google.api.http) = {
+      post: "/v1/kv/txn"
+      body: "*"
+    };
+  }
 
-  // Compact compacts the event history in the olive key-value store. The key-value
+  // Compact compacts the event history in the etcd key-value store. The key-value
   // store should be periodically compacted or the event history will continue to grow
   // indefinitely.
-  rpc Compact(CompactionRequest) returns (CompactionResponse);
+  rpc Compact(CompactionRequest) returns (CompactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/kv/compaction"
+      body: "*"
+    };
+  }
 }
 
 service Watch {
@@ -44,7 +72,12 @@ service Watch {
   // stream sends events. One watch RPC can watch on multiple key ranges, streaming events
   // for several watches at once. The entire event history can be watched starting from the
   // last compaction revision.
-  rpc Watch(stream WatchRequest) returns (stream WatchResponse);
+  rpc Watch(stream WatchRequest) returns (stream WatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/watch"
+      body: "*"
+    };
+  }
 }
 
 service DefinitionRPC {

@@ -28,7 +28,7 @@ generate:
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/api.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft_internal.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/rpc.proto
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf -I $(GOPATH)/src/github.com/google/protobuf --gogo_out=:. --grpc-gateway_out=:. $(ROOT)/api/serverpb/rpc.proto
 
 docker:
 
