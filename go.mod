@@ -23,7 +23,6 @@ require (
 	go.etcd.io/etcd/pkg/v3 v3.5.10
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.17.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 	google.golang.org/grpc v1.59.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -75,7 +74,6 @@ require (
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto v0.0.0-20231030173426-d783a09b4405 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
