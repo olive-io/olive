@@ -28,8 +28,6 @@ import (
 	"github.com/lni/dragonboat/v4/raftio"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/config"
-	"github.com/olive-io/olive/server/execute"
-	"github.com/olive-io/olive/server/hooks"
 	"github.com/olive-io/olive/server/mvcc"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/wait"
@@ -45,9 +43,9 @@ var (
 )
 
 type KVServer struct {
-	nh *dragonboat.NodeHost
+	*config.ServerConfig
 
-	Cfg config.ServerConfig
+	nh *dragonboat.NodeHost
 
 	lgMu *sync.RWMutex
 	lg   *zap.Logger
@@ -73,15 +71,10 @@ type KVServer struct {
 
 	raftEventCh chan raftio.LeaderInfo
 
-	// hooks
-	executeHooks []hooks.IExecuteHook
-
 	smu sync.RWMutex
 	sms map[uint64]*shard
 
 	apply applier
-
-	executor execute.IExecutor
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -135,20 +128,17 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 	kv := mvcc.NewStore(lg, be, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 
 	s := &KVServer{
-		nh:          nh,
-		Cfg:         cfg,
-		lgMu:        new(sync.RWMutex),
-		lg:          lg,
-		kv:          kv,
-		bemu:        sync.Mutex{},
-		be:          be,
-		raftEventCh: raftChannel,
-		sms:         map[uint64]*shard{},
+		ServerConfig: &cfg,
+		nh:           nh,
+		lgMu:         new(sync.RWMutex),
+		lg:           lg,
+		kv:           kv,
+		bemu:         sync.Mutex{},
+		be:           be,
+		raftEventCh:  raftChannel,
+		sms:          map[uint64]*shard{},
 	}
 	s.apply = s.newApplierBackend()
-
-	s.executeHooks = cfg.ExecuteHooks
-	s.executor = cfg.Executor
 
 	return s, nil
 }
@@ -174,9 +164,9 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 	rc := dbc.Config{
 		ShardID:             cfg.ShardID,
 		CheckQuorum:         true,
-		PreVote:             s.Cfg.PreVote,
-		ElectionRTT:         s.Cfg.ElectionTTL,
-		HeartbeatRTT:        s.Cfg.HeartBeatTTL,
+		PreVote:             s.PreVote,
+		ElectionRTT:         s.ElectionTTL,
+		HeartbeatRTT:        s.HeartBeatTTL,
 		SnapshotEntries:     10,
 		CompactionOverhead:  5,
 		OrderedConfigChange: true,
@@ -193,7 +183,7 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 		}
 		replicaID := GenHash([]byte(key))
 		peerAddress := URL.Host
-		if peerAddress == s.Cfg.ListenerPeerAddress {
+		if peerAddress == s.ListenerPeerAddress {
 			rc.ReplicaID = replicaID
 		}
 		members[replicaID] = peerAddress

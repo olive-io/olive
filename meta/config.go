@@ -117,6 +117,7 @@ func TestConfig() (Config, func()) {
 	peer, _ := types.NewURLsMap("test=http://" + config.DefaultListenerPeerAddress)
 	cfg := Config{
 		ServerConfig:          scfg,
+		Name:                  "test",
 		InitialCluster:        peer,
 		ElectionTimeout:       time.Second * 5,
 		ListenerClientAddress: DefaultListenerClientAddress,

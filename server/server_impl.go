@@ -60,7 +60,7 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 	var resp *api.RangeResponse
 	var err error
 	defer func(start time.Time) {
-		warnOfExpensiveReadOnlyRangeRequest(s.Logger(), s.Cfg.WarningApplyDuration, start, r, resp, err)
+		warnOfExpensiveReadOnlyRangeRequest(s.Logger(), s.WarningApplyDuration, start, r, resp, err)
 		if resp != nil {
 			trace.AddField(
 				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
@@ -181,7 +181,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 		//}
 
 		defer func(start time.Time) {
-			warnOfExpensiveReadOnlyTxnRequest(s.Logger(), s.Cfg.WarningApplyDuration, start, r, resp, err)
+			warnOfExpensiveReadOnlyTxnRequest(s.Logger(), s.WarningApplyDuration, start, r, resp, err)
 			trace.LogIfLong(traceThreshold)
 		}(time.Now())
 
@@ -364,14 +364,14 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 		return nil, err
 	}
 
-	if len(data) > int(s.Cfg.MaxRequestBytes) {
+	if len(data) > int(s.MaxRequestBytes) {
 		return nil, errs.ErrRequestTooLarge
 	}
 
 	id := r.Header.ID
 	ch := s.w.Register(id)
 
-	cctx, cancel := context.WithTimeout(ctx, s.Cfg.ReqTimeout())
+	cctx, cancel := context.WithTimeout(ctx, s.ReqTimeout())
 	defer cancel()
 
 	start := time.Now()

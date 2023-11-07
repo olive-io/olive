@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	definitionPrefix = "/definitions"
+	definitionPrefix = "/dt"
 )
 
 var noPrefixEnd = []byte{0}

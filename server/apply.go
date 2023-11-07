@@ -80,7 +80,7 @@ func (a *applierBackend) Apply(r *api.InternalRaftRequest) *applyResult {
 	defer func(start time.Time) {
 		success := ar.err == nil || errors.Is(ar.err, mvcc.ErrCompacted)
 		applySec.WithLabelValues("v1", op, strconv.FormatBool(success)).Observe(time.Since(start).Seconds())
-		warnOfExpensiveRequest(a.s.Logger(), a.s.Cfg.WarningApplyDuration, start, &api.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+		warnOfExpensiveRequest(a.s.Logger(), a.s.WarningApplyDuration, start, &api.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		if !success {
 			warnOfFailedRequest(a.s.Logger(), start, &api.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		}
@@ -302,7 +302,7 @@ func (a *applierBackend) Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnR
 	// When the transaction contains write operations, we use ReadTx instead of
 	// ConcurrentReadTx to avoid extra overhead of copying buffer.
 	var txn mvcc.ITxnWrite
-	if isWrite && a.s.Cfg.TxnModeWriteWithSharedBuffer {
+	if isWrite && a.s.TxnModeWriteWithSharedBuffer {
 		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.SharedBufReadTxMode, trace))
 	} else {
 		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.ConcurrentReadTxMode, trace))
@@ -573,12 +573,12 @@ func (a *applierBackend) Execute(ctx context.Context, er *api.ExecuteRequest) (*
 		return resp, trace, nil
 	}
 
-	for _, hk := range a.s.executeHooks {
+	for _, hk := range a.s.ExecuteHooks {
 		go hk.OnPreExecute(er, a.s.StoppingNotify())
 	}
 
 	var err error
-	if executor := a.s.executor; executor != nil {
+	if executor := a.s.Executor; executor != nil {
 		resp, err = executor.Execute(ctx, er)
 	}
 

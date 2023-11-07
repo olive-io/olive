@@ -209,6 +209,8 @@ func (s *Server) GracefulStop() error {
 		return err
 	}
 
+	s.kvs.Stop()
+
 	s.wg.Wait()
 	return nil
 }
