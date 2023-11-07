@@ -6,7 +6,6 @@ toolchain go1.21.1
 
 require (
 	github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
-	github.com/coreos/go-semver v0.2.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/btree v1.1.2

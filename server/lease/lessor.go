@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/go-semver/semver"
 	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"github.com/olive-io/olive/server/mvcc/buckets"
@@ -169,11 +168,6 @@ type lessor struct {
 	expiredLeaseRetryInterval time.Duration
 	// whether lessor should always persist remaining TTL (always enabled in v3.6).
 	checkpointPersist bool
-}
-
-type cluster interface {
-	// Version is the cluster-wide minimum major.minor version.
-	Version() *semver.Version
 }
 
 type LessorConfig struct {
