@@ -14,8 +14,8 @@
 
 package hooks
 
-import "github.com/olive-io/olive/api"
+import pb "github.com/olive-io/olive/api/serverpb"
 
 type IExecuteHook interface {
-	OnPreExecute(r *api.ExecuteRequest, done <-chan struct{})
+	OnPreExecute(r *pb.ExecuteRequest, done <-chan struct{})
 }

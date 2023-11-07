@@ -24,8 +24,9 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	errs "github.com/olive-io/olive/pkg/errors"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.uber.org/zap"
@@ -43,18 +44,18 @@ type applyResult struct {
 
 // applier is the interface for processing rafe message
 type applier interface {
-	Apply(r *api.InternalRaftRequest) *applyResult
+	Apply(r *pb.InternalRaftRequest) *applyResult
 
-	Put(ctx context.Context, txn mvcc.ITxnWrite, p *api.PutRequest) (*api.PutResponse, *traceutil.Trace, error)
-	Range(ctx context.Context, txn mvcc.ITxnRead, r *api.RangeRequest) (*api.RangeResponse, error)
-	DeleteRange(txn mvcc.ITxnWrite, dr *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error)
-	Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnResponse, *traceutil.Trace, error)
-	Compaction(compaction *api.CompactionRequest) (*api.CompactionResponse, <-chan struct{}, *traceutil.Trace, error)
+	Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutRequest) (*pb.PutResponse, *traceutil.Trace, error)
+	Range(ctx context.Context, txn mvcc.ITxnRead, r *pb.RangeRequest) (*pb.RangeResponse, error)
+	DeleteRange(txn mvcc.ITxnWrite, dr *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error)
+	Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error)
+	Compaction(compaction *pb.CompactionRequest) (*pb.CompactionResponse, <-chan struct{}, *traceutil.Trace, error)
 
-	Execute(ctx context.Context, er *api.ExecuteRequest) (*api.ExecuteResponse, *traceutil.Trace, error)
+	Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error)
 }
 
-type checkReqFunc func(mvcc.IReadView, *api.RequestOp) error
+type checkReqFunc func(mvcc.IReadView, *pb.RequestOp) error
 
 type applierBackend struct {
 	s *KVServer
@@ -65,24 +66,24 @@ type applierBackend struct {
 
 func (s *KVServer) newApplierBackend() applier {
 	base := &applierBackend{s: s}
-	base.checkPut = func(rv mvcc.IReadView, req *api.RequestOp) error {
+	base.checkPut = func(rv mvcc.IReadView, req *pb.RequestOp) error {
 		return base.checkRequestPut(rv, req)
 	}
-	base.checkRange = func(rv mvcc.IReadView, req *api.RequestOp) error {
+	base.checkRange = func(rv mvcc.IReadView, req *pb.RequestOp) error {
 		return base.checkRequestRange(rv, req)
 	}
 	return base
 }
 
-func (a *applierBackend) Apply(r *api.InternalRaftRequest) *applyResult {
+func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 	op := "unknown"
 	ar := &applyResult{}
 	defer func(start time.Time) {
 		success := ar.err == nil || errors.Is(ar.err, mvcc.ErrCompacted)
 		applySec.WithLabelValues("v1", op, strconv.FormatBool(success)).Observe(time.Since(start).Seconds())
-		warnOfExpensiveRequest(a.s.Logger(), a.s.WarningApplyDuration, start, &api.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+		warnOfExpensiveRequest(a.s.Logger(), a.s.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		if !success {
-			warnOfFailedRequest(a.s.Logger(), start, &api.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+			warnOfFailedRequest(a.s.Logger(), start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		}
 	}(time.Now())
 
@@ -109,9 +110,9 @@ func (a *applierBackend) Apply(r *api.InternalRaftRequest) *applyResult {
 	return ar
 }
 
-func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *api.PutRequest) (resp *api.PutResponse, trace *traceutil.Trace, err error) {
-	resp = &api.PutResponse{}
-	resp.Header = &api.ResponseHeader{}
+func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutRequest) (resp *pb.PutResponse, trace *traceutil.Trace, err error) {
+	resp = &pb.PutResponse{}
+	resp.Header = &pb.ResponseHeader{}
 	trace = traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
@@ -121,8 +122,13 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *api.Put
 			traceutil.Field{Key: "req_size", Value: p.XSize()},
 		)
 	}
-	val := p.Value
+	val, leaseID := p.Value, lease.LeaseID(p.Lease)
 	if txn == nil {
+		if leaseID != lease.NoLease {
+			if l := a.s.lessor.Lookup(leaseID); l == nil {
+				return nil, nil, lease.ErrLeaseNotFound
+			}
+		}
 		txn = a.s.KV().Write(trace)
 		defer txn.End()
 	}
@@ -146,22 +152,25 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *api.Put
 	if p.IgnoreValue {
 		val = rr.KVs[0].Value
 	}
+	if p.IgnoreLease {
+		leaseID = lease.LeaseID(rr.KVs[0].Lease)
+	}
 	if p.PrevKv {
 		if rr != nil && len(rr.KVs) != 0 {
 			resp.PrevKv = &rr.KVs[0]
 		}
 	}
 
-	resp.Header.Revision = txn.Put(p.Key, val)
+	resp.Header.Revision = txn.Put(p.Key, val, leaseID)
 	trace.AddField(traceutil.Field{Key: "response_revision", Value: resp.Header.Revision})
 	return resp, trace, nil
 }
 
-func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.RangeRequest) (*api.RangeResponse, error) {
+func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *pb.RangeRequest) (*pb.RangeResponse, error) {
 	trace := traceutil.Get(ctx)
 
-	resp := &api.RangeResponse{}
-	resp.Header = &api.ResponseHeader{}
+	resp := &pb.RangeResponse{}
+	resp.Header = &pb.ResponseHeader{}
 
 	if txn == nil {
 		txn = a.s.kv.Read(mvcc.ConcurrentReadTxMode, trace)
@@ -169,7 +178,7 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.Ra
 	}
 
 	limit := r.Limit
-	if r.SortOrder != api.RangeRequest_NONE ||
+	if r.SortOrder != pb.RangeRequest_NONE ||
 		r.MinModRevision != 0 || r.MaxModRevision != 0 ||
 		r.MinCreateRevision != 0 || r.MaxCreateRevision != 0 {
 		// fetch everything; sort and truncate afterwards
@@ -200,47 +209,47 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.Ra
 	}
 
 	if r.MaxModRevision != 0 {
-		f := func(kv *api.KeyValue) bool { return kv.ModRevision > r.MaxModRevision }
+		f := func(kv *pb.KeyValue) bool { return kv.ModRevision > r.MaxModRevision }
 		pruneKVs(rr, f)
 	}
 	if r.MinModRevision != 0 {
-		f := func(kv *api.KeyValue) bool { return kv.ModRevision < r.MinModRevision }
+		f := func(kv *pb.KeyValue) bool { return kv.ModRevision < r.MinModRevision }
 		pruneKVs(rr, f)
 	}
 	if r.MaxCreateRevision != 0 {
-		f := func(kv *api.KeyValue) bool { return kv.CreateRevision > r.MaxCreateRevision }
+		f := func(kv *pb.KeyValue) bool { return kv.CreateRevision > r.MaxCreateRevision }
 		pruneKVs(rr, f)
 	}
 	if r.MinCreateRevision != 0 {
-		f := func(kv *api.KeyValue) bool { return kv.CreateRevision < r.MinCreateRevision }
+		f := func(kv *pb.KeyValue) bool { return kv.CreateRevision < r.MinCreateRevision }
 		pruneKVs(rr, f)
 	}
 
 	sortOrder := r.SortOrder
-	if r.SortTarget != api.RangeRequest_KEY && sortOrder == api.RangeRequest_NONE {
+	if r.SortTarget != pb.RangeRequest_KEY && sortOrder == pb.RangeRequest_NONE {
 		// Since current mvcc.Range implementation returns results
 		// sorted by keys in lexiographically ascending order,
 		// sort ASCEND by default only when target is not 'KEY'
-		sortOrder = api.RangeRequest_ASCEND
+		sortOrder = pb.RangeRequest_ASCEND
 	}
-	if sortOrder != api.RangeRequest_NONE {
+	if sortOrder != pb.RangeRequest_NONE {
 		var sorter sort.Interface
 		switch {
-		case r.SortTarget == api.RangeRequest_KEY:
+		case r.SortTarget == pb.RangeRequest_KEY:
 			sorter = &kvSortByKey{&kvSort{rr.KVs}}
-		case r.SortTarget == api.RangeRequest_VERSION:
+		case r.SortTarget == pb.RangeRequest_VERSION:
 			sorter = &kvSortByVersion{&kvSort{rr.KVs}}
-		case r.SortTarget == api.RangeRequest_CREATE:
+		case r.SortTarget == pb.RangeRequest_CREATE:
 			sorter = &kvSortByCreate{&kvSort{rr.KVs}}
-		case r.SortTarget == api.RangeRequest_MOD:
+		case r.SortTarget == pb.RangeRequest_MOD:
 			sorter = &kvSortByMod{&kvSort{rr.KVs}}
-		case r.SortTarget == api.RangeRequest_VALUE:
+		case r.SortTarget == pb.RangeRequest_VALUE:
 			sorter = &kvSortByValue{&kvSort{rr.KVs}}
 		}
 		switch {
-		case sortOrder == api.RangeRequest_ASCEND:
+		case sortOrder == pb.RangeRequest_ASCEND:
 			sort.Sort(sorter)
-		case sortOrder == api.RangeRequest_DESCEND:
+		case sortOrder == pb.RangeRequest_DESCEND:
 			sort.Sort(sort.Reverse(sorter))
 		}
 	}
@@ -252,7 +261,7 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.Ra
 	trace.Step("filter and sort the key-value pairs")
 	resp.Header.Revision = rr.Rev
 	resp.Count = int64(rr.Count)
-	resp.Kvs = make([]*api.KeyValue, len(rr.KVs))
+	resp.Kvs = make([]*pb.KeyValue, len(rr.KVs))
 	for i := range rr.KVs {
 		if r.KeysOnly {
 			rr.KVs[i].Value = nil
@@ -263,9 +272,9 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *api.Ra
 	return resp, nil
 }
 
-func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
-	resp := &api.DeleteRangeResponse{}
-	resp.Header = &api.ResponseHeader{}
+func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error) {
+	resp := &pb.DeleteRangeResponse{}
+	resp.Header = &pb.ResponseHeader{}
 	end := mkGteRange(dr.RangeEnd)
 
 	if txn == nil {
@@ -279,7 +288,7 @@ func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *api.DeleteRangeRequ
 			return nil, err
 		}
 		if rr != nil {
-			resp.PrevKvs = make([]*api.KeyValue, len(rr.KVs))
+			resp.PrevKvs = make([]*pb.KeyValue, len(rr.KVs))
 			for i := range rr.KVs {
 				resp.PrevKvs[i] = &rr.KVs[i]
 			}
@@ -290,7 +299,7 @@ func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *api.DeleteRangeRequ
 	return resp, nil
 }
 
-func (a *applierBackend) Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnResponse, *traceutil.Trace, error) {
+func (a *applierBackend) Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error) {
 	lg := a.s.Logger()
 	trace := traceutil.Get(ctx)
 	if trace.IsEmpty() {
@@ -365,28 +374,28 @@ func (a *applierBackend) Txn(ctx context.Context, rt *api.TxnRequest) (*api.TxnR
 }
 
 // newTxnResp allocates a txn response for a txn request given a path.
-func newTxnResp(rt *api.TxnRequest, txnPath []bool) (txnResp *api.TxnResponse, txnCount int) {
+func newTxnResp(rt *pb.TxnRequest, txnPath []bool) (txnResp *pb.TxnResponse, txnCount int) {
 	reqs := rt.Success
 	if !txnPath[0] {
 		reqs = rt.Failure
 	}
-	resps := make([]*api.ResponseOp, len(reqs))
-	txnResp = &api.TxnResponse{
+	resps := make([]*pb.ResponseOp, len(reqs))
+	txnResp = &pb.TxnResponse{
 		Responses: resps,
 		Succeeded: txnPath[0],
-		Header:    &api.ResponseHeader{},
+		Header:    &pb.ResponseHeader{},
 	}
 	for i, req := range reqs {
 		switch tv := req.Request.(type) {
-		case *api.RequestOp_RequestRange:
-			resps[i] = &api.ResponseOp{Response: &api.ResponseOp_ResponseRange{}}
-		case *api.RequestOp_RequestPut:
-			resps[i] = &api.ResponseOp{Response: &api.ResponseOp_ResponsePut{}}
-		case *api.RequestOp_RequestDeleteRange:
-			resps[i] = &api.ResponseOp{Response: &api.ResponseOp_ResponseDeleteRange{}}
-		case *api.RequestOp_RequestTxn:
+		case *pb.RequestOp_RequestRange:
+			resps[i] = &pb.ResponseOp{Response: &pb.ResponseOp_ResponseRange{}}
+		case *pb.RequestOp_RequestPut:
+			resps[i] = &pb.ResponseOp{Response: &pb.ResponseOp_ResponsePut{}}
+		case *pb.RequestOp_RequestDeleteRange:
+			resps[i] = &pb.ResponseOp{Response: &pb.ResponseOp_ResponseDeleteRange{}}
+		case *pb.RequestOp_RequestTxn:
 			resp, txns := newTxnResp(tv.RequestTxn, txnPath[1:])
-			resps[i] = &api.ResponseOp{Response: &api.ResponseOp_ResponseTxn{ResponseTxn: resp}}
+			resps[i] = &pb.ResponseOp{Response: &pb.ResponseOp_ResponseTxn{ResponseTxn: resp}}
 			txnPath = txnPath[1+txns:]
 			txnCount += txns + 1
 		default:
@@ -395,14 +404,14 @@ func newTxnResp(rt *api.TxnRequest, txnPath []bool) (txnResp *api.TxnResponse, t
 	return txnResp, txnCount
 }
 
-func compareToPath(rv mvcc.IReadView, rt *api.TxnRequest) []bool {
+func compareToPath(rv mvcc.IReadView, rt *pb.TxnRequest) []bool {
 	txnPath := make([]bool, 1)
 	ops := rt.Success
 	if txnPath[0] = applyCompares(rv, rt.Compare); !txnPath[0] {
 		ops = rt.Failure
 	}
 	for _, op := range ops {
-		tv, ok := op.Request.(*api.RequestOp_RequestTxn)
+		tv, ok := op.Request.(*pb.RequestOp_RequestTxn)
 		if !ok || tv.RequestTxn == nil {
 			continue
 		}
@@ -411,7 +420,7 @@ func compareToPath(rv mvcc.IReadView, rt *api.TxnRequest) []bool {
 	return txnPath
 }
 
-func applyCompares(rv mvcc.IReadView, cmps []*api.Compare) bool {
+func applyCompares(rv mvcc.IReadView, cmps []*pb.Compare) bool {
 	for _, c := range cmps {
 		if !applyCompare(rv, c) {
 			return false
@@ -422,7 +431,7 @@ func applyCompares(rv mvcc.IReadView, cmps []*api.Compare) bool {
 
 // applyCompare applies the compare request.
 // If the comparison succeeds, it returns true. Otherwise, returns false.
-func applyCompare(rv mvcc.IReadView, c *api.Compare) bool {
+func applyCompare(rv mvcc.IReadView, c *pb.Compare) bool {
 	// TODO: possible optimizations
 	// * chunk reads for large ranges to conserve memory
 	// * rewrite rules for common patterns:
@@ -433,12 +442,12 @@ func applyCompare(rv mvcc.IReadView, c *api.Compare) bool {
 		return false
 	}
 	if len(rr.KVs) == 0 {
-		if c.Target == api.Compare_VALUE {
+		if c.Target == pb.Compare_VALUE {
 			// Always fail if comparing a value on a key/keys that doesn't exist;
 			// nil == empty string in grpc; no way to represent missing value
 			return false
 		}
-		return compareKV(c, api.KeyValue{})
+		return compareKV(c, pb.KeyValue{})
 	}
 	for _, kv := range rr.KVs {
 		if !compareKV(c, kv) {
@@ -448,46 +457,46 @@ func applyCompare(rv mvcc.IReadView, c *api.Compare) bool {
 	return true
 }
 
-func compareKV(c *api.Compare, ckv api.KeyValue) bool {
+func compareKV(c *pb.Compare, ckv pb.KeyValue) bool {
 	var result int
 	rev := int64(0)
 	switch c.Target {
-	case api.Compare_VALUE:
+	case pb.Compare_VALUE:
 		v := []byte{}
-		if tv, _ := c.TargetUnion.(*api.Compare_Value); tv != nil {
+		if tv, _ := c.TargetUnion.(*pb.Compare_Value); tv != nil {
 			v = tv.Value
 		}
 		result = bytes.Compare(ckv.Value, v)
-	case api.Compare_CREATE:
-		if tv, _ := c.TargetUnion.(*api.Compare_CreateRevision); tv != nil {
+	case pb.Compare_CREATE:
+		if tv, _ := c.TargetUnion.(*pb.Compare_CreateRevision); tv != nil {
 			rev = tv.CreateRevision
 		}
 		result = compareInt64(ckv.CreateRevision, rev)
-	case api.Compare_MOD:
-		if tv, _ := c.TargetUnion.(*api.Compare_ModRevision); tv != nil {
+	case pb.Compare_MOD:
+		if tv, _ := c.TargetUnion.(*pb.Compare_ModRevision); tv != nil {
 			rev = tv.ModRevision
 		}
 		result = compareInt64(ckv.ModRevision, rev)
-	case api.Compare_VERSION:
-		if tv, _ := c.TargetUnion.(*api.Compare_Version); tv != nil {
+	case pb.Compare_VERSION:
+		if tv, _ := c.TargetUnion.(*pb.Compare_Version); tv != nil {
 			rev = tv.Version
 		}
 		result = compareInt64(ckv.Version, rev)
 	}
 	switch c.Result {
-	case api.Compare_EQUAL:
+	case pb.Compare_EQUAL:
 		return result == 0
-	case api.Compare_NOT_EQUAL:
+	case pb.Compare_NOT_EQUAL:
 		return result != 0
-	case api.Compare_GREATER:
+	case pb.Compare_GREATER:
 		return result > 0
-	case api.Compare_LESS:
+	case pb.Compare_LESS:
 		return result < 0
 	}
 	return true
 }
 
-func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *api.TxnRequest, txnPath []bool, tresp *api.TxnResponse) (txns int, err error) {
+func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *pb.TxnRequest, txnPath []bool, tresp *pb.TxnResponse) (txns int, err error) {
 	trace := traceutil.Get(ctx)
 	reqs := rt.Success
 	if !txnPath[0] {
@@ -497,7 +506,7 @@ func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *a
 	for i, req := range reqs {
 		respi := tresp.Responses[i].Response
 		switch tv := req.Request.(type) {
-		case *api.RequestOp_RequestRange:
+		case *pb.RequestOp_RequestRange:
 			trace.StartSubTrace(
 				traceutil.Field{Key: "req_type", Value: "range"},
 				traceutil.Field{Key: "range_begin", Value: string(tv.RequestRange.Key)},
@@ -506,9 +515,9 @@ func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *a
 			if err != nil {
 				return 0, fmt.Errorf("applyTxn: failed Range: %w", err)
 			}
-			respi.(*api.ResponseOp_ResponseRange).ResponseRange = resp
+			respi.(*pb.ResponseOp_ResponseRange).ResponseRange = resp
 			trace.StopSubTrace()
-		case *api.RequestOp_RequestPut:
+		case *pb.RequestOp_RequestPut:
 			trace.StartSubTrace(
 				traceutil.Field{Key: "req_type", Value: "put"},
 				traceutil.Field{Key: "key", Value: string(tv.RequestPut.Key)},
@@ -517,16 +526,16 @@ func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *a
 			if err != nil {
 				return 0, fmt.Errorf("applyTxn: failed Put: %w", err)
 			}
-			respi.(*api.ResponseOp_ResponsePut).ResponsePut = resp
+			respi.(*pb.ResponseOp_ResponsePut).ResponsePut = resp
 			trace.StopSubTrace()
-		case *api.RequestOp_RequestDeleteRange:
+		case *pb.RequestOp_RequestDeleteRange:
 			resp, err := a.DeleteRange(txn, tv.RequestDeleteRange)
 			if err != nil {
 				return 0, fmt.Errorf("applyTxn: failed DeleteRange: %w", err)
 			}
-			respi.(*api.ResponseOp_ResponseDeleteRange).ResponseDeleteRange = resp
-		case *api.RequestOp_RequestTxn:
-			resp := respi.(*api.ResponseOp_ResponseTxn).ResponseTxn
+			respi.(*pb.ResponseOp_ResponseDeleteRange).ResponseDeleteRange = resp
+		case *pb.RequestOp_RequestTxn:
+			resp := respi.(*pb.ResponseOp_ResponseTxn).ResponseTxn
 			applyTxns, err := a.applyTxn(ctx, txn, tv.RequestTxn, txnPath[1:], resp)
 			if err != nil {
 				// don't wrap the error. It's a recursive call and err should be already wrapped
@@ -541,9 +550,9 @@ func (a *applierBackend) applyTxn(ctx context.Context, txn mvcc.ITxnWrite, rt *a
 	return txns, nil
 }
 
-func (a *applierBackend) Compaction(compaction *api.CompactionRequest) (*api.CompactionResponse, <-chan struct{}, *traceutil.Trace, error) {
-	resp := &api.CompactionResponse{}
-	resp.Header = &api.ResponseHeader{}
+func (a *applierBackend) Compaction(compaction *pb.CompactionRequest) (*pb.CompactionResponse, <-chan struct{}, *traceutil.Trace, error) {
+	resp := &pb.CompactionResponse{}
+	resp.Header = &pb.ResponseHeader{}
 	trace := traceutil.New("compact",
 		a.s.Logger(),
 		traceutil.Field{Key: "revision", Value: compaction.Revision},
@@ -559,9 +568,9 @@ func (a *applierBackend) Compaction(compaction *api.CompactionRequest) (*api.Com
 	return resp, ch, trace, err
 }
 
-func (a *applierBackend) Execute(ctx context.Context, er *api.ExecuteRequest) (*api.ExecuteResponse, *traceutil.Trace, error) {
-	resp := &api.ExecuteResponse{}
-	resp.Header = &api.ResponseHeader{}
+func (a *applierBackend) Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error) {
+	resp := &pb.ExecuteResponse{}
+	resp.Header = &pb.ResponseHeader{}
 	trace := traceutil.New("do-leader",
 		a.s.Logger(),
 		traceutil.Field{Key: "leader", Value: er.Leader},
@@ -585,7 +594,7 @@ func (a *applierBackend) Execute(ctx context.Context, er *api.ExecuteRequest) (*
 	return resp, trace, err
 }
 
-type kvSort struct{ kvs []api.KeyValue }
+type kvSort struct{ kvs []pb.KeyValue }
 
 func (s *kvSort) Swap(i, j int) {
 	t := s.kvs[i]
@@ -624,14 +633,14 @@ func (s *kvSortByValue) Less(i, j int) bool {
 	return bytes.Compare(s.kvs[i].Value, s.kvs[j].Value) < 0
 }
 
-func checkRequests(rv mvcc.IReadView, rt *api.TxnRequest, txnPath []bool, f checkReqFunc) (int, error) {
+func checkRequests(rv mvcc.IReadView, rt *pb.TxnRequest, txnPath []bool, f checkReqFunc) (int, error) {
 	txnCount := 0
 	reqs := rt.Success
 	if !txnPath[0] {
 		reqs = rt.Failure
 	}
 	for _, req := range reqs {
-		if tv, ok := req.Request.(*api.RequestOp_RequestTxn); ok && tv.RequestTxn != nil {
+		if tv, ok := req.Request.(*pb.RequestOp_RequestTxn); ok && tv.RequestTxn != nil {
 			txns, err := checkRequests(rv, tv.RequestTxn, txnPath[1:], f)
 			if err != nil {
 				return 0, err
@@ -647,8 +656,8 @@ func checkRequests(rv mvcc.IReadView, rt *api.TxnRequest, txnPath []bool, f chec
 	return txnCount, nil
 }
 
-func (a *applierBackend) checkRequestPut(rv mvcc.IReadView, reqOp *api.RequestOp) error {
-	tv, ok := reqOp.Request.(*api.RequestOp_RequestPut)
+func (a *applierBackend) checkRequestPut(rv mvcc.IReadView, reqOp *pb.RequestOp) error {
+	tv, ok := reqOp.Request.(*pb.RequestOp_RequestPut)
 	if !ok || tv.RequestPut == nil {
 		return nil
 	}
@@ -663,11 +672,16 @@ func (a *applierBackend) checkRequestPut(rv mvcc.IReadView, reqOp *api.RequestOp
 			return errs.ErrKeyNotFound
 		}
 	}
+	if lease.LeaseID(req.Lease) != lease.NoLease {
+		if l := a.s.lessor.Lookup(lease.LeaseID(req.Lease)); l == nil {
+			return lease.ErrLeaseNotFound
+		}
+	}
 	return nil
 }
 
-func (a *applierBackend) checkRequestRange(rv mvcc.IReadView, reqOp *api.RequestOp) error {
-	tv, ok := reqOp.Request.(*api.RequestOp_RequestRange)
+func (a *applierBackend) checkRequestRange(rv mvcc.IReadView, reqOp *pb.RequestOp) error {
+	tv, ok := reqOp.Request.(*pb.RequestOp_RequestRange)
 	if !ok || tv.RequestRange == nil {
 		return nil
 	}
@@ -705,11 +719,11 @@ func mkGteRange(rangeEnd []byte) []byte {
 	return rangeEnd
 }
 
-func noSideEffect(r *api.InternalRaftRequest) bool {
+func noSideEffect(r *pb.InternalRaftRequest) bool {
 	return r.Range != nil
 }
 
-func pruneKVs(rr *mvcc.RangeResult, isPrunable func(*api.KeyValue) bool) {
+func pruneKVs(rr *mvcc.RangeResult, isPrunable func(*pb.KeyValue) bool) {
 	j := 0
 	for i := range rr.KVs {
 		rr.KVs[j] = rr.KVs[i]

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +52,7 @@ func warnOfFailedRequest(lg *zap.Logger, now time.Time, reqStringer fmt.Stringer
 	)
 }
 
-func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, rangeResponse *api.RangeResponse, err error) {
+func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, rangeResponse *pb.RangeResponse, err error) {
 	if time.Since(now) <= warningApplyDuration {
 		return
 	}
@@ -63,17 +63,17 @@ func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, warningApplyDuration ti
 	warnOfExpensiveGenericRequest(lg, warningApplyDuration, now, reqStringer, "read-only range ", resp, err)
 }
 
-func warnOfExpensiveReadOnlyTxnRequest(lg *zap.Logger, warningApplyDuration time.Duration, now time.Time, r *api.TxnRequest, txnResponse *api.TxnResponse, err error) {
+func warnOfExpensiveReadOnlyTxnRequest(lg *zap.Logger, warningApplyDuration time.Duration, now time.Time, r *pb.TxnRequest, txnResponse *pb.TxnResponse, err error) {
 	if time.Since(now) <= warningApplyDuration {
 		return
 	}
-	reqStringer := api.NewLoggableTxnRequest(r)
+	reqStringer := pb.NewLoggableTxnRequest(r)
 	var resp string
 	if !isNil(txnResponse) {
 		var resps []string
 		for _, r := range txnResponse.Responses {
 			switch op := r.Response.(type) {
-			case *api.ResponseOp_ResponseRange:
+			case *pb.ResponseOp_ResponseRange:
 				if op.ResponseRange != nil {
 					resps = append(resps, fmt.Sprintf("range_response_count:%d", len(op.ResponseRange.Kvs)))
 				} else {

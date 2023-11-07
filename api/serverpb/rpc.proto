@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package serverpb;
+
+import "github.com/olive-io/olive/api/serverpb/api.proto";
+import "github.com/olive-io/olive/api/serverpb/raft_internal.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/olive-io/olive/api/serverpb;serverpb";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+
+service KV {
+  // Range gets the keys in the range from the key-value store.
+  rpc Range(RangeRequest) returns (RangeResponse);
+
+  // Put puts the given key into the key-value store.
+  // A put request increments the revision of the key-value store
+  // and generates one event in the event history.
+  rpc Put(PutRequest) returns (PutResponse);
+
+  // DeleteRange deletes the given range from the key-value store.
+  // A delete request increments the revision of the key-value store
+  // and generates a delete event in the event history for every deleted key.
+  rpc DeleteRange(DeleteRangeRequest) returns (DeleteRangeResponse);
+
+  // Txn processes multiple requests in a single transaction.
+  // A txn request increments the revision of the key-value store
+  // and generates events with the same revision for every completed request.
+  // It is not allowed to modify the same key several times within one txn.
+  rpc Txn(TxnRequest) returns (TxnResponse);
+
+  // Compact compacts the event history in the olive key-value store. The key-value
+  // store should be periodically compacted or the event history will continue to grow
+  // indefinitely.
+  rpc Compact(CompactionRequest) returns (CompactionResponse);
+}
+
+service Watch {
+  // Watch watches for events happening or that have happened. Both input and output
+  // are streams; the input stream is for creating and canceling watchers and the output
+  // stream sends events. One watch RPC can watch on multiple key ranges, streaming events
+  // for several watches at once. The entire event history can be watched starting from the
+  // last compaction revision.
+  rpc Watch(stream WatchRequest) returns (stream WatchResponse);
+}
+
+service DefinitionRPC {
+  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse);
+  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse);
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
+  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse);
+  rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse);
+}
+
+message DeployDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  bytes content = 3;
+}
+
+message DeployDefinitionResponse {
+  serverpb.ResponseHeader header = 1;
+  int64 version = 2;
+}
+
+message ListDefinitionRequest {}
+
+message ListDefinitionResponse {
+  serverpb.ResponseHeader header = 1;
+  repeated serverpb.Definition definitions = 2;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+  int64 version = 2;
+}
+
+message GetDefinitionResponse {
+  serverpb.ResponseHeader header = 1;
+  serverpb.Definition definition = 2;
+}
+
+message RemoveDefinitionRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message RemoveDefinitionResponse {
+  serverpb.ResponseHeader header = 1;
+}
+
+message ExecuteDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  map<string, string> header = 3;
+}
+
+message ExecuteDefinitionResponse {
+  serverpb.ResponseHeader header = 1;
+  serverpb.ProcessInstance instance = 2;
+}

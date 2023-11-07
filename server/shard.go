@@ -23,7 +23,7 @@ import (
 	"time"
 
 	sm "github.com/lni/dragonboat/v4/statemachine"
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/cindex"
@@ -128,7 +128,7 @@ func (s *shard) run() {
 func (s *shard) Open(done <-chan struct{}) (uint64, error) {
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
-	r := &api.RangeRequest{
+	r := &pb.RangeRequest{
 		Key:   bytesutil.PathJoin(s.prefix(), lastAppliedIndex),
 		Limit: 1,
 	}
@@ -162,7 +162,7 @@ func (s *shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	lastIndex := entries[last].Index
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
-	r := &api.PutRequest{Key: bytesutil.PathJoin(s.prefix(), lastAppliedIndex)}
+	r := &pb.PutRequest{Key: bytesutil.PathJoin(s.prefix(), lastAppliedIndex)}
 	r.Value = make([]byte, 8)
 	binary.LittleEndian.PutUint64(r.Value, lastIndex)
 	_, _, err := s.apply.Put(ctx, nil, r)
@@ -177,7 +177,7 @@ func (s *shard) Lookup(query interface{}) (interface{}, error) {
 	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
-	r := query.(*api.RangeRequest)
+	r := query.(*pb.RangeRequest)
 	rsp, err := s.apply.Range(ctx, nil, r)
 	if err != nil {
 		return nil, err
@@ -272,7 +272,7 @@ func (s *shard) applyEntryNormal(ent *sm.Entry) {
 		zap.Uint64("entry-term", s.term),
 		zap.Uint64("entry-index", ent.Index))
 
-	raftReq := api.InternalRaftRequest{}
+	raftReq := pb.InternalRaftRequest{}
 	if err := raftReq.Unmarshal(ent.Cmd); err != nil {
 		s.lg.Error("unmarshal raft entry",
 			zap.Uint64("entry-term", s.term),

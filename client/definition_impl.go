@@ -14,93 +14,87 @@
 
 package client
 
-import (
-	"context"
-
-	"github.com/olive-io/olive/api"
-	"google.golang.org/grpc"
-)
-
-type IDefinitionKV interface {
-	DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error)
-	ListDefinition(ctx context.Context) ([]*api.Definition, error)
-	GetDefinition(ctx context.Context, id string, version int64) (*api.Definition, error)
-	RemoveDefinition(ctx context.Context, id string) error
-	ExecuteDefinition(ctx context.Context, id string) (*api.ProcessInstance, error)
-}
-
-type definitionKVC struct {
-	remote   api.DefinitionRPCClient
-	callOpts []grpc.CallOption
-}
-
-func NewDefinitionKV(c *Client) IDefinitionKV {
-	kvc := &definitionKVC{remote: RetryDefinitionClient(c)}
-	if c != nil {
-		kvc.callOpts = c.callOpts
-	}
-	return kvc
-}
-
-func NewDefinitionKVFromClient(remote api.DefinitionRPCClient, c *Client) IDefinitionKV {
-	kvc := &definitionKVC{remote: remote}
-	if c != nil {
-		kvc.callOpts = c.callOpts
-	}
-	return kvc
-}
-
-func (kvc *definitionKVC) DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error) {
-	in := &api.DeployDefinitionRequest{
-		Id:      id,
-		Name:    name,
-		Content: content,
-	}
-	resp, err := kvc.remote.DeployDefinition(ctx, in, kvc.callOpts...)
-	if err != nil {
-		return 0, toErr(ctx, err)
-	}
-	return resp.Version, nil
-}
-
-func (kvc *definitionKVC) ListDefinition(ctx context.Context) ([]*api.Definition, error) {
-	in := &api.ListDefinitionRequest{}
-	resp, err := kvc.remote.ListDefinition(ctx, in, kvc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return resp.Definitions, nil
-}
-
-func (kvc *definitionKVC) GetDefinition(ctx context.Context, id string, version int64) (*api.Definition, error) {
-	in := &api.GetDefinitionRequest{
-		Id:      id,
-		Version: version,
-	}
-	resp, err := kvc.remote.GetDefinition(ctx, in, kvc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return resp.Definition, nil
-}
-
-func (kvc *definitionKVC) RemoveDefinition(ctx context.Context, id string) error {
-	in := &api.RemoveDefinitionRequest{
-		Id:   id,
-		Name: "",
-	}
-	_, err := kvc.remote.RemoveDefinition(ctx, in, kvc.callOpts...)
-	return toErr(ctx, err)
-}
-
-func (kvc *definitionKVC) ExecuteDefinition(ctx context.Context, id string) (*api.ProcessInstance, error) {
-	in := &api.ExecuteDefinitionRequest{
-		Id:   id,
-		Name: "",
-	}
-	resp, err := kvc.remote.ExecuteDefinition(ctx, in, kvc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return resp.Instance, nil
-}
+//
+//type IDefinitionKV interface {
+//	DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error)
+//	ListDefinition(ctx context.Context) ([]*pb.Definition, error)
+//	GetDefinition(ctx context.Context, id string, version int64) (*pb.Definition, error)
+//	RemoveDefinition(ctx context.Context, id string) error
+//	ExecuteDefinition(ctx context.Context, id string) (*pb.ProcessInstance, error)
+//}
+//
+//type definitionKVC struct {
+//	remote   pb.DefinitionRPCClient
+//	callOpts []grpc.CallOption
+//}
+//
+//func NewDefinitionKV(c *Client) IDefinitionKV {
+//	kvc := &definitionKVC{remote: RetryDefinitionClient(c)}
+//	if c != nil {
+//		kvc.callOpts = c.callOpts
+//	}
+//	return kvc
+//}
+//
+//func NewDefinitionKVFromClient(remote pb.DefinitionRPCClient, c *Client) IDefinitionKV {
+//	kvc := &definitionKVC{remote: remote}
+//	if c != nil {
+//		kvc.callOpts = c.callOpts
+//	}
+//	return kvc
+//}
+//
+//func (kvc *definitionKVC) DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error) {
+//	in := &pb.DeployDefinitionRequest{
+//		Id:      id,
+//		Name:    name,
+//		Content: content,
+//	}
+//	resp, err := kvc.remote.DeployDefinition(ctx, in, kvc.callOpts...)
+//	if err != nil {
+//		return 0, toErr(ctx, err)
+//	}
+//	return resp.Version, nil
+//}
+//
+//func (kvc *definitionKVC) ListDefinition(ctx context.Context) ([]*pb.Definition, error) {
+//	in := &pb.ListDefinitionRequest{}
+//	resp, err := kvc.remote.ListDefinition(ctx, in, kvc.callOpts...)
+//	if err != nil {
+//		return nil, toErr(ctx, err)
+//	}
+//	return resp.Definitions, nil
+//}
+//
+//func (kvc *definitionKVC) GetDefinition(ctx context.Context, id string, version int64) (*pb.Definition, error) {
+//	in := &pb.GetDefinitionRequest{
+//		Id:      id,
+//		Version: version,
+//	}
+//	resp, err := kvc.remote.GetDefinition(ctx, in, kvc.callOpts...)
+//	if err != nil {
+//		return nil, toErr(ctx, err)
+//	}
+//	return resp.Definition, nil
+//}
+//
+//func (kvc *definitionKVC) RemoveDefinition(ctx context.Context, id string) error {
+//	in := &pb.RemoveDefinitionRequest{
+//		Id:   id,
+//		Name: "",
+//	}
+//	_, err := kvc.remote.RemoveDefinition(ctx, in, kvc.callOpts...)
+//	return toErr(ctx, err)
+//}
+//
+//func (kvc *definitionKVC) ExecuteDefinition(ctx context.Context, id string) (*pb.ProcessInstance, error) {
+//	in := &pb.ExecuteDefinitionRequest{
+//		Id:   id,
+//		Name: "",
+//	}
+//	resp, err := kvc.remote.ExecuteDefinition(ctx, in, kvc.callOpts...)
+//	if err != nil {
+//		return nil, toErr(ctx, err)
+//	}
+//	return resp.Instance, nil
+//}

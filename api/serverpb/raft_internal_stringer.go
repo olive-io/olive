@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api
+package serverpb
 
 import (
 	"fmt"
@@ -105,8 +105,8 @@ func (as *requestOpStringer) String() string {
 // replace the value bytes field with a value size field.
 // To preserve proto encoding of the key and range_end bytes, a faked out proto type is used here.
 type loggableValueCompare struct {
-	Result    Compare_CompareResult `protobuf:"varint,1,opt,name=result,proto3,enum=api.Compare_CompareResult"`
-	Target    Compare_CompareTarget `protobuf:"varint,2,opt,name=target,proto3,enum=api.Compare_CompareTarget"`
+	Result    Compare_CompareResult `protobuf:"varint,1,opt,name=result,proto3,enum=Compare_CompareResult"`
+	Target    Compare_CompareTarget `protobuf:"varint,2,opt,name=target,proto3,enum=Compare_CompareTarget"`
 	Key       []byte                `protobuf:"bytes,3,opt,name=key,proto3"`
 	ValueSize int64                 `protobuf:"varint,7,opt,name=value_size,proto3"`
 	RangeEnd  []byte                `protobuf:"bytes,64,opt,name=range_end,proto3"`

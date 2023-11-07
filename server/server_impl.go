@@ -22,7 +22,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/lni/dragonboat/v4"
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ const (
 	applyTimeout = time.Second
 )
 
-func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeRequest) (*api.RangeResponse, error) {
+func (s *KVServer) Range(ctx context.Context, shardID uint64, r *pb.RangeRequest) (*pb.RangeResponse, error) {
 	_, exists := s.getShard(shardID)
 	if !exists {
 		return nil, errs.ErrShardNotFound
@@ -57,7 +57,7 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 	)
 	ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
-	var resp *api.RangeResponse
+	var resp *pb.RangeResponse
 	var err error
 	defer func(start time.Time) {
 		warnOfExpensiveReadOnlyRangeRequest(s.Logger(), s.WarningApplyDuration, start, r, resp, err)
@@ -81,7 +81,7 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 			if err != nil {
 				return
 			}
-			resp, ok = result.(*api.RangeResponse)
+			resp, ok = result.(*pb.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
 			}
@@ -98,7 +98,7 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 			if err != nil {
 				return
 			}
-			resp, ok = result.(*api.RangeResponse)
+			resp, ok = result.(*pb.RangeResponse)
 			if !ok {
 				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
 			}
@@ -115,24 +115,24 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *api.RangeReques
 	return resp, err
 }
 
-func (s *KVServer) Put(ctx context.Context, shardID uint64, r *api.PutRequest) (*api.PutResponse, error) {
+func (s *KVServer) Put(ctx context.Context, shardID uint64, r *pb.PutRequest) (*pb.PutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Put: r})
+	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{Put: r})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*api.PutResponse), nil
+	return resp.(*pb.PutResponse), nil
 }
 
-func (s *KVServer) DeleteRange(ctx context.Context, shardID uint64, r *api.DeleteRangeRequest) (*api.DeleteRangeResponse, error) {
-	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{DeleteRange: r})
+func (s *KVServer) DeleteRange(ctx context.Context, shardID uint64, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error) {
+	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{DeleteRange: r})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*api.DeleteRangeResponse), nil
+	return resp.(*pb.DeleteRangeResponse), nil
 }
 
-func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (*api.TxnResponse, error) {
+func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*pb.TxnResponse, error) {
 	if isTxnReadonly(r) {
 		trace := traceutil.New("transaction",
 			s.Logger(),
@@ -142,7 +142,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 		ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
 		var get func()
-		var resp *api.TxnResponse
+		var resp *pb.TxnResponse
 		var err error
 
 		if !isTxnSerializable(r) {
@@ -153,7 +153,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 				if err != nil {
 					return
 				}
-				resp, ok = result.(*api.TxnResponse)
+				resp, ok = result.(*pb.TxnResponse)
 				if !ok {
 					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
 				}
@@ -170,7 +170,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 				if err != nil {
 					return
 				}
-				resp, ok = result.(*api.TxnResponse)
+				resp, ok = result.(*pb.TxnResponse)
 				if !ok {
 					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
 				}
@@ -192,14 +192,14 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *api.TxnRequest) (
 	}
 
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Txn: r})
+	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{Txn: r})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*api.TxnResponse), nil
+	return resp.(*pb.TxnResponse), nil
 }
 
-func isTxnSerializable(rt *api.TxnRequest) bool {
+func isTxnSerializable(rt *pb.TxnRequest) bool {
 	for _, u := range rt.Success {
 		if r := u.GetRequestRange(); r == nil || !r.Serializable {
 			return false
@@ -213,7 +213,7 @@ func isTxnSerializable(rt *api.TxnRequest) bool {
 	return true
 }
 
-func isTxnReadonly(tr *api.TxnRequest) bool {
+func isTxnReadonly(tr *pb.TxnRequest) bool {
 	for _, u := range tr.Success {
 		if r := u.GetRequestRange(); r == nil {
 			return false
@@ -227,9 +227,9 @@ func isTxnReadonly(tr *api.TxnRequest) bool {
 	return true
 }
 
-func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *api.CompactionRequest) (*api.CompactionResponse, error) {
+func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
 	startTime := time.Now()
-	result, err := s.processInternalRaftRequestOnce(ctx, shardID, api.InternalRaftRequest{Compaction: r})
+	result, err := s.processInternalRaftRequestOnce(ctx, shardID, pb.InternalRaftRequest{Compaction: r})
 	trace := traceutil.TODO()
 	if result != nil && result.trace != nil {
 		trace = result.trace
@@ -256,12 +256,12 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *api.Compactio
 	if result.err != nil {
 		return nil, result.err
 	}
-	resp := result.resp.(*api.CompactionResponse)
+	resp := result.resp.(*pb.CompactionResponse)
 	if resp == nil {
-		resp = &api.CompactionResponse{}
+		resp = &pb.CompactionResponse{}
 	}
 	if resp.Header == nil {
-		resp.Header = &api.ResponseHeader{}
+		resp.Header = &pb.ResponseHeader{}
 	}
 	resp.Header.Revision = s.kv.Rev()
 	trace.AddField(traceutil.Field{Key: "response_revision", Value: resp.Header.Revision})
@@ -269,16 +269,16 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *api.Compactio
 	return resp, nil
 }
 
-func (s *KVServer) Execute(ctx context.Context, shardID uint64, r *api.ExecuteRequest) (*api.ExecuteResponse, error) {
+func (s *KVServer) Execute(ctx context.Context, shardID uint64, r *pb.ExecuteRequest) (*pb.ExecuteResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, shardID, api.InternalRaftRequest{Execute: r})
+	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{Execute: r})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*api.ExecuteResponse), nil
+	return resp.(*pb.ExecuteResponse), nil
 }
 
-func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (proto.Message, error) {
 	result, err := s.processInternalRaftRequestOnce(ctx, shardID, r)
 	if err != nil {
 		return nil, err
@@ -298,7 +298,7 @@ func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r api.In
 	return result.resp, nil
 }
 
-func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (proto.Message, error) {
+func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (proto.Message, error) {
 	return s.raftRequestOnce(ctx, shardID, r)
 }
 
@@ -331,7 +331,7 @@ func (s *KVServer) doSerialize(
 	return nil
 }
 
-func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r api.InternalRaftRequest) (*applyResult, error) {
+func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (*applyResult, error) {
 	ssm, exists := s.getShard(shardID)
 	if !exists {
 		return nil, errs.ErrShardNotFound
@@ -343,7 +343,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 		return nil, errs.ErrTooManyRequests
 	}
 
-	r.Header = &api.RequestHeader{
+	r.Header = &pb.RequestHeader{
 		ID: ssm.reqIDGen.Next(),
 	}
 

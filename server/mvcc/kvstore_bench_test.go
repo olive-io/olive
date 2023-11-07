@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend/testing"
 	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
@@ -27,7 +28,7 @@ import (
 
 func BenchmarkStorePut(b *testing.B) {
 	be, tmpPath := betesting.NewDefaultTmpBackend(b)
-	s := NewStore(zap.NewExample(), be, StoreConfig{})
+	s := NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 	defer cleanup(s, be, tmpPath)
 
 	// arbitrary number of bytes
@@ -37,7 +38,7 @@ func BenchmarkStorePut(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		s.Put(keys[i], vals[i])
+		s.Put(keys[i], vals[i], lease.NoLease)
 	}
 }
 
@@ -46,13 +47,13 @@ func BenchmarkStoreRangeKey100(b *testing.B) { benchmarkStoreRange(b, 100) }
 
 func benchmarkStoreRange(b *testing.B, n int) {
 	be, tmpPath := betesting.NewDefaultTmpBackend(b)
-	s := NewStore(zap.NewExample(), be, StoreConfig{})
+	s := NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 	defer cleanup(s, be, tmpPath)
 
 	// 64 byte key/val
 	keys, val := createBytesSlice(64, n), createBytesSlice(64, 1)
 	for i := range keys {
-		s.Put(keys[i], val[0])
+		s.Put(keys[i], val[0], lease.NoLease)
 	}
 	// Force into pebble tx instead of backend read tx.
 	s.Commit()
@@ -95,7 +96,7 @@ func benchmarkStoreRange(b *testing.B, n int) {
 // BenchmarkStorePutUpdate is same as above, but instead updates single key
 func BenchmarkStorePutUpdate(b *testing.B) {
 	be, tmpPath := betesting.NewDefaultTmpBackend(b)
-	s := NewStore(zap.NewExample(), be, StoreConfig{})
+	s := NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 	defer cleanup(s, be, tmpPath)
 
 	// arbitrary number of bytes
@@ -104,7 +105,7 @@ func BenchmarkStorePutUpdate(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		s.Put(keys[0], vals[0])
+		s.Put(keys[0], vals[0], lease.NoLease)
 	}
 }
 
@@ -113,7 +114,7 @@ func BenchmarkStorePutUpdate(b *testing.B) {
 // some synchronization operations, such as mutex locking.
 func BenchmarkStoreTxnPut(b *testing.B) {
 	be, tmpPath := betesting.NewDefaultTmpBackend(b)
-	s := NewStore(zap.NewExample(), be, StoreConfig{})
+	s := NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 	defer cleanup(s, be, tmpPath)
 
 	// arbitrary number of bytes
@@ -125,7 +126,7 @@ func BenchmarkStoreTxnPut(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		txn := s.Write(traceutil.TODO())
-		txn.Put(keys[i], vals[i])
+		txn.Put(keys[i], vals[i], lease.NoLease)
 		txn.End()
 	}
 }
@@ -133,7 +134,7 @@ func BenchmarkStoreTxnPut(b *testing.B) {
 // benchmarkStoreRestore benchmarks the restore operation
 func benchmarkStoreRestore(revsPerKey int, b *testing.B) {
 	be, tmpPath := betesting.NewDefaultTmpBackend(b)
-	s := NewStore(zap.NewExample(), be, StoreConfig{})
+	s := NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 	// use closure to capture 's' to pick up the reassignment
 	defer func() { cleanup(s, be, tmpPath) }()
 
@@ -145,7 +146,7 @@ func benchmarkStoreRestore(revsPerKey int, b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < revsPerKey; j++ {
 			txn := s.Write(traceutil.TODO())
-			txn.Put(keys[i], vals[i])
+			txn.Put(keys[i], vals[i], lease.NoLease)
 			txn.End()
 		}
 	}
@@ -153,7 +154,7 @@ func benchmarkStoreRestore(revsPerKey int, b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	s = NewStore(zap.NewExample(), be, StoreConfig{})
+	s = NewStore(zap.NewExample(), be, &lease.FakeLessor{}, StoreConfig{})
 }
 
 func BenchmarkStoreRestoreRevs1(b *testing.B) {

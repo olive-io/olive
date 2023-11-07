@@ -17,7 +17,8 @@ package mvcc
 import (
 	"context"
 
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 )
@@ -29,7 +30,7 @@ type RangeOptions struct {
 }
 
 type RangeResult struct {
-	KVs   []api.KeyValue
+	KVs   []pb.KeyValue
 	Rev   int64
 	Count int
 }
@@ -74,10 +75,12 @@ type IWriteView interface {
 	// if the `end` is not nil, deleteRange deletes the keys in range [key, range_end).
 	DeleteRange(key, end []byte) (n, rev int64)
 
-	// Put puts the given key, value into the store.
+	// Put puts the given key, value into the store. Put also takes additional argument lease to
+	// attach a lease to a key-value pair as meta-data. KV implementation does not validate the lease
+	// id.
 	// A put also increases the rev of the store, and generates one event in the event history.
 	// The returned rev is the current revision of the KV when the operation is executed.
-	Put(key, value []byte) (rev int64)
+	Put(key, value []byte, lease lease.LeaseID) (rev int64)
 }
 
 // ITxnWrite represents a transaction that can modify the store.
@@ -85,17 +88,17 @@ type ITxnWrite interface {
 	ITxnRead
 	IWriteView
 	// Changes gets the changes made since opening the write txn.
-	Changes() []api.KeyValue
+	Changes() []pb.KeyValue
 }
 
 // txnReadWrite coerces a read txn to a write, panicking on any write operation.
 type txnReadWrite struct{ ITxnRead }
 
 func (trw *txnReadWrite) DeleteRange(key, end []byte) (n, rev int64) { panic("unexpected DeleteRange") }
-func (trw *txnReadWrite) Put(key, value []byte) (rev int64) {
+func (trw *txnReadWrite) Put(key, value []byte, lease lease.LeaseID) (rev int64) {
 	panic("unexpected Put")
 }
-func (trw *txnReadWrite) Changes() []api.KeyValue { return nil }
+func (trw *txnReadWrite) Changes() []pb.KeyValue { return nil }
 
 func NewReadOnlyTxnWrite(txn ITxnRead) ITxnWrite { return &txnReadWrite{txn} }
 
@@ -130,4 +133,17 @@ type IKV interface {
 	// Restore restores the KV store from a backend.
 	Restore(b backend.IBackend) error
 	Close() error
+}
+
+// IWatchableKV is a KV that can be watched.
+type IWatchableKV interface {
+	IKV
+	IWatchable
+}
+
+// IWatchable is the interface that wraps the NewWatchStream function.
+type IWatchable interface {
+	// NewWatchStream returns a IWatchStream that can be used to
+	// watch events happened or happening on the KV.
+	NewWatchStream() IWatchStream
 }

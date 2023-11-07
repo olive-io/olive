@@ -25,7 +25,7 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	humanize "github.com/dustin/go-humanize"
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"go.uber.org/zap"
 )
 
@@ -342,7 +342,7 @@ func (b *backend) Recover(reader io.Reader) error {
 		if _, err := io.ReadFull(reader, data); err != nil {
 			return err
 		}
-		rkv := &api.RaftInternalKV{}
+		rkv := &pb.RaftInternalKV{}
 		if err := rkv.Unmarshal(data); err != nil {
 			panic(err)
 		}

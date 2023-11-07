@@ -20,8 +20,8 @@ import (
 	"path"
 
 	"github.com/olive-io/bpmn/schema"
-	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/rpctypes"
+	pb "github.com/olive-io/olive/api/serverpb"
 	errs "github.com/olive-io/olive/pkg/errors"
 )
 
@@ -31,8 +31,8 @@ const (
 
 var noPrefixEnd = []byte{0}
 
-func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinitionRequest) (resp *api.DeployDefinitionResponse, err error) {
-	resp = &api.DeployDefinitionResponse{}
+func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
+	resp = &pb.DeployDefinitionResponse{}
 	shardID := s.getShardID()
 
 	var sd schema.Definitions
@@ -42,7 +42,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 		return
 	}
 
-	definitions := &api.Definition{
+	definitions := &pb.Definition{
 		Id:      req.Id,
 		Name:    req.Name,
 		Content: req.Content,
@@ -51,14 +51,14 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 	data, _ := definitions.Marshal()
 
 	key := path.Join(definitionPrefix, req.Id)
-	putReq := &api.PutRequest{
+	putReq := &pb.PutRequest{
 		Key:         []byte(key),
 		Value:       data,
 		PrevKv:      false,
 		IgnoreValue: false,
 	}
 
-	var rsp *api.PutResponse
+	var rsp *pb.PutResponse
 	rsp, err = s.kvs.Put(ctx, shardID, putReq)
 	if err != nil {
 		return
@@ -72,29 +72,29 @@ func (s *Server) DeployDefinition(ctx context.Context, req *api.DeployDefinition
 	return
 }
 
-func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequest) (resp *api.ListDefinitionResponse, err error) {
-	resp = &api.ListDefinitionResponse{}
+func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
+	resp = &pb.ListDefinitionResponse{}
 
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix)
-	rangeReq := &api.RangeRequest{
+	rangeReq := &pb.RangeRequest{
 		Key:          []byte(key),
 		RangeEnd:     getPrefix([]byte(key)),
 		Serializable: true,
 		KeysOnly:     true,
 	}
 
-	var rsp *api.RangeResponse
+	var rsp *pb.RangeResponse
 	rsp, err = s.kvs.Range(ctx, shardID, rangeReq)
 	if err != nil {
 		return
 	}
 
-	resp.Definitions = make([]*api.Definition, 0)
+	resp.Definitions = make([]*pb.Definition, 0)
 	resp.Header = rsp.Header
 	for _, kv := range rsp.Kvs {
-		definitions := &api.Definition{}
+		definitions := &pb.Definition{}
 		if err = definitions.Unmarshal(kv.Value); err == nil {
 			resp.Definitions = append(resp.Definitions, definitions)
 		}
@@ -103,13 +103,13 @@ func (s *Server) ListDefinition(ctx context.Context, req *api.ListDefinitionRequ
 	return
 }
 
-func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionRequest) (resp *api.GetDefinitionResponse, err error) {
-	resp = &api.GetDefinitionResponse{}
+func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
+	resp = &pb.GetDefinitionResponse{}
 
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix, req.Id)
-	rangeReq := &api.RangeRequest{
+	rangeReq := &pb.RangeRequest{
 		Key:          []byte(key),
 		Serializable: true,
 		Limit:        1,
@@ -117,7 +117,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 		MultiVersion: true,
 	}
 
-	var rsp *api.RangeResponse
+	var rsp *pb.RangeResponse
 	rsp, err = s.kvs.Range(ctx, shardID, rangeReq)
 	if err != nil {
 		return
@@ -128,24 +128,24 @@ func (s *Server) GetDefinition(ctx context.Context, req *api.GetDefinitionReques
 	}
 
 	resp.Header = rsp.Header
-	resp.Definition = &api.Definition{}
+	resp.Definition = &pb.Definition{}
 	resp.Definition.Versions = rsp.Versions
 	err = resp.Definition.Unmarshal(rsp.Kvs[0].Value)
 
 	return
 }
 
-func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinitionRequest) (resp *api.RemoveDefinitionResponse, err error) {
-	resp = &api.RemoveDefinitionResponse{}
+func (s *Server) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
+	resp = &pb.RemoveDefinitionResponse{}
 
 	shardID := s.getShardID()
 
 	key := path.Join(definitionPrefix, req.Id)
-	deleteReq := &api.DeleteRangeRequest{
+	deleteReq := &pb.DeleteRangeRequest{
 		Key: []byte(key),
 	}
 
-	var rsp *api.DeleteRangeResponse
+	var rsp *pb.DeleteRangeResponse
 	rsp, err = s.kvs.DeleteRange(ctx, shardID, deleteReq)
 	if err != nil {
 		return
@@ -156,7 +156,7 @@ func (s *Server) RemoveDefinition(ctx context.Context, req *api.RemoveDefinition
 	return
 }
 
-func (s *Server) ExecuteDefinition(ctx context.Context, req *api.ExecuteDefinitionRequest) (resp *api.ExecuteDefinitionResponse, err error) {
+func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
 	// TODO: select a runner
 	return
 }

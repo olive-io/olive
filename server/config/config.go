@@ -137,6 +137,13 @@ type ServerConfig struct {
 	// PreVote is true to enable Raft Pre-Vote.
 	PreVote bool `json:"pre-vote"`
 
+	// EnableLeaseCheckpoint enables leader to send regular checkpoints to other members to prevent reset of remaining TTL on leader change.
+	EnableLeaseCheckpoint bool
+	// LeaseCheckpointInterval time.Duration is the wait duration between lease checkpoints.
+	LeaseCheckpointInterval time.Duration
+	// LeaseCheckpointPersist enables persisting remainingTTL to prevent indefinite auto-renewal of long lived leases.
+	LeaseCheckpointPersist bool
+
 	// MutualTLS defines whether to use mutual TLS for authenticating servers
 	// and clients. Insecure communication is used when MutualTLS is set to
 	// False.

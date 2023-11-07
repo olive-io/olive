@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api_test
+package serverpb_test
 
 import (
 	"testing"
 
-	"github.com/olive-io/olive/api"
+	"github.com/olive-io/olive/api/serverpb"
 )
 
 // TestInvalidGoTypeIntPanic tests conditions that caused
 func TestInvalidGoTypeIntPanic(t *testing.T) {
-	result := api.NewLoggablePutRequest(&api.PutRequest{}).String()
+	result := serverpb.NewLoggablePutRequest(&serverpb.PutRequest{}).String()
 	if result != "" {
 		t.Errorf("Got result: %s, expected empty string", result)
 	}

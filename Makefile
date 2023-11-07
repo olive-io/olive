@@ -25,10 +25,10 @@ install:
 
 generate:
 	cd $(GOPATH)/src && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/api.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/raft.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/raft_internal.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/rpc.proto
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/api.proto && \
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft.proto && \
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft_internal.proto && \
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/rpc.proto
 
 docker:
 

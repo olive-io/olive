@@ -17,12 +17,14 @@ package mvcc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"sync"
 	"time"
 
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/pkg/schedule"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"github.com/olive-io/olive/server/mvcc/buckets"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
@@ -65,6 +67,8 @@ type store struct {
 	b       backend.IBackend
 	kvindex index
 
+	le lease.ILessor
+
 	// revMuLock protects currentRev and compactMainRev.
 	// Locked at end of write txn and released after write txn unlock lock.
 	// Locked before locking read txn and released after locking.
@@ -84,7 +88,7 @@ type store struct {
 
 // NewStore returns a new store. It is useful to create a store inside
 // mvcc pkg. It should only be used for testing externally.
-func NewStore(lg *zap.Logger, b backend.IBackend, cfg StoreConfig) *store {
+func NewStore(lg *zap.Logger, b backend.IBackend, le lease.ILessor, cfg StoreConfig) *store {
 	if lg == nil {
 		lg = zap.NewNop()
 	}
@@ -95,6 +99,8 @@ func NewStore(lg *zap.Logger, b backend.IBackend, cfg StoreConfig) *store {
 		cfg:     cfg,
 		b:       b,
 		kvindex: newTreeIndex(lg),
+
+		le: le,
 
 		currentRev:     1,
 		compactMainRev: -1,
@@ -108,6 +114,9 @@ func NewStore(lg *zap.Logger, b backend.IBackend, cfg StoreConfig) *store {
 	s.hashes = newHashStorage(lg, s)
 	s.IReadView = &readView{s}
 	s.IWriteView = &writeView{s}
+	if s.le != nil {
+		s.le.SetRangeDeleter(func() lease.TxnDelete { return s.Write(traceutil.TODO()) })
+	}
 
 	tx := s.b.BatchTx()
 	tx.LockOutsideApply()
@@ -299,7 +308,7 @@ func (s *store) restore() error {
 	revToBytes(revision{main: 1}, min)
 	revToBytes(revision{main: math.MaxInt64, sub: math.MaxInt64}, max)
 
-	//keyToLease := make(map[string]lease.LeaseID)
+	keyToLease := make(map[string]lease.LeaseID)
 
 	// restore index
 	tx := s.b.ReadTx()
@@ -334,7 +343,7 @@ func (s *store) restore() error {
 		}
 		// rkvc blocks if the total pending keys exceeds the restore
 		// chunk size to keep keys from consuming too much memory.
-		restoreChunk(s.lg, rkvc, keys, vals)
+		restoreChunk(s.lg, rkvc, keys, vals, keyToLease)
 		if len(keys) < restoreChunkKeys {
 			// partial set implies final set
 			break
@@ -363,6 +372,21 @@ func (s *store) restore() error {
 		scheduledCompact = 0
 	}
 
+	for key, lid := range keyToLease {
+		if s.le == nil {
+			tx.Unlock()
+			panic("no lessor to attach lease")
+		}
+		err := s.le.Attach(lid, []lease.LeaseItem{{Key: key}})
+		if err != nil {
+			s.lg.Error(
+				"failed to attach a lease",
+				zap.String("lease-id", fmt.Sprintf("%016x", lid)),
+				zap.Error(err),
+			)
+		}
+	}
+
 	tx.Unlock()
 
 	s.lg.Info("kvstore restored", zap.Int64("current-rev", s.currentRev))
@@ -385,7 +409,7 @@ func (s *store) restore() error {
 
 type revKeyValue struct {
 	key  []byte
-	kv   api.KeyValue
+	kv   pb.KeyValue
 	kstr string
 }
 
@@ -436,20 +460,20 @@ func restoreIntoIndex(lg *zap.Logger, idx index) (chan<- revKeyValue, <-chan int
 	return rkvc, revc
 }
 
-func restoreChunk(lg *zap.Logger, kvc chan<- revKeyValue, keys, vals [][]byte) {
+func restoreChunk(lg *zap.Logger, kvc chan<- revKeyValue, keys, vals [][]byte, keyToLease map[string]lease.LeaseID) {
 	for i, key := range keys {
 		rkv := revKeyValue{key: key}
 		if err := rkv.kv.Unmarshal(vals[i]); err != nil {
-			lg.Fatal("failed to unmarshal api.KeyValue", zap.Error(err))
+			lg.Fatal("failed to unmarshal pb.KeyValue", zap.Error(err))
 		}
 		rkv.kstr = string(rkv.kv.Key)
-		//if isTombstone(key) {
-		//	delete(keyToLease, rkv.kstr)
-		//} else if lid := lease.LeaseID(rkv.kv.Lease); lid != lease.NoLease {
-		//	keyToLease[rkv.kstr] = lid
-		//} else {
-		//	delete(keyToLease, rkv.kstr)
-		//}
+		if isTombstone(key) {
+			delete(keyToLease, rkv.kstr)
+		} else if lid := lease.LeaseID(rkv.kv.Lease); lid != lease.NoLease {
+			keyToLease[rkv.kstr] = lid
+		} else {
+			delete(keyToLease, rkv.kstr)
+		}
 		kvc <- rkv
 	}
 }

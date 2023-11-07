@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package api;
+package serverpb;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/olive-io/olive/api;api";
+option go_package = "github.com/olive-io/olive/api/serverpb;serverpb";
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;

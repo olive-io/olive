@@ -32,8 +32,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/pkg/schedule"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"github.com/olive-io/olive/server/mvcc/backend/testing"
 	"github.com/olive-io/olive/server/mvcc/buckets"
@@ -45,11 +46,11 @@ import (
 
 func TestStoreRev(t *testing.T) {
 	b, _ := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer s.Close()
 
 	for i := 1; i <= 3; i++ {
-		s.Put([]byte("foo"), []byte("bar"))
+		s.Put([]byte("foo"), []byte("bar"), lease.NoLease)
 		if r := s.Rev(); r != int64(i+1) {
 			t.Errorf("#%d: rev = %d, want %d", i, r, i+1)
 		}
@@ -57,7 +58,7 @@ func TestStoreRev(t *testing.T) {
 }
 
 func TestStorePut(t *testing.T) {
-	kv := api.KeyValue{
+	kv := pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("bar"),
 		CreateRevision: 1,
@@ -76,7 +77,7 @@ func TestStorePut(t *testing.T) {
 
 		wrev    revision
 		wkey    []byte
-		wkv     api.KeyValue
+		wkv     pb.KeyValue
 		wputrev revision
 	}{
 		{
@@ -86,7 +87,7 @@ func TestStorePut(t *testing.T) {
 
 			revision{2, 0},
 			newTestKeyBytes(revision{2, 0}, false),
-			api.KeyValue{
+			pb.KeyValue{
 				Key:            []byte("foo"),
 				Value:          []byte("bar"),
 				CreateRevision: 2,
@@ -102,7 +103,7 @@ func TestStorePut(t *testing.T) {
 
 			revision{2, 0},
 			newTestKeyBytes(revision{2, 0}, false),
-			api.KeyValue{
+			pb.KeyValue{
 				Key:            []byte("foo"),
 				Value:          []byte("bar"),
 				CreateRevision: 2,
@@ -118,7 +119,7 @@ func TestStorePut(t *testing.T) {
 
 			revision{3, 0},
 			newTestKeyBytes(revision{3, 0}, false),
-			api.KeyValue{
+			pb.KeyValue{
 				Key:            []byte("foo"),
 				Value:          []byte("bar"),
 				CreateRevision: 2,
@@ -139,7 +140,7 @@ func TestStorePut(t *testing.T) {
 			b.tx.rangeRespc <- *tt.rr
 		}
 
-		s.Put([]byte("foo"), []byte("bar"))
+		s.Put([]byte("foo"), []byte("bar"), lease.NoLease)
 
 		data, err := tt.wkv.Marshal()
 		if err != nil {
@@ -176,7 +177,7 @@ func TestStorePut(t *testing.T) {
 
 func TestStoreRange(t *testing.T) {
 	key := newTestKeyBytes(revision{2, 0}, false)
-	kv := api.KeyValue{
+	kv := pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("bar"),
 		CreateRevision: 1,
@@ -217,7 +218,7 @@ func TestStoreRange(t *testing.T) {
 		if err != nil {
 			t.Errorf("#%d: err = %v, want nil", i, err)
 		}
-		if w := []api.KeyValue{kv}; !reflect.DeepEqual(ret.KVs, w) {
+		if w := []pb.KeyValue{kv}; !reflect.DeepEqual(ret.KVs, w) {
 			t.Errorf("#%d: kvs = %+v, want %+v", i, ret.KVs, w)
 		}
 		if ret.Rev != wrev {
@@ -248,7 +249,7 @@ func TestStoreRange(t *testing.T) {
 
 func TestStoreDeleteRange(t *testing.T) {
 	key := newTestKeyBytes(revision{2, 0}, false)
-	kv := api.KeyValue{
+	kv := pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("bar"),
 		CreateRevision: 1,
@@ -295,7 +296,7 @@ func TestStoreDeleteRange(t *testing.T) {
 			t.Errorf("#%d: n = %d, want 1", i, n)
 		}
 
-		data, err := (&api.KeyValue{
+		data, err := (&pb.KeyValue{
 			Key: []byte("foo"),
 		}).Marshal()
 		if err != nil {
@@ -363,7 +364,7 @@ func TestStoreRestore(t *testing.T) {
 	fi := s.kvindex.(*fakeIndex)
 
 	putkey := newTestKeyBytes(revision{3, 0}, false)
-	putkv := api.KeyValue{
+	putkv := pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("bar"),
 		CreateRevision: 4,
@@ -375,7 +376,7 @@ func TestStoreRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	delkey := newTestKeyBytes(revision{5, 0}, true)
-	delkv := api.KeyValue{
+	delkv := pb.KeyValue{
 		Key: []byte("foo"),
 	}
 	delkvb, err := delkv.Marshal()
@@ -425,19 +426,19 @@ func TestRestoreDelete(t *testing.T) {
 	defer func() { restoreChunkKeys = oldChunk }()
 
 	b, _ := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 
 	keys := make(map[string]struct{})
 	for i := 0; i < 20; i++ {
 		ks := fmt.Sprintf("foo-%d", i)
 		k := []byte(ks)
-		s.Put(k, []byte("bar"))
+		s.Put(k, []byte("bar"), lease.NoLease)
 		keys[ks] = struct{}{}
 		switch mrand.Intn(3) {
 		case 0:
 			// put random key from past via random range on map
 			ks = fmt.Sprintf("foo-%d", mrand.Intn(i+1))
-			s.Put([]byte(ks), []byte("baz"))
+			s.Put([]byte(ks), []byte("baz"), lease.NoLease)
 			keys[ks] = struct{}{}
 		case 1:
 			// delete random key via random range on map
@@ -450,7 +451,7 @@ func TestRestoreDelete(t *testing.T) {
 	}
 	s.Close()
 
-	s = NewStore(zap.NewExample(), b, StoreConfig{})
+	s = NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer s.Close()
 	for i := 0; i < 20; i++ {
 		ks := fmt.Sprintf("foo-%d", i)
@@ -472,11 +473,11 @@ func TestRestoreContinueUnfinishedCompaction(t *testing.T) {
 	tests := []string{"recreate", "restore"}
 	for _, test := range tests {
 		b, _ := betesting.NewDefaultTmpBackend(t)
-		s0 := NewStore(zap.NewExample(), b, StoreConfig{})
+		s0 := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 
-		s0.Put([]byte("foo"), []byte("bar"))
-		s0.Put([]byte("foo"), []byte("bar1"))
-		s0.Put([]byte("foo"), []byte("bar2"))
+		s0.Put([]byte("foo"), []byte("bar"), lease.NoLease)
+		s0.Put([]byte("foo"), []byte("bar1"), lease.NoLease)
+		s0.Put([]byte("foo"), []byte("bar2"), lease.NoLease)
 
 		// write scheduled compaction, but not do compaction
 		rbytes := newRevBytes()
@@ -491,7 +492,7 @@ func TestRestoreContinueUnfinishedCompaction(t *testing.T) {
 		var s *store
 		switch test {
 		case "recreate":
-			s = NewStore(zap.NewExample(), b, StoreConfig{})
+			s = NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 		case "restore":
 			s0.Restore(b)
 			s = s0
@@ -533,12 +534,12 @@ type hashKVResult struct {
 // TestHashKVWhenCompacting ensures that HashKV returns correct hash when compacting.
 func TestHashKVWhenCompacting(t *testing.T) {
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer os.Remove(tmpPath)
 
 	rev := 10000
 	for i := 2; i <= rev; i++ {
-		s.Put([]byte("foo"), []byte(fmt.Sprintf("bar%d", i)))
+		s.Put([]byte("foo"), []byte(fmt.Sprintf("bar%d", i)), lease.NoLease)
 	}
 
 	hashCompactc := make(chan hashKVResult, 1)
@@ -601,12 +602,12 @@ func TestHashKVWhenCompacting(t *testing.T) {
 // correct hash value with latest revision.
 func TestHashKVZeroRevision(t *testing.T) {
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer os.Remove(tmpPath)
 
 	rev := 10000
 	for i := 2; i <= rev; i++ {
-		s.Put([]byte("foo"), []byte(fmt.Sprintf("bar%d", i)))
+		s.Put([]byte("foo"), []byte(fmt.Sprintf("bar%d", i)), lease.NoLease)
 	}
 	if _, err := s.Compact(traceutil.TODO(), int64(rev/2)); err != nil {
 		t.Fatal(err)
@@ -634,13 +635,13 @@ func TestTxnPut(t *testing.T) {
 	vals := createBytesSlice(bytesN, sliceN)
 
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer cleanup(s, b, tmpPath)
 
 	for i := 0; i < sliceN; i++ {
 		txn := s.Write(traceutil.TODO())
 		base := int64(i + 2)
-		if rev := txn.Put(keys[i], vals[i]); rev != base {
+		if rev := txn.Put(keys[i], vals[i], lease.NoLease); rev != base {
 			t.Errorf("#%d: rev = %d, want %d", i, rev, base)
 		}
 		txn.End()
@@ -650,11 +651,11 @@ func TestTxnPut(t *testing.T) {
 // TestConcurrentReadNotBlockingWrite ensures Read does not blocking Write after its creation
 func TestConcurrentReadNotBlockingWrite(t *testing.T) {
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer os.Remove(tmpPath)
 
 	// write something to read later
-	s.Put([]byte("foo"), []byte("bar"))
+	s.Put([]byte("foo"), []byte("bar"), lease.NoLease)
 
 	// readTx simulates a long read request
 	readTx1 := s.Read(ConcurrentReadTxMode, traceutil.TODO())
@@ -662,7 +663,7 @@ func TestConcurrentReadNotBlockingWrite(t *testing.T) {
 	// write should not be blocked by reads
 	done := make(chan struct{}, 1)
 	go func() {
-		s.Put([]byte("foo"), []byte("newBar")) // this is a write Txn
+		s.Put([]byte("foo"), []byte("newBar"), lease.NoLease) // this is a write Txn
 		done <- struct{}{}
 	}()
 	select {
@@ -679,7 +680,7 @@ func TestConcurrentReadNotBlockingWrite(t *testing.T) {
 		t.Fatalf("failed to range: %v", err)
 	}
 	// readTx2 should see the result of new write
-	w := api.KeyValue{
+	w := pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("newBar"),
 		CreateRevision: 2,
@@ -696,7 +697,7 @@ func TestConcurrentReadNotBlockingWrite(t *testing.T) {
 		t.Fatalf("failed to range: %v", err)
 	}
 	// readTx1 should not see the result of new write
-	w = api.KeyValue{
+	w = pb.KeyValue{
 		Key:            []byte("foo"),
 		Value:          []byte("bar"),
 		CreateRevision: 2,
@@ -719,7 +720,7 @@ func TestConcurrentReadTxAndWrite(t *testing.T) {
 		mu                   sync.Mutex // mu protects committedKVs
 	)
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s := NewStore(zap.NewExample(), b, StoreConfig{})
+	s := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer os.Remove(tmpPath)
 
 	var wg sync.WaitGroup
@@ -735,7 +736,7 @@ func TestConcurrentReadTxAndWrite(t *testing.T) {
 			for j := 0; j < numOfPuts; j++ {
 				k := []byte(strconv.Itoa(mrand.Int()))
 				v := []byte(strconv.Itoa(mrand.Int()))
-				tx.Put(k, v)
+				tx.Put(k, v, lease.NoLease)
 				pendingKvs = append(pendingKvs, kv{k, v})
 			}
 			// reads should not see above Puts until write is finished
@@ -841,6 +842,7 @@ func newFakeStore() *store {
 		cfg:            StoreConfig{CompactionBatchLimit: 10000},
 		b:              b,
 		kvindex:        newFakeIndex(),
+		le:             &lease.FakeLessor{},
 		currentRev:     0,
 		compactMainRev: -1,
 		fifoSched:      schedule.NewFIFOScheduler(),

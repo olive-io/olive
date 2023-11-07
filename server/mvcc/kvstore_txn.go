@@ -18,7 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"github.com/olive-io/olive/server/mvcc/buckets"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
@@ -76,7 +77,7 @@ type storeTxnWrite struct {
 	tx backend.IBatchTx
 	// beginRev is the revision where the txn begins; it will write to the next revision.
 	beginRev int64
-	changes  []api.KeyValue
+	changes  []pb.KeyValue
 }
 
 func (s *store) Write(trace *traceutil.Trace) ITxnWrite {
@@ -87,7 +88,7 @@ func (s *store) Write(trace *traceutil.Trace) ITxnWrite {
 		storeTxnRead: storeTxnRead{s, tx, 0, 0, trace},
 		tx:           tx,
 		beginRev:     s.currentRev,
-		changes:      make([]api.KeyValue, 0, 4),
+		changes:      make([]pb.KeyValue, 0, 4),
 	}
 	return newMetricsTxnWrite(tw)
 }
@@ -109,8 +110,8 @@ func (tw *storeTxnWrite) DeleteRange(key, end []byte) (int64, int64) {
 	return 0, tw.beginRev
 }
 
-func (tw *storeTxnWrite) Put(key, value []byte) int64 {
-	tw.put(key, value)
+func (tw *storeTxnWrite) Put(key, value []byte, leaseID lease.LeaseID) int64 {
+	tw.put(key, value, leaseID)
 	return tw.beginRev + 1
 }
 
@@ -155,7 +156,7 @@ func (tr *storeTxnRead) rangeKeys(ctx context.Context, key, end []byte, curRev i
 		limit = len(revpairs)
 	}
 
-	kvs := make([]api.KeyValue, limit)
+	kvs := make([]pb.KeyValue, limit)
 	revBytes := newRevBytes()
 	for i, revpair := range revpairs[:len(kvs)] {
 		select {
@@ -185,7 +186,7 @@ func (tr *storeTxnRead) rangeKeys(ctx context.Context, key, end []byte, curRev i
 		}
 		if err = kvs[i].Unmarshal(vs[0]); err != nil {
 			tr.s.lg.Fatal(
-				"failed to unmarshal api.KeyValue",
+				"failed to unmarshal pb.KeyValue",
 				zap.Error(err),
 			)
 		}
@@ -194,15 +195,17 @@ func (tr *storeTxnRead) rangeKeys(ctx context.Context, key, end []byte, curRev i
 	return &RangeResult{KVs: kvs, Count: total, Rev: curRev}, nil
 }
 
-func (tw *storeTxnWrite) put(key, value []byte) {
+func (tw *storeTxnWrite) put(key, value []byte, leaseID lease.LeaseID) {
 	rev := tw.beginRev + 1
 	c := rev
+	oldLease := lease.NoLease
 
 	// if the key exists before, use its previous created and
 	// get its previous leaseID
 	_, created, ver, err := tw.s.kvindex.Get(key, rev)
 	if err == nil {
 		c = created.main
+		oldLease = tw.s.le.GetLease(lease.LeaseItem{Key: string(key)})
 		tw.trace.Step("get key's previous created_revision and leaseID")
 	}
 	ibytes := newRevBytes()
@@ -210,29 +213,53 @@ func (tw *storeTxnWrite) put(key, value []byte) {
 	revToBytes(idxRev, ibytes)
 
 	ver = ver + 1
-	kv := api.KeyValue{
+	kv := pb.KeyValue{
 		Key:            key,
 		Value:          value,
 		CreateRevision: c,
 		ModRevision:    rev,
 		Version:        ver,
+		Lease:          int64(leaseID),
 	}
 
 	d, err := kv.Marshal()
 	if err != nil {
 		tw.storeTxnRead.s.lg.Fatal(
-			"failed to marshal api.KeyValue",
+			"failed to marshal pb.KeyValue",
 			zap.Error(err),
 		)
 	}
 
-	tw.trace.Step("marshal api.KeyValue")
+	tw.trace.Step("marshal pb.KeyValue")
 	tw.tx.UnsafeSeqPut(buckets.Key, ibytes, d)
 	tw.s.kvindex.Put(key, idxRev)
 	tw.changes = append(tw.changes, kv)
 	tw.trace.Step("store kv pair into pebble db")
 
-	//tw.trace.Step("attach lease to kv pair")
+	if oldLease != lease.NoLease {
+		if tw.s.le == nil {
+			panic("no lessor to detach lease")
+		}
+		err = tw.s.le.Detach(oldLease, []lease.LeaseItem{{Key: string(key)}})
+		if err != nil {
+			tw.storeTxnRead.s.lg.Error(
+				"failed to detach old lease from a key",
+				zap.Error(err),
+			)
+		}
+	}
+
+	if leaseID != lease.NoLease {
+		if tw.s.le == nil {
+			panic("no lessor to attach lease")
+		}
+		err = tw.s.le.Attach(leaseID, []lease.LeaseItem{{Key: string(key)}})
+		if err != nil {
+			panic("unexpected error from lease Attach")
+		}
+	}
+
+	tw.trace.Step("attach lease to kv pair")
 }
 
 func (tw *storeTxnWrite) deleteRange(key, end []byte) int64 {
@@ -257,12 +284,12 @@ func (tw *storeTxnWrite) delete(key []byte) {
 
 	ibytes = appendMarkTombstone(tw.storeTxnRead.s.lg, ibytes)
 
-	kv := api.KeyValue{Key: key}
+	kv := pb.KeyValue{Key: key}
 
 	d, err := kv.Marshal()
 	if err != nil {
 		tw.storeTxnRead.s.lg.Fatal(
-			"failed to marshal api.KeyValue",
+			"failed to marshal pb.KeyValue",
 			zap.Error(err),
 		)
 	}
@@ -277,6 +304,19 @@ func (tw *storeTxnWrite) delete(key []byte) {
 		)
 	}
 	tw.changes = append(tw.changes, kv)
+
+	item := lease.LeaseItem{Key: string(key)}
+	leaseID := tw.s.le.GetLease(item)
+
+	if leaseID != lease.NoLease {
+		err = tw.s.le.Detach(leaseID, []lease.LeaseItem{item})
+		if err != nil {
+			tw.storeTxnRead.s.lg.Error(
+				"failed to detach old lease from a key",
+				zap.Error(err),
+			)
+		}
+	}
 }
 
-func (tw *storeTxnWrite) Changes() []api.KeyValue { return tw.changes }
+func (tw *storeTxnWrite) Changes() []pb.KeyValue { return tw.changes }

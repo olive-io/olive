@@ -28,6 +28,7 @@ import (
 	"github.com/lni/dragonboat/v4/raftio"
 	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/config"
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/wait"
@@ -61,7 +62,8 @@ type KVServer struct {
 
 	errorc chan error
 
-	kv mvcc.IKV
+	kv     mvcc.IKV
+	lessor lease.ILessor
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -125,7 +127,19 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 		return nil, err
 	}
 
-	kv := mvcc.NewStore(lg, be, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
+	heartbeat := time.Millisecond * time.Duration(cfg.RTTMillisecond) * time.Duration(cfg.HeartBeatTTL)
+	minTTL := (3 * time.Millisecond * time.Duration(cfg.RTTMillisecond) * time.Duration(cfg.ElectionTTL)) / 2 * heartbeat
+
+	// always recover lessor before kv. When we recover the mvcc.KV it will reattach keys to its leases.
+	// If we recover mvcc.KV first, it will attach the keys to the wrong lessor before it recovers.
+	lessor := lease.NewLessor(lg, be, lease.LessorConfig{
+		MinLeaseTTL:                int64(math.Ceil(minTTL.Seconds())),
+		CheckpointInterval:         cfg.LeaseCheckpointInterval,
+		CheckpointPersist:          cfg.LeaseCheckpointPersist,
+		ExpiredLeasesRetryInterval: cfg.ReqTimeout(),
+	})
+
+	kv := mvcc.New(lg, be, lessor, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 
 	s := &KVServer{
 		ServerConfig: &cfg,
@@ -133,6 +147,7 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 		lgMu:         new(sync.RWMutex),
 		lg:           lg,
 		kv:           kv,
+		lessor:       lessor,
 		bemu:         sync.Mutex{},
 		be:           be,
 		raftEventCh:  raftChannel,

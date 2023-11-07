@@ -16,6 +16,8 @@ package mvcc
 
 import (
 	"context"
+
+	"github.com/olive-io/olive/server/lease"
 )
 
 type metricsTxnWrite struct {
@@ -44,11 +46,11 @@ func (tw *metricsTxnWrite) DeleteRange(key, end []byte) (n, rev int64) {
 	return tw.ITxnWrite.DeleteRange(key, end)
 }
 
-func (tw *metricsTxnWrite) Put(key, value []byte) (rev int64) {
+func (tw *metricsTxnWrite) Put(key, value []byte, lease lease.LeaseID) (rev int64) {
 	tw.puts++
 	size := int64(len(key) + len(value))
 	tw.putSize += size
-	return tw.ITxnWrite.Put(key, value)
+	return tw.ITxnWrite.Put(key, value, lease)
 }
 
 func (tw *metricsTxnWrite) End() {

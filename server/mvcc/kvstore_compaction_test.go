@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc/backend/testing"
 	"github.com/olive-io/olive/server/mvcc/buckets"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
@@ -68,7 +69,7 @@ func TestScheduleCompaction(t *testing.T) {
 	}
 	for i, tt := range tests {
 		b, tmpPath := betesting.NewDefaultTmpBackend(t)
-		s := NewStore(zaptest.NewLogger(t), b, StoreConfig{})
+		s := NewStore(zaptest.NewLogger(t), b, &lease.FakeLessor{}, StoreConfig{})
 		fi := newFakeIndex()
 		fi.indexCompactRespc <- tt.keep
 		s.kvindex = fi
@@ -109,12 +110,12 @@ func TestScheduleCompaction(t *testing.T) {
 
 func TestCompactAllAndRestore(t *testing.T) {
 	b, tmpPath := betesting.NewDefaultTmpBackend(t)
-	s0 := NewStore(zap.NewExample(), b, StoreConfig{})
+	s0 := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	defer os.Remove(tmpPath)
 
-	s0.Put([]byte("foo"), []byte("bar"))
-	s0.Put([]byte("foo"), []byte("bar1"))
-	s0.Put([]byte("foo"), []byte("bar2"))
+	s0.Put([]byte("foo"), []byte("bar"), lease.NoLease)
+	s0.Put([]byte("foo"), []byte("bar1"), lease.NoLease)
+	s0.Put([]byte("foo"), []byte("bar2"), lease.NoLease)
 	s0.DeleteRange([]byte("foo"), nil)
 
 	rev := s0.Rev()
@@ -135,7 +136,7 @@ func TestCompactAllAndRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s1 := NewStore(zap.NewExample(), b, StoreConfig{})
+	s1 := NewStore(zap.NewExample(), b, &lease.FakeLessor{}, StoreConfig{})
 	if s1.Rev() != rev {
 		t.Errorf("rev = %v, want %v", s1.Rev(), rev)
 	}

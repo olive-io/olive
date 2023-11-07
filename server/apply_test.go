@@ -35,11 +35,11 @@ package server
 //	// we are expecting failure on cancelled context check
 //	s.Put([]byte("foo"), []byte("bar"))
 //
-//	txn := &api.TxnRequest{
-//		Success: []*api.RequestOp{
+//	txn := &pb.TxnRequest{
+//		Success: []*pb.RequestOp{
 //			{
-//				Request: &api.RequestOp_RequestRange{
-//					RequestRange: &api.RangeRequest{
+//				Request: &pb.RequestOp_RequestRange{
+//					RequestRange: &pb.RangeRequest{
 //						Key: []byte("foo"),
 //					},
 //				},
@@ -71,19 +71,19 @@ package server
 //	cancel()
 //
 //	// write txn that puts some data and then fails in range due to cancelled context
-//	txn := &api.TxnRequest{
-//		Success: []*api.RequestOp{
+//	txn := &pb.TxnRequest{
+//		Success: []*pb.RequestOp{
 //			{
-//				Request: &api.RequestOp_RequestPut{
-//					RequestPut: &api.PutRequest{
+//				Request: &pb.RequestOp_RequestPut{
+//					RequestPut: &pb.PutRequest{
 //						Key:   []byte("foo"),
 //						Value: []byte("bar"),
 //					},
 //				},
 //			},
 //			{
-//				Request: &api.RequestOp_RequestRange{
-//					RequestRange: &api.RangeRequest{
+//				Request: &pb.RequestOp_RequestRange{
+//					RequestRange: &pb.RangeRequest{
 //						Key: []byte("foo"),
 //					},
 //				},

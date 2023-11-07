@@ -17,6 +17,7 @@ package mvcc
 import (
 	"context"
 
+	"github.com/olive-io/olive/server/lease"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 )
 
@@ -54,8 +55,8 @@ func (wv *writeView) DeleteRange(key, end []byte) (n, rev int64) {
 	return tw.DeleteRange(key, end)
 }
 
-func (wv *writeView) Put(key, value []byte) (rev int64) {
+func (wv *writeView) Put(key, value []byte, lease lease.LeaseID) (rev int64) {
 	tw := wv.kv.Write(traceutil.TODO())
 	defer tw.End()
-	return tw.Put(key, value)
+	return tw.Put(key, value, lease)
 }

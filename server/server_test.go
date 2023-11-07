@@ -19,7 +19,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/olive-io/olive/api"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/config"
 	"github.com/stretchr/testify/assert"
@@ -75,13 +75,13 @@ func TestNewServer(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	req := &api.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
+	req := &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
 	_, err = s.Put(ctx, shard, req)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	rsp, err := s.Range(ctx, shard, &api.RangeRequest{Key: []byte("foo"), Limit: 1})
+	rsp, err := s.Range(ctx, shard, &pb.RangeRequest{Key: []byte("foo"), Limit: 1})
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -123,13 +123,13 @@ func TestNewCluster(t *testing.T) {
 	s3.ShardView(shard)
 
 	ctx := context.Background()
-	req := &api.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
+	req := &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
 	_, err = s1.Put(ctx, shard, req)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	rsp, err := s2.Range(ctx, shard, &api.RangeRequest{Key: []byte("foo"), Limit: 1, Serializable: true})
+	rsp, err := s2.Range(ctx, shard, &pb.RangeRequest{Key: []byte("foo"), Limit: 1, Serializable: true})
 	if !assert.NoError(t, err) {
 		return
 	}
