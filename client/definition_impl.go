@@ -22,11 +22,11 @@ import (
 )
 
 type IDefinitionKV interface {
-	Deploy(ctx context.Context, id, name string, content []byte) (int64, error)
-	List(ctx context.Context) ([]*api.Definition, error)
-	Get(ctx context.Context, id string, version int64) (*api.Definition, error)
-	Remove(ctx context.Context, id string) error
-	Execute(ctx context.Context, id string) (*api.ProcessInstance, error)
+	DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error)
+	ListDefinition(ctx context.Context) ([]*api.Definition, error)
+	GetDefinition(ctx context.Context, id string, version int64) (*api.Definition, error)
+	RemoveDefinition(ctx context.Context, id string) error
+	ExecuteDefinition(ctx context.Context, id string) (*api.ProcessInstance, error)
 }
 
 type definitionKVC struct {
@@ -35,8 +35,7 @@ type definitionKVC struct {
 }
 
 func NewDefinitionKV(c *Client) IDefinitionKV {
-	//kvc := &definitionKVC{remote: RetryDefinitionClient(c)}
-	kvc := &definitionKVC{remote: api.NewDefinitionRPCClient(c.conn)}
+	kvc := &definitionKVC{remote: RetryDefinitionClient(c)}
 	if c != nil {
 		kvc.callOpts = c.callOpts
 	}
@@ -51,7 +50,7 @@ func NewDefinitionKVFromClient(remote api.DefinitionRPCClient, c *Client) IDefin
 	return kvc
 }
 
-func (kvc *definitionKVC) Deploy(ctx context.Context, id, name string, content []byte) (int64, error) {
+func (kvc *definitionKVC) DeployDefinition(ctx context.Context, id, name string, content []byte) (int64, error) {
 	in := &api.DeployDefinitionRequest{
 		Id:      id,
 		Name:    name,
@@ -64,7 +63,7 @@ func (kvc *definitionKVC) Deploy(ctx context.Context, id, name string, content [
 	return resp.Version, nil
 }
 
-func (kvc *definitionKVC) List(ctx context.Context) ([]*api.Definition, error) {
+func (kvc *definitionKVC) ListDefinition(ctx context.Context) ([]*api.Definition, error) {
 	in := &api.ListDefinitionRequest{}
 	resp, err := kvc.remote.ListDefinition(ctx, in, kvc.callOpts...)
 	if err != nil {
@@ -73,7 +72,7 @@ func (kvc *definitionKVC) List(ctx context.Context) ([]*api.Definition, error) {
 	return resp.Definitions, nil
 }
 
-func (kvc *definitionKVC) Get(ctx context.Context, id string, version int64) (*api.Definition, error) {
+func (kvc *definitionKVC) GetDefinition(ctx context.Context, id string, version int64) (*api.Definition, error) {
 	in := &api.GetDefinitionRequest{
 		Id:      id,
 		Version: version,
@@ -85,7 +84,7 @@ func (kvc *definitionKVC) Get(ctx context.Context, id string, version int64) (*a
 	return resp.Definition, nil
 }
 
-func (kvc *definitionKVC) Remove(ctx context.Context, id string) error {
+func (kvc *definitionKVC) RemoveDefinition(ctx context.Context, id string) error {
 	in := &api.RemoveDefinitionRequest{
 		Id:   id,
 		Name: "",
@@ -94,7 +93,7 @@ func (kvc *definitionKVC) Remove(ctx context.Context, id string) error {
 	return toErr(ctx, err)
 }
 
-func (kvc *definitionKVC) Execute(ctx context.Context, id string) (*api.ProcessInstance, error) {
+func (kvc *definitionKVC) ExecuteDefinition(ctx context.Context, id string) (*api.ProcessInstance, error) {
 	in := &api.ExecuteDefinitionRequest{
 		Id:   id,
 		Name: "",

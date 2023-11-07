@@ -76,7 +76,7 @@ func (s *BrainStorage) Update(entries []sm.Entry) ([]sm.Entry, error) {
 		//en.Result.
 	}
 
-	iter, _ := s.db.NewIter(&pebble.IterOptions{})
+	iter := s.db.NewIter(&pebble.IterOptions{})
 	for iter.First(); iter.Valid(); iter.Next() {
 
 	}
