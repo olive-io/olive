@@ -28,6 +28,7 @@ import (
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/config"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -160,7 +161,7 @@ func (s *Server) Start() error {
 	}
 	s.setShardID(scfg.ShardID)
 
-	mux := http.NewServeMux()
+	mux := s.newHttpMux()
 
 	handler := grpcHandlerFunc(s.gs, mux)
 	srv := &http.Server{
@@ -221,6 +222,13 @@ func (s *Server) setShardID(id uint64) {
 
 func (s *Server) getShardID() uint64 {
 	return atomic.LoadUint64(&s.shardID)
+}
+
+func (s *Server) newHttpMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	return mux
 }
 
 // grpcHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC

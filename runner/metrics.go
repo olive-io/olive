@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package meta
+package runner
 
 import (
 	goruntime "runtime"
@@ -24,18 +24,18 @@ import (
 var (
 	currentVersion = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "olive",
-		Subsystem: "meta",
+		Subsystem: "runner",
 		Name:      "version",
-		Help:      "Which version is running. 1 for 'meta_version' label with current version.",
+		Help:      "Which version is running. 1 for 'runner_version' label with current version.",
 	},
-		[]string{"meta_version"})
+		[]string{"runner_version"})
 	currentGoVersion = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "olive",
-		Subsystem: "meta",
+		Subsystem: "runner",
 		Name:      "go_version",
-		Help:      "Which Go version meta is running with. 1 for 'meta_go_version' label with current version.",
+		Help:      "Which Go version runner is running with. 1 for 'runner_go_version' label with current version.",
 	},
-		[]string{"meta_go_version"})
+		[]string{"runner_go_version"})
 )
 
 func init() {
@@ -43,9 +43,9 @@ func init() {
 	prometheus.MustRegister(currentGoVersion)
 
 	currentVersion.With(prometheus.Labels{
-		"meta_version": version.GoV(),
+		"runner_version": version.GoV(),
 	}).Set(1)
 	currentGoVersion.With(prometheus.Labels{
-		"meta_go_version": goruntime.Version(),
+		"runner_go_version": goruntime.Version(),
 	}).Set(1)
 }
