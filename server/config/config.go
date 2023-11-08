@@ -11,6 +11,7 @@ import (
 	"github.com/olive-io/olive/server/hooks"
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 const (
@@ -42,10 +43,14 @@ const (
 
 	DefaultCompactionBatchLimit = 1000
 
+	DefaultMaxTxnOps = 128
+
 	DefaultMaxRequestBytes      = 10 * 1024 * 1024
 	DefaultWarningApplyDuration = time.Millisecond * 100
 
 	DefaultListenerPeerAddress = "localhost:7380"
+
+	DefaultWatchProgressNotifyInterval = time.Minute * 10
 )
 
 var (
@@ -66,6 +71,8 @@ func init() {
 		"BackendBatchLimit is the maximum operations before commit the backend transaction.")
 	serverFlagSet.Int("compaction-batch-limit", DefaultCompactionBatchLimit,
 		"CompactionBatchLimit sets the maximum revisions deleted in each compaction batch.")
+	serverFlagSet.Uint("max-txn-ops", DefaultMaxTxnOps,
+		"Maximum number of operations permitted in a transaction.")
 	serverFlagSet.Uint64("max-request-bytes", DefaultMaxRequestBytes,
 		"Maximum client request size in bytes the server will accept.")
 	serverFlagSet.Duration("warning-apply-duration", DefaultWarningApplyDuration,
@@ -78,6 +85,8 @@ func init() {
 		"Sets the minimum number of message RTT between elections.")
 	serverFlagSet.Bool("pre-vote", true,
 		"PreVote is true to enable Raft Pre-Vote")
+	serverFlagSet.Duration("experimental-watch-progress-notify-interval", DefaultWatchProgressNotifyInterval,
+		"Duration of periodical watch progress notification.")
 	serverFlagSet.Bool("mutual-tls", false,
 		"MutualTLS defines whether to use mutual TLS for authenticating servers and clients.")
 	serverFlagSet.String("cert-file", "",
@@ -106,8 +115,14 @@ type ServerConfig struct {
 
 	CompactionBatchLimit int `json:"compaction-batch-limit"`
 
+	MaxTxnOps uint `json:"max-txn-ops"`
+
 	// MaxRequestBytes is the maximum request size to send over raft.
 	MaxRequestBytes uint64 `json:"max-request-bytes"`
+
+	// MaxConcurrentStreams specifies the maximum number of concurrent
+	// streams that each client can open at a time.
+	MaxConcurrentStreams uint32
 
 	WarningApplyDuration time.Duration `json:"warning-apply-duration"`
 
@@ -120,15 +135,29 @@ type ServerConfig struct {
 	HeartBeatTTL uint64 `json:"heartbeat-ttl"`
 	ElectionTTL  uint64 `json:"election-ttl"`
 
+	// ClientCertAuthEnabled is true when cert has been signed by the client CA.
+	ClientCertAuthEnabled bool
+
+	AuthToken  string
+	BcryptCost uint
+	TokenTTL   uint
+
 	// PreVote is true to enable Raft Pre-Vote.
 	PreVote bool `json:"pre-vote"`
 
 	// EnableLeaseCheckpoint enables leader to send regular checkpoints to other members to prevent reset of remaining TTL on leader change.
-	EnableLeaseCheckpoint bool
+	EnableLeaseCheckpoint bool `json:"enable-lease-checkpoint"`
 	// LeaseCheckpointInterval time.Duration is the wait duration between lease checkpoints.
-	LeaseCheckpointInterval time.Duration
+	LeaseCheckpointInterval time.Duration `json:"lease-checkpoint-interval"`
 	// LeaseCheckpointPersist enables persisting remainingTTL to prevent indefinite auto-renewal of long lived leases.
-	LeaseCheckpointPersist bool
+	LeaseCheckpointPersist bool `json:"lease-checkpoint-persist"`
+
+	// ExperimentalEnableDistributedTracing enables distributed tracing using OpenTelemetry protocol.
+	ExperimentalEnableDistributedTracing bool
+	// ExperimentalTracerOptions are options for OpenTelemetry gRPC interceptor.
+	ExperimentalTracerOptions []otelgrpc.Option
+
+	WatchProgressNotifyInterval time.Duration
 
 	// MutualTLS defines whether to use mutual TLS for authenticating servers
 	// and clients. Insecure communication is used when MutualTLS is set to
@@ -158,6 +187,7 @@ func NewServerConfig(dataDir, listenerAddress string) ServerConfig {
 		BackendBatchInterval:         DefaultBackendBatchInterval,
 		BackendBatchLimit:            DefaultBatchLimit,
 		CompactionBatchLimit:         DefaultCompactionBatchLimit,
+		MaxTxnOps:                    DefaultMaxTxnOps,
 		MaxRequestBytes:              DefaultMaxRequestBytes,
 		WarningApplyDuration:         DefaultWarningApplyDuration,
 		TxnModeWriteWithSharedBuffer: false,
@@ -165,6 +195,7 @@ func NewServerConfig(dataDir, listenerAddress string) ServerConfig {
 		HeartBeatTTL:                 DefaultHeartBeatTTL,
 		ElectionTTL:                  DefaultElectionTTL,
 		PreVote:                      false,
+		WatchProgressNotifyInterval:  DefaultWatchProgressNotifyInterval,
 	}
 
 	return cfg
@@ -201,6 +232,10 @@ func ServerConfigFromFlagSet(flags *pflag.FlagSet) (cfg ServerConfig, err error)
 	if err != nil {
 		return
 	}
+	cfg.MaxTxnOps, err = flags.GetUint("max-txn-ops")
+	if err != nil {
+		return
+	}
 	cfg.MaxRequestBytes, err = flags.GetUint64("max-request-bytes")
 	if err != nil {
 		return
@@ -222,6 +257,10 @@ func ServerConfigFromFlagSet(flags *pflag.FlagSet) (cfg ServerConfig, err error)
 		return
 	}
 	cfg.PreVote, err = flags.GetBool("pre-vote")
+	if err != nil {
+		return
+	}
+	cfg.WatchProgressNotifyInterval, err = flags.GetDuration("experimental-watch-progress-notify-interval")
 	if err != nil {
 		return
 	}
@@ -278,6 +317,9 @@ func (c *ServerConfig) Apply() error {
 
 	if c.CompactionBatchLimit == 0 {
 		c.CompactionBatchLimit = DefaultCompactionBatchLimit
+	}
+	if c.MaxTxnOps == 0 {
+		c.MaxTxnOps = DefaultMaxTxnOps
 	}
 	if c.MaxRequestBytes == 0 {
 		c.MaxRequestBytes = DefaultMaxRequestBytes

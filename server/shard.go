@@ -11,7 +11,6 @@ import (
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	errs "github.com/olive-io/olive/pkg/errors"
 	"github.com/olive-io/olive/server/cindex"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -22,6 +21,16 @@ import (
 var (
 	lastAppliedIndex = []byte("last_applied_index")
 )
+
+// RaftStatusGetter represents olive server and Raft progress.
+type RaftStatusGetter interface {
+	ShardID() uint64
+	NodeID() uint64
+	Leader() uint64
+	AppliedIndex() uint64
+	CommittedIndex() uint64
+	Term() uint64
+}
 
 type shard struct {
 	lg *zap.Logger
@@ -132,6 +141,10 @@ func (s *shard) Open(done <-chan struct{}) (uint64, error) {
 }
 
 func (s *shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
+	if length := len(entries); length > 0 {
+		s.setCommittedIndex(entries[length-1].Index)
+	}
+
 	if entries[0].Index < s.getAppliedIndex() {
 		return entries, nil
 	}
@@ -207,7 +220,7 @@ func (s *shard) prefix() []byte {
 func (s *shard) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
-		return errs.ErrCanceled
+		return ErrCanceled
 
 	case context.DeadlineExceeded:
 		//s.leadTimeMu.RLock()
@@ -230,7 +243,7 @@ func (s *shard) parseProposeCtxErr(err error, start time.Time) error {
 		//		return errs.ErrTimeoutDueToConnectionLost
 		//	}
 		//}
-		return errs.ErrTimeout
+		return ErrTimeout
 
 	default:
 		return err
@@ -266,14 +279,6 @@ func (s *shard) applyEntryNormal(ent *sm.Entry) {
 		return
 	}
 	s.lg.Debug("applyEntryNormal", zap.Stringer("raftReq", &raftReq))
-
-	if raftReq.Execute != nil {
-		lr := raftReq.Execute
-		lr.Index = ent.Index
-		lr.Leader = s.getLead()
-		lr.Shard = s.shardID
-		lr.Node = s.nodeID
-	}
 
 	id := raftReq.Header.ID
 	needResult := s.w.IsRegistered(id)
@@ -337,19 +342,19 @@ func (s *shard) ChangeNotify() {
 	s.changec <- struct{}{}
 }
 
-func (s *shard) setCommittedIndex(v uint64) {
-	atomic.StoreUint64(&s.committedIndex, v)
-}
-
-func (s *shard) getCommittedIndex() uint64 {
-	return atomic.LoadUint64(&s.committedIndex)
-}
-
 func (s *shard) setAppliedIndex(v uint64) {
 	atomic.StoreUint64(&s.appliedIndex, v)
 }
 
 func (s *shard) getAppliedIndex() uint64 {
+	return atomic.LoadUint64(&s.appliedIndex)
+}
+
+func (s *shard) setCommittedIndex(v uint64) {
+	atomic.StoreUint64(&s.appliedIndex, v)
+}
+
+func (s *shard) getCommittedIndex() uint64 {
 	return atomic.LoadUint64(&s.appliedIndex)
 }
 
@@ -367,4 +372,28 @@ func (s *shard) setLead(v uint64) {
 
 func (s *shard) getLead() uint64 {
 	return atomic.LoadUint64(&s.lead)
+}
+
+func (s *shard) ShardID() uint64 {
+	return s.nodeID
+}
+
+func (s *shard) NodeID() uint64 {
+	return s.nodeID
+}
+
+func (s *shard) Leader() uint64 {
+	return s.getLead()
+}
+
+func (s *shard) AppliedIndex() uint64 {
+	return s.getAppliedIndex()
+}
+
+func (s *shard) CommittedIndex() uint64 {
+	return s.getCommittedIndex()
+}
+
+func (s *shard) Term() uint64 {
+	return s.getTerm()
 }

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	pb "github.com/olive-io/olive/api/serverpb"
-	errs "github.com/olive-io/olive/pkg/errors"
+	"github.com/olive-io/olive/server/auth"
 	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
@@ -38,6 +38,26 @@ type applier interface {
 	Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error)
 	Compaction(compaction *pb.CompactionRequest) (*pb.CompactionResponse, <-chan struct{}, *traceutil.Trace, error)
 
+	Authenticate(r *pb.InternalAuthenticateRequest) (*pb.AuthenticateResponse, error)
+
+	AuthEnable() (*pb.AuthEnableResponse, error)
+	AuthDisable() (*pb.AuthDisableResponse, error)
+	AuthStatus() (*pb.AuthStatusResponse, error)
+
+	UserAdd(ua *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error)
+	UserDelete(ua *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error)
+	UserChangePassword(ua *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error)
+	UserGrantRole(ua *pb.AuthUserGrantRoleRequest) (*pb.AuthUserGrantRoleResponse, error)
+	UserGet(ua *pb.AuthUserGetRequest) (*pb.AuthUserGetResponse, error)
+	UserRevokeRole(ua *pb.AuthUserRevokeRoleRequest) (*pb.AuthUserRevokeRoleResponse, error)
+	RoleAdd(ua *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error)
+	RoleGrantPermission(ua *pb.AuthRoleGrantPermissionRequest) (*pb.AuthRoleGrantPermissionResponse, error)
+	RoleGet(ua *pb.AuthRoleGetRequest) (*pb.AuthRoleGetResponse, error)
+	RoleRevokePermission(ua *pb.AuthRoleRevokePermissionRequest) (*pb.AuthRoleRevokePermissionResponse, error)
+	RoleDelete(ua *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error)
+	UserList(ua *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error)
+	RoleList(ua *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error)
+
 	Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error)
 }
 
@@ -59,6 +79,14 @@ func (s *KVServer) newApplierBackend() applier {
 		return base.checkRequestRange(rv, req)
 	}
 	return base
+}
+
+func (s *KVServer) newApplier() applier {
+	return newAuthApplier(
+		s.AuthStore(),
+		s.newApplierBackend(),
+		s.lessor,
+	)
 }
 
 func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
@@ -87,9 +115,6 @@ func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 	case r.Txn != nil:
 		op = "Txn"
 		ar.resp, ar.trace, ar.err = a.s.apply.Txn(context.TODO(), r.Txn)
-	case r.Execute != nil:
-		op = "Leader"
-		ar.resp, ar.trace, ar.err = a.s.apply.Execute(context.TODO(), r.Execute)
 	default:
 		a.s.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
 	}
@@ -132,7 +157,7 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutR
 	if p.IgnoreValue {
 		if rr == nil || len(rr.KVs) == 0 {
 			// ignore_{lease,value} flag expects previous key-value pair
-			return nil, nil, errs.ErrKeyNotFound
+			return nil, nil, ErrKeyNotFound
 		}
 	}
 	if p.IgnoreValue {
@@ -554,6 +579,144 @@ func (a *applierBackend) Compaction(compaction *pb.CompactionRequest) (*pb.Compa
 	return resp, ch, trace, err
 }
 
+func (a *applierBackend) AuthEnable() (*pb.AuthEnableResponse, error) {
+	err := a.s.AuthStore().AuthEnable()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AuthEnableResponse{Header: newHeader(a.s)}, nil
+}
+
+func (a *applierBackend) AuthDisable() (*pb.AuthDisableResponse, error) {
+	a.s.AuthStore().AuthDisable()
+	return &pb.AuthDisableResponse{Header: newHeader(a.s)}, nil
+}
+
+func (a *applierBackend) AuthStatus() (*pb.AuthStatusResponse, error) {
+	enabled := a.s.AuthStore().IsAuthEnabled()
+	authRevision := a.s.AuthStore().Revision()
+	return &pb.AuthStatusResponse{Header: newHeader(a.s), Enabled: enabled, AuthRevision: authRevision}, nil
+}
+
+func (a *applierBackend) Authenticate(r *pb.InternalAuthenticateRequest) (*pb.AuthenticateResponse, error) {
+	cluster, err := a.s.InternalCluster()
+	if err != nil {
+		return nil, err
+	}
+	sm := cluster.(*shard)
+	index := sm.consistIndex.ConsistentIndex()
+	ctx := context.WithValue(context.WithValue(a.s.ctx, auth.AuthenticateParamIndex{}, index), auth.AuthenticateParamSimpleTokenPrefix{}, r.SimpleToken)
+	resp, err := a.s.AuthStore().Authenticate(ctx, r.Name, r.Password)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserAdd(r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
+	resp, err := a.s.AuthStore().UserAdd(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserDelete(r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error) {
+	resp, err := a.s.AuthStore().UserDelete(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserChangePassword(r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
+	resp, err := a.s.AuthStore().UserChangePassword(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserGrantRole(r *pb.AuthUserGrantRoleRequest) (*pb.AuthUserGrantRoleResponse, error) {
+	resp, err := a.s.AuthStore().UserGrantRole(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserGet(r *pb.AuthUserGetRequest) (*pb.AuthUserGetResponse, error) {
+	resp, err := a.s.AuthStore().UserGet(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserRevokeRole(r *pb.AuthUserRevokeRoleRequest) (*pb.AuthUserRevokeRoleResponse, error) {
+	resp, err := a.s.AuthStore().UserRevokeRole(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleAdd(r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error) {
+	resp, err := a.s.AuthStore().RoleAdd(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleGrantPermission(r *pb.AuthRoleGrantPermissionRequest) (*pb.AuthRoleGrantPermissionResponse, error) {
+	resp, err := a.s.AuthStore().RoleGrantPermission(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleGet(r *pb.AuthRoleGetRequest) (*pb.AuthRoleGetResponse, error) {
+	resp, err := a.s.AuthStore().RoleGet(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleRevokePermission(r *pb.AuthRoleRevokePermissionRequest) (*pb.AuthRoleRevokePermissionResponse, error) {
+	resp, err := a.s.AuthStore().RoleRevokePermission(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleDelete(r *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error) {
+	resp, err := a.s.AuthStore().RoleDelete(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) UserList(r *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error) {
+	resp, err := a.s.AuthStore().UserList(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) RoleList(r *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error) {
+	resp, err := a.s.AuthStore().RoleList(r)
+	if resp != nil {
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
 func (a *applierBackend) Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error) {
 	resp := &pb.ExecuteResponse{}
 	resp.Header = &pb.ResponseHeader{}
@@ -655,7 +818,7 @@ func (a *applierBackend) checkRequestPut(rv mvcc.IReadView, reqOp *pb.RequestOp)
 			return err
 		}
 		if rr == nil || len(rr.KVs) == 0 {
-			return errs.ErrKeyNotFound
+			return ErrKeyNotFound
 		}
 	}
 	if lease.LeaseID(req.Lease) != lease.NoLease {
@@ -718,4 +881,18 @@ func pruneKVs(rr *mvcc.RangeResult, isPrunable func(*pb.KeyValue) bool) {
 		}
 	}
 	rr.KVs = rr.KVs[:j]
+}
+
+func newHeader(s *KVServer) *pb.ResponseHeader {
+	cluster, err := s.InternalCluster()
+	if err != nil {
+		return &pb.ResponseHeader{}
+	}
+
+	return &pb.ResponseHeader{
+		ShardId:  cluster.ShardID(),
+		NodeId:   cluster.NodeID(),
+		Revision: s.KV().Rev(),
+		RaftTerm: cluster.Term(),
+	}
 }

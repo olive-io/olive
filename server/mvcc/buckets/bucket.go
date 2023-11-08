@@ -11,6 +11,10 @@ var (
 	metaBucketName  = []byte("meta")
 	leaseBucketName = []byte("lease")
 
+	authBucketName      = []byte("auth")
+	authUsersBucketName = []byte("authUsers")
+	authRolesBucketName = []byte("authRoles")
+
 	testBucketName = []byte("test")
 )
 
@@ -18,6 +22,10 @@ var (
 	Key   = backend.IBucket(bucket{id: 1, name: keyBucketName, safeRangeBucket: true})
 	Meta  = backend.IBucket(bucket{id: 2, name: metaBucketName, safeRangeBucket: false})
 	Lease = backend.IBucket(bucket{id: 3, name: leaseBucketName, safeRangeBucket: false})
+
+	Auth      = backend.IBucket(bucket{id: 20, name: authBucketName, safeRangeBucket: false})
+	AuthUsers = backend.IBucket(bucket{id: 21, name: authUsersBucketName, safeRangeBucket: false})
+	AuthRoles = backend.IBucket(bucket{id: 22, name: authRolesBucketName, safeRangeBucket: false})
 
 	Test = backend.IBucket(bucket{id: 100, name: testBucketName, safeRangeBucket: false})
 )

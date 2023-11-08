@@ -325,7 +325,7 @@ func (le *lessor) Revoke(id LeaseID) error {
 	delete(le.leaseMap, l.ID)
 	// lease deletion needs to be in the same backend transaction with the
 	// kv deletion. Or we might end up with not executing the revoke or not
-	// deleting the keys if etcdserver fails in between.
+	// deleting the keys if olive server fails in between.
 	le.b.BatchTx().UnsafeDelete(buckets.Lease, int64ToBytes(int64(l.ID)))
 
 	txn.End()

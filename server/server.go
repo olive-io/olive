@@ -6,13 +6,14 @@ import (
 	"math"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/lni/dragonboat/v4"
 	dbc "github.com/lni/dragonboat/v4/config"
 	"github.com/lni/dragonboat/v4/raftio"
-	errs "github.com/olive-io/olive/pkg/errors"
+	"github.com/olive-io/olive/server/auth"
 	"github.com/olive-io/olive/server/config"
 	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc"
@@ -46,23 +47,30 @@ type KVServer struct {
 	// done is closed when all goroutines from start() complete.
 	done chan struct{}
 
+	// internalShard sets value when interval raft StartInternalReplica() completed
+	internalShard uint64
+	// internalWaitC is closed when internal raft StartInternalReplica() completed
+	internalWaitC chan struct{}
+
 	errorc chan error
 
-	kv     mvcc.IKV
+	kv     mvcc.IWatchableKV
 	lessor lease.ILessor
 
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	bemu sync.Mutex
-	be   backend.IBackend
+	bemu      sync.Mutex
+	be        backend.IBackend
+	authStore auth.AuthStore
 
 	raftEventCh chan raftio.LeaderInfo
 
 	smu sync.RWMutex
 	sms map[uint64]*shard
 
-	apply applier
+	apply     applier
+	applyWait wait.WaitTime
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -139,7 +147,23 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 		raftEventCh:  raftChannel,
 		sms:          map[uint64]*shard{},
 	}
-	s.apply = s.newApplierBackend()
+
+	s.w = wait.New()
+	s.applyWait = wait.NewTimeList()
+
+	tp, err := auth.NewTokenProvider(lg, cfg.AuthToken,
+		func(index uint64) <-chan struct{} {
+			return s.applyWait.Wait(index)
+		},
+		time.Duration(cfg.TokenTTL)*time.Second,
+	)
+	if err != nil {
+		lg.Warn("failed to create token provider", zap.Error(err))
+		return nil, err
+	}
+
+	s.authStore = auth.NewAuthStore(lg, be, tp, int(cfg.BcryptCost))
+	s.apply = s.newApplier()
 
 	return s, nil
 }
@@ -150,14 +174,37 @@ func (s *KVServer) Start() {
 }
 
 func (s *KVServer) start() {
-	s.w = wait.New()
 	s.done = make(chan struct{})
 	s.stop = make(chan struct{})
 	s.stopping = make(chan struct{}, 1)
 	s.errorc = make(chan error, 1)
+	s.internalWaitC = make(chan struct{}, 1)
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
 	go s.run()
+}
+
+func (s *KVServer) StartInternalReplica(cfg config.ShardConfig) error {
+	if _, ok := s.readyInternalReplica(); ok {
+		return nil
+	}
+
+	err := s.StartReplica(cfg)
+	if err != nil {
+		return err
+	}
+
+	atomic.StoreUint64(&s.internalShard, cfg.ShardID)
+	return nil
+}
+
+func (s *KVServer) readyInternalReplica() (uint64, bool) {
+	select {
+	case <-s.internalWaitC:
+		return atomic.LoadUint64(&s.internalShard), true
+	default:
+		return 0, false
+	}
 }
 
 func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
@@ -207,9 +254,9 @@ func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
 	for {
 		select {
 		case <-s.stop:
-			return errs.ErrStopped
+			return ErrStopped
 		case <-after.C:
-			return fmt.Errorf("wait shard ready: %w", errs.ErrTimeout)
+			return fmt.Errorf("wait shard ready: %w", ErrTimeout)
 		case <-ticker.C:
 		}
 
@@ -239,7 +286,7 @@ func (s *KVServer) Logger() *zap.Logger {
 func (s *KVServer) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
-		return errs.ErrCanceled
+		return ErrCanceled
 
 	case context.DeadlineExceeded:
 		//s.leadTimeMu.RLock()
@@ -262,19 +309,21 @@ func (s *KVServer) parseProposeCtxErr(err error, start time.Time) error {
 		//		return errs.ErrTimeoutDueToConnectionLost
 		//	}
 		//}
-		return errs.ErrTimeout
+		return ErrTimeout
 
 	default:
 		return err
 	}
 }
 
-func (s *KVServer) KV() mvcc.IKV { return s.kv }
+func (s *KVServer) KV() mvcc.IWatchableKV { return s.kv }
 func (s *KVServer) Backend() backend.IBackend {
 	s.bemu.Lock()
 	defer s.bemu.Unlock()
 	return s.be
 }
+
+func (s *KVServer) AuthStore() auth.AuthStore { return s.authStore }
 
 // HardStop stops the server without coordination with other raft group in the server.
 func (s *KVServer) HardStop() {
@@ -405,4 +454,17 @@ func (s *KVServer) CleanUp() {
 func (s *KVServer) TransferLeadership() error {
 	// TODO: TransferLeadership
 	return nil
+}
+
+func (s *KVServer) InternalCluster() (RaftStatusGetter, error) {
+	shardID, ok := s.readyInternalReplica()
+	if !ok {
+		return nil, ErrNoInternalReplica
+	}
+
+	rsg, ok := s.getShard(shardID)
+	if !ok {
+		panic("invalid shardID from readyInternalReplica()")
+	}
+	return rsg, nil
 }

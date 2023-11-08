@@ -96,7 +96,7 @@ func prepareBuckenAndKey(tx backend.IBatchTx) {
 	tx.UnsafePut(bucket, key, []byte(">"))
 }
 
-func newTestHooksBackend(t testing.TB, baseConfig backend.BackendConfig) backend.IBackend {
+func newTestHooksBackend(t testing.TB, baseConfig backend.IBackendConfig) backend.IBackend {
 	cfg := baseConfig
 	hook := backend.NewHooks(func(tx backend.IBatchTx) {
 		k, v, _ := tx.UnsafeRange(bucket, key, nil, 1)

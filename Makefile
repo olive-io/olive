@@ -25,6 +25,7 @@ install:
 
 generate:
 	cd $(GOPATH)/src && \
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/authpb/auth.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/api.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/serverpb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/serverpb/raft_internal.proto && \

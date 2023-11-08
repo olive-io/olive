@@ -11,7 +11,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -112,8 +111,6 @@ func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
 		startc: make(chan struct{}, 1),
 		stopc:  make(chan struct{}, 1),
 	}
-
-	pb.RegisterDefinitionRPCServer(gs, s)
 
 	return s, nil
 }

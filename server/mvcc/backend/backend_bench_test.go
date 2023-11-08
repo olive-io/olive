@@ -25,7 +25,7 @@ func BenchmarkBackendPut(b *testing.B) {
 	_, err := rand.Read(value)
 	assert.NoError(b, err)
 
-	batchTx := backend.BatchTx()
+	batchTx := backend.IBatchTx()
 
 	batchTx.Lock()
 	batchTx.UnsafeCreateBucket(buckets.Test)

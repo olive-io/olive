@@ -2393,7 +2393,7 @@ type KVClient interface {
 	// and generates events with the same revision for every completed request.
 	// It is not allowed to modify the same key several times within one txn.
 	Txn(ctx context.Context, in *TxnRequest, opts ...grpc.CallOption) (*TxnResponse, error)
-	// Compact compacts the event history in the etcd key-value store. The key-value
+	// Compact compacts the event history in the olive key-value store. The key-value
 	// store should be periodically compacted or the event history will continue to grow
 	// indefinitely.
 	Compact(ctx context.Context, in *CompactionRequest, opts ...grpc.CallOption) (*CompactionResponse, error)
@@ -2469,7 +2469,7 @@ type KVServer interface {
 	// and generates events with the same revision for every completed request.
 	// It is not allowed to modify the same key several times within one txn.
 	Txn(context.Context, *TxnRequest) (*TxnResponse, error)
-	// Compact compacts the event history in the etcd key-value store. The key-value
+	// Compact compacts the event history in the olive key-value store. The key-value
 	// store should be periodically compacted or the event history will continue to grow
 	// indefinitely.
 	Compact(context.Context, *CompactionRequest) (*CompactionResponse, error)

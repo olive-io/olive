@@ -55,7 +55,7 @@ service KV {
     };
   }
 
-  // Compact compacts the event history in the etcd key-value store. The key-value
+  // Compact compacts the event history in the olive key-value store. The key-value
   // store should be periodically compacted or the event history will continue to grow
   // indefinitely.
   rpc Compact(CompactionRequest) returns (CompactionResponse) {
