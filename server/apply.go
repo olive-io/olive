@@ -38,6 +38,11 @@ type applier interface {
 	Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error)
 	Compaction(compaction *pb.CompactionRequest) (*pb.CompactionResponse, <-chan struct{}, *traceutil.Trace, error)
 
+	LeaseGrant(lc *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error)
+	LeaseRevoke(lc *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error)
+
+	LeaseCheckpoint(lc *pb.LeaseCheckpointRequest) (*pb.LeaseCheckpointResponse, error)
+
 	Authenticate(r *pb.InternalAuthenticateRequest) (*pb.AuthenticateResponse, error)
 
 	AuthEnable() (*pb.AuthEnableResponse, error)
@@ -101,7 +106,7 @@ func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 		}
 	}(time.Now())
 
-	// call into a.s.applyV3.F instead of a.F so upper appliers can check individual calls
+	// call into a.s.apply.F instead of a.F so upper appliers can check individual calls
 	switch {
 	case r.Range != nil:
 		op = "Range"
@@ -115,6 +120,68 @@ func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 	case r.Txn != nil:
 		op = "Txn"
 		ar.resp, ar.trace, ar.err = a.s.apply.Txn(context.TODO(), r.Txn)
+	case r.Compaction != nil:
+		op = "Compaction"
+		ar.resp, ar.physc, ar.trace, ar.err = a.s.apply.Compaction(r.Compaction)
+	case r.LeaseGrant != nil:
+		op = "LeaseGrant"
+		ar.resp, ar.err = a.s.apply.LeaseGrant(r.LeaseGrant)
+	case r.LeaseRevoke != nil:
+		op = "LeaseRevoke"
+		ar.resp, ar.err = a.s.apply.LeaseRevoke(r.LeaseRevoke)
+	case r.LeaseCheckpoint != nil:
+		op = "LeaseCheckpoint"
+		ar.resp, ar.err = a.s.apply.LeaseCheckpoint(r.LeaseCheckpoint)
+	case r.Authenticate != nil:
+		op = "Authenticate"
+		ar.resp, ar.err = a.s.apply.Authenticate(r.Authenticate)
+	case r.AuthEnable != nil:
+		op = "AuthEnable"
+		ar.resp, ar.err = a.s.apply.AuthEnable()
+	case r.AuthDisable != nil:
+		op = "AuthDisable"
+		ar.resp, ar.err = a.s.apply.AuthDisable()
+	case r.AuthStatus != nil:
+		ar.resp, ar.err = a.s.apply.AuthStatus()
+	case r.AuthUserAdd != nil:
+		op = "AuthUserAdd"
+		ar.resp, ar.err = a.s.apply.UserAdd(r.AuthUserAdd)
+	case r.AuthUserDelete != nil:
+		op = "AuthUserDelete"
+		ar.resp, ar.err = a.s.apply.UserDelete(r.AuthUserDelete)
+	case r.AuthUserChangePassword != nil:
+		op = "AuthUserChangePassword"
+		ar.resp, ar.err = a.s.apply.UserChangePassword(r.AuthUserChangePassword)
+	case r.AuthUserGrantRole != nil:
+		op = "AuthUserGrantRole"
+		ar.resp, ar.err = a.s.apply.UserGrantRole(r.AuthUserGrantRole)
+	case r.AuthUserGet != nil:
+		op = "AuthUserGet"
+		ar.resp, ar.err = a.s.apply.UserGet(r.AuthUserGet)
+	case r.AuthUserRevokeRole != nil:
+		op = "AuthUserRevokeRole"
+		ar.resp, ar.err = a.s.apply.UserRevokeRole(r.AuthUserRevokeRole)
+	case r.AuthRoleAdd != nil:
+		op = "AuthRoleAdd"
+		ar.resp, ar.err = a.s.apply.RoleAdd(r.AuthRoleAdd)
+	case r.AuthRoleGrantPermission != nil:
+		op = "AuthRoleGrantPermission"
+		ar.resp, ar.err = a.s.apply.RoleGrantPermission(r.AuthRoleGrantPermission)
+	case r.AuthRoleGet != nil:
+		op = "AuthRoleGet"
+		ar.resp, ar.err = a.s.apply.RoleGet(r.AuthRoleGet)
+	case r.AuthRoleRevokePermission != nil:
+		op = "AuthRoleRevokePermission"
+		ar.resp, ar.err = a.s.apply.RoleRevokePermission(r.AuthRoleRevokePermission)
+	case r.AuthRoleDelete != nil:
+		op = "AuthRoleDelete"
+		ar.resp, ar.err = a.s.apply.RoleDelete(r.AuthRoleDelete)
+	case r.AuthUserList != nil:
+		op = "AuthUserList"
+		ar.resp, ar.err = a.s.apply.UserList(r.AuthUserList)
+	case r.AuthRoleList != nil:
+		op = "AuthRoleList"
+		ar.resp, ar.err = a.s.apply.RoleList(r.AuthRoleList)
 	default:
 		a.s.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
 	}
@@ -577,6 +644,32 @@ func (a *applierBackend) Compaction(compaction *pb.CompactionRequest) (*pb.Compa
 	rr, _ := a.s.KV().Range(context.TODO(), []byte("compaction"), nil, mvcc.RangeOptions{})
 	resp.Header.Revision = rr.Rev
 	return resp, ch, trace, err
+}
+
+func (a *applierBackend) LeaseGrant(lc *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error) {
+	l, err := a.s.lessor.Grant(lease.LeaseID(lc.ID), lc.TTL)
+	resp := &pb.LeaseGrantResponse{}
+	if err == nil {
+		resp.ID = int64(l.ID)
+		resp.TTL = l.TTL()
+		resp.Header = newHeader(a.s)
+	}
+	return resp, err
+}
+
+func (a *applierBackend) LeaseRevoke(lc *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
+	err := a.s.lessor.Revoke(lease.LeaseID(lc.ID))
+	return &pb.LeaseRevokeResponse{Header: newHeader(a.s)}, err
+}
+
+func (a *applierBackend) LeaseCheckpoint(lc *pb.LeaseCheckpointRequest) (*pb.LeaseCheckpointResponse, error) {
+	for _, c := range lc.Checkpoints {
+		err := a.s.lessor.Checkpoint(lease.LeaseID(c.ID), c.Remaining_TTL)
+		if err != nil {
+			return &pb.LeaseCheckpointResponse{Header: newHeader(a.s)}, err
+		}
+	}
+	return &pb.LeaseCheckpointResponse{Header: newHeader(a.s)}, nil
 }
 
 func (a *applierBackend) AuthEnable() (*pb.AuthEnableResponse, error) {
