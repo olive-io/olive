@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	// In the health case, there might be a small gap (10s of entries) between
+	// In the health case, there might be a raall gap (10s of entries) between
 	// the applied index and committed index.
 	// However, if the committed entries are very heavy to apply, the gap might grow.
 	// We should stop accepting new proposals if the gap growing to a certain point.
@@ -79,7 +79,7 @@ type Authenticator interface {
 }
 
 func (s *KVServer) Range(ctx context.Context, shardID uint64, r *pb.RangeRequest) (*pb.RangeResponse, error) {
-	_, exists := s.getShard(shardID)
+	ra, exists := s.getReplica(shardID)
 	if !exists {
 		return nil, ErrShardNotFound
 	}
@@ -140,10 +140,10 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *pb.RangeRequest
 		}
 	}
 	chk := func(ai *auth.AuthInfo) error {
-		return s.authStore.IsRangePermitted(ai, r.Key, r.RangeEnd)
+		return ra.AuthStore().IsRangePermitted(ai, r.Key, r.RangeEnd)
 	}
 
-	if serr := s.doSerialize(ctx, chk, get); serr != nil {
+	if serr := doSerialize(ctx, ra, chk, get); serr != nil {
 		err = serr
 		return nil, err
 	}
@@ -168,6 +168,11 @@ func (s *KVServer) DeleteRange(ctx context.Context, shardID uint64, r *pb.Delete
 }
 
 func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*pb.TxnResponse, error) {
+	ra, exists := s.getReplica(shardID)
+	if !exists {
+		return nil, ErrShardNotFound
+	}
+
 	if isTxnReadonly(r) {
 		trace := traceutil.New("transaction",
 			s.Logger(),
@@ -212,7 +217,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*
 			}
 		}
 		chk := func(ai *auth.AuthInfo) error {
-			return checkTxnAuth(s.authStore, ai, r)
+			return checkTxnAuth(ra.authStore, ai, r)
 		}
 
 		defer func(start time.Time) {
@@ -220,7 +225,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*
 			trace.LogIfLong(traceThreshold)
 		}(time.Now())
 
-		if serr := s.doSerialize(ctx, chk, get); serr != nil {
+		if serr := doSerialize(ctx, ra, chk, get); serr != nil {
 			return nil, serr
 		}
 		return resp, err
@@ -263,6 +268,11 @@ func isTxnReadonly(tr *pb.TxnRequest) bool {
 }
 
 func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
+	ra, exists := s.getReplica(shardID)
+	if !exists {
+		return nil, ErrShardNotFound
+	}
+
 	startTime := time.Now()
 	result, err := s.processInternalRaftRequestOnce(ctx, shardID, pb.InternalRaftRequest{Compaction: r})
 	trace := traceutil.TODO()
@@ -282,7 +292,7 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.Compaction
 		// the hash may revert to a hash prior to compaction completing
 		// if the compaction resumes. Force the finished compaction to
 		// commit, so it won't resume following a crash.
-		s.be.ForceCommit()
+		ra.Backend().ForceCommit()
 		trace.Step("physically apply compaction")
 	}
 	if err != nil {
@@ -298,7 +308,7 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.Compaction
 	if resp.Header == nil {
 		resp.Header = &pb.ResponseHeader{}
 	}
-	resp.Header.Revision = s.kv.Rev()
+	resp.Header.Revision = ra.KV().Rev()
 	trace.AddField(traceutil.Field{Key: "response_revision", Value: resp.Header.Revision})
 	trace.AddField(traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)})
 	return resp, nil
@@ -389,26 +399,27 @@ func (s *KVServer) LeaseRenew(ctx context.Context, id lease.LeaseID) (int64, err
 }
 
 func (s *KVServer) checkLeaseTimeToLive(ctx context.Context, leaseID lease.LeaseID) (uint64, error) {
-	rev := s.AuthStore().Revision()
-	if !s.AuthStore().IsAuthEnabled() {
-		return rev, nil
-	}
-	authInfo, err := s.AuthInfoFromCtx(ctx)
-	if err != nil {
-		return rev, err
-	}
-	if authInfo == nil {
-		return rev, auth.ErrUserEmpty
-	}
-
-	l := s.lessor.Lookup(leaseID)
-	if l != nil {
-		for _, key := range l.Keys() {
-			if err := s.AuthStore().IsRangePermitted(authInfo, []byte(key), []byte{}); err != nil {
-				return 0, err
-			}
-		}
-	}
+	rev := uint64(0)
+	//rev := s.AuthStore().Revision()
+	//if !s.AuthStore().IsAuthEnabled() {
+	//	return rev, nil
+	//}
+	//authInfo, err := s.AuthInfoFromCtx(ctx)
+	//if err != nil {
+	//	return rev, err
+	//}
+	//if authInfo == nil {
+	//	return rev, auth.ErrUserEmpty
+	//}
+	//
+	//l := s.lessor.Lookup(leaseID)
+	//if l != nil {
+	//	for _, key := range l.Keys() {
+	//		if err := s.AuthStore().IsRangePermitted(authInfo, []byte(key), []byte{}); err != nil {
+	//			return 0, err
+	//		}
+	//	}
+	//}
 
 	return rev, nil
 }
@@ -473,6 +484,7 @@ func (s *KVServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveReq
 			return nil, err
 		}
 	}
+	_ = rev
 
 	resp, err := s.leaseTimeToLive(ctx, r)
 	if err != nil {
@@ -480,21 +492,22 @@ func (s *KVServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveReq
 	}
 
 	if r.Keys {
-		if s.AuthStore().IsAuthEnabled() && rev != s.AuthStore().Revision() {
-			return nil, auth.ErrAuthOldRevision
-		}
+		//if s.AuthStore().IsAuthEnabled() && rev != s.AuthStore().Revision() {
+		//	return nil, auth.ErrAuthOldRevision
+		//}
 	}
 	return resp, nil
 }
 
 // LeaseLeases is really ListLeases !???
 func (s *KVServer) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*pb.LeaseLeasesResponse, error) {
-	ls := s.lessor.Leases()
+	var ra *Replica
+	ls := ra.lessor.Leases()
 	lss := make([]*pb.LeaseStatus, len(ls))
 	for i := range ls {
 		lss[i] = &pb.LeaseStatus{ID: int64(ls[i].ID)}
 	}
-	return &pb.LeaseLeasesResponse{Header: newHeader(s), Leases: lss}, nil
+	return &pb.LeaseLeasesResponse{Header: newHeader(ra), Leases: lss}, nil
 }
 
 //func (s *KVServer) waitLeader(ctx context.Context) (*membership.Member, error) {
@@ -557,6 +570,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 	//if err := s.linearizableReadNotify(ctx); err != nil {
 	//	return nil, err
 	//}
+	var ra *Replica
 
 	lg := s.Logger()
 
@@ -574,7 +588,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 
 	var resp proto.Message
 	for {
-		checkedRevision, err := s.AuthStore().CheckPassword(r.Name, r.Password)
+		checkedRevision, err := ra.AuthStore().CheckPassword(r.Name, r.Password)
 		if err != nil {
 			if err != auth.ErrAuthNotEnabled {
 				lg.Warn(
@@ -586,7 +600,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 			return nil, err
 		}
 
-		st, err := s.AuthStore().GenTokenPrefix()
+		st, err := ra.AuthStore().GenTokenPrefix()
 		if err != nil {
 			return nil, err
 		}
@@ -602,7 +616,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 		if err != nil {
 			return nil, err
 		}
-		if checkedRevision == s.AuthStore().Revision() {
+		if checkedRevision == ra.AuthStore().Revision() {
 			break
 		}
 
@@ -613,8 +627,9 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 }
 
 func (s *KVServer) UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
+	var ra *Replica
 	if r.Options == nil || !r.Options.NoPassword {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), s.authStore.BcryptCost())
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), ra.authStore.BcryptCost())
 		if err != nil {
 			return nil, err
 		}
@@ -647,8 +662,9 @@ func (s *KVServer) UserDelete(ctx context.Context, r *pb.AuthUserDeleteRequest) 
 }
 
 func (s *KVServer) UserChangePassword(ctx context.Context, r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
+	var ra *Replica
 	if r.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), s.authStore.BcryptCost())
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), ra.authStore.BcryptCost())
 		if err != nil {
 			return nil, err
 		}
@@ -813,7 +829,7 @@ func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r pb.Interna
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
-func (s *KVServer) doSerialize(ctx context.Context, chk func(*auth.AuthInfo) error, get func()) error {
+func doSerialize(ctx context.Context, s *Replica, chk func(*auth.AuthInfo) error, get func()) error {
 	trace := traceutil.Get(ctx)
 	ai, err := s.AuthInfoFromCtx(ctx)
 	if err != nil {
@@ -823,9 +839,9 @@ func (s *KVServer) doSerialize(ctx context.Context, chk func(*auth.AuthInfo) err
 		// chk expects non-nil AuthInfo; use empty credentials
 		ai = &auth.AuthInfo{}
 	}
-	//if err = chk(ai); err != nil {
-	//	return err
-	//}
+	if err = chk(ai); err != nil {
+		return err
+	}
 	trace.Step("get authentication metadata")
 	// fetch response for serialized request
 	get()
@@ -838,32 +854,32 @@ func (s *KVServer) doSerialize(ctx context.Context, chk func(*auth.AuthInfo) err
 }
 
 func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (*applyResult, error) {
-	ssm, exists := s.getShard(shardID)
+	sra, exists := s.getReplica(shardID)
 	if !exists {
 		return nil, ErrShardNotFound
 	}
 
-	ai := ssm.getAppliedIndex()
-	ci := ssm.getCommittedIndex()
+	ai := sra.getAppliedIndex()
+	ci := sra.getCommittedIndex()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
 		return nil, ErrTooManyRequests
 	}
 
 	r.Header = &pb.RequestHeader{
-		ID: ssm.reqIDGen.Next(),
+		ID: sra.reqIDGen.Next(),
 	}
 
 	// check authinfo if it is not InternalAuthenticateRequest
-	//if r.Authenticate == nil {
-	//	authInfo, err := s.AuthInfoFromCtx(ctx)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	if authInfo != nil {
-	//		r.Header.Username = authInfo.Username
-	//		r.Header.AuthRevision = authInfo.Revision
-	//	}
-	//}
+	if r.Authenticate == nil {
+		authInfo, err := sra.AuthInfoFromCtx(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if authInfo != nil {
+			r.Header.Username = authInfo.Username
+			r.Header.AuthRevision = authInfo.Revision
+		}
+	}
 
 	data, err := r.Marshal()
 	if err != nil {
@@ -875,7 +891,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 	}
 
 	id := r.Header.ID
-	ch := s.w.Register(id)
+	ch := sra.w.Register(id)
 
 	cctx, cancel := context.WithTimeout(ctx, s.ReqTimeout())
 	defer cancel()
@@ -886,7 +902,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 	_, err = s.nh.SyncPropose(cctx, session, data)
 	if err != nil {
 		proposalsFailed.Inc()
-		s.w.Trigger(id, nil) // GC wait
+		sra.w.Trigger(id, nil) // GC wait
 		return nil, err
 	}
 	proposalsPending.Inc()
@@ -897,22 +913,22 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 		return x.(*applyResult), nil
 	case <-cctx.Done():
 		proposalsFailed.Inc()
-		s.w.Trigger(id, nil) // GC wait
+		sra.w.Trigger(id, nil) // GC wait
 		return nil, s.parseProposeCtxErr(cctx.Err(), start)
 	case <-s.done:
 		return nil, ErrStopped
 	}
 }
 
-func (s *KVServer) AuthInfoFromCtx(ctx context.Context) (*auth.AuthInfo, error) {
-	authInfo, err := s.AuthStore().AuthInfoFromCtx(ctx)
+func (ra *Replica) AuthInfoFromCtx(ctx context.Context) (*auth.AuthInfo, error) {
+	authInfo, err := ra.AuthStore().AuthInfoFromCtx(ctx)
 	if authInfo != nil || err != nil {
 		return authInfo, err
 	}
-	if !s.ClientCertAuthEnabled {
+	if !ra.ClientCertAuthEnabled {
 		return nil, nil
 	}
-	authInfo = s.AuthStore().AuthInfoFromTLS(ctx)
+	authInfo = ra.AuthStore().AuthInfoFromTLS(ctx)
 	return authInfo, nil
 }
 
@@ -920,4 +936,4 @@ func isStopped(err error) bool {
 	return errors.Is(err, dragonboat.ErrClosed) || errors.Is(err, ErrStopped)
 }
 
-func (s *KVServer) Watchable() mvcc.IWatchableKV { return s.KV() }
+func (ra *Replica) Watchable() mvcc.IWatchableKV { return ra.KV() }

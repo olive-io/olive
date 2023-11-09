@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/olive-io/olive/server/config"
@@ -35,12 +37,13 @@ func newBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) b
 	return be
 }
 
-// openBackend returns a backend using the current olive db.
-func openBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
+// openBackend returns a backend using the current pebble db.
+func openBackend(lg *zap.Logger, shardID, nodeID uint64, cfg config.ServerConfig, hooks backend.IHooks) backend.IBackend {
 	if lg == nil {
 		lg = zap.NewNop()
 	}
-	fn := cfg.BackendPath()
+	cfg.DataDir = filepath.Join(cfg.DataDir, fmt.Sprintf("%d", shardID), fmt.Sprintf("%d", nodeID))
+	bpath := cfg.BackendPath()
 
 	now, beOpened := time.Now(), make(chan backend.IBackend)
 	go func() {
@@ -49,13 +52,13 @@ func openBackend(lg *zap.Logger, cfg config.ServerConfig, hooks backend.IHooks) 
 
 	select {
 	case be := <-beOpened:
-		lg.Info("opened backend db", zap.String("path", fn), zap.Duration("took", time.Since(now)))
+		lg.Info("opened backend db", zap.String("path", bpath), zap.Duration("took", time.Since(now)))
 		return be
 
 	case <-time.After(10 * time.Second):
 		lg.Info(
 			"db file is flocked by another process, or taking too long",
-			zap.String("path", fn),
+			zap.String("path", bpath),
 			zap.Duration("took", time.Since(now)),
 		)
 	}

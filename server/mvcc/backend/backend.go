@@ -26,6 +26,10 @@ const (
 	minSnapshotWarningTimeout = 30 * time.Second
 )
 
+var defaultSplit pebble.Split = func(a []byte) int {
+	return 1
+}
+
 type IBackend interface {
 	// ReadTx returns a read transaction. It is replaced by ConcurrentReadTx in the main data path, see #10523.
 	ReadTx() IReadTx
@@ -131,7 +135,11 @@ func newBackend(cfg BackendConfig) *backend {
 		cfg.Logger = zap.NewNop()
 	}
 
-	options := &pebble.Options{}
+	comparer := pebble.DefaultComparer
+	comparer.Split = defaultSplit
+	options := &pebble.Options{
+		Comparer: comparer,
+	}
 	if cfg.CacheSize != 0 {
 		options.Cache = pebble.NewCache(int64(cfg.CacheSize))
 	}

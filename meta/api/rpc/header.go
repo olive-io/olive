@@ -18,11 +18,13 @@ func newHeader(s *server.KVServer) header {
 		panic(err)
 	}
 
+	ra := cluster.(*server.Replica)
+
 	return header{
 		shardID: cluster.ShardID(),
 		nodeID:  cluster.NodeID(),
 		sg:      cluster,
-		rev:     func() int64 { return s.KV().Rev() },
+		rev:     func() int64 { return ra.KV().Rev() },
 	}
 }
 

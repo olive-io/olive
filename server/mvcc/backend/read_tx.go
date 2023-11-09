@@ -40,7 +40,7 @@ func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limi
 		limit = 1
 	}
 
-	for iter.SeekGE(startKey); iteratorIsValid(iter) && isMatch(iter.Key()); iter.Next() {
+	for iter.SeekPrefixGE(startKey); iteratorIsValid(iter) && isMatch(iter.Key()); iter.Next() {
 		value := iter.Value()
 
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
@@ -61,7 +61,7 @@ func unsafeForEach(tx *pebble.Batch, bucket IBucket, visitor func(k, v []byte) e
 	defer iter.Close()
 
 	prefix := bytesutil.PathJoin(bucket.Name())
-	for iter.SeekGE(prefix); iteratorIsValid(iter); iter.Next() {
+	for iter.SeekPrefixGE(prefix); iteratorIsValid(iter); iter.Next() {
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
 		value := iter.Value()
 

@@ -40,6 +40,7 @@ func NewWatchServer(s *server.KVServer) pb.WatchServer {
 		panic(err)
 	}
 
+	ra := cluster.(*server.Replica)
 	srv := &watchServer{
 		lg: s.Logger(),
 
@@ -49,8 +50,8 @@ func NewWatchServer(s *server.KVServer) pb.WatchServer {
 		maxRequestBytes: int(s.MaxRequestBytes + grpcOverheadBytes),
 
 		sg:        cluster,
-		watchable: s.Watchable(),
-		ag:        s,
+		watchable: ra.Watchable(),
+		ag:        ra,
 	}
 	if srv.lg == nil {
 		srv.lg = zap.NewNop()

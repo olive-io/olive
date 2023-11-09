@@ -62,21 +62,19 @@ type applier interface {
 	RoleDelete(ua *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error)
 	UserList(ua *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error)
 	RoleList(ua *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error)
-
-	Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error)
 }
 
 type checkReqFunc func(mvcc.IReadView, *pb.RequestOp) error
 
 type applierBackend struct {
-	s *KVServer
+	s *Replica
 
 	checkPut   checkReqFunc
 	checkRange checkReqFunc
 }
 
-func (s *KVServer) newApplierBackend() applier {
-	base := &applierBackend{s: s}
+func (ra *Replica) newApplierBackend() applier {
+	base := &applierBackend{s: ra}
 	base.checkPut = func(rv mvcc.IReadView, req *pb.RequestOp) error {
 		return base.checkRequestPut(rv, req)
 	}
@@ -86,11 +84,11 @@ func (s *KVServer) newApplierBackend() applier {
 	return base
 }
 
-func (s *KVServer) newApplier() applier {
+func (ra *Replica) newApplier() applier {
 	return newAuthApplier(
-		s.AuthStore(),
-		s.newApplierBackend(),
-		s.lessor,
+		ra.AuthStore(),
+		ra.newApplierBackend(),
+		ra.lessor,
 	)
 }
 
@@ -100,9 +98,9 @@ func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 	defer func(start time.Time) {
 		success := ar.err == nil || errors.Is(ar.err, mvcc.ErrCompacted)
 		applySec.WithLabelValues("v1", op, strconv.FormatBool(success)).Observe(time.Since(start).Seconds())
-		warnOfExpensiveRequest(a.s.Logger(), a.s.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+		warnOfExpensiveRequest(a.s.lg, a.s.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		if !success {
-			warnOfFailedRequest(a.s.Logger(), start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+			warnOfFailedRequest(a.s.lg, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		}
 	}(time.Now())
 
@@ -195,7 +193,7 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutR
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
 		trace = traceutil.New("put",
-			a.s.Logger(),
+			a.s.lg,
 			traceutil.Field{Key: "key", Value: string(p.Key)},
 			traceutil.Field{Key: "req_size", Value: p.XSize()},
 		)
@@ -378,10 +376,10 @@ func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *pb.DeleteRangeReque
 }
 
 func (a *applierBackend) Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error) {
-	lg := a.s.Logger()
+	lg := a.s.lg
 	trace := traceutil.Get(ctx)
 	if trace.IsEmpty() {
-		trace = traceutil.New("transaction", a.s.Logger())
+		trace = traceutil.New("transaction", a.s.lg)
 		ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 	}
 	isWrite := !isTxnReadonly(rt)
@@ -632,7 +630,7 @@ func (a *applierBackend) Compaction(compaction *pb.CompactionRequest) (*pb.Compa
 	resp := &pb.CompactionResponse{}
 	resp.Header = &pb.ResponseHeader{}
 	trace := traceutil.New("compact",
-		a.s.Logger(),
+		a.s.lg,
 		traceutil.Field{Key: "revision", Value: compaction.Revision},
 	)
 
@@ -692,11 +690,11 @@ func (a *applierBackend) AuthStatus() (*pb.AuthStatusResponse, error) {
 }
 
 func (a *applierBackend) Authenticate(r *pb.InternalAuthenticateRequest) (*pb.AuthenticateResponse, error) {
-	cluster, err := a.s.InternalCluster()
-	if err != nil {
-		return nil, err
-	}
-	sm := cluster.(*shard)
+	//cluster, err := a.s.InternalCluster()
+	//if err != nil {
+	//	return nil, err
+	//}
+	sm := a.s
 	index := sm.consistIndex.ConsistentIndex()
 	ctx := context.WithValue(context.WithValue(a.s.ctx, auth.AuthenticateParamIndex{}, index), auth.AuthenticateParamSimpleTokenPrefix{}, r.SimpleToken)
 	resp, err := a.s.AuthStore().Authenticate(ctx, r.Name, r.Password)
@@ -808,32 +806,6 @@ func (a *applierBackend) RoleList(r *pb.AuthRoleListRequest) (*pb.AuthRoleListRe
 		resp.Header = newHeader(a.s)
 	}
 	return resp, err
-}
-
-func (a *applierBackend) Execute(ctx context.Context, er *pb.ExecuteRequest) (*pb.ExecuteResponse, *traceutil.Trace, error) {
-	resp := &pb.ExecuteResponse{}
-	resp.Header = &pb.ResponseHeader{}
-	trace := traceutil.New("do-leader",
-		a.s.Logger(),
-		traceutil.Field{Key: "leader", Value: er.Leader},
-		traceutil.Field{Key: "node", Value: er.Node},
-		traceutil.Field{Key: "body_size", Value: len(er.Body)})
-
-	if er.Leader != er.Node {
-		a.s.Logger().Debug("skip leader request")
-		return resp, trace, nil
-	}
-
-	for _, hk := range a.s.ExecuteHooks {
-		go hk.OnPreExecute(er, a.s.StoppingNotify())
-	}
-
-	var err error
-	if executor := a.s.Executor; executor != nil {
-		resp, err = executor.Execute(ctx, er)
-	}
-
-	return resp, trace, err
 }
 
 type kvSort struct{ kvs []pb.KeyValue }
@@ -976,11 +948,12 @@ func pruneKVs(rr *mvcc.RangeResult, isPrunable func(*pb.KeyValue) bool) {
 	rr.KVs = rr.KVs[:j]
 }
 
-func newHeader(s *KVServer) *pb.ResponseHeader {
-	cluster, err := s.InternalCluster()
-	if err != nil {
-		return &pb.ResponseHeader{}
-	}
+func newHeader(s *Replica) *pb.ResponseHeader {
+	cluster := s
+	//cluster, err := s.InternalCluster()
+	//if err != nil {
+	//	return &pb.ResponseHeader{}
+	//}
 
 	return &pb.ResponseHeader{
 		ShardId:  cluster.ShardID(),

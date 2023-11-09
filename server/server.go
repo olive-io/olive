@@ -13,12 +13,7 @@ import (
 	"github.com/lni/dragonboat/v4"
 	dbc "github.com/lni/dragonboat/v4/config"
 	"github.com/lni/dragonboat/v4/raftio"
-	"github.com/olive-io/olive/server/auth"
 	"github.com/olive-io/olive/server/config"
-	"github.com/olive-io/olive/server/lease"
-	"github.com/olive-io/olive/server/mvcc"
-	"github.com/olive-io/olive/server/mvcc/backend"
-	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
@@ -38,8 +33,6 @@ type KVServer struct {
 	lgMu *sync.RWMutex
 	lg   *zap.Logger
 
-	w wait.Wait
-
 	// stop signals the run goroutine should shutdown.
 	stop chan struct{}
 	// stopping is closed by run goroutine on shutdown.
@@ -54,23 +47,13 @@ type KVServer struct {
 
 	errorc chan error
 
-	kv     mvcc.IWatchableKV
-	lessor lease.ILessor
-
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	bemu      sync.Mutex
-	be        backend.IBackend
-	authStore auth.AuthStore
-
 	raftEventCh chan raftio.LeaderInfo
 
-	smu sync.RWMutex
-	sms map[uint64]*shard
-
-	apply     applier
-	applyWait wait.WaitTime
+	rmu      sync.RWMutex
+	replicas map[uint64]*Replica
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -84,27 +67,15 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 		lg = zap.NewExample()
 	}
 
-	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
-		lg.Warn(
-			"exceeded recommended request limit",
-			zap.Uint64("max-request-bytes", cfg.MaxRequestBytes),
-			zap.String("max-request-size", humanize.Bytes(cfg.MaxRequestBytes)),
-			zap.Int("recommended-request-bytes", recommendedMaxRequestBytes),
-			zap.String("recommended-request-size", recommendedMaxRequestBytesString),
-		)
-	}
-
-	bepath := cfg.BackendPath()
-	be := openBackend(lg, cfg, nil)
-
 	raftChannel := make(chan raftio.LeaderInfo, 1)
 	rel := newRaftEventListener(raftChannel)
 
 	sel := newSystemEventListener()
 
+	hostDir := cfg.BackendPath()
 	nhc := dbc.NodeHostConfig{
 		WALDir:              cfg.WALPath(),
-		NodeHostDir:         bepath,
+		NodeHostDir:         hostDir,
 		RTTMillisecond:      cfg.RTTMillisecond,
 		RaftAddress:         cfg.ListenerPeerAddress,
 		EnableMetrics:       true,
@@ -121,49 +92,14 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*KVServer, error) {
 		return nil, err
 	}
 
-	heartbeat := time.Millisecond * time.Duration(cfg.RTTMillisecond) * time.Duration(cfg.HeartBeatTTL)
-	minTTL := (3 * time.Millisecond * time.Duration(cfg.RTTMillisecond) * time.Duration(cfg.ElectionTTL)) / 2 * heartbeat
-
-	// always recover lessor before kv. When we recover the mvcc.KV it will reattach keys to its leases.
-	// If we recover mvcc.KV first, it will attach the keys to the wrong lessor before it recovers.
-	lessor := lease.NewLessor(lg, be, lease.LessorConfig{
-		MinLeaseTTL:                int64(math.Ceil(minTTL.Seconds())),
-		CheckpointInterval:         cfg.LeaseCheckpointInterval,
-		CheckpointPersist:          cfg.LeaseCheckpointPersist,
-		ExpiredLeasesRetryInterval: cfg.ReqTimeout(),
-	})
-
-	kv := mvcc.New(lg, be, lessor, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
-
 	s := &KVServer{
 		ServerConfig: &cfg,
 		nh:           nh,
 		lgMu:         new(sync.RWMutex),
 		lg:           lg,
-		kv:           kv,
-		lessor:       lessor,
-		bemu:         sync.Mutex{},
-		be:           be,
 		raftEventCh:  raftChannel,
-		sms:          map[uint64]*shard{},
+		replicas:     map[uint64]*Replica{},
 	}
-
-	s.w = wait.New()
-	s.applyWait = wait.NewTimeList()
-
-	tp, err := auth.NewTokenProvider(lg, cfg.AuthToken,
-		func(index uint64) <-chan struct{} {
-			return s.applyWait.Wait(index)
-		},
-		time.Duration(cfg.TokenTTL)*time.Second,
-	)
-	if err != nil {
-		lg.Warn("failed to create token provider", zap.Error(err))
-		return nil, err
-	}
-
-	s.authStore = auth.NewAuthStore(lg, be, tp, int(cfg.BcryptCost))
-	s.apply = s.newApplier()
 
 	return s, nil
 }
@@ -326,15 +262,6 @@ func (s *KVServer) parseProposeCtxErr(err error, start time.Time) error {
 	}
 }
 
-func (s *KVServer) KV() mvcc.IWatchableKV { return s.kv }
-func (s *KVServer) Backend() backend.IBackend {
-	s.bemu.Lock()
-	defer s.bemu.Unlock()
-	return s.be
-}
-
-func (s *KVServer) AuthStore() auth.AuthStore { return s.authStore }
-
 // HardStop stops the server without coordination with other raft group in the server.
 func (s *KVServer) HardStop() {
 	select {
@@ -373,20 +300,20 @@ func (s *KVServer) processRaftEvent() {
 		case <-s.stopping:
 			return
 		case ch := <-s.raftEventCh:
-			sm, ok := s.getShard(ch.ShardID)
+			ra, ok := s.getReplica(ch.ShardID)
 			if ok {
-				sm.setLead(ch.LeaderID)
-				sm.setTerm(ch.Term)
-				sm.ChangeNotify()
+				ra.setLead(ch.LeaderID)
+				ra.setTerm(ch.Term)
+				ra.ChangeNotify()
 			}
 		}
 	}
 }
 
-func (s *KVServer) getShard(shardID uint64) (*shard, bool) {
-	s.smu.RLock()
-	defer s.smu.RUnlock()
-	ssm, ok := s.sms[shardID]
+func (s *KVServer) getReplica(shardID uint64) (*Replica, bool) {
+	s.rmu.RLock()
+	defer s.rmu.RUnlock()
+	ssm, ok := s.replicas[shardID]
 	return ssm, ok
 }
 
@@ -431,8 +358,6 @@ func (s *KVServer) run() {
 		// wait for gouroutines before closing raft so wal stays open
 		s.wg.Wait()
 
-		s.CleanUp()
-
 		close(s.done)
 	}()
 
@@ -448,18 +373,6 @@ func (s *KVServer) run() {
 	}
 }
 
-func (s *KVServer) CleanUp() {
-	lg := s.Logger()
-
-	s.bemu.Lock()
-	defer s.bemu.Unlock()
-
-	s.be.ForceCommit()
-	if err := s.be.Close(); err != nil {
-		lg.Error("close backend", zap.Error(err))
-	}
-}
-
 // TransferLeadership transfers the leader to the chosen transferee.
 func (s *KVServer) TransferLeadership() error {
 	// TODO: TransferLeadership
@@ -472,9 +385,9 @@ func (s *KVServer) InternalCluster() (RaftStatusGetter, error) {
 		return nil, ErrNoInternalReplica
 	}
 
-	rsg, ok := s.getShard(shardID)
+	ra, ok := s.getReplica(shardID)
 	if !ok {
 		panic("invalid shardID from readyInternalReplica()")
 	}
-	return rsg, nil
+	return ra, nil
 }
