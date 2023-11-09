@@ -38,7 +38,6 @@ func TestBackendSnapshot(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 	tx.Unlock()
 	b.ForceCommit()
@@ -97,7 +96,6 @@ func TestBackendBatchIntervalCommit(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 	tx.Unlock()
 
@@ -122,7 +120,6 @@ func TestBackendWriteback(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Key)
 	tx.UnsafePut(buckets.Key, []byte("abc"), []byte("bar"))
 	tx.UnsafePut(buckets.Key, []byte("def"), []byte("baz"))
 	tx.UnsafePut(buckets.Key, []byte("overwrite"), []byte("1"))
@@ -198,7 +195,6 @@ func TestConcurrentReadTx(t *testing.T) {
 
 	wtx1 := b.BatchTx()
 	wtx1.Lock()
-	wtx1.UnsafeCreateBucket(buckets.Key)
 	wtx1.UnsafePut(buckets.Key, []byte("abc"), []byte("ABC"))
 	wtx1.UnsafePut(buckets.Key, []byte("overwrite"), []byte("1"))
 	wtx1.Unlock()
@@ -232,7 +228,6 @@ func TestBackendWritebackForEach(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Key)
 	for i := 0; i < 5; i++ {
 		k := []byte(fmt.Sprintf("%04d", i))
 		tx.UnsafePut(buckets.Key, k, []byte("bar"))
@@ -243,7 +238,6 @@ func TestBackendWritebackForEach(t *testing.T) {
 	b.ForceCommit()
 
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Key)
 	for i := 5; i < 20; i++ {
 		k := []byte(fmt.Sprintf("%04d", i))
 		tx.UnsafePut(buckets.Key, k, []byte("bar"))

@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,8 +12,6 @@ import (
 
 type IBatchTx interface {
 	IReadTx
-	UnsafeCreateBucket(bucket IBucket)
-	UnsafeDeleteBucket(bucket IBucket)
 	UnsafePut(bucket IBucket, key []byte, value []byte)
 	UnsafeSeqPut(bucket IBucket, key []byte, value []byte)
 	UnsafeDelete(bucket IBucket, key []byte)
@@ -81,30 +78,6 @@ func (t *batchTx) RLock() {
 
 func (t *batchTx) RUnlock() {
 	panic("unexpected RUnlock")
-}
-
-func (t *batchTx) UnsafeCreateBucket(bucket IBucket) {
-	err := createBucket(t.tx, bucket)
-	if err != nil && !errors.Is(err, pebble.ErrNotFound) {
-		t.backend.lg.Fatal(
-			"failed to create a bucket",
-			zap.Stringer("bucket-name", bucket),
-			zap.Error(err),
-		)
-	}
-	t.pending++
-}
-
-func (t *batchTx) UnsafeDeleteBucket(bucket IBucket) {
-	err := deleteBucket(t.tx, bucket)
-	if err != nil && !errors.Is(err, pebble.ErrNotFound) {
-		t.backend.lg.Fatal(
-			"failed to delete a bucket",
-			zap.Stringer("bucket-name", bucket),
-			zap.Error(err),
-		)
-	}
-	t.pending++
 }
 
 // UnsafePut must be called holding the lock on the tx.

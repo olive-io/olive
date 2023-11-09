@@ -1032,10 +1032,6 @@ func NewAuthStore(lg *zap.Logger, be backend.IBackend, tp TokenProvider, bcryptC
 	tx := be.BatchTx()
 	tx.LockOutsideApply()
 
-	tx.UnsafeCreateBucket(buckets.Auth)
-	tx.UnsafeCreateBucket(buckets.AuthUsers)
-	tx.UnsafeCreateBucket(buckets.AuthRoles)
-
 	enabled := false
 	_, vs, _ := tx.UnsafeRange(buckets.Auth, enableFlagKey, nil, 0)
 	if len(vs) == 1 {

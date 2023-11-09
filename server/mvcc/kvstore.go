@@ -106,8 +106,6 @@ func NewStore(lg *zap.Logger, b backend.IBackend, le lease.ILessor, cfg StoreCon
 
 	tx := s.b.BatchTx()
 	tx.LockOutsideApply()
-	tx.UnsafeCreateBucket(buckets.Key)
-	tx.UnsafeCreateBucket(buckets.Meta)
 	tx.Unlock()
 	s.b.ForceCommit()
 

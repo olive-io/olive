@@ -18,9 +18,6 @@ func TestBatchTxPut(t *testing.T) {
 
 	tx.Lock()
 
-	// create bucket
-	tx.UnsafeCreateBucket(buckets.Test)
-
 	// put
 	v := []byte("bar")
 	tx.UnsafePut(buckets.Test, []byte("foo"), v)
@@ -47,7 +44,6 @@ func TestBatchTxRange(t *testing.T) {
 	tx.Lock()
 	defer tx.Unlock()
 
-	tx.UnsafeCreateBucket(buckets.Test)
 	// put keys
 	allKeys := [][]byte{[]byte("foo"), []byte("foo1"), []byte("foo2")}
 	allVals := [][]byte{[]byte("bar"), []byte("bar1"), []byte("bar2")}
@@ -117,7 +113,6 @@ func TestBatchTxDelete(t *testing.T) {
 	tx := b.BatchTx()
 	tx.Lock()
 
-	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 
 	tx.UnsafeDelete(buckets.Test, []byte("foo"))
@@ -141,7 +136,6 @@ func TestBatchTxCommit(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 	tx.Unlock()
 
@@ -164,7 +158,6 @@ func TestBatchTxBatchLimitCommit(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 	tx.Unlock()
 

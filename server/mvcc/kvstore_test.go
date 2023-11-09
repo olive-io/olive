@@ -860,14 +860,12 @@ type fakeBatchTx struct {
 	rangeRespc chan rangeResp
 }
 
-func (b *fakeBatchTx) LockInsideApply()                          {}
-func (b *fakeBatchTx) LockOutsideApply()                         {}
-func (b *fakeBatchTx) Lock()                                     {}
-func (b *fakeBatchTx) Unlock()                                   {}
-func (b *fakeBatchTx) RLock()                                    {}
-func (b *fakeBatchTx) RUnlock()                                  {}
-func (b *fakeBatchTx) UnsafeCreateBucket(bucket backend.IBucket) {}
-func (b *fakeBatchTx) UnsafeDeleteBucket(bucket backend.IBucket) {}
+func (b *fakeBatchTx) LockInsideApply()  {}
+func (b *fakeBatchTx) LockOutsideApply() {}
+func (b *fakeBatchTx) Lock()             {}
+func (b *fakeBatchTx) Unlock()           {}
+func (b *fakeBatchTx) RLock()            {}
+func (b *fakeBatchTx) RUnlock()          {}
 func (b *fakeBatchTx) UnsafePut(bucket backend.IBucket, key []byte, value []byte) {
 	b.Recorder.Record(testutil.Action{Name: "put", Params: []interface{}{bucket, key, value}})
 }

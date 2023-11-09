@@ -768,7 +768,6 @@ func (le *lessor) initAndRecover() {
 	tx := le.b.BatchTx()
 	tx.LockOutsideApply()
 
-	tx.UnsafeCreateBucket(buckets.Lease)
 	lpbs := unsafeGetAllLeases(tx)
 	tx.Unlock()
 	for _, lpb := range lpbs {

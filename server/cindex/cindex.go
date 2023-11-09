@@ -155,15 +155,12 @@ func (f *fakeConsistentIndex) UnsafeSave(_ backend.IBatchTx) {}
 func (f *fakeConsistentIndex) SetBackend(_ IBackend)         {}
 
 // UnsafeCreateMetaBucket creates the `meta` bucket (if it does not exists yet).
-func UnsafeCreateMetaBucket(tx backend.IBatchTx) {
-	tx.UnsafeCreateBucket(buckets.Meta)
-}
+func UnsafeCreateMetaBucket(tx backend.IBatchTx) {}
 
 // CreateMetaBucket creates the `meta` bucket (if it does not exists yet).
 func CreateMetaBucket(tx backend.IBatchTx) {
 	tx.LockOutsideApply()
 	defer tx.Unlock()
-	tx.UnsafeCreateBucket(buckets.Meta)
 }
 
 // unsafeGetConsistentIndex loads consistent index & term from given transaction.
