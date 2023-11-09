@@ -1,7 +1,11 @@
 package client
 
 import (
+	"context"
+
 	"github.com/olive-io/olive/api/rpctypes"
+	pb "github.com/olive-io/olive/api/serverpb"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -72,33 +76,142 @@ func isSafeRetryMutableRPC(err error) bool {
 	return desc == "there is no address available" || desc == "there is no connection available"
 }
 
-//type retryDefinitionClient struct {
-//	kc api.DefinitionRPCClient
-//}
-//
-//// RetryDefinitionClient implements a DefinitionClient.
-//func RetryDefinitionClient(c *Client) api.DefinitionRPCClient {
-//	return &retryDefinitionClient{
-//		kc: api.NewDefinitionRPCClient(c.conn),
-//	}
-//}
-//
-//func (rc *retryDefinitionClient) DeployDefinition(ctx context.Context, in *pb.DeployDefinitionRequest, opts ...grpc.CallOption) (resp *pb.DeployDefinitionResponse, err error) {
-//	return rc.kc.DeployDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
-//
-//func (rc *retryDefinitionClient) ListDefinition(ctx context.Context, in *pb.ListDefinitionRequest, opts ...grpc.CallOption) (resp *pb.ListDefinitionResponse, err error) {
-//	return rc.kc.ListDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
-//
-//func (rc *retryDefinitionClient) GetDefinition(ctx context.Context, in *pb.GetDefinitionRequest, opts ...grpc.CallOption) (resp *pb.GetDefinitionResponse, err error) {
-//	return rc.kc.GetDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
-//
-//func (rc *retryDefinitionClient) RemoveDefinition(ctx context.Context, in *pb.RemoveDefinitionRequest, opts ...grpc.CallOption) (resp *pb.RemoveDefinitionResponse, err error) {
-//	return rc.kc.RemoveDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
-//
-//func (rc *retryDefinitionClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (resp *pb.ExecuteDefinitionResponse, err error) {
-//	return rc.kc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
+type retryKVClient struct {
+	kc pb.KVClient
+}
+
+// RetryKVClient implements a KVClient.
+func RetryKVClient(c *Client) pb.KVClient {
+	return &retryKVClient{
+		kc: pb.NewKVClient(c.conn),
+	}
+}
+func (rkv *retryKVClient) Range(ctx context.Context, in *pb.RangeRequest, opts ...grpc.CallOption) (resp *pb.RangeResponse, err error) {
+	return rkv.kc.Range(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rkv *retryKVClient) Put(ctx context.Context, in *pb.PutRequest, opts ...grpc.CallOption) (resp *pb.PutResponse, err error) {
+	return rkv.kc.Put(ctx, in, opts...)
+}
+
+func (rkv *retryKVClient) DeleteRange(ctx context.Context, in *pb.DeleteRangeRequest, opts ...grpc.CallOption) (resp *pb.DeleteRangeResponse, err error) {
+	return rkv.kc.DeleteRange(ctx, in, opts...)
+}
+
+func (rkv *retryKVClient) Txn(ctx context.Context, in *pb.TxnRequest, opts ...grpc.CallOption) (resp *pb.TxnResponse, err error) {
+	return rkv.kc.Txn(ctx, in, opts...)
+}
+
+func (rkv *retryKVClient) Compact(ctx context.Context, in *pb.CompactionRequest, opts ...grpc.CallOption) (resp *pb.CompactionResponse, err error) {
+	return rkv.kc.Compact(ctx, in, opts...)
+}
+
+type retryLeaseClient struct {
+	lc pb.LeaseClient
+}
+
+// RetryLeaseClient implements a LeaseClient.
+func RetryLeaseClient(c *Client) pb.LeaseClient {
+	return &retryLeaseClient{
+		lc: pb.NewLeaseClient(c.conn),
+	}
+}
+
+func (rlc *retryLeaseClient) LeaseTimeToLive(ctx context.Context, in *pb.LeaseTimeToLiveRequest, opts ...grpc.CallOption) (resp *pb.LeaseTimeToLiveResponse, err error) {
+	return rlc.lc.LeaseTimeToLive(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rlc *retryLeaseClient) LeaseLeases(ctx context.Context, in *pb.LeaseLeasesRequest, opts ...grpc.CallOption) (resp *pb.LeaseLeasesResponse, err error) {
+	return rlc.lc.LeaseLeases(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rlc *retryLeaseClient) LeaseGrant(ctx context.Context, in *pb.LeaseGrantRequest, opts ...grpc.CallOption) (resp *pb.LeaseGrantResponse, err error) {
+	return rlc.lc.LeaseGrant(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rlc *retryLeaseClient) LeaseRevoke(ctx context.Context, in *pb.LeaseRevokeRequest, opts ...grpc.CallOption) (resp *pb.LeaseRevokeResponse, err error) {
+	return rlc.lc.LeaseRevoke(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rlc *retryLeaseClient) LeaseKeepAlive(ctx context.Context, opts ...grpc.CallOption) (stream pb.Lease_LeaseKeepAliveClient, err error) {
+	return rlc.lc.LeaseKeepAlive(ctx, append(opts, withRetryPolicy(repeatable))...)
+}
+
+type retryAuthClient struct {
+	ac pb.AuthClient
+}
+
+// RetryAuthClient implements a AuthClient.
+func RetryAuthClient(c *Client) pb.AuthClient {
+	return &retryAuthClient{
+		ac: pb.NewAuthClient(c.conn),
+	}
+}
+
+func (rac *retryAuthClient) UserList(ctx context.Context, in *pb.AuthUserListRequest, opts ...grpc.CallOption) (resp *pb.AuthUserListResponse, err error) {
+	return rac.ac.UserList(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rac *retryAuthClient) UserGet(ctx context.Context, in *pb.AuthUserGetRequest, opts ...grpc.CallOption) (resp *pb.AuthUserGetResponse, err error) {
+	return rac.ac.UserGet(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rac *retryAuthClient) RoleGet(ctx context.Context, in *pb.AuthRoleGetRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleGetResponse, err error) {
+	return rac.ac.RoleGet(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rac *retryAuthClient) RoleList(ctx context.Context, in *pb.AuthRoleListRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleListResponse, err error) {
+	return rac.ac.RoleList(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rac *retryAuthClient) AuthEnable(ctx context.Context, in *pb.AuthEnableRequest, opts ...grpc.CallOption) (resp *pb.AuthEnableResponse, err error) {
+	return rac.ac.AuthEnable(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) AuthDisable(ctx context.Context, in *pb.AuthDisableRequest, opts ...grpc.CallOption) (resp *pb.AuthDisableResponse, err error) {
+	return rac.ac.AuthDisable(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) AuthStatus(ctx context.Context, in *pb.AuthStatusRequest, opts ...grpc.CallOption) (resp *pb.AuthStatusResponse, err error) {
+	return rac.ac.AuthStatus(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) UserAdd(ctx context.Context, in *pb.AuthUserAddRequest, opts ...grpc.CallOption) (resp *pb.AuthUserAddResponse, err error) {
+	return rac.ac.UserAdd(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) UserDelete(ctx context.Context, in *pb.AuthUserDeleteRequest, opts ...grpc.CallOption) (resp *pb.AuthUserDeleteResponse, err error) {
+	return rac.ac.UserDelete(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) UserChangePassword(ctx context.Context, in *pb.AuthUserChangePasswordRequest, opts ...grpc.CallOption) (resp *pb.AuthUserChangePasswordResponse, err error) {
+	return rac.ac.UserChangePassword(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) UserGrantRole(ctx context.Context, in *pb.AuthUserGrantRoleRequest, opts ...grpc.CallOption) (resp *pb.AuthUserGrantRoleResponse, err error) {
+	return rac.ac.UserGrantRole(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) UserRevokeRole(ctx context.Context, in *pb.AuthUserRevokeRoleRequest, opts ...grpc.CallOption) (resp *pb.AuthUserRevokeRoleResponse, err error) {
+	return rac.ac.UserRevokeRole(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) RoleAdd(ctx context.Context, in *pb.AuthRoleAddRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleAddResponse, err error) {
+	return rac.ac.RoleAdd(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) RoleDelete(ctx context.Context, in *pb.AuthRoleDeleteRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleDeleteResponse, err error) {
+	return rac.ac.RoleDelete(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) RoleGrantPermission(ctx context.Context, in *pb.AuthRoleGrantPermissionRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleGrantPermissionResponse, err error) {
+	return rac.ac.RoleGrantPermission(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) RoleRevokePermission(ctx context.Context, in *pb.AuthRoleRevokePermissionRequest, opts ...grpc.CallOption) (resp *pb.AuthRoleRevokePermissionResponse, err error) {
+	return rac.ac.RoleRevokePermission(ctx, in, opts...)
+}
+
+func (rac *retryAuthClient) Authenticate(ctx context.Context, in *pb.AuthenticateRequest, opts ...grpc.CallOption) (resp *pb.AuthenticateResponse, err error) {
+	return rac.ac.Authenticate(ctx, in, opts...)
+}

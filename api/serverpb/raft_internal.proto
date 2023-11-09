@@ -28,6 +28,11 @@ message InternalRaftRequest {
   TxnRequest txn = 103;
   CompactionRequest compaction = 104;
 
+  LeaseGrantRequest lease_grant = 108;
+  LeaseRevokeRequest lease_revoke = 109;
+
+  LeaseCheckpointRequest lease_checkpoint = 111;
+
   AuthEnableRequest auth_enable = 1000;
   AuthDisableRequest auth_disable = 1011;
   AuthStatusRequest auth_status = 1013;
@@ -111,12 +116,6 @@ message Event {
 
   // prev_kv holds the key-value pair before the event happens.
   KeyValue prev_kv = 3;
-}
-
-message Lease {
-  int64 ID = 1;
-  int64 TTL = 2;
-  int64 RemainingTTL = 3;
 }
 
 message ResponseHeader {
@@ -298,6 +297,7 @@ message Compare {
     CREATE = 1;
     MOD = 2;
     VALUE = 3;
+    LEASE = 4;
   }
   // result is logical comparison operation for this comparison.
   CompareResult result = 1;

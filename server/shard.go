@@ -375,7 +375,7 @@ func (s *shard) getLead() uint64 {
 }
 
 func (s *shard) ShardID() uint64 {
-	return s.nodeID
+	return s.shardID
 }
 
 func (s *shard) NodeID() uint64 {

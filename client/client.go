@@ -28,7 +28,10 @@ var (
 
 // Client provides and manages an olive client session.
 type Client struct {
-	//IDefinitionKV
+	IKV
+	IAuth
+	ILease
+	IWatcher
 
 	conn *grpc.ClientConn
 
@@ -121,6 +124,12 @@ func (c *Client) GetLogger() *zap.Logger {
 // Close shuts down the client's olive connections.
 func (c *Client) Close() error {
 	c.cancel()
+	if c.IWatcher != nil {
+		c.IWatcher.Close()
+	}
+	if c.ILease != nil {
+		c.ILease.Close()
+	}
 	if c.conn != nil {
 		return toErr(c.ctx, c.conn.Close())
 	}
@@ -392,7 +401,10 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 	client.conn = conn
 
-	//client.IDefinitionKV = NewDefinitionKV(client)
+	client.IKV = NewKV(client)
+	client.IAuth = NewAuth(client)
+	client.ILease = NewLease(client)
+	client.IWatcher = NewWatcher(client)
 
 	//get token with established connection
 	ctx, cancel = client.ctx, func() {}

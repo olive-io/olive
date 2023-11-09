@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/olive-io/olive/meta/api/rpc"
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -64,34 +65,6 @@ func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
 		return nil, err
 	}
 
-	var ts net.Listener
-	tc, isTLS, err := cfg.ServerConfig.TLSConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	opts := make([]grpc.ServerOption, 0)
-	cred := insecure.NewCredentials()
-	if isTLS {
-		cred = grpccredentials.NewTLS(tc)
-		ts, err = tls.Listen("tcp", cfg.ListenerClientAddress, tc)
-	} else {
-		ts, err = net.Listen("tcp", cfg.ListenerClientAddress)
-	}
-	if err != nil {
-		return nil, err
-	}
-	opts = append(opts, grpc.Creds(cred))
-
-	if cfg.MaxGRPCSendMessageSize != 0 {
-		opts = append(opts, grpc.MaxSendMsgSize(int(cfg.MaxGRPCSendMessageSize)))
-	}
-	if cfg.MaxGRPCReceiveMessageSize != 0 {
-		opts = append(opts, grpc.MaxRecvMsgSize(int(cfg.MaxGRPCReceiveMessageSize)))
-	}
-
-	gs := grpc.NewServer(opts...)
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s := &Server{
@@ -101,9 +74,6 @@ func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
 		cancel: cancel,
 
 		lg: lg,
-
-		gs:       gs,
-		listener: ts,
 
 		kvs: kvs,
 
@@ -138,13 +108,18 @@ func (s *Server) Start() error {
 		scfg.ElectionTimeout = s.cfg.ElectionTimeout
 	}
 
-	err := s.kvs.StartReplica(scfg)
+	err := s.kvs.StartInternalReplica(scfg)
 	if err != nil {
 		return err
 	}
 	s.setShardID(scfg.ShardID)
 
 	mux := s.newHttpMux()
+
+	s.gs, err = s.newGRPCServe()
+	if err != nil {
+		return err
+	}
 
 	handler := grpcHandlerFunc(s.gs, mux)
 	srv := &http.Server{
@@ -205,6 +180,39 @@ func (s *Server) setShardID(id uint64) {
 
 func (s *Server) getShardID() uint64 {
 	return atomic.LoadUint64(&s.shardID)
+}
+
+func (s *Server) newGRPCServe() (*grpc.Server, error) {
+	var ts net.Listener
+	tc, isTLS, err := s.cfg.TLSConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	opts := make([]grpc.ServerOption, 0)
+	cred := insecure.NewCredentials()
+	if isTLS {
+		cred = grpccredentials.NewTLS(tc)
+		ts, err = tls.Listen("tcp", s.cfg.ListenerClientAddress, tc)
+	} else {
+		ts, err = net.Listen("tcp", s.cfg.ListenerClientAddress)
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.listener = ts
+
+	opts = append(opts, grpc.Creds(cred))
+
+	if s.cfg.MaxGRPCSendMessageSize != 0 {
+		opts = append(opts, grpc.MaxSendMsgSize(int(s.cfg.MaxGRPCSendMessageSize)))
+	}
+	if s.cfg.MaxGRPCReceiveMessageSize != 0 {
+		opts = append(opts, grpc.MaxRecvMsgSize(int(s.cfg.MaxGRPCReceiveMessageSize)))
+	}
+
+	gs := rpc.Server(s.kvs, tc, nil, opts...)
+	return gs, nil
 }
 
 func (s *Server) newHttpMux() http.Handler {

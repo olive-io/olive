@@ -427,57 +427,96 @@ func init() {
 }
 
 var fileDescriptor_9eaed422e7d170b4 = []byte{
-	// 788 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xcd, 0x6e, 0xc3, 0x44,
-	0x10, 0x8e, 0x63, 0xfa, 0x37, 0x69, 0x4b, 0xbb, 0x4a, 0x1a, 0xd7, 0xa4, 0x6e, 0x58, 0x2e, 0x51,
-	0x25, 0xe2, 0x12, 0x7e, 0x04, 0x41, 0x48, 0x88, 0xb6, 0x40, 0x45, 0x91, 0x82, 0xa9, 0xa8, 0x0a,
-	0x48, 0xc8, 0x71, 0xb6, 0xa9, 0xd5, 0x64, 0xd7, 0xd8, 0x9b, 0x90, 0x9e, 0x90, 0x2a, 0x1e, 0x00,
-	0x89, 0xd7, 0xe1, 0xc2, 0xad, 0xe2, 0x54, 0x89, 0x0b, 0x47, 0x68, 0x79, 0x10, 0xe4, 0xf5, 0x3a,
-	0x76, 0x93, 0xb8, 0xad, 0x72, 0x9b, 0xfd, 0x66, 0xe6, 0xfb, 0x66, 0x76, 0x47, 0x63, 0xc3, 0x7e,
-	0xd7, 0xe5, 0x97, 0x83, 0x76, 0xdd, 0x61, 0x7d, 0x93, 0xf5, 0xdc, 0x21, 0x79, 0xd3, 0x65, 0x91,
-	0x61, 0xda, 0x9e, 0x6b, 0x06, 0xc4, 0x1f, 0x12, 0xdf, 0x6b, 0x9b, 0xbe, 0xe7, 0xd4, 0x3d, 0x9f,
-	0x71, 0x86, 0x96, 0x63, 0x4c, 0x7f, 0x69, 0xae, 0xed, 0xb9, 0x51, 0xae, 0xde, 0x7c, 0xa9, 0x9a,
-	0x7d, 0xc1, 0x7f, 0x70, 0x29, 0x27, 0x3e, 0xb5, 0x7b, 0x32, 0xb7, 0xd8, 0x65, 0x5d, 0x26, 0x4c,
-	0x33, 0xb4, 0x24, 0x5a, 0xe9, 0x32, 0xd6, 0xed, 0x45, 0xe9, 0x36, 0xa5, 0x8c, 0xdb, 0xdc, 0x65,
-	0x34, 0x88, 0xbc, 0xf8, 0x0c, 0xca, 0x87, 0xc4, 0xeb, 0xb1, 0xeb, 0x43, 0x72, 0xe1, 0x52, 0x37,
-	0x74, 0x59, 0xe4, 0xc7, 0x01, 0x09, 0x38, 0x5a, 0x87, 0xbc, 0xdb, 0xd1, 0x94, 0xaa, 0x52, 0x5b,
-	0xb1, 0xf2, 0x6e, 0x07, 0x21, 0x78, 0x85, 0xda, 0x7d, 0xa2, 0xe5, 0x05, 0x22, 0x6c, 0xa4, 0xc1,
-	0x92, 0xc3, 0x28, 0x27, 0x94, 0x6b, 0x6a, 0x55, 0xa9, 0xad, 0x5a, 0xf1, 0x11, 0x5f, 0x80, 0x36,
-	0x4d, 0x1c, 0x78, 0x8c, 0x06, 0x04, 0xed, 0xc3, 0xe2, 0x25, 0xb1, 0x3b, 0xc4, 0x17, 0xec, 0x85,
-	0x86, 0x56, 0x8f, 0xfb, 0xaa, 0xc7, 0x31, 0x9f, 0x0b, 0xbf, 0x25, 0xe3, 0x42, 0x9d, 0x21, 0xf1,
-	0x03, 0x97, 0x51, 0x21, 0xaf, 0x5a, 0xf1, 0x11, 0x97, 0xa1, 0x74, 0xe2, 0x06, 0x7c, 0xaa, 0x7c,
-	0x7c, 0xa3, 0xc0, 0xd6, 0xa4, 0x67, 0x6e, 0xfd, 0xf7, 0xa0, 0xd0, 0x19, 0xf3, 0x04, 0x5a, 0xbe,
-	0xaa, 0xd6, 0x0a, 0x8d, 0x62, 0x92, 0x96, 0x12, 0x49, 0x07, 0xe2, 0x8f, 0xa1, 0xf8, 0x19, 0xe1,
-	0xcf, 0xdf, 0x6d, 0x76, 0x7f, 0x3f, 0x43, 0x69, 0x82, 0x61, 0xee, 0x26, 0xde, 0x01, 0x48, 0x6a,
-	0x13, 0x3a, 0x59, 0x3d, 0xa4, 0xe2, 0xf0, 0x47, 0x50, 0xb6, 0x48, 0x9f, 0x0d, 0xc9, 0x5c, 0x13,
-	0x82, 0x4f, 0x40, 0x9b, 0x4e, 0x9f, 0xb7, 0x05, 0xfc, 0x87, 0x02, 0xda, 0xd1, 0x88, 0x38, 0x03,
-	0x3e, 0x5f, 0x39, 0xe8, 0xd3, 0xb1, 0xa4, 0x2a, 0xde, 0xb0, 0x9e, 0x48, 0x66, 0xf1, 0xd6, 0xa3,
-	0x1a, 0x8e, 0x28, 0xf7, 0xaf, 0xe3, 0x42, 0xf4, 0x0f, 0xa0, 0x90, 0x82, 0xd1, 0x06, 0xa8, 0x57,
-	0xe4, 0x5a, 0x6a, 0x87, 0x26, 0x2a, 0xc2, 0xc2, 0xd0, 0xee, 0x0d, 0x62, 0xf5, 0xe8, 0xd0, 0xcc,
-	0xbf, 0xaf, 0xe0, 0x5f, 0x14, 0xd8, 0x9e, 0xa1, 0x35, 0xf7, 0xb3, 0xbe, 0x0b, 0xcb, 0x2e, 0x0d,
-	0xb8, 0x4d, 0x1d, 0x22, 0x1f, 0x75, 0x3b, 0xc9, 0x69, 0xf9, 0xcc, 0x21, 0x41, 0x70, 0x2c, 0x03,
-	0xac, 0x71, 0x68, 0xe3, 0x77, 0x15, 0xf2, 0x5f, 0x7c, 0x83, 0xbe, 0x82, 0x05, 0xcb, 0xa6, 0x5d,
-	0x82, 0xb6, 0x52, 0x42, 0x21, 0x20, 0xbb, 0xd7, 0xcb, 0x53, 0x78, 0x54, 0x05, 0x2e, 0xdf, 0xfc,
-	0xf5, 0xdf, 0x6f, 0xf9, 0x4d, 0xbc, 0x6a, 0x0e, 0xdf, 0x32, 0xaf, 0x86, 0xa6, 0x1f, 0x7a, 0x9b,
-	0xca, 0x1e, 0x3a, 0x06, 0xb5, 0x35, 0xe0, 0x28, 0x35, 0x5a, 0xad, 0x01, 0x8f, 0xe9, 0x4a, 0x13,
-	0xa8, 0x24, 0x2b, 0x09, 0xb2, 0x57, 0x31, 0x48, 0x32, 0x6f, 0xc0, 0x43, 0x2a, 0x17, 0x0a, 0x87,
-	0xa4, 0x47, 0x38, 0x89, 0x6a, 0xac, 0xa4, 0xa7, 0x75, 0x0c, 0xc7, 0xd4, 0x3b, 0x19, 0x5e, 0x29,
-	0xb1, 0x23, 0x24, 0xca, 0x18, 0x49, 0x89, 0x8e, 0x88, 0x49, 0x57, 0x7d, 0x3a, 0xa2, 0xe9, 0xaa,
-	0x4f, 0x47, 0x74, 0x46, 0xd5, 0x02, 0xcd, 0xa8, 0x9a, 0x8f, 0x68, 0x48, 0xd5, 0x86, 0xa5, 0x03,
-	0xd6, 0xf7, 0x6c, 0x87, 0xa3, 0xd7, 0x92, 0x44, 0x09, 0x25, 0x83, 0xa5, 0x57, 0x66, 0x3b, 0x25,
-	0x79, 0x45, 0x90, 0x6f, 0xe1, 0x4d, 0x49, 0xee, 0x8c, 0x43, 0x9a, 0xca, 0x5e, 0xe3, 0x3b, 0x58,
-	0x38, 0xb3, 0xb9, 0x73, 0x89, 0xac, 0xd8, 0x48, 0x3d, 0xa0, 0x00, 0x66, 0x3c, 0xa0, 0xc4, 0xa5,
-	0x40, 0x51, 0x08, 0xac, 0xe3, 0x95, 0x50, 0xe0, 0xa7, 0xd0, 0xd5, 0x54, 0xf6, 0x6a, 0xca, 0xbe,
-	0xd2, 0xf8, 0x53, 0x85, 0xb5, 0xd4, 0x6c, 0xb6, 0x0e, 0xd0, 0x39, 0x6c, 0x4c, 0xae, 0x73, 0xf4,
-	0x7a, 0xfa, 0xbe, 0x67, 0x7e, 0x43, 0x74, 0xfc, 0x54, 0x88, 0x9c, 0xf8, 0xaf, 0x61, 0xfd, 0xf1,
-	0x9e, 0x46, 0xbb, 0x49, 0xd6, 0xcc, 0xdd, 0xae, 0x57, 0xb3, 0x03, 0x24, 0x69, 0x0b, 0xd6, 0x1e,
-	0xad, 0x4d, 0x64, 0x24, 0x29, 0xb3, 0x36, 0xb2, 0xbe, 0x9b, 0xe9, 0x97, 0x8c, 0xe7, 0xb0, 0x31,
-	0xb9, 0xc8, 0xd2, 0x37, 0x90, 0xb1, 0x23, 0xd3, 0x37, 0x90, 0xb9, 0x07, 0xbf, 0x87, 0xcd, 0xa9,
-	0x85, 0x80, 0xf0, 0xf3, 0x9b, 0x49, 0x7f, 0xe3, 0xc9, 0x98, 0x88, 0xfd, 0x93, 0x2f, 0x6f, 0xff,
-	0x35, 0x72, 0xb7, 0xf7, 0x86, 0x72, 0x77, 0x6f, 0x28, 0xff, 0xdc, 0x1b, 0xca, 0xaf, 0x0f, 0x46,
-	0xee, 0xee, 0xc1, 0xc8, 0xfd, 0xfd, 0x60, 0xe4, 0xbe, 0x35, 0x5f, 0xf6, 0xc3, 0xf1, 0x61, 0x6c,
-	0xb4, 0x17, 0xc5, 0x8f, 0xc3, 0xdb, 0xff, 0x07, 0x00, 0x00, 0xff, 0xff, 0x3b, 0xa9, 0x35, 0x3a,
-	0x18, 0x09, 0x00, 0x00,
+	// 1420 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x98, 0xcf, 0x6f, 0x1b, 0xc5,
+	0x17, 0xc0, 0xb3, 0x76, 0xd3, 0xb4, 0xcf, 0x6d, 0x92, 0x4e, 0x9d, 0xd8, 0x75, 0x53, 0x37, 0xdd,
+	0xef, 0x57, 0x22, 0x44, 0x22, 0x5b, 0x0c, 0xe5, 0x47, 0x50, 0x25, 0x4a, 0x53, 0x42, 0xd5, 0x20,
+	0x19, 0x37, 0x50, 0xb5, 0x20, 0xa1, 0x8d, 0x77, 0x6a, 0xaf, 0x62, 0xef, 0x2c, 0xbb, 0x63, 0x27,
+	0x95, 0x90, 0x10, 0x15, 0x5c, 0x38, 0x20, 0x24, 0xc4, 0x91, 0xff, 0x84, 0x0b, 0xb7, 0x8a, 0x53,
+	0x25, 0x2e, 0x1c, 0xa1, 0xe1, 0x0f, 0x41, 0x33, 0x3b, 0xb3, 0x3b, 0xbb, 0x9e, 0x71, 0xa3, 0x5c,
+	0x92, 0xf1, 0xfb, 0xf5, 0x79, 0x33, 0xef, 0xcd, 0xce, 0xce, 0xc2, 0xf5, 0x9e, 0x4f, 0xfb, 0xa3,
+	0xbd, 0x8d, 0x2e, 0x19, 0x3a, 0x64, 0xe0, 0x8f, 0xf1, 0x6b, 0x3e, 0x49, 0x06, 0x8e, 0x1b, 0xfa,
+	0x4e, 0x8c, 0xa3, 0x31, 0x8e, 0xc2, 0x3d, 0x27, 0x0a, 0xbb, 0x1b, 0x61, 0x44, 0x28, 0x41, 0x67,
+	0xa4, 0xac, 0x71, 0x5c, 0x5f, 0x37, 0xf4, 0x13, 0xdf, 0xc6, 0xe6, 0x71, 0x69, 0xee, 0x63, 0xfa,
+	0xa5, 0x1f, 0x50, 0x1c, 0x05, 0xee, 0x40, 0xf8, 0x56, 0x7b, 0xa4, 0x47, 0xf8, 0xd0, 0x61, 0x23,
+	0x21, 0x5d, 0xe9, 0x11, 0xd2, 0x1b, 0x24, 0xee, 0x6e, 0x10, 0x10, 0xea, 0x52, 0x9f, 0x04, 0x71,
+	0xa2, 0xb5, 0x1f, 0x40, 0x6d, 0x0b, 0x87, 0x03, 0xf2, 0x64, 0x0b, 0x3f, 0xf6, 0x03, 0x9f, 0xa9,
+	0x3a, 0xf8, 0xab, 0x11, 0x8e, 0x29, 0x9a, 0x87, 0x92, 0xef, 0xd5, 0xad, 0x55, 0x6b, 0xed, 0x6c,
+	0xa7, 0xe4, 0x7b, 0x08, 0xc1, 0xa9, 0xc0, 0x1d, 0xe2, 0x7a, 0x89, 0x4b, 0xf8, 0x18, 0xd5, 0x61,
+	0xae, 0x4b, 0x02, 0x8a, 0x03, 0x5a, 0x2f, 0xaf, 0x5a, 0x6b, 0xe7, 0x3a, 0xf2, 0xa7, 0xfd, 0x18,
+	0xea, 0x93, 0x81, 0xe3, 0x90, 0x04, 0x31, 0x46, 0xd7, 0xe1, 0x74, 0x1f, 0xbb, 0x1e, 0x8e, 0x78,
+	0xf4, 0x4a, 0xab, 0xbe, 0x21, 0xe7, 0xb5, 0x21, 0x6d, 0x3e, 0xe2, 0xfa, 0x8e, 0xb0, 0x63, 0x9c,
+	0x31, 0x8e, 0x62, 0x9f, 0x04, 0x1c, 0x5f, 0xee, 0xc8, 0x9f, 0x76, 0x0d, 0x96, 0x76, 0xfc, 0x98,
+	0x4e, 0xa4, 0x6f, 0x3f, 0xb5, 0x60, 0xb9, 0xa8, 0x39, 0x31, 0xff, 0x2d, 0xa8, 0x78, 0x69, 0x9c,
+	0xb8, 0x5e, 0x5a, 0x2d, 0xaf, 0x55, 0x5a, 0xd5, 0xcc, 0x4d, 0x81, 0xa8, 0x86, 0xf6, 0xfb, 0x50,
+	0xdd, 0xc6, 0xf4, 0xe5, 0x6b, 0x6b, 0x9e, 0xdf, 0x37, 0xb0, 0x54, 0x88, 0x70, 0xe2, 0x49, 0xbc,
+	0x09, 0x90, 0xe5, 0xc6, 0x39, 0xa6, 0x39, 0x28, 0x76, 0xf6, 0x4d, 0xa8, 0x75, 0xf0, 0x90, 0x8c,
+	0xf1, 0x89, 0x3a, 0xc4, 0xde, 0x81, 0xfa, 0xa4, 0xfb, 0x49, 0xa7, 0x60, 0xff, 0x6e, 0x41, 0xfd,
+	0xce, 0x21, 0xee, 0x8e, 0xe8, 0xc9, 0xd2, 0x41, 0x1f, 0xa6, 0xc8, 0x32, 0xaf, 0xe1, 0x46, 0x86,
+	0x34, 0xc5, 0xdd, 0x48, 0x72, 0xb8, 0x13, 0xd0, 0xe8, 0x89, 0x4c, 0xa4, 0xf1, 0x2e, 0x54, 0x14,
+	0x31, 0x5a, 0x84, 0xf2, 0x3e, 0x7e, 0x22, 0xd8, 0x6c, 0x88, 0xaa, 0x30, 0x3b, 0x76, 0x07, 0x23,
+	0x49, 0x4f, 0x7e, 0x6c, 0x96, 0xde, 0xb1, 0xec, 0xef, 0x2c, 0xb8, 0xa4, 0x61, 0x9d, 0xb8, 0xac,
+	0x37, 0xe0, 0x8c, 0x1f, 0xc4, 0xd4, 0x0d, 0xba, 0x58, 0x14, 0xf5, 0x52, 0xe6, 0xd3, 0x8e, 0x48,
+	0x17, 0xc7, 0xf1, 0x5d, 0x61, 0xd0, 0x49, 0x4d, 0x5b, 0xbf, 0x95, 0xa1, 0x74, 0xef, 0x33, 0xf4,
+	0x09, 0xcc, 0x76, 0xdc, 0xa0, 0x87, 0xd1, 0xb2, 0x02, 0x62, 0x02, 0x31, 0xfb, 0x46, 0x6d, 0x42,
+	0x9e, 0x64, 0x61, 0xd7, 0x9e, 0xfe, 0xf9, 0xef, 0xcf, 0xa5, 0x0b, 0xf6, 0x39, 0x67, 0xfc, 0xba,
+	0xb3, 0x3f, 0x76, 0x22, 0xa6, 0xdd, 0xb4, 0xd6, 0xd1, 0x5d, 0x28, 0xb7, 0x47, 0x14, 0x29, 0xad,
+	0xd5, 0x1e, 0x51, 0x19, 0x6e, 0xa9, 0x20, 0x15, 0xc1, 0x96, 0x78, 0xb0, 0x05, 0x1b, 0x44, 0xb0,
+	0x70, 0x44, 0x59, 0x28, 0x1f, 0x2a, 0x5b, 0x78, 0x80, 0x29, 0x4e, 0x72, 0x5c, 0x51, 0xbb, 0x35,
+	0x15, 0xcb, 0xd0, 0x57, 0x0c, 0x5a, 0x81, 0xb8, 0xc2, 0x11, 0x35, 0x1b, 0x09, 0x84, 0xc7, 0x6d,
+	0xd4, 0xac, 0x77, 0x0f, 0x03, 0x35, 0xeb, 0xdd, 0xc3, 0x40, 0x93, 0x35, 0x97, 0x1a, 0xb2, 0xa6,
+	0x87, 0x01, 0x0b, 0xb5, 0x07, 0x73, 0xb7, 0xc9, 0x30, 0x74, 0xbb, 0x14, 0x5d, 0xce, 0x1c, 0x85,
+	0x28, 0x6b, 0xac, 0xc6, 0x8a, 0x5e, 0x29, 0x82, 0xaf, 0xf0, 0xe0, 0xcb, 0xf6, 0x05, 0x11, 0xbc,
+	0x9b, 0x9a, 0x6c, 0x5a, 0xeb, 0xad, 0xcf, 0x61, 0xf6, 0x81, 0x4b, 0xbb, 0x7d, 0xd4, 0x91, 0x03,
+	0xa5, 0x80, 0x5c, 0xa0, 0x29, 0xa0, 0x90, 0x0b, 0x40, 0x95, 0x03, 0xe6, 0xed, 0xb3, 0x0c, 0x70,
+	0xc0, 0x54, 0x9b, 0xd6, 0xfa, 0x9a, 0x75, 0xdd, 0x6a, 0x7d, 0x3f, 0x0b, 0xb3, 0x3b, 0xd8, 0x8d,
+	0x31, 0xea, 0x02, 0xf0, 0xc1, 0x76, 0xe4, 0x06, 0xb9, 0xd9, 0x64, 0x52, 0xcd, 0x6c, 0x54, 0xa5,
+	0x80, 0x35, 0x38, 0xac, 0x6a, 0x2f, 0x30, 0xd8, 0x80, 0xe9, 0x9d, 0x1e, 0x33, 0x60, 0xeb, 0xf5,
+	0xad, 0x05, 0x15, 0xee, 0xd2, 0xc1, 0x63, 0xb2, 0x9f, 0x2b, 0xb3, 0x22, 0xd6, 0x94, 0x39, 0xa7,
+	0x15, 0xa0, 0x1b, 0x1c, 0xe4, 0xd8, 0x8b, 0x19, 0x28, 0xe2, 0x16, 0x9b, 0xd6, 0xfa, 0xa3, 0xba,
+	0x7d, 0x51, 0xac, 0x66, 0x41, 0x83, 0x0e, 0x60, 0x9e, 0x47, 0xbb, 0x87, 0x71, 0x78, 0x8b, 0x9d,
+	0xb7, 0xe8, 0x6a, 0x81, 0x93, 0x6a, 0x64, 0x22, 0xab, 0x66, 0x03, 0x91, 0x4b, 0x93, 0xe7, 0x22,
+	0xa0, 0x09, 0x71, 0x1f, 0xe3, 0xd0, 0x65, 0x46, 0x62, 0xad, 0xd1, 0x2f, 0x16, 0x2c, 0x70, 0xf7,
+	0x5d, 0x7f, 0x88, 0x77, 0xc9, 0x0e, 0x43, 0x17, 0x23, 0x67, 0x2a, 0xc9, 0xbe, 0x36, 0xc5, 0x42,
+	0xc0, 0x6f, 0x72, 0xf8, 0xdb, 0x76, 0x35, 0x83, 0x53, 0x7f, 0x88, 0x29, 0x11, 0xf4, 0x47, 0x2b,
+	0x76, 0x2d, 0xb7, 0x18, 0x39, 0x6d, 0x56, 0x14, 0xfe, 0x27, 0x9e, 0x28, 0x4a, 0x22, 0x36, 0x15,
+	0x45, 0x6a, 0xcd, 0x45, 0xe1, 0x7f, 0x63, 0x5d, 0x51, 0x52, 0x4d, 0xeb, 0xd7, 0x05, 0x38, 0x75,
+	0x6b, 0x44, 0xfb, 0xac, 0x0d, 0xd9, 0xff, 0x3b, 0x81, 0xbb, 0x37, 0xc0, 0x6a, 0x1b, 0x66, 0x52,
+	0x4d, 0x1b, 0xaa, 0x4a, 0x5d, 0x1b, 0xba, 0x23, 0xda, 0x77, 0x30, 0x37, 0x60, 0x33, 0xee, 0x41,
+	0x85, 0x79, 0x6c, 0xf9, 0x31, 0xa7, 0x14, 0x02, 0x09, 0xb1, 0x66, 0xc2, 0x39, 0xad, 0xe0, 0x5c,
+	0xe6, 0x9c, 0xa5, 0x64, 0xc2, 0x9c, 0xe3, 0x25, 0x16, 0x0c, 0x24, 0x66, 0x73, 0x9f, 0xba, 0x74,
+	0x14, 0x17, 0x67, 0x93, 0x48, 0x0d, 0xb3, 0x91, 0x4a, 0xe3, 0x6c, 0x62, 0x6e, 0xc0, 0x20, 0x04,
+	0xce, 0x31, 0x0f, 0x1c, 0x50, 0xbf, 0xeb, 0x52, 0x8c, 0x0a, 0x09, 0x4b, 0xb9, 0x04, 0x35, 0x4d,
+	0x6a, 0x81, 0x5a, 0xe5, 0xa8, 0x86, 0xbd, 0x94, 0xa2, 0x5c, 0xc5, 0x8c, 0x01, 0x3d, 0x98, 0xfb,
+	0x34, 0xc6, 0xd1, 0x2d, 0xcf, 0x2b, 0x2e, 0x9d, 0x10, 0x1b, 0x96, 0x2e, 0xd5, 0xea, 0x9e, 0x7b,
+	0x9c, 0x34, 0x8a, 0x71, 0xe4, 0xb8, 0x9e, 0xa7, 0x50, 0xb6, 0x31, 0xd5, 0x51, 0xb6, 0x31, 0x9d,
+	0x42, 0xe1, 0xda, 0xe9, 0x94, 0x1e, 0xe6, 0x4f, 0xa4, 0x3e, 0x9c, 0x61, 0x0e, 0xec, 0xfd, 0x11,
+	0x69, 0x02, 0x31, 0xb9, 0x61, 0xe1, 0x32, 0xb5, 0xee, 0xd8, 0xc9, 0x40, 0x03, 0x3f, 0xe6, 0xa4,
+	0x10, 0x80, 0xb9, 0x24, 0x07, 0x96, 0xfa, 0xcc, 0x91, 0xc1, 0xc4, 0x51, 0x36, 0xf9, 0xcc, 0x29,
+	0x1a, 0x08, 0xde, 0x55, 0xce, 0xbb, 0x94, 0x6c, 0xfb, 0x8c, 0x97, 0x9c, 0x76, 0x8c, 0xf8, 0x83,
+	0x05, 0x88, 0xf9, 0xdd, 0xee, 0xb3, 0xa3, 0xaf, 0xed, 0xc6, 0xf1, 0x01, 0x89, 0x3c, 0xf4, 0xca,
+	0x64, 0xe4, 0xbc, 0x85, 0x4c, 0x61, 0xed, 0xe5, 0x86, 0x22, 0x95, 0x6b, 0x3c, 0x95, 0xcb, 0xf6,
+	0x72, 0x3e, 0x95, 0x2e, 0xb7, 0x0e, 0x0f, 0x58, 0x32, 0x87, 0x70, 0x9e, 0x57, 0x86, 0x9f, 0x15,
+	0x64, 0x80, 0x91, 0xad, 0x29, 0x9b, 0x54, 0xca, 0x0c, 0xfe, 0x37, 0xd5, 0x46, 0xf7, 0xec, 0x55,
+	0x0a, 0x2c, 0x0f, 0x9d, 0xaf, 0x61, 0x9e, 0x39, 0x8a, 0xd3, 0x83, 0xa1, 0x35, 0x61, 0x33, 0xad,
+	0x64, 0xff, 0x7f, 0xba, 0xd1, 0xf4, 0x22, 0x64, 0xc7, 0x8d, 0x07, 0x73, 0xcc, 0x41, 0xb3, 0x59,
+	0x84, 0xd8, 0xd0, 0xc6, 0xa9, 0xd6, 0xd8, 0xc6, 0x11, 0x61, 0x97, 0xbd, 0x74, 0xb3, 0x30, 0x07,
+	0xcd, 0x66, 0x11, 0xe2, 0x29, 0x94, 0xe9, 0x9b, 0x85, 0x53, 0xb2, 0xcd, 0xc2, 0x1c, 0x74, 0x9b,
+	0x45, 0xca, 0x0d, 0x9b, 0x25, 0x53, 0x1b, 0x37, 0x0b, 0x07, 0x29, 0x9b, 0x85, 0xb9, 0xe8, 0x37,
+	0x4b, 0xa6, 0x31, 0x6c, 0x16, 0xd5, 0xc0, 0x58, 0x27, 0xce, 0xcb, 0x6d, 0x96, 0x8b, 0x7c, 0x35,
+	0x58, 0xdb, 0xb4, 0x71, 0x34, 0xf4, 0x63, 0x76, 0x2d, 0x43, 0x6b, 0x9a, 0x05, 0xcb, 0x9b, 0xc8,
+	0x24, 0x5e, 0x3d, 0x86, 0xa5, 0xb1, 0x65, 0x93, 0x65, 0x96, 0x2d, 0xfb, 0xa3, 0x05, 0xd5, 0xa4,
+	0xcd, 0x58, 0x1b, 0x29, 0xd9, 0x68, 0x18, 0x45, 0x1b, 0x99, 0xce, 0xfa, 0x71, 0x4c, 0xa7, 0xaf,
+	0x4e, 0xda, 0xc5, 0xad, 0x3f, 0xca, 0x70, 0x5e, 0xb9, 0xc3, 0xb4, 0x6f, 0xa3, 0x87, 0xb0, 0x58,
+	0xbc, 0xf6, 0xa3, 0x6b, 0xea, 0x7b, 0xb9, 0xf6, 0x5b, 0x43, 0xc3, 0x9e, 0x66, 0x22, 0x6e, 0x46,
+	0xf7, 0x61, 0x3e, 0x7f, 0x9f, 0xcf, 0xbd, 0xa1, 0xe9, 0xbe, 0x01, 0xe4, 0xde, 0xd0, 0xf4, 0x9f,
+	0x02, 0xda, 0x70, 0x3e, 0x77, 0xbd, 0x46, 0x4a, 0x87, 0xea, 0x6e, 0xee, 0x8d, 0xab, 0x46, 0xbd,
+	0x88, 0xf8, 0x10, 0x16, 0x8b, 0x17, 0x5e, 0x75, 0x05, 0x0c, 0x77, 0x69, 0x75, 0x05, 0x8c, 0xf7,
+	0xe5, 0x2f, 0xe0, 0xc2, 0xc4, 0xc5, 0x51, 0x7d, 0x60, 0x9a, 0x6e, 0xb0, 0xea, 0x03, 0xd3, 0x78,
+	0xf3, 0xfc, 0xe0, 0xe3, 0x67, 0xff, 0x34, 0x67, 0x9e, 0xbd, 0x68, 0x5a, 0xcf, 0x5f, 0x34, 0xad,
+	0xbf, 0x5f, 0x34, 0xad, 0x9f, 0x8e, 0x9a, 0x33, 0xcf, 0x8f, 0x9a, 0x33, 0x7f, 0x1d, 0x35, 0x67,
+	0x1e, 0x39, 0xc7, 0xfb, 0x30, 0xf5, 0x9e, 0x1c, 0xec, 0x9d, 0xe6, 0x1f, 0x98, 0xde, 0xf8, 0x2f,
+	0x00, 0x00, 0xff, 0xff, 0x5f, 0x23, 0xd3, 0x1d, 0x40, 0x13, 0x00, 0x00,
 }
 
 func (m *DeployDefinitionRequest) XSize() (n int) {
@@ -2729,6 +2768,953 @@ var _Watch_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
+	Metadata: "github.com/olive-io/olive/api/serverpb/rpc.proto",
+}
+
+// LeaseClient is the client API for Lease service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type LeaseClient interface {
+	// LeaseGrant creates a lease which expires if the server does not receive a keepAlive
+	// within a given time to live period. All keys attached to the lease will be expired and
+	// deleted if the lease expires. Each expired key generates a delete event in the event history.
+	LeaseGrant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error)
+	// LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.
+	LeaseRevoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error)
+	// LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
+	// to the server and streaming keep alive responses from the server to the client.
+	LeaseKeepAlive(ctx context.Context, opts ...grpc.CallOption) (Lease_LeaseKeepAliveClient, error)
+	// LeaseTimeToLive retrieves lease information.
+	LeaseTimeToLive(ctx context.Context, in *LeaseTimeToLiveRequest, opts ...grpc.CallOption) (*LeaseTimeToLiveResponse, error)
+	// LeaseLeases lists all existing leases.
+	LeaseLeases(ctx context.Context, in *LeaseLeasesRequest, opts ...grpc.CallOption) (*LeaseLeasesResponse, error)
+}
+
+type leaseClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewLeaseClient(cc *grpc.ClientConn) LeaseClient {
+	return &leaseClient{cc}
+}
+
+func (c *leaseClient) LeaseGrant(ctx context.Context, in *LeaseGrantRequest, opts ...grpc.CallOption) (*LeaseGrantResponse, error) {
+	out := new(LeaseGrantResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Lease/LeaseGrant", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leaseClient) LeaseRevoke(ctx context.Context, in *LeaseRevokeRequest, opts ...grpc.CallOption) (*LeaseRevokeResponse, error) {
+	out := new(LeaseRevokeResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Lease/LeaseRevoke", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leaseClient) LeaseKeepAlive(ctx context.Context, opts ...grpc.CallOption) (Lease_LeaseKeepAliveClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Lease_serviceDesc.Streams[0], "/serverpb.Lease/LeaseKeepAlive", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &leaseLeaseKeepAliveClient{stream}
+	return x, nil
+}
+
+type Lease_LeaseKeepAliveClient interface {
+	Send(*LeaseKeepAliveRequest) error
+	Recv() (*LeaseKeepAliveResponse, error)
+	grpc.ClientStream
+}
+
+type leaseLeaseKeepAliveClient struct {
+	grpc.ClientStream
+}
+
+func (x *leaseLeaseKeepAliveClient) Send(m *LeaseKeepAliveRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *leaseLeaseKeepAliveClient) Recv() (*LeaseKeepAliveResponse, error) {
+	m := new(LeaseKeepAliveResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *leaseClient) LeaseTimeToLive(ctx context.Context, in *LeaseTimeToLiveRequest, opts ...grpc.CallOption) (*LeaseTimeToLiveResponse, error) {
+	out := new(LeaseTimeToLiveResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Lease/LeaseTimeToLive", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *leaseClient) LeaseLeases(ctx context.Context, in *LeaseLeasesRequest, opts ...grpc.CallOption) (*LeaseLeasesResponse, error) {
+	out := new(LeaseLeasesResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Lease/LeaseLeases", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// LeaseServer is the server API for Lease service.
+type LeaseServer interface {
+	// LeaseGrant creates a lease which expires if the server does not receive a keepAlive
+	// within a given time to live period. All keys attached to the lease will be expired and
+	// deleted if the lease expires. Each expired key generates a delete event in the event history.
+	LeaseGrant(context.Context, *LeaseGrantRequest) (*LeaseGrantResponse, error)
+	// LeaseRevoke revokes a lease. All keys attached to the lease will expire and be deleted.
+	LeaseRevoke(context.Context, *LeaseRevokeRequest) (*LeaseRevokeResponse, error)
+	// LeaseKeepAlive keeps the lease alive by streaming keep alive requests from the client
+	// to the server and streaming keep alive responses from the server to the client.
+	LeaseKeepAlive(Lease_LeaseKeepAliveServer) error
+	// LeaseTimeToLive retrieves lease information.
+	LeaseTimeToLive(context.Context, *LeaseTimeToLiveRequest) (*LeaseTimeToLiveResponse, error)
+	// LeaseLeases lists all existing leases.
+	LeaseLeases(context.Context, *LeaseLeasesRequest) (*LeaseLeasesResponse, error)
+}
+
+// UnimplementedLeaseServer can be embedded to have forward compatible implementations.
+type UnimplementedLeaseServer struct {
+}
+
+func (*UnimplementedLeaseServer) LeaseGrant(ctx context.Context, req *LeaseGrantRequest) (*LeaseGrantResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaseGrant not implemented")
+}
+func (*UnimplementedLeaseServer) LeaseRevoke(ctx context.Context, req *LeaseRevokeRequest) (*LeaseRevokeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaseRevoke not implemented")
+}
+func (*UnimplementedLeaseServer) LeaseKeepAlive(srv Lease_LeaseKeepAliveServer) error {
+	return status.Errorf(codes.Unimplemented, "method LeaseKeepAlive not implemented")
+}
+func (*UnimplementedLeaseServer) LeaseTimeToLive(ctx context.Context, req *LeaseTimeToLiveRequest) (*LeaseTimeToLiveResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaseTimeToLive not implemented")
+}
+func (*UnimplementedLeaseServer) LeaseLeases(ctx context.Context, req *LeaseLeasesRequest) (*LeaseLeasesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaseLeases not implemented")
+}
+
+func RegisterLeaseServer(s *grpc.Server, srv LeaseServer) {
+	s.RegisterService(&_Lease_serviceDesc, srv)
+}
+
+func _Lease_LeaseGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseGrantRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).LeaseGrant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Lease/LeaseGrant",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).LeaseGrant(ctx, req.(*LeaseGrantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Lease_LeaseRevoke_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseRevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).LeaseRevoke(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Lease/LeaseRevoke",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).LeaseRevoke(ctx, req.(*LeaseRevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Lease_LeaseKeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(LeaseServer).LeaseKeepAlive(&leaseLeaseKeepAliveServer{stream})
+}
+
+type Lease_LeaseKeepAliveServer interface {
+	Send(*LeaseKeepAliveResponse) error
+	Recv() (*LeaseKeepAliveRequest, error)
+	grpc.ServerStream
+}
+
+type leaseLeaseKeepAliveServer struct {
+	grpc.ServerStream
+}
+
+func (x *leaseLeaseKeepAliveServer) Send(m *LeaseKeepAliveResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *leaseLeaseKeepAliveServer) Recv() (*LeaseKeepAliveRequest, error) {
+	m := new(LeaseKeepAliveRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _Lease_LeaseTimeToLive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseTimeToLiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).LeaseTimeToLive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Lease/LeaseTimeToLive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).LeaseTimeToLive(ctx, req.(*LeaseTimeToLiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Lease_LeaseLeases_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaseLeasesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LeaseServer).LeaseLeases(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Lease/LeaseLeases",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LeaseServer).LeaseLeases(ctx, req.(*LeaseLeasesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Lease_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "serverpb.Lease",
+	HandlerType: (*LeaseServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "LeaseGrant",
+			Handler:    _Lease_LeaseGrant_Handler,
+		},
+		{
+			MethodName: "LeaseRevoke",
+			Handler:    _Lease_LeaseRevoke_Handler,
+		},
+		{
+			MethodName: "LeaseTimeToLive",
+			Handler:    _Lease_LeaseTimeToLive_Handler,
+		},
+		{
+			MethodName: "LeaseLeases",
+			Handler:    _Lease_LeaseLeases_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "LeaseKeepAlive",
+			Handler:       _Lease_LeaseKeepAlive_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "github.com/olive-io/olive/api/serverpb/rpc.proto",
+}
+
+// AuthClient is the client API for Auth service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type AuthClient interface {
+	// AuthEnable enables authentication.
+	AuthEnable(ctx context.Context, in *AuthEnableRequest, opts ...grpc.CallOption) (*AuthEnableResponse, error)
+	// AuthDisable disables authentication.
+	AuthDisable(ctx context.Context, in *AuthDisableRequest, opts ...grpc.CallOption) (*AuthDisableResponse, error)
+	// AuthStatus displays authentication status.
+	AuthStatus(ctx context.Context, in *AuthStatusRequest, opts ...grpc.CallOption) (*AuthStatusResponse, error)
+	// Authenticate processes an authenticate request.
+	Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error)
+	// UserAdd adds a new user. User name cannot be empty.
+	UserAdd(ctx context.Context, in *AuthUserAddRequest, opts ...grpc.CallOption) (*AuthUserAddResponse, error)
+	// UserGet gets detailed user information.
+	UserGet(ctx context.Context, in *AuthUserGetRequest, opts ...grpc.CallOption) (*AuthUserGetResponse, error)
+	// UserList gets a list of all users.
+	UserList(ctx context.Context, in *AuthUserListRequest, opts ...grpc.CallOption) (*AuthUserListResponse, error)
+	// UserDelete deletes a specified user.
+	UserDelete(ctx context.Context, in *AuthUserDeleteRequest, opts ...grpc.CallOption) (*AuthUserDeleteResponse, error)
+	// UserChangePassword changes the password of a specified user.
+	UserChangePassword(ctx context.Context, in *AuthUserChangePasswordRequest, opts ...grpc.CallOption) (*AuthUserChangePasswordResponse, error)
+	// UserGrant grants a role to a specified user.
+	UserGrantRole(ctx context.Context, in *AuthUserGrantRoleRequest, opts ...grpc.CallOption) (*AuthUserGrantRoleResponse, error)
+	// UserRevokeRole revokes a role of specified user.
+	UserRevokeRole(ctx context.Context, in *AuthUserRevokeRoleRequest, opts ...grpc.CallOption) (*AuthUserRevokeRoleResponse, error)
+	// RoleAdd adds a new role. Role name cannot be empty.
+	RoleAdd(ctx context.Context, in *AuthRoleAddRequest, opts ...grpc.CallOption) (*AuthRoleAddResponse, error)
+	// RoleGet gets detailed role information.
+	RoleGet(ctx context.Context, in *AuthRoleGetRequest, opts ...grpc.CallOption) (*AuthRoleGetResponse, error)
+	// RoleList gets lists of all roles.
+	RoleList(ctx context.Context, in *AuthRoleListRequest, opts ...grpc.CallOption) (*AuthRoleListResponse, error)
+	// RoleDelete deletes a specified role.
+	RoleDelete(ctx context.Context, in *AuthRoleDeleteRequest, opts ...grpc.CallOption) (*AuthRoleDeleteResponse, error)
+	// RoleGrantPermission grants a permission of a specified key or range to a specified role.
+	RoleGrantPermission(ctx context.Context, in *AuthRoleGrantPermissionRequest, opts ...grpc.CallOption) (*AuthRoleGrantPermissionResponse, error)
+	// RoleRevokePermission revokes a key or range permission of a specified role.
+	RoleRevokePermission(ctx context.Context, in *AuthRoleRevokePermissionRequest, opts ...grpc.CallOption) (*AuthRoleRevokePermissionResponse, error)
+}
+
+type authClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAuthClient(cc *grpc.ClientConn) AuthClient {
+	return &authClient{cc}
+}
+
+func (c *authClient) AuthEnable(ctx context.Context, in *AuthEnableRequest, opts ...grpc.CallOption) (*AuthEnableResponse, error) {
+	out := new(AuthEnableResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/AuthEnable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) AuthDisable(ctx context.Context, in *AuthDisableRequest, opts ...grpc.CallOption) (*AuthDisableResponse, error) {
+	out := new(AuthDisableResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/AuthDisable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) AuthStatus(ctx context.Context, in *AuthStatusRequest, opts ...grpc.CallOption) (*AuthStatusResponse, error) {
+	out := new(AuthStatusResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/AuthStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error) {
+	out := new(AuthenticateResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/Authenticate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserAdd(ctx context.Context, in *AuthUserAddRequest, opts ...grpc.CallOption) (*AuthUserAddResponse, error) {
+	out := new(AuthUserAddResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserAdd", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserGet(ctx context.Context, in *AuthUserGetRequest, opts ...grpc.CallOption) (*AuthUserGetResponse, error) {
+	out := new(AuthUserGetResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserGet", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserList(ctx context.Context, in *AuthUserListRequest, opts ...grpc.CallOption) (*AuthUserListResponse, error) {
+	out := new(AuthUserListResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserDelete(ctx context.Context, in *AuthUserDeleteRequest, opts ...grpc.CallOption) (*AuthUserDeleteResponse, error) {
+	out := new(AuthUserDeleteResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserDelete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserChangePassword(ctx context.Context, in *AuthUserChangePasswordRequest, opts ...grpc.CallOption) (*AuthUserChangePasswordResponse, error) {
+	out := new(AuthUserChangePasswordResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserChangePassword", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserGrantRole(ctx context.Context, in *AuthUserGrantRoleRequest, opts ...grpc.CallOption) (*AuthUserGrantRoleResponse, error) {
+	out := new(AuthUserGrantRoleResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserGrantRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) UserRevokeRole(ctx context.Context, in *AuthUserRevokeRoleRequest, opts ...grpc.CallOption) (*AuthUserRevokeRoleResponse, error) {
+	out := new(AuthUserRevokeRoleResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/UserRevokeRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleAdd(ctx context.Context, in *AuthRoleAddRequest, opts ...grpc.CallOption) (*AuthRoleAddResponse, error) {
+	out := new(AuthRoleAddResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleAdd", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleGet(ctx context.Context, in *AuthRoleGetRequest, opts ...grpc.CallOption) (*AuthRoleGetResponse, error) {
+	out := new(AuthRoleGetResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleGet", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleList(ctx context.Context, in *AuthRoleListRequest, opts ...grpc.CallOption) (*AuthRoleListResponse, error) {
+	out := new(AuthRoleListResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleDelete(ctx context.Context, in *AuthRoleDeleteRequest, opts ...grpc.CallOption) (*AuthRoleDeleteResponse, error) {
+	out := new(AuthRoleDeleteResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleDelete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleGrantPermission(ctx context.Context, in *AuthRoleGrantPermissionRequest, opts ...grpc.CallOption) (*AuthRoleGrantPermissionResponse, error) {
+	out := new(AuthRoleGrantPermissionResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleGrantPermission", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) RoleRevokePermission(ctx context.Context, in *AuthRoleRevokePermissionRequest, opts ...grpc.CallOption) (*AuthRoleRevokePermissionResponse, error) {
+	out := new(AuthRoleRevokePermissionResponse)
+	err := c.cc.Invoke(ctx, "/serverpb.Auth/RoleRevokePermission", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AuthServer is the server API for Auth service.
+type AuthServer interface {
+	// AuthEnable enables authentication.
+	AuthEnable(context.Context, *AuthEnableRequest) (*AuthEnableResponse, error)
+	// AuthDisable disables authentication.
+	AuthDisable(context.Context, *AuthDisableRequest) (*AuthDisableResponse, error)
+	// AuthStatus displays authentication status.
+	AuthStatus(context.Context, *AuthStatusRequest) (*AuthStatusResponse, error)
+	// Authenticate processes an authenticate request.
+	Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error)
+	// UserAdd adds a new user. User name cannot be empty.
+	UserAdd(context.Context, *AuthUserAddRequest) (*AuthUserAddResponse, error)
+	// UserGet gets detailed user information.
+	UserGet(context.Context, *AuthUserGetRequest) (*AuthUserGetResponse, error)
+	// UserList gets a list of all users.
+	UserList(context.Context, *AuthUserListRequest) (*AuthUserListResponse, error)
+	// UserDelete deletes a specified user.
+	UserDelete(context.Context, *AuthUserDeleteRequest) (*AuthUserDeleteResponse, error)
+	// UserChangePassword changes the password of a specified user.
+	UserChangePassword(context.Context, *AuthUserChangePasswordRequest) (*AuthUserChangePasswordResponse, error)
+	// UserGrant grants a role to a specified user.
+	UserGrantRole(context.Context, *AuthUserGrantRoleRequest) (*AuthUserGrantRoleResponse, error)
+	// UserRevokeRole revokes a role of specified user.
+	UserRevokeRole(context.Context, *AuthUserRevokeRoleRequest) (*AuthUserRevokeRoleResponse, error)
+	// RoleAdd adds a new role. Role name cannot be empty.
+	RoleAdd(context.Context, *AuthRoleAddRequest) (*AuthRoleAddResponse, error)
+	// RoleGet gets detailed role information.
+	RoleGet(context.Context, *AuthRoleGetRequest) (*AuthRoleGetResponse, error)
+	// RoleList gets lists of all roles.
+	RoleList(context.Context, *AuthRoleListRequest) (*AuthRoleListResponse, error)
+	// RoleDelete deletes a specified role.
+	RoleDelete(context.Context, *AuthRoleDeleteRequest) (*AuthRoleDeleteResponse, error)
+	// RoleGrantPermission grants a permission of a specified key or range to a specified role.
+	RoleGrantPermission(context.Context, *AuthRoleGrantPermissionRequest) (*AuthRoleGrantPermissionResponse, error)
+	// RoleRevokePermission revokes a key or range permission of a specified role.
+	RoleRevokePermission(context.Context, *AuthRoleRevokePermissionRequest) (*AuthRoleRevokePermissionResponse, error)
+}
+
+// UnimplementedAuthServer can be embedded to have forward compatible implementations.
+type UnimplementedAuthServer struct {
+}
+
+func (*UnimplementedAuthServer) AuthEnable(ctx context.Context, req *AuthEnableRequest) (*AuthEnableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthEnable not implemented")
+}
+func (*UnimplementedAuthServer) AuthDisable(ctx context.Context, req *AuthDisableRequest) (*AuthDisableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthDisable not implemented")
+}
+func (*UnimplementedAuthServer) AuthStatus(ctx context.Context, req *AuthStatusRequest) (*AuthStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthStatus not implemented")
+}
+func (*UnimplementedAuthServer) Authenticate(ctx context.Context, req *AuthenticateRequest) (*AuthenticateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
+}
+func (*UnimplementedAuthServer) UserAdd(ctx context.Context, req *AuthUserAddRequest) (*AuthUserAddResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserAdd not implemented")
+}
+func (*UnimplementedAuthServer) UserGet(ctx context.Context, req *AuthUserGetRequest) (*AuthUserGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserGet not implemented")
+}
+func (*UnimplementedAuthServer) UserList(ctx context.Context, req *AuthUserListRequest) (*AuthUserListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserList not implemented")
+}
+func (*UnimplementedAuthServer) UserDelete(ctx context.Context, req *AuthUserDeleteRequest) (*AuthUserDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserDelete not implemented")
+}
+func (*UnimplementedAuthServer) UserChangePassword(ctx context.Context, req *AuthUserChangePasswordRequest) (*AuthUserChangePasswordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserChangePassword not implemented")
+}
+func (*UnimplementedAuthServer) UserGrantRole(ctx context.Context, req *AuthUserGrantRoleRequest) (*AuthUserGrantRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserGrantRole not implemented")
+}
+func (*UnimplementedAuthServer) UserRevokeRole(ctx context.Context, req *AuthUserRevokeRoleRequest) (*AuthUserRevokeRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserRevokeRole not implemented")
+}
+func (*UnimplementedAuthServer) RoleAdd(ctx context.Context, req *AuthRoleAddRequest) (*AuthRoleAddResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleAdd not implemented")
+}
+func (*UnimplementedAuthServer) RoleGet(ctx context.Context, req *AuthRoleGetRequest) (*AuthRoleGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleGet not implemented")
+}
+func (*UnimplementedAuthServer) RoleList(ctx context.Context, req *AuthRoleListRequest) (*AuthRoleListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleList not implemented")
+}
+func (*UnimplementedAuthServer) RoleDelete(ctx context.Context, req *AuthRoleDeleteRequest) (*AuthRoleDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleDelete not implemented")
+}
+func (*UnimplementedAuthServer) RoleGrantPermission(ctx context.Context, req *AuthRoleGrantPermissionRequest) (*AuthRoleGrantPermissionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleGrantPermission not implemented")
+}
+func (*UnimplementedAuthServer) RoleRevokePermission(ctx context.Context, req *AuthRoleRevokePermissionRequest) (*AuthRoleRevokePermissionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RoleRevokePermission not implemented")
+}
+
+func RegisterAuthServer(s *grpc.Server, srv AuthServer) {
+	s.RegisterService(&_Auth_serviceDesc, srv)
+}
+
+func _Auth_AuthEnable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthEnableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).AuthEnable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/AuthEnable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).AuthEnable(ctx, req.(*AuthEnableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_AuthDisable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthDisableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).AuthDisable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/AuthDisable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).AuthDisable(ctx, req.(*AuthDisableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_AuthStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).AuthStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/AuthStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).AuthStatus(ctx, req.(*AuthStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Authenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthenticateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Authenticate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/Authenticate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Authenticate(ctx, req.(*AuthenticateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserAdd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserAddRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserAdd(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserAdd",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserAdd(ctx, req.(*AuthUserAddRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserGet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserGet",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserGet(ctx, req.(*AuthUserGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserList(ctx, req.(*AuthUserListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserDelete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserDelete(ctx, req.(*AuthUserDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserChangePassword",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserChangePassword(ctx, req.(*AuthUserChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserGrantRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserGrantRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserGrantRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserGrantRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserGrantRole(ctx, req.(*AuthUserGrantRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_UserRevokeRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthUserRevokeRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).UserRevokeRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/UserRevokeRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).UserRevokeRole(ctx, req.(*AuthUserRevokeRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleAdd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleAddRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleAdd(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleAdd",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleAdd(ctx, req.(*AuthRoleAddRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleGet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleGet",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleGet(ctx, req.(*AuthRoleGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleList(ctx, req.(*AuthRoleListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleDelete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleDelete(ctx, req.(*AuthRoleDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleGrantPermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleGrantPermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleGrantPermission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleGrantPermission",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleGrantPermission(ctx, req.(*AuthRoleGrantPermissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_RoleRevokePermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRoleRevokePermissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).RoleRevokePermission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/serverpb.Auth/RoleRevokePermission",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).RoleRevokePermission(ctx, req.(*AuthRoleRevokePermissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Auth_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "serverpb.Auth",
+	HandlerType: (*AuthServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AuthEnable",
+			Handler:    _Auth_AuthEnable_Handler,
+		},
+		{
+			MethodName: "AuthDisable",
+			Handler:    _Auth_AuthDisable_Handler,
+		},
+		{
+			MethodName: "AuthStatus",
+			Handler:    _Auth_AuthStatus_Handler,
+		},
+		{
+			MethodName: "Authenticate",
+			Handler:    _Auth_Authenticate_Handler,
+		},
+		{
+			MethodName: "UserAdd",
+			Handler:    _Auth_UserAdd_Handler,
+		},
+		{
+			MethodName: "UserGet",
+			Handler:    _Auth_UserGet_Handler,
+		},
+		{
+			MethodName: "UserList",
+			Handler:    _Auth_UserList_Handler,
+		},
+		{
+			MethodName: "UserDelete",
+			Handler:    _Auth_UserDelete_Handler,
+		},
+		{
+			MethodName: "UserChangePassword",
+			Handler:    _Auth_UserChangePassword_Handler,
+		},
+		{
+			MethodName: "UserGrantRole",
+			Handler:    _Auth_UserGrantRole_Handler,
+		},
+		{
+			MethodName: "UserRevokeRole",
+			Handler:    _Auth_UserRevokeRole_Handler,
+		},
+		{
+			MethodName: "RoleAdd",
+			Handler:    _Auth_RoleAdd_Handler,
+		},
+		{
+			MethodName: "RoleGet",
+			Handler:    _Auth_RoleGet_Handler,
+		},
+		{
+			MethodName: "RoleList",
+			Handler:    _Auth_RoleList_Handler,
+		},
+		{
+			MethodName: "RoleDelete",
+			Handler:    _Auth_RoleDelete_Handler,
+		},
+		{
+			MethodName: "RoleGrantPermission",
+			Handler:    _Auth_RoleGrantPermission_Handler,
+		},
+		{
+			MethodName: "RoleRevokePermission",
+			Handler:    _Auth_RoleRevokePermission_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "github.com/olive-io/olive/api/serverpb/rpc.proto",
 }
 

@@ -62,7 +62,6 @@ func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInt
 	if s.ExperimentalEnableDistributedTracing {
 		chainUnaryInterceptors = append(chainUnaryInterceptors, otelgrpc.UnaryServerInterceptor(s.ExperimentalTracerOptions...))
 		chainStreamInterceptors = append(chainStreamInterceptors, otelgrpc.StreamServerInterceptor(s.ExperimentalTracerOptions...))
-
 	}
 
 	opts = append(opts, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(chainUnaryInterceptors...)))
@@ -76,9 +75,9 @@ func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInt
 
 	pb.RegisterKVServer(grpcServer, NewKVServer(s))
 	pb.RegisterWatchServer(grpcServer, NewWatchServer(s))
-	//pb.RegisterLeaseServer(grpcServer, NewQuotaLeaseServer(s))
+	pb.RegisterLeaseServer(grpcServer, NewLeaseServer(s))
 	//pb.RegisterClusterServer(grpcServer, NewClusterServer(s))
-	//pb.RegisterAuthServer(grpcServer, NewAuthServer(s))
+	pb.RegisterAuthServer(grpcServer, NewAuthServer(s))
 	//pb.RegisterMaintenanceServer(grpcServer, NewMaintenanceServer(s))
 
 	// server should register all the services manually

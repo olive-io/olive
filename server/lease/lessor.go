@@ -12,6 +12,7 @@ import (
 	"time"
 
 	pb "github.com/olive-io/olive/api/serverpb"
+	leasepb "github.com/olive-io/olive/server/lease/leasepb"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"github.com/olive-io/olive/server/mvcc/buckets"
 	"go.uber.org/zap"
@@ -814,7 +815,7 @@ func (l *Lease) expired() bool {
 func (l *Lease) persistTo(b backend.IBackend) {
 	key := int64ToBytes(int64(l.ID))
 
-	lpb := pb.Lease{ID: int64(l.ID), TTL: l.ttl, RemainingTTL: l.remainingTTL}
+	lpb := leasepb.Lease{ID: int64(l.ID), TTL: l.ttl, RemainingTTL: l.remainingTTL}
 	val, err := lpb.Marshal()
 	if err != nil {
 		panic("failed to marshal lease proto item")
@@ -892,10 +893,10 @@ func bytesToLeaseID(bytes []byte) int64 {
 	return int64(binary.BigEndian.Uint64(bytes))
 }
 
-func unsafeGetAllLeases(tx backend.IReadTx) []*pb.Lease {
-	ls := make([]*pb.Lease, 0)
+func unsafeGetAllLeases(tx backend.IReadTx) []*leasepb.Lease {
+	ls := make([]*leasepb.Lease, 0)
 	err := tx.UnsafeForEach(buckets.Lease, func(k, v []byte) error {
-		var lpb pb.Lease
+		var lpb leasepb.Lease
 		err := lpb.Unmarshal(v)
 		if err != nil {
 			return fmt.Errorf("failed to Unmarshal lease proto item; lease ID=%016x", bytesToLeaseID(k))

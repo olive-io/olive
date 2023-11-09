@@ -185,7 +185,7 @@ func (s *KVServer) start() {
 }
 
 func (s *KVServer) StartInternalReplica(cfg config.ShardConfig) error {
-	if _, ok := s.readyInternalReplica(); ok {
+	if _, ok := s.isReadyInternalReplica(); ok {
 		return nil
 	}
 
@@ -194,17 +194,27 @@ func (s *KVServer) StartInternalReplica(cfg config.ShardConfig) error {
 		return err
 	}
 
-	atomic.StoreUint64(&s.internalShard, cfg.ShardID)
+	s.readyInternalReplica(cfg.ShardID)
 	return nil
 }
 
-func (s *KVServer) readyInternalReplica() (uint64, bool) {
+func (s *KVServer) isReadyInternalReplica() (uint64, bool) {
 	select {
 	case <-s.internalWaitC:
 		return atomic.LoadUint64(&s.internalShard), true
 	default:
 		return 0, false
 	}
+}
+
+func (s *KVServer) readyInternalReplica(shardID uint64) {
+	select {
+	case <-s.internalWaitC:
+	default:
+		close(s.internalWaitC)
+	}
+
+	atomic.StoreUint64(&s.internalShard, shardID)
 }
 
 func (s *KVServer) StartReplica(cfg config.ShardConfig) error {
@@ -457,7 +467,7 @@ func (s *KVServer) TransferLeadership() error {
 }
 
 func (s *KVServer) InternalCluster() (RaftStatusGetter, error) {
-	shardID, ok := s.readyInternalReplica()
+	shardID, ok := s.isReadyInternalReplica()
 	if !ok {
 		return nil, ErrNoInternalReplica
 	}

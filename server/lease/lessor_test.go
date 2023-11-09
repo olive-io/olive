@@ -13,6 +13,7 @@ import (
 	"time"
 
 	pb "github.com/olive-io/olive/api/serverpb"
+	"github.com/olive-io/olive/server/lease/leasepb"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	betesting "github.com/olive-io/olive/server/mvcc/backend/testing"
 	"github.com/olive-io/olive/server/mvcc/buckets"
@@ -570,22 +571,22 @@ func TestLeaseBackend(t *testing.T) {
 	tcs := []struct {
 		name  string
 		setup func(tx backend.IBatchTx)
-		want  []*pb.Lease
+		want  []*leasepb.Lease
 	}{
 		{
 			name:  "Empty by default",
 			setup: func(tx backend.IBatchTx) {},
-			want:  []*pb.Lease{},
+			want:  []*leasepb.Lease{},
 		},
 		{
 			name: "Returns data put before",
 			setup: func(tx backend.IBatchTx) {
-				mustUnsafePutLease(tx, &pb.Lease{
+				mustUnsafePutLease(tx, &leasepb.Lease{
 					ID:  -1,
 					TTL: 2,
 				})
 			},
-			want: []*pb.Lease{
+			want: []*leasepb.Lease{
 				{
 					ID:  -1,
 					TTL: 2,
@@ -595,21 +596,21 @@ func TestLeaseBackend(t *testing.T) {
 		{
 			name: "Skips deleted",
 			setup: func(tx backend.IBatchTx) {
-				mustUnsafePutLease(tx, &pb.Lease{
+				mustUnsafePutLease(tx, &leasepb.Lease{
 					ID:  -1,
 					TTL: 2,
 				})
-				mustUnsafePutLease(tx, &pb.Lease{
+				mustUnsafePutLease(tx, &leasepb.Lease{
 					ID:  math.MinInt64,
 					TTL: 2,
 				})
-				mustUnsafePutLease(tx, &pb.Lease{
+				mustUnsafePutLease(tx, &leasepb.Lease{
 					ID:  math.MaxInt64,
 					TTL: 3,
 				})
 				tx.UnsafeDelete(buckets.Lease, int64ToBytes(-1))
 			},
-			want: []*pb.Lease{
+			want: []*leasepb.Lease{
 				{
 					ID:  math.MaxInt64,
 					TTL: 3,
@@ -643,7 +644,7 @@ func TestLeaseBackend(t *testing.T) {
 	}
 }
 
-func mustUnsafePutLease(tx backend.IBatchTx, lpb *pb.Lease) {
+func mustUnsafePutLease(tx backend.IBatchTx, lpb *leasepb.Lease) {
 	key := int64ToBytes(lpb.ID)
 
 	val, err := lpb.Marshal()
