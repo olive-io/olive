@@ -43,7 +43,7 @@ type Client struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	// Username is a user name for authentication.
+	// Username is a username for authentication.
 	Username string
 	// Password is a password for authentication.
 	Password        string
