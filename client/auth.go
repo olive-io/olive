@@ -45,22 +45,22 @@ type IAuth interface {
 	// Authenticate login and get token
 	Authenticate(ctx context.Context, name string, password string) (*AuthenticateResponse, error)
 
-	// AuthEnable enables auth of an etcd cluster.
+	// AuthEnable enables auth of an olive cluster.
 	AuthEnable(ctx context.Context) (*AuthEnableResponse, error)
 
-	// AuthDisable disables auth of an etcd cluster.
+	// AuthDisable disables auth of an olive cluster.
 	AuthDisable(ctx context.Context) (*AuthDisableResponse, error)
 
-	// AuthStatus returns the status of auth of an etcd cluster.
+	// AuthStatus returns the status of auth of an olive cluster.
 	AuthStatus(ctx context.Context) (*AuthStatusResponse, error)
 
-	// UserAdd adds a new user to an etcd cluster.
+	// UserAdd adds a new user to an olive cluster.
 	UserAdd(ctx context.Context, name string, password string) (*AuthUserAddResponse, error)
 
-	// UserAddWithOptions adds a new user to an etcd cluster with some options.
+	// UserAddWithOptions adds a new user to an olive cluster with some options.
 	UserAddWithOptions(ctx context.Context, name string, password string, opt *UserAddOptions) (*AuthUserAddResponse, error)
 
-	// UserDelete deletes a user from an etcd cluster.
+	// UserDelete deletes a user from an olive cluster.
 	UserDelete(ctx context.Context, name string) (*AuthUserDeleteResponse, error)
 
 	// UserChangePassword changes a password of a user.
@@ -78,7 +78,7 @@ type IAuth interface {
 	// UserRevokeRole revokes a role of a user.
 	UserRevokeRole(ctx context.Context, name string, role string) (*AuthUserRevokeRoleResponse, error)
 
-	// RoleAdd adds a new role to an etcd cluster.
+	// RoleAdd adds a new role to an olive cluster.
 	RoleAdd(ctx context.Context, name string) (*AuthRoleAddResponse, error)
 
 	// RoleGrantPermission grants a permission to a role.

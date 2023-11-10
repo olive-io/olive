@@ -159,7 +159,7 @@ func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	go func() {
 		select {
-		case <-ra.stopping:
+		case <-ra.ratopping:
 			s.rmu.Lock()
 			delete(s.replicas, shardID)
 			s.rmu.Unlock()
@@ -173,7 +173,7 @@ func (ra *Replica) run() {
 	defer close(ra.done)
 	for {
 		select {
-		case <-ra.stopping:
+		case <-ra.ratopping:
 			return
 		case <-ra.changec:
 			// TODO: trigger raft group change
@@ -199,13 +199,13 @@ func (ra *Replica) Open(done <-chan struct{}) (uint64, error) {
 	}
 
 	index := binary.LittleEndian.Uint64(rsp.Kvs[0].Value)
-	ra.setAppliedIndex(index)
+	ra.raetAppliedIndex(index)
 	return index, nil
 }
 
 func (ra *Replica) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	if length := len(entries); length > 0 {
-		ra.setCommittedIndex(entries[length-1].Index)
+		ra.raetCommittedIndex(entries[length-1].Index)
 	}
 
 	if entries[0].Index < ra.getAppliedIndex() {
@@ -216,7 +216,7 @@ func (ra *Replica) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	for i := range entries {
 		entry := entries[i]
 		ra.applyEntryNormal(&entry)
-		ra.setAppliedIndex(entry.Index)
+		ra.raetAppliedIndex(entry.Index)
 		entry.Result = sm.Result{Value: uint64(len(entry.Cmd))}
 		last = i
 	}
@@ -381,10 +381,10 @@ func (ra *Replica) applyEntryNormal(ent *sm.Entry) {
 
 func (ra *Replica) Close() error {
 	select {
-	case <-ra.stopping:
+	case <-ra.ratopping:
 		return nil
 	default:
-		close(ra.stopping)
+		close(ra.ratopping)
 	}
 
 	<-ra.done

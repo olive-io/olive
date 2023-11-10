@@ -199,7 +199,6 @@ type authStore struct {
 	// Hot paths like Range(), needs to acquire read lock for improving performance
 	//
 	// Note that BatchTx and ReadTx cannot be a mutex for rangePermCache because they are independent resources
-	// see also: https://github.com/etcd-io/etcd/pull/13920#discussion_r849114855
 	rangePermCache   map[string]*unifiedRangePermissions // username -> unifiedRangePermissions
 	rangePermCacheMu sync.RWMutex
 

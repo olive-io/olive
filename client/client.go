@@ -44,9 +44,9 @@ type Client struct {
 	cancel context.CancelFunc
 
 	// Username is a user name for authentication.
-	// Username string
+	Username string
 	// Password is a password for authentication.
-	// Password        string
+	Password        string
 	authTokenBundle credentials.Bundle
 
 	callOpts []grpc.CallOption
@@ -237,20 +237,20 @@ func (c *Client) Dial(ep string) (*grpc.ClientConn, error) {
 }
 
 func (c *Client) getToken(ctx context.Context) error {
-	//var err error // return last error in a case of fail
-	//
-	//if c.Username == "" || c.Password == "" {
-	//	return nil
-	//}
-	//
-	//resp, err := c.Auth.Authenticate(ctx, c.Username, c.Password)
-	//if err != nil {
-	//	if err == rpctypes.ErrAuthNotEnabled {
-	//		return nil
-	//	}
-	//	return err
-	//}
-	//c.authTokenBundle.UpdateAuthToken(resp.Token)
+	var err error // return last error in a case of fail
+
+	if c.Username == "" || c.Password == "" {
+		return nil
+	}
+
+	resp, err := c.IAuth.Authenticate(ctx, c.Username, c.Password)
+	if err != nil {
+		if err == rpctypes.ErrAuthNotEnabled {
+			return nil
+		}
+		return err
+	}
+	c.authTokenBundle.UpdateAuthToken(resp.Token)
 	return nil
 }
 
@@ -361,11 +361,11 @@ func newClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
-	//if cfg.Username != "" && cfg.Password != "" {
-	//	client.Username = cfg.Username
-	//	client.Password = cfg.Password
-	//	client.authTokenBundle = credentials.NewBundle(credentials.Config{})
-	//}
+	if cfg.Username != "" && cfg.Password != "" {
+		client.Username = cfg.Username
+		client.Password = cfg.Password
+		client.authTokenBundle = credentials.NewBundle(credentials.Config{})
+	}
 	if cfg.MaxCallSendMsgSize > 0 || cfg.MaxCallRecvMsgSize > 0 {
 		if cfg.MaxCallRecvMsgSize > 0 && cfg.MaxCallSendMsgSize > cfg.MaxCallRecvMsgSize {
 			return nil, fmt.Errorf("gRPC message recv limit (%d bytes) must be greater than send limit (%d bytes)", cfg.MaxCallRecvMsgSize, cfg.MaxCallSendMsgSize)

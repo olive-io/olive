@@ -67,14 +67,14 @@ type applier interface {
 type checkReqFunc func(mvcc.IReadView, *pb.RequestOp) error
 
 type applierBackend struct {
-	s *Replica
+	ra *Replica
 
 	checkPut   checkReqFunc
 	checkRange checkReqFunc
 }
 
 func (ra *Replica) newApplierBackend() applier {
-	base := &applierBackend{s: ra}
+	base := &applierBackend{ra: ra}
 	base.checkPut = func(rv mvcc.IReadView, req *pb.RequestOp) error {
 		return base.checkRequestPut(rv, req)
 	}
@@ -98,90 +98,90 @@ func (a *applierBackend) Apply(r *pb.InternalRaftRequest) *applyResult {
 	defer func(start time.Time) {
 		success := ar.err == nil || errors.Is(ar.err, mvcc.ErrCompacted)
 		applySec.WithLabelValues("v1", op, strconv.FormatBool(success)).Observe(time.Since(start).Seconds())
-		warnOfExpensiveRequest(a.s.lg, a.s.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+		warnOfExpensiveRequest(a.ra.lg, a.ra.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		if !success {
-			warnOfFailedRequest(a.s.lg, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+			warnOfFailedRequest(a.ra.lg, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		}
 	}(time.Now())
 
-	// call into a.s.apply.F instead of a.F so upper appliers can check individual calls
+	// call into a.ra.apply.F instead of a.F so upper appliers can check individual calls
 	switch {
 	case r.Range != nil:
 		op = "Range"
-		ar.resp, ar.err = a.s.apply.Range(context.TODO(), nil, r.Range)
+		ar.resp, ar.err = a.ra.apply.Range(context.TODO(), nil, r.Range)
 	case r.Put != nil:
 		op = "Put"
-		ar.resp, ar.trace, ar.err = a.s.apply.Put(context.TODO(), nil, r.Put)
+		ar.resp, ar.trace, ar.err = a.ra.apply.Put(context.TODO(), nil, r.Put)
 	case r.DeleteRange != nil:
 		op = "DeleteRange"
-		ar.resp, ar.err = a.s.apply.DeleteRange(nil, r.DeleteRange)
+		ar.resp, ar.err = a.ra.apply.DeleteRange(nil, r.DeleteRange)
 	case r.Txn != nil:
 		op = "Txn"
-		ar.resp, ar.trace, ar.err = a.s.apply.Txn(context.TODO(), r.Txn)
+		ar.resp, ar.trace, ar.err = a.ra.apply.Txn(context.TODO(), r.Txn)
 	case r.Compaction != nil:
 		op = "Compaction"
-		ar.resp, ar.physc, ar.trace, ar.err = a.s.apply.Compaction(r.Compaction)
+		ar.resp, ar.physc, ar.trace, ar.err = a.ra.apply.Compaction(r.Compaction)
 	case r.LeaseGrant != nil:
 		op = "LeaseGrant"
-		ar.resp, ar.err = a.s.apply.LeaseGrant(r.LeaseGrant)
+		ar.resp, ar.err = a.ra.apply.LeaseGrant(r.LeaseGrant)
 	case r.LeaseRevoke != nil:
 		op = "LeaseRevoke"
-		ar.resp, ar.err = a.s.apply.LeaseRevoke(r.LeaseRevoke)
+		ar.resp, ar.err = a.ra.apply.LeaseRevoke(r.LeaseRevoke)
 	case r.LeaseCheckpoint != nil:
 		op = "LeaseCheckpoint"
-		ar.resp, ar.err = a.s.apply.LeaseCheckpoint(r.LeaseCheckpoint)
+		ar.resp, ar.err = a.ra.apply.LeaseCheckpoint(r.LeaseCheckpoint)
 	case r.Authenticate != nil:
 		op = "Authenticate"
-		ar.resp, ar.err = a.s.apply.Authenticate(r.Authenticate)
+		ar.resp, ar.err = a.ra.apply.Authenticate(r.Authenticate)
 	case r.AuthEnable != nil:
 		op = "AuthEnable"
-		ar.resp, ar.err = a.s.apply.AuthEnable()
+		ar.resp, ar.err = a.ra.apply.AuthEnable()
 	case r.AuthDisable != nil:
 		op = "AuthDisable"
-		ar.resp, ar.err = a.s.apply.AuthDisable()
+		ar.resp, ar.err = a.ra.apply.AuthDisable()
 	case r.AuthStatus != nil:
-		ar.resp, ar.err = a.s.apply.AuthStatus()
+		ar.resp, ar.err = a.ra.apply.AuthStatus()
 	case r.AuthUserAdd != nil:
 		op = "AuthUserAdd"
-		ar.resp, ar.err = a.s.apply.UserAdd(r.AuthUserAdd)
+		ar.resp, ar.err = a.ra.apply.UserAdd(r.AuthUserAdd)
 	case r.AuthUserDelete != nil:
 		op = "AuthUserDelete"
-		ar.resp, ar.err = a.s.apply.UserDelete(r.AuthUserDelete)
+		ar.resp, ar.err = a.ra.apply.UserDelete(r.AuthUserDelete)
 	case r.AuthUserChangePassword != nil:
 		op = "AuthUserChangePassword"
-		ar.resp, ar.err = a.s.apply.UserChangePassword(r.AuthUserChangePassword)
+		ar.resp, ar.err = a.ra.apply.UserChangePassword(r.AuthUserChangePassword)
 	case r.AuthUserGrantRole != nil:
 		op = "AuthUserGrantRole"
-		ar.resp, ar.err = a.s.apply.UserGrantRole(r.AuthUserGrantRole)
+		ar.resp, ar.err = a.ra.apply.UserGrantRole(r.AuthUserGrantRole)
 	case r.AuthUserGet != nil:
 		op = "AuthUserGet"
-		ar.resp, ar.err = a.s.apply.UserGet(r.AuthUserGet)
+		ar.resp, ar.err = a.ra.apply.UserGet(r.AuthUserGet)
 	case r.AuthUserRevokeRole != nil:
 		op = "AuthUserRevokeRole"
-		ar.resp, ar.err = a.s.apply.UserRevokeRole(r.AuthUserRevokeRole)
+		ar.resp, ar.err = a.ra.apply.UserRevokeRole(r.AuthUserRevokeRole)
 	case r.AuthRoleAdd != nil:
 		op = "AuthRoleAdd"
-		ar.resp, ar.err = a.s.apply.RoleAdd(r.AuthRoleAdd)
+		ar.resp, ar.err = a.ra.apply.RoleAdd(r.AuthRoleAdd)
 	case r.AuthRoleGrantPermission != nil:
 		op = "AuthRoleGrantPermission"
-		ar.resp, ar.err = a.s.apply.RoleGrantPermission(r.AuthRoleGrantPermission)
+		ar.resp, ar.err = a.ra.apply.RoleGrantPermission(r.AuthRoleGrantPermission)
 	case r.AuthRoleGet != nil:
 		op = "AuthRoleGet"
-		ar.resp, ar.err = a.s.apply.RoleGet(r.AuthRoleGet)
+		ar.resp, ar.err = a.ra.apply.RoleGet(r.AuthRoleGet)
 	case r.AuthRoleRevokePermission != nil:
 		op = "AuthRoleRevokePermission"
-		ar.resp, ar.err = a.s.apply.RoleRevokePermission(r.AuthRoleRevokePermission)
+		ar.resp, ar.err = a.ra.apply.RoleRevokePermission(r.AuthRoleRevokePermission)
 	case r.AuthRoleDelete != nil:
 		op = "AuthRoleDelete"
-		ar.resp, ar.err = a.s.apply.RoleDelete(r.AuthRoleDelete)
+		ar.resp, ar.err = a.ra.apply.RoleDelete(r.AuthRoleDelete)
 	case r.AuthUserList != nil:
 		op = "AuthUserList"
-		ar.resp, ar.err = a.s.apply.UserList(r.AuthUserList)
+		ar.resp, ar.err = a.ra.apply.UserList(r.AuthUserList)
 	case r.AuthRoleList != nil:
 		op = "AuthRoleList"
-		ar.resp, ar.err = a.s.apply.RoleList(r.AuthRoleList)
+		ar.resp, ar.err = a.ra.apply.RoleList(r.AuthRoleList)
 	default:
-		a.s.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
+		a.ra.lg.Panic("not implemented apply", zap.Stringer("raft-request", r))
 	}
 	return ar
 }
@@ -193,7 +193,7 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutR
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
 		trace = traceutil.New("put",
-			a.s.lg,
+			a.ra.lg,
 			traceutil.Field{Key: "key", Value: string(p.Key)},
 			traceutil.Field{Key: "req_size", Value: p.XSize()},
 		)
@@ -201,11 +201,11 @@ func (a *applierBackend) Put(ctx context.Context, txn mvcc.ITxnWrite, p *pb.PutR
 	val, leaseID := p.Value, lease.LeaseID(p.Lease)
 	if txn == nil {
 		if leaseID != lease.NoLease {
-			if l := a.s.lessor.Lookup(leaseID); l == nil {
+			if l := a.ra.lessor.Lookup(leaseID); l == nil {
 				return nil, nil, lease.ErrLeaseNotFound
 			}
 		}
-		txn = a.s.KV().Write(trace)
+		txn = a.ra.KV().Write(trace)
 		defer txn.End()
 	}
 
@@ -249,7 +249,7 @@ func (a *applierBackend) Range(ctx context.Context, txn mvcc.ITxnRead, r *pb.Ran
 	resp.Header = &pb.ResponseHeader{}
 
 	if txn == nil {
-		txn = a.s.kv.Read(mvcc.ConcurrentReadTxMode, trace)
+		txn = a.ra.kv.Read(mvcc.ConcurrentReadTxMode, trace)
 		defer txn.End()
 	}
 
@@ -354,7 +354,7 @@ func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *pb.DeleteRangeReque
 	end := mkGteRange(dr.RangeEnd)
 
 	if txn == nil {
-		txn = a.s.kv.Write(traceutil.TODO())
+		txn = a.ra.kv.Write(traceutil.TODO())
 		defer txn.End()
 	}
 
@@ -376,10 +376,10 @@ func (a *applierBackend) DeleteRange(txn mvcc.ITxnWrite, dr *pb.DeleteRangeReque
 }
 
 func (a *applierBackend) Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnResponse, *traceutil.Trace, error) {
-	lg := a.s.lg
+	lg := a.ra.lg
 	trace := traceutil.Get(ctx)
 	if trace.IsEmpty() {
-		trace = traceutil.New("transaction", a.s.lg)
+		trace = traceutil.New("transaction", a.ra.lg)
 		ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 	}
 	isWrite := !isTxnReadonly(rt)
@@ -387,10 +387,10 @@ func (a *applierBackend) Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnRes
 	// When the transaction contains write operations, we use ReadTx instead of
 	// ConcurrentReadTx to avoid extra overhead of copying buffer.
 	var txn mvcc.ITxnWrite
-	if isWrite && a.s.TxnModeWriteWithSharedBuffer {
-		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.SharedBufReadTxMode, trace))
+	if isWrite && a.ra.TxnModeWriteWithSharedBuffer {
+		txn = mvcc.NewReadOnlyTxnWrite(a.ra.KV().Read(mvcc.SharedBufReadTxMode, trace))
 	} else {
-		txn = mvcc.NewReadOnlyTxnWrite(a.s.KV().Read(mvcc.ConcurrentReadTxMode, trace))
+		txn = mvcc.NewReadOnlyTxnWrite(a.ra.KV().Read(mvcc.ConcurrentReadTxMode, trace))
 	}
 
 	var txnPath []bool
@@ -421,7 +421,7 @@ func (a *applierBackend) Txn(ctx context.Context, rt *pb.TxnRequest) (*pb.TxnRes
 	// be the revision of the write txn.
 	if isWrite {
 		txn.End()
-		txn = a.s.KV().Write(trace)
+		txn = a.ra.KV().Write(trace)
 	}
 	_, err := a.applyTxn(ctx, txn, rt, txnPath, txnResp)
 	if err != nil {
@@ -630,180 +630,175 @@ func (a *applierBackend) Compaction(compaction *pb.CompactionRequest) (*pb.Compa
 	resp := &pb.CompactionResponse{}
 	resp.Header = &pb.ResponseHeader{}
 	trace := traceutil.New("compact",
-		a.s.lg,
+		a.ra.lg,
 		traceutil.Field{Key: "revision", Value: compaction.Revision},
 	)
 
-	ch, err := a.s.KV().Compact(trace, compaction.Revision)
+	ch, err := a.ra.KV().Compact(trace, compaction.Revision)
 	if err != nil {
 		return nil, ch, nil, err
 	}
 	// get the current revision. which key to get is not important.
-	rr, _ := a.s.KV().Range(context.TODO(), []byte("compaction"), nil, mvcc.RangeOptions{})
+	rr, _ := a.ra.KV().Range(context.TODO(), []byte("compaction"), nil, mvcc.RangeOptions{})
 	resp.Header.Revision = rr.Rev
 	return resp, ch, trace, err
 }
 
 func (a *applierBackend) LeaseGrant(lc *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error) {
-	l, err := a.s.lessor.Grant(lease.LeaseID(lc.ID), lc.TTL)
+	l, err := a.ra.lessor.Grant(lease.LeaseID(lc.ID), lc.TTL)
 	resp := &pb.LeaseGrantResponse{}
 	if err == nil {
 		resp.ID = int64(l.ID)
 		resp.TTL = l.TTL()
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) LeaseRevoke(lc *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
-	err := a.s.lessor.Revoke(lease.LeaseID(lc.ID))
-	return &pb.LeaseRevokeResponse{Header: newHeader(a.s)}, err
+	err := a.ra.lessor.Revoke(lease.LeaseID(lc.ID))
+	return &pb.LeaseRevokeResponse{Header: newHeader(a.ra)}, err
 }
 
 func (a *applierBackend) LeaseCheckpoint(lc *pb.LeaseCheckpointRequest) (*pb.LeaseCheckpointResponse, error) {
 	for _, c := range lc.Checkpoints {
-		err := a.s.lessor.Checkpoint(lease.LeaseID(c.ID), c.Remaining_TTL)
+		err := a.ra.lessor.Checkpoint(lease.LeaseID(c.ID), c.Remaining_TTL)
 		if err != nil {
-			return &pb.LeaseCheckpointResponse{Header: newHeader(a.s)}, err
+			return &pb.LeaseCheckpointResponse{Header: newHeader(a.ra)}, err
 		}
 	}
-	return &pb.LeaseCheckpointResponse{Header: newHeader(a.s)}, nil
+	return &pb.LeaseCheckpointResponse{Header: newHeader(a.ra)}, nil
 }
 
 func (a *applierBackend) AuthEnable() (*pb.AuthEnableResponse, error) {
-	err := a.s.AuthStore().AuthEnable()
+	err := a.ra.AuthStore().AuthEnable()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.AuthEnableResponse{Header: newHeader(a.s)}, nil
+	return &pb.AuthEnableResponse{Header: newHeader(a.ra)}, nil
 }
 
 func (a *applierBackend) AuthDisable() (*pb.AuthDisableResponse, error) {
-	a.s.AuthStore().AuthDisable()
-	return &pb.AuthDisableResponse{Header: newHeader(a.s)}, nil
+	a.ra.AuthStore().AuthDisable()
+	return &pb.AuthDisableResponse{Header: newHeader(a.ra)}, nil
 }
 
 func (a *applierBackend) AuthStatus() (*pb.AuthStatusResponse, error) {
-	enabled := a.s.AuthStore().IsAuthEnabled()
-	authRevision := a.s.AuthStore().Revision()
-	return &pb.AuthStatusResponse{Header: newHeader(a.s), Enabled: enabled, AuthRevision: authRevision}, nil
+	enabled := a.ra.AuthStore().IsAuthEnabled()
+	authRevision := a.ra.AuthStore().Revision()
+	return &pb.AuthStatusResponse{Header: newHeader(a.ra), Enabled: enabled, AuthRevision: authRevision}, nil
 }
 
 func (a *applierBackend) Authenticate(r *pb.InternalAuthenticateRequest) (*pb.AuthenticateResponse, error) {
-	//cluster, err := a.s.InternalCluster()
-	//if err != nil {
-	//	return nil, err
-	//}
-	sm := a.s
-	index := sm.consistIndex.ConsistentIndex()
-	ctx := context.WithValue(context.WithValue(a.s.ctx, auth.AuthenticateParamIndex{}, index), auth.AuthenticateParamSimpleTokenPrefix{}, r.SimpleToken)
-	resp, err := a.s.AuthStore().Authenticate(ctx, r.Name, r.Password)
+	index := a.ra.consistIndex.ConsistentIndex()
+	ctx := context.WithValue(context.WithValue(a.ra.ctx, auth.AuthenticateParamIndex{}, index), auth.AuthenticateParamSimpleTokenPrefix{}, r.SimpleToken)
+	resp, err := a.ra.AuthStore().Authenticate(ctx, r.Name, r.Password)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserAdd(r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
-	resp, err := a.s.AuthStore().UserAdd(r)
+	resp, err := a.ra.AuthStore().UserAdd(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserDelete(r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error) {
-	resp, err := a.s.AuthStore().UserDelete(r)
+	resp, err := a.ra.AuthStore().UserDelete(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserChangePassword(r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
-	resp, err := a.s.AuthStore().UserChangePassword(r)
+	resp, err := a.ra.AuthStore().UserChangePassword(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserGrantRole(r *pb.AuthUserGrantRoleRequest) (*pb.AuthUserGrantRoleResponse, error) {
-	resp, err := a.s.AuthStore().UserGrantRole(r)
+	resp, err := a.ra.AuthStore().UserGrantRole(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserGet(r *pb.AuthUserGetRequest) (*pb.AuthUserGetResponse, error) {
-	resp, err := a.s.AuthStore().UserGet(r)
+	resp, err := a.ra.AuthStore().UserGet(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserRevokeRole(r *pb.AuthUserRevokeRoleRequest) (*pb.AuthUserRevokeRoleResponse, error) {
-	resp, err := a.s.AuthStore().UserRevokeRole(r)
+	resp, err := a.ra.AuthStore().UserRevokeRole(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleAdd(r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error) {
-	resp, err := a.s.AuthStore().RoleAdd(r)
+	resp, err := a.ra.AuthStore().RoleAdd(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleGrantPermission(r *pb.AuthRoleGrantPermissionRequest) (*pb.AuthRoleGrantPermissionResponse, error) {
-	resp, err := a.s.AuthStore().RoleGrantPermission(r)
+	resp, err := a.ra.AuthStore().RoleGrantPermission(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleGet(r *pb.AuthRoleGetRequest) (*pb.AuthRoleGetResponse, error) {
-	resp, err := a.s.AuthStore().RoleGet(r)
+	resp, err := a.ra.AuthStore().RoleGet(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleRevokePermission(r *pb.AuthRoleRevokePermissionRequest) (*pb.AuthRoleRevokePermissionResponse, error) {
-	resp, err := a.s.AuthStore().RoleRevokePermission(r)
+	resp, err := a.ra.AuthStore().RoleRevokePermission(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleDelete(r *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error) {
-	resp, err := a.s.AuthStore().RoleDelete(r)
+	resp, err := a.ra.AuthStore().RoleDelete(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) UserList(r *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error) {
-	resp, err := a.s.AuthStore().UserList(r)
+	resp, err := a.ra.AuthStore().UserList(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
 
 func (a *applierBackend) RoleList(r *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error) {
-	resp, err := a.s.AuthStore().RoleList(r)
+	resp, err := a.ra.AuthStore().RoleList(r)
 	if resp != nil {
-		resp.Header = newHeader(a.s)
+		resp.Header = newHeader(a.ra)
 	}
 	return resp, err
 }
@@ -887,7 +882,7 @@ func (a *applierBackend) checkRequestPut(rv mvcc.IReadView, reqOp *pb.RequestOp)
 		}
 	}
 	if lease.LeaseID(req.Lease) != lease.NoLease {
-		if l := a.s.lessor.Lookup(lease.LeaseID(req.Lease)); l == nil {
+		if l := a.ra.lessor.Lookup(lease.LeaseID(req.Lease)); l == nil {
 			return lease.ErrLeaseNotFound
 		}
 	}
@@ -948,17 +943,11 @@ func pruneKVs(rr *mvcc.RangeResult, isPrunable func(*pb.KeyValue) bool) {
 	rr.KVs = rr.KVs[:j]
 }
 
-func newHeader(s *Replica) *pb.ResponseHeader {
-	cluster := s
-	//cluster, err := s.InternalCluster()
-	//if err != nil {
-	//	return &pb.ResponseHeader{}
-	//}
-
+func newHeader(ra *Replica) *pb.ResponseHeader {
 	return &pb.ResponseHeader{
-		ShardId:  cluster.ShardID(),
-		NodeId:   cluster.NodeID(),
-		Revision: s.KV().Rev(),
-		RaftTerm: cluster.Term(),
+		ShardId:  ra.ShardID(),
+		NodeId:   ra.NodeID(),
+		Revision: ra.KV().Rev(),
+		RaftTerm: ra.Term(),
 	}
 }

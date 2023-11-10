@@ -29,7 +29,7 @@ func (op CompactOp) toRequest() *pb.CompactionRequest {
 }
 
 // WithCompactPhysical makes Compact wait until all compacted entries are
-// removed from the etcd server's storage.
+// removed from the olive server's storage.
 func WithCompactPhysical() CompactOption {
 	return func(op *CompactOp) { op.physical = true }
 }

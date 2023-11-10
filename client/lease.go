@@ -83,7 +83,7 @@ type ErrKeepAliveHalted struct {
 }
 
 func (e ErrKeepAliveHalted) Error() string {
-	s := "etcdclient: leases keep alive halted"
+	s := "oliveclient: leases keep alive halted"
 	if e.Reason != nil {
 		s += ": " + e.Reason.Error()
 	}
@@ -105,10 +105,10 @@ type ILease interface {
 
 	// KeepAlive attempts to keep the given lease alive forever. If the keepalive responses posted
 	// to the channel are not consumed promptly the channel may become full. When full, the lease
-	// client will continue sending keep alive requests to the etcd server, but will drop responses
+	// client will continue sending keep alive requests to the olive server, but will drop responses
 	// until there is capacity on the channel to send more responses.
 	//
-	// If client keep alive loop halts with an unexpected error (e.g. "etcdserver: no leader") or
+	// If client keep alive loop halts with an unexpected error (e.g. "olive server: no leader") or
 	// canceled by the caller (e.g. context.Canceled), KeepAlive returns a ErrKeepAliveHalted error
 	// containing the error reason.
 	//
@@ -117,7 +117,7 @@ type ILease interface {
 	// given context "ctx" is canceled or timed out.
 	//
 	// TODO(v4.0): post errors to last keep alive message before closing
-	// (see https://github.com/etcd-io/etcd/pull/7866)
+	// (see https://github.com/olive-io/olive/pull/7866)
 	KeepAlive(ctx context.Context, id LeaseID) (<-chan *LeaseKeepAliveResponse, error)
 
 	// KeepAliveOnce renews the lease once. The response corresponds to the
@@ -128,7 +128,7 @@ type ILease interface {
 	KeepAliveOnce(ctx context.Context, id LeaseID) (*LeaseKeepAliveResponse, error)
 
 	// Close releases all resources Lease keeps for efficient communication
-	// with the etcd server.
+	// with the olive server.
 	Close() error
 }
 

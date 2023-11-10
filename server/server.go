@@ -302,8 +302,8 @@ func (s *KVServer) processRaftEvent() {
 		case ch := <-s.raftEventCh:
 			ra, ok := s.getReplica(ch.ShardID)
 			if ok {
-				ra.setLead(ch.LeaderID)
-				ra.setTerm(ch.Term)
+				ra.raetLead(ch.LeaderID)
+				ra.raetTerm(ch.Term)
 				ra.ChangeNotify()
 			}
 		}

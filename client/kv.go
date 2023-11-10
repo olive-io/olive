@@ -16,7 +16,7 @@ type (
 )
 
 type IKV interface {
-	// Put puts a key-value pair into etcd.
+	// Put puts a key-value pair into olive.
 	// Note that key,value can be plain bytes array and string is
 	// an immutable representation of that bytes array.
 	// To get a string of bytes, do string([]byte{0x10, 0x20}).
@@ -35,7 +35,7 @@ type IKV interface {
 	// Delete deletes a key, or optionally using WithRange(end), [key, end).
 	Delete(ctx context.Context, key string, opts ...OpOption) (*DeleteResponse, error)
 
-	// Compact compacts etcd KV history before the given rev.
+	// Compact compacts olive KV history before the given rev.
 	Compact(ctx context.Context, rev int64, opts ...CompactOption) (*CompactResponse, error)
 
 	// Do applies a single Op on KV without a transaction.

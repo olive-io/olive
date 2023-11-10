@@ -81,7 +81,7 @@ func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInt
 	//pb.RegisterMaintenanceServer(grpcServer, NewMaintenanceServer(s))
 
 	// server should register all the services manually
-	// use empty service name for all etcd services' health status,
+	// use empty service name for all olive services' health status,
 	// see https://github.com/grpc/grpc/blob/master/doc/health-checking.md for more
 	hsrv := health.NewServer()
 	hsrv.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)

@@ -829,9 +829,9 @@ func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r pb.Interna
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
-func doSerialize(ctx context.Context, s *Replica, chk func(*auth.AuthInfo) error, get func()) error {
+func doSerialize(ctx context.Context, ra *Replica, chk func(*auth.AuthInfo) error, get func()) error {
 	trace := traceutil.Get(ctx)
-	ai, err := s.AuthInfoFromCtx(ctx)
+	ai, err := ra.AuthInfoFromCtx(ctx)
 	if err != nil {
 		return err
 	}
@@ -847,31 +847,31 @@ func doSerialize(ctx context.Context, s *Replica, chk func(*auth.AuthInfo) error
 	get()
 	// check for stale token revision in case the auth store was updated while
 	// the request has been handled.
-	if ai.Revision != 0 && ai.Revision != s.authStore.Revision() {
+	if ai.Revision != 0 && ai.Revision != ra.authStore.Revision() {
 		return auth.ErrAuthOldRevision
 	}
 	return nil
 }
 
 func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (*applyResult, error) {
-	sra, exists := s.getReplica(shardID)
+	ra, exists := s.getReplica(shardID)
 	if !exists {
 		return nil, ErrShardNotFound
 	}
 
-	ai := sra.getAppliedIndex()
-	ci := sra.getCommittedIndex()
+	ai := ra.getAppliedIndex()
+	ci := ra.getCommittedIndex()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
 		return nil, ErrTooManyRequests
 	}
 
 	r.Header = &pb.RequestHeader{
-		ID: sra.reqIDGen.Next(),
+		ID: ra.reqIDGen.Next(),
 	}
 
 	// check authinfo if it is not InternalAuthenticateRequest
 	if r.Authenticate == nil {
-		authInfo, err := sra.AuthInfoFromCtx(ctx)
+		authInfo, err := ra.AuthInfoFromCtx(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -891,7 +891,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 	}
 
 	id := r.Header.ID
-	ch := sra.w.Register(id)
+	ch := ra.w.Register(id)
 
 	cctx, cancel := context.WithTimeout(ctx, s.ReqTimeout())
 	defer cancel()
@@ -902,7 +902,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 	_, err = s.nh.SyncPropose(cctx, session, data)
 	if err != nil {
 		proposalsFailed.Inc()
-		sra.w.Trigger(id, nil) // GC wait
+		ra.w.Trigger(id, nil) // GC wait
 		return nil, err
 	}
 	proposalsPending.Inc()
@@ -913,7 +913,7 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 		return x.(*applyResult), nil
 	case <-cctx.Done():
 		proposalsFailed.Inc()
-		sra.w.Trigger(id, nil) // GC wait
+		ra.w.Trigger(id, nil) // GC wait
 		return nil, s.parseProposeCtxErr(cctx.Err(), start)
 	case <-s.done:
 		return nil, ErrStopped
@@ -932,8 +932,8 @@ func (ra *Replica) AuthInfoFromCtx(ctx context.Context) (*auth.AuthInfo, error) 
 	return authInfo, nil
 }
 
+func (ra *Replica) Watchable() mvcc.IWatchableKV { return ra.KV() }
+
 func isStopped(err error) bool {
 	return errors.Is(err, dragonboat.ErrClosed) || errors.Is(err, ErrStopped)
 }
-
-func (ra *Replica) Watchable() mvcc.IWatchableKV { return ra.KV() }

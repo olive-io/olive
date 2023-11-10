@@ -217,7 +217,7 @@ func newLessor(lg *zap.Logger, b backend.IBackend, cfg LessorConfig) *lessor {
 // isPrimary indicates if this lessor is the primary lessor. The primary
 // lessor manages lease expiration and renew.
 //
-// in etcd, raft leader is the primary. Thus there might be two primary
+// in olive, raft leader is the primary. Thus there might be two primary
 // leaders at the same time (raft allows concurrent leader but with different term)
 // for at most a leader election timeout.
 // The old primary leader cannot affect the correctness since its proposal has a

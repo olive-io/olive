@@ -507,11 +507,11 @@ func WithPrevKV() OpOption {
 
 // WithFragment to receive raw watch response with fragmentation.
 // Fragmentation is disabled by default. If fragmentation is enabled,
-// etcd watch server will split watch response before sending to clients
+// olive watch server will split watch response before sending to clients
 // when the total size of watch events exceed server-side request limit.
 // The default server-side request limit is 1.5 MiB, which can be configured
 // as "--max-request-bytes" flag value + gRPC-overhead 512 bytes.
-// See "etcdserver/api/v3rpc/watch.go" for more details.
+// See "olive server/api/rpc/watch.go" for more details.
 func WithFragment() OpOption {
 	return func(op *Op) { op.fragment = true }
 }

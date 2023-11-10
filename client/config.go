@@ -45,10 +45,10 @@ type Config struct {
 	TLS *tls.Config
 
 	// Username is a user name for authentication.
-	// Username string `json:"username"`
+	Username string `json:"username"`
 	//
 	// Password is a password for authentication.
-	// Password string `json:"password"`
+	Password string `json:"password"`
 
 	// DialOptions is a list of dial options for the grpc client (e.g., for interceptors).
 	// For example, pass "grpc.WithBlock()" to block until the underlying connection is up.

@@ -51,7 +51,7 @@ type IWatcher interface {
 	// returns a non-recoverable error (e.g. ErrCompacted).
 	// For example, when context passed with "WithRequireLeader" and the
 	// connected server has no leader (e.g. due to network partition),
-	// error "etcdserver: no leader" (ErrNoLeader) will be returned,
+	// error "oliveserver: no leader" (ErrNoLeader) will be returned,
 	// and then "WatchChan" is closed with non-nil "Err()".
 	// In order to prevent a watch stream being stuck in a partitioned node,
 	// make sure to wrap context with "WithRequireLeader".
@@ -59,10 +59,6 @@ type IWatcher interface {
 	// Otherwise, as long as the context has not been canceled or timed out,
 	// watch will retry on other recoverable errors forever until reconnected.
 	//
-	// TODO: explicitly set context error in the last "WatchResponse" message and close channel?
-	// Currently, client contexts are overwritten with "valCtx" that never closes.
-	// TODO(v3.4): configure watch retry policy, limit maximum retry number
-	// (see https://github.com/etcd-io/etcd/issues/8980)
 	Watch(ctx context.Context, key string, opts ...OpOption) WatchChan
 
 	// RequestProgress requests a progress notify response be sent in all watch channels.
@@ -224,7 +220,7 @@ type watcherStream struct {
 	// id is the registered watch id on the grpc stream
 	id int64
 
-	// buf holds all events received from etcd but not yet consumed by the client
+	// buf holds all events received from olive but not yet consumed by the client
 	buf []*WatchResponse
 }
 
@@ -516,7 +512,7 @@ func (w *watchGrpcStream) run() {
 		w.owner.closeStream(w)
 	}()
 
-	// start a stream with the etcd grpc server
+	// start a stream with the olive grpc server
 	if wc, closeErr = w.newWatchClient(); closeErr != nil {
 		return
 	}
