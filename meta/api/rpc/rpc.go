@@ -19,8 +19,8 @@ type kvServer struct {
 	maxTxnOps uint
 }
 
-func NewKVServer(s *server.KVServer) pb.KVServer {
-	return &kvServer{hdr: newHeader(s), kv: s, maxTxnOps: s.MaxTxnOps}
+func NewKVServer(ra *server.Replica) pb.KVServer {
+	return &kvServer{hdr: newHeader(ra), kv: ra, maxTxnOps: ra.MaxTxnOps}
 }
 
 func (s *kvServer) Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResponse, error) {
@@ -28,7 +28,7 @@ func (s *kvServer) Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResp
 		return nil, err
 	}
 
-	resp, err := s.kv.Range(ctx, s.hdr.shardID, r)
+	resp, err := s.kv.Range(ctx, r)
 	if err != nil {
 		return nil, togRPCError(err)
 	}
@@ -42,7 +42,7 @@ func (s *kvServer) Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, 
 		return nil, err
 	}
 
-	resp, err := s.kv.Put(ctx, s.hdr.shardID, r)
+	resp, err := s.kv.Put(ctx, r)
 	if err != nil {
 		return nil, togRPCError(err)
 	}
@@ -56,7 +56,7 @@ func (s *kvServer) DeleteRange(ctx context.Context, r *pb.DeleteRangeRequest) (*
 		return nil, err
 	}
 
-	resp, err := s.kv.DeleteRange(ctx, s.hdr.shardID, r)
+	resp, err := s.kv.DeleteRange(ctx, r)
 	if err != nil {
 		return nil, togRPCError(err)
 	}
@@ -77,7 +77,7 @@ func (s *kvServer) Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, 
 		return nil, err
 	}
 
-	resp, err := s.kv.Txn(ctx, s.hdr.shardID, r)
+	resp, err := s.kv.Txn(ctx, r)
 	if err != nil {
 		return nil, togRPCError(err)
 	}
@@ -87,7 +87,7 @@ func (s *kvServer) Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, 
 }
 
 func (s *kvServer) Compact(ctx context.Context, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
-	resp, err := s.kv.Compact(ctx, s.hdr.shardID, r)
+	resp, err := s.kv.Compact(ctx, r)
 	if err != nil {
 		return nil, togRPCError(err)
 	}

@@ -34,11 +34,11 @@ const (
 )
 
 type IRaftKV interface {
-	Range(ctx context.Context, shard uint64, r *pb.RangeRequest) (*pb.RangeResponse, error)
-	Put(ctx context.Context, shard uint64, r *pb.PutRequest) (*pb.PutResponse, error)
-	DeleteRange(ctx context.Context, shard uint64, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error)
-	Txn(ctx context.Context, shard uint64, r *pb.TxnRequest) (*pb.TxnResponse, error)
-	Compact(ctx context.Context, shard uint64, r *pb.CompactionRequest) (*pb.CompactionResponse, error)
+	Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResponse, error)
+	Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, error)
+	DeleteRange(ctx context.Context, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error)
+	Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, error)
+	Compact(ctx context.Context, r *pb.CompactionRequest) (*pb.CompactionResponse, error)
 }
 
 type ILessor interface {
@@ -78,69 +78,74 @@ type Authenticator interface {
 	RoleList(ctx context.Context, r *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error)
 }
 
-func (s *KVServer) Range(ctx context.Context, shardID uint64, r *pb.RangeRequest) (*pb.RangeResponse, error) {
-	ra, exists := s.getReplica(shardID)
-	if !exists {
-		return nil, ErrShardNotFound
-	}
-
+func (ra *Replica) Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResponse, error) {
 	trace := traceutil.New("range",
-		s.Logger(),
+		ra.lg,
 		traceutil.Field{Key: "range_begin", Value: string(r.Key)},
 		traceutil.Field{Key: "range_end", Value: string(r.RangeEnd)},
-		traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
+		traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", ra.ShardID())},
 	)
 	ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
 	var resp *pb.RangeResponse
 	var err error
 	defer func(start time.Time) {
-		warnOfExpensiveReadOnlyRangeRequest(s.Logger(), s.WarningApplyDuration, start, r, resp, err)
+		warnOfExpensiveReadOnlyRangeRequest(ra.lg, ra.WarningApplyDuration, start, r, resp, err)
 		if resp != nil {
 			trace.AddField(
 				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
 				traceutil.Field{Key: "response_revision", Value: resp.Header.Revision},
-				traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
+				traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", ra.ShardID())},
 			)
 		}
 		trace.LogIfLong(traceThreshold)
 	}(time.Now())
 
-	var get func()
+	var req *replicaRequest
+	rc := make(chan any, 1)
+	ec := make(chan error, 1)
 
 	if !r.Serializable {
-		get = func() {
-			var result any
-			var ok bool
-			result, err = s.nh.StaleRead(shardID, r)
-			if err != nil {
-				return
-			}
-			resp, ok = result.(*pb.RangeResponse)
-			if !ok {
-				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
-			}
+		req = &replicaRequest{
+			shardID: ra.ShardID(),
+			nodeID:  ra.NodeID(),
+			staleRead: &replicaStaleRead{
+				query: r,
+				rc:    rc,
+				ec:    ec,
+			},
 		}
 		trace.Step("agreement among raft nodes before linearized reading")
 	} else {
-		get = func() {
-			var result any
-			var ok bool
-
-			tctx, cancel := context.WithTimeout(ctx, queryTimeout)
-			defer cancel()
-			result, err = s.nh.SyncRead(tctx, shardID, r)
-			if err != nil {
-				return
-			}
-			resp, ok = result.(*pb.RangeResponse)
-			if !ok {
-				s.Logger().Panic("not match raft read", zap.Stringer("request", r))
-			}
+		tctx, cancel := context.WithTimeout(ctx, queryTimeout)
+		defer cancel()
+		req = &replicaRequest{
+			shardID: ra.ShardID(),
+			nodeID:  ra.NodeID(),
+			syncRead: &replicaSyncRead{
+				ctx:   tctx,
+				query: r,
+				rc:    rc,
+				ec:    ec,
+			},
 		}
 	}
+
 	chk := func(ai *auth.AuthInfo) error {
 		return ra.AuthStore().IsRangePermitted(ai, r.Key, r.RangeEnd)
+	}
+
+	get := func() {
+		ra.s.ReplicaRequest(req)
+		select {
+		case result := <-rc:
+			var ok bool
+			resp, ok = result.(*pb.RangeResponse)
+			if !ok {
+				ra.lg.Panic("not match raft read", zap.Stringer("request", r))
+			}
+		case err = <-ec:
+		}
 	}
 
 	if serr := doSerialize(ctx, ra, chk, get); serr != nil {
@@ -150,34 +155,29 @@ func (s *KVServer) Range(ctx context.Context, shardID uint64, r *pb.RangeRequest
 	return resp, err
 }
 
-func (s *KVServer) Put(ctx context.Context, shardID uint64, r *pb.PutRequest) (*pb.PutResponse, error) {
+func (ra *Replica) Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{Put: r})
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{Put: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.PutResponse), nil
 }
 
-func (s *KVServer) DeleteRange(ctx context.Context, shardID uint64, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error) {
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{DeleteRange: r})
+func (ra *Replica) DeleteRange(ctx context.Context, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{DeleteRange: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.DeleteRangeResponse), nil
 }
 
-func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*pb.TxnResponse, error) {
-	ra, exists := s.getReplica(shardID)
-	if !exists {
-		return nil, ErrShardNotFound
-	}
-
+func (ra *Replica) Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, error) {
 	if isTxnReadonly(r) {
 		trace := traceutil.New("transaction",
-			s.Logger(),
+			ra.lg,
 			traceutil.Field{Key: "read_only", Value: true},
-			traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)},
+			traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", ra.ShardID())},
 		)
 		ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
@@ -185,43 +185,61 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*
 		var resp *pb.TxnResponse
 		var err error
 
+		var req *replicaRequest
+		rc := make(chan any, 1)
+		ec := make(chan error, 1)
+
+		defer func() {
+			close(rc)
+			close(ec)
+		}()
+
 		if !isTxnSerializable(r) {
 			get = func() {
-				var result any
-				var ok bool
-				result, err = s.nh.StaleRead(shardID, r)
-				if err != nil {
-					return
-				}
-				resp, ok = result.(*pb.TxnResponse)
-				if !ok {
-					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
+				req = &replicaRequest{
+					shardID: ra.ShardID(),
+					nodeID:  ra.NodeID(),
+					staleRead: &replicaStaleRead{
+						query: r,
+						rc:    rc,
+						ec:    ec,
+					},
 				}
 			}
 			trace.Step("agreement among raft nodes before linearized reading")
 		} else {
-			get = func() {
-				var result any
-				var ok bool
-
-				tctx, cancel := context.WithTimeout(ctx, queryTimeout)
-				defer cancel()
-				result, err = s.nh.SyncRead(tctx, shardID, r)
-				if err != nil {
-					return
-				}
-				resp, ok = result.(*pb.TxnResponse)
-				if !ok {
-					s.Logger().Panic("not match raft read", zap.Stringer("request", r))
-				}
+			tctx, cancel := context.WithTimeout(ctx, queryTimeout)
+			defer cancel()
+			req = &replicaRequest{
+				shardID: ra.ShardID(),
+				nodeID:  ra.NodeID(),
+				syncRead: &replicaSyncRead{
+					ctx:   tctx,
+					query: r,
+					rc:    rc,
+					ec:    ec,
+				},
 			}
 		}
 		chk := func(ai *auth.AuthInfo) error {
 			return checkTxnAuth(ra.authStore, ai, r)
 		}
 
+		get = func() {
+			ra.s.ReplicaRequest(req)
+			select {
+			case result := <-rc:
+				var ok bool
+				resp, ok = result.(*pb.TxnResponse)
+				if !ok {
+					ra.lg.Panic("not match raft read", zap.Stringer("request", r))
+				}
+			case err = <-ec:
+			}
+		}
+
 		defer func(start time.Time) {
-			warnOfExpensiveReadOnlyTxnRequest(s.Logger(), s.WarningApplyDuration, start, r, resp, err)
+			warnOfExpensiveReadOnlyTxnRequest(ra.lg, ra.WarningApplyDuration, start, r, resp, err)
 			trace.LogIfLong(traceThreshold)
 		}(time.Now())
 
@@ -232,7 +250,7 @@ func (s *KVServer) Txn(ctx context.Context, shardID uint64, r *pb.TxnRequest) (*
 	}
 
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{Txn: r})
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{Txn: r})
 	if err != nil {
 		return nil, err
 	}
@@ -267,14 +285,9 @@ func isTxnReadonly(tr *pb.TxnRequest) bool {
 	return true
 }
 
-func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
-	ra, exists := s.getReplica(shardID)
-	if !exists {
-		return nil, ErrShardNotFound
-	}
-
+func (ra *Replica) Compact(ctx context.Context, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
 	startTime := time.Now()
-	result, err := s.processInternalRaftRequestOnce(ctx, shardID, pb.InternalRaftRequest{Compaction: r})
+	result, err := ra.processInternalRaftRequestOnce(ctx, pb.InternalRaftRequest{Compaction: r})
 	trace := traceutil.TODO()
 	if result != nil && result.trace != nil {
 		trace = result.trace
@@ -310,33 +323,28 @@ func (s *KVServer) Compact(ctx context.Context, shardID uint64, r *pb.Compaction
 	}
 	resp.Header.Revision = ra.KV().Rev()
 	trace.AddField(traceutil.Field{Key: "response_revision", Value: resp.Header.Revision})
-	trace.AddField(traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", shardID)})
+	trace.AddField(traceutil.Field{Key: "shard", Value: fmt.Sprintf("%d", ra.ShardID())})
 	return resp, nil
 }
 
-func (s *KVServer) LeaseGrant(ctx context.Context, r *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error) {
+func (ra *Replica) LeaseGrant(ctx context.Context, r *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error) {
 	// no id given? choose one
-	//for r.ID == int64(lease.NoLease) {
-	//	// only use positive int64 id's
-	//	r.ID = int64(s.reqIDGen.Next() & ((1 << 63) - 1))
-	//}
-
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
+	for r.ID == int64(lease.NoLease) {
+		// only use positive int64 id's
+		r.ID = int64(ra.reqIDGen.Next() & ((1 << 63) - 1))
 	}
 
-	resp, err := s.raftRequestOnce(ctx, shardID, pb.InternalRaftRequest{LeaseGrant: r})
+	resp, err := ra.raftRequestOnce(ctx, pb.InternalRaftRequest{LeaseGrant: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.LeaseGrantResponse), nil
 }
 
-func (s *KVServer) waitAppliedIndex() error {
+func (ra *Replica) waitAppliedIndex() error {
 	select {
-	//case <-s.ApplyWait():
-	case <-s.stopping:
+	case <-ra.ApplyWait():
+	case <-ra.stopping:
 		return ErrStopped
 	case <-time.After(applyTimeout):
 		return ErrTimeoutWaitAppliedIndex
@@ -345,86 +353,81 @@ func (s *KVServer) waitAppliedIndex() error {
 	return nil
 }
 
-func (s *KVServer) LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequestOnce(ctx, shardID, pb.InternalRaftRequest{LeaseRevoke: r})
+func (ra *Replica) LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
+	resp, err := ra.raftRequestOnce(ctx, pb.InternalRaftRequest{LeaseRevoke: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.LeaseRevokeResponse), nil
 }
 
-func (s *KVServer) LeaseRenew(ctx context.Context, id lease.LeaseID) (int64, error) {
-	//if s.isLeader() {
-	//	if err := s.waitAppliedIndex(); err != nil {
-	//		return 0, err
-	//	}
-	//
-	//	ttl, err := s.lessor.Renew(id)
-	//	if err == nil { // already requested to primary lessor(leader)
-	//		return ttl, nil
-	//	}
-	//	if err != lease.ErrNotPrimary {
-	//		return -1, err
-	//	}
-	//}
-	//
-	//cctx, cancel := context.WithTimeout(ctx, s.Cfg.ReqTimeout())
-	//defer cancel()
-	//
-	//// renewals don't go through raft; forward to leader manually
-	//for cctx.Err() == nil {
-	//	leader, lerr := s.waitLeader(cctx)
-	//	if lerr != nil {
-	//		return -1, lerr
-	//	}
-	//	for _, url := range leader.PeerURLs {
-	//		lurl := url + leasehttp.LeasePrefix
-	//		ttl, err := leasehttp.RenewHTTP(cctx, id, lurl, s.peerRt)
-	//		if err == nil || err == lease.ErrLeaseNotFound {
-	//			return ttl, err
-	//		}
-	//	}
-	//	// Throttle in case of e.g. connection problems.
-	//	time.Sleep(50 * time.Millisecond)
-	//}
-	//
-	//if cctx.Err() == context.DeadlineExceeded {
-	//	return -1, ErrTimeout
-	//}
+func (ra *Replica) LeaseRenew(ctx context.Context, id lease.LeaseID) (int64, error) {
+	if ra.isLeader() {
+		if err := ra.waitAppliedIndex(); err != nil {
+			return 0, err
+		}
+
+		ttl, err := ra.lessor.Renew(id)
+		if err == nil { // already requested to primary lessor(leader)
+			return ttl, nil
+		}
+		if !errors.Is(err, lease.ErrNotPrimary) {
+			return -1, err
+		}
+	}
+
+	cctx, cancel := context.WithTimeout(ctx, ra.ReqTimeout())
+	defer cancel()
+
+	// renewals don't go through raft; forward to leader manually
+	for cctx.Err() == nil {
+		//leader, lerr := s.waitLeader(cctx)
+		//if lerr != nil {
+		//	return -1, lerr
+		//}
+		//for _, url := range leader.PeerURLs {
+		//	lurl := url + leasehttp.LeasePrefix
+		//	ttl, err := leasehttp.RenewHTTP(cctx, id, lurl, s.peerRt)
+		//	if err == nil || err == lease.ErrLeaseNotFound {
+		//		return ttl, err
+		//	}
+		//}
+		// Throttle in case of e.g. connection problems.
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	if errors.Is(cctx.Err(), context.DeadlineExceeded) {
+		return -1, ErrTimeout
+	}
 	return -1, ErrCanceled
 }
 
-func (s *KVServer) checkLeaseTimeToLive(ctx context.Context, leaseID lease.LeaseID) (uint64, error) {
-	rev := uint64(0)
-	//rev := s.AuthStore().Revision()
-	//if !s.AuthStore().IsAuthEnabled() {
-	//	return rev, nil
-	//}
-	//authInfo, err := s.AuthInfoFromCtx(ctx)
-	//if err != nil {
-	//	return rev, err
-	//}
-	//if authInfo == nil {
-	//	return rev, auth.ErrUserEmpty
-	//}
-	//
-	//l := s.lessor.Lookup(leaseID)
-	//if l != nil {
-	//	for _, key := range l.Keys() {
-	//		if err := s.AuthStore().IsRangePermitted(authInfo, []byte(key), []byte{}); err != nil {
-	//			return 0, err
-	//		}
-	//	}
-	//}
+func (ra *Replica) checkLeaseTimeToLive(ctx context.Context, leaseID lease.LeaseID) (uint64, error) {
+	rev := ra.AuthStore().Revision()
+	if !ra.AuthStore().IsAuthEnabled() {
+		return rev, nil
+	}
+	authInfo, err := ra.AuthInfoFromCtx(ctx)
+	if err != nil {
+		return rev, err
+	}
+	if authInfo == nil {
+		return rev, auth.ErrUserEmpty
+	}
+
+	l := ra.lessor.Lookup(leaseID)
+	if l != nil {
+		for _, key := range l.Keys() {
+			if err := ra.AuthStore().IsRangePermitted(authInfo, []byte(key), []byte{}); err != nil {
+				return 0, err
+			}
+		}
+	}
 
 	return rev, nil
 }
 
-func (s *KVServer) leaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
+func (ra *Replica) leaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
 	//if s.isLeader() {
 	//	if err := s.waitAppliedIndex(); err != nil {
 	//		return nil, err
@@ -474,34 +477,32 @@ func (s *KVServer) leaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveReq
 	return nil, ErrCanceled
 }
 
-func (s *KVServer) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
+func (ra *Replica) LeaseTimeToLive(ctx context.Context, r *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
 	var rev uint64
 	var err error
 	if r.Keys {
 		// check RBAC permission only if Keys is true
-		rev, err = s.checkLeaseTimeToLive(ctx, lease.LeaseID(r.ID))
+		rev, err = ra.checkLeaseTimeToLive(ctx, lease.LeaseID(r.ID))
 		if err != nil {
 			return nil, err
 		}
 	}
-	_ = rev
 
-	resp, err := s.leaseTimeToLive(ctx, r)
+	resp, err := ra.leaseTimeToLive(ctx, r)
 	if err != nil {
 		return nil, err
 	}
 
 	if r.Keys {
-		//if s.AuthStore().IsAuthEnabled() && rev != s.AuthStore().Revision() {
-		//	return nil, auth.ErrAuthOldRevision
-		//}
+		if ra.AuthStore().IsAuthEnabled() && rev != ra.AuthStore().Revision() {
+			return nil, auth.ErrAuthOldRevision
+		}
 	}
 	return resp, nil
 }
 
 // LeaseLeases is really ListLeases !???
-func (s *KVServer) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*pb.LeaseLeasesResponse, error) {
-	var ra *Replica
+func (ra *Replica) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*pb.LeaseLeasesResponse, error) {
 	ls := ra.lessor.Leases()
 	lss := make([]*pb.LeaseStatus, len(ls))
 	for i := range ls {
@@ -510,7 +511,7 @@ func (s *KVServer) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*
 	return &pb.LeaseLeasesResponse{Header: newHeader(ra), Leases: lss}, nil
 }
 
-//func (s *KVServer) waitLeader(ctx context.Context) (*membership.Member, error) {
+//func (s *OliveServer) waitLeader(ctx context.Context) (*membership.Member, error) {
 //	leader := s.cluster.Member(s.Leader())
 //	for leader == nil {
 //		// wait an election
@@ -530,49 +531,35 @@ func (s *KVServer) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*
 //	return leader, nil
 //}
 
-func (s *KVServer) AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequestOnce(ctx, shardID, pb.InternalRaftRequest{AuthEnable: r})
+func (ra *Replica) AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error) {
+	resp, err := ra.raftRequestOnce(ctx, pb.InternalRaftRequest{AuthEnable: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthEnableResponse), nil
 }
 
-func (s *KVServer) AuthDisable(ctx context.Context, r *pb.AuthDisableRequest) (*pb.AuthDisableResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthDisable: r})
+func (ra *Replica) AuthDisable(ctx context.Context, r *pb.AuthDisableRequest) (*pb.AuthDisableResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthDisable: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthDisableResponse), nil
 }
 
-func (s *KVServer) AuthStatus(ctx context.Context, r *pb.AuthStatusRequest) (*pb.AuthStatusResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthStatus: r})
+func (ra *Replica) AuthStatus(ctx context.Context, r *pb.AuthStatusRequest) (*pb.AuthStatusResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthStatus: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthStatusResponse), nil
 }
 
-func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
+func (ra *Replica) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
 	//if err := s.linearizableReadNotify(ctx); err != nil {
 	//	return nil, err
 	//}
-	var ra *Replica
-
-	lg := s.Logger()
+	lg := ra.lg
 
 	// fix https://nvd.nist.gov/vuln/detail/CVE-2021-28235
 	defer func() {
@@ -581,16 +568,11 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 		}
 	}()
 
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-
 	var resp proto.Message
 	for {
 		checkedRevision, err := ra.AuthStore().CheckPassword(r.Name, r.Password)
 		if err != nil {
-			if err != auth.ErrAuthNotEnabled {
+			if !errors.Is(err, auth.ErrAuthNotEnabled) {
 				lg.Warn(
 					"invalid authentication was requested",
 					zap.String("user", r.Name),
@@ -612,7 +594,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 			SimpleToken: st,
 		}
 
-		resp, err = s.raftRequestOnce(ctx, shardID, pb.InternalRaftRequest{Authenticate: internalReq})
+		resp, err = ra.raftRequestOnce(ctx, pb.InternalRaftRequest{Authenticate: internalReq})
 		if err != nil {
 			return nil, err
 		}
@@ -626,8 +608,7 @@ func (s *KVServer) Authenticate(ctx context.Context, r *pb.AuthenticateRequest) 
 	return resp.(*pb.AuthenticateResponse), nil
 }
 
-func (s *KVServer) UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
-	var ra *Replica
+func (ra *Replica) UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
 	if r.Options == nil || !r.Options.NoPassword {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), ra.authStore.BcryptCost())
 		if err != nil {
@@ -637,32 +618,22 @@ func (s *KVServer) UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.A
 		r.Password = ""
 	}
 
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserAdd: r})
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserAdd: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserAddResponse), nil
 }
 
-func (s *KVServer) UserDelete(ctx context.Context, r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserDelete: r})
+func (ra *Replica) UserDelete(ctx context.Context, r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserDelete: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserDeleteResponse), nil
 }
 
-func (s *KVServer) UserChangePassword(ctx context.Context, r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
-	var ra *Replica
+func (ra *Replica) UserChangePassword(ctx context.Context, r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
 	if r.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(r.Password), ra.authStore.BcryptCost())
 		if err != nil {
@@ -672,140 +643,95 @@ func (s *KVServer) UserChangePassword(ctx context.Context, r *pb.AuthUserChangeP
 		r.Password = ""
 	}
 
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserChangePassword: r})
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserChangePassword: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserChangePasswordResponse), nil
 }
 
-func (s *KVServer) UserGrantRole(ctx context.Context, r *pb.AuthUserGrantRoleRequest) (*pb.AuthUserGrantRoleResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserGrantRole: r})
+func (ra *Replica) UserGrantRole(ctx context.Context, r *pb.AuthUserGrantRoleRequest) (*pb.AuthUserGrantRoleResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserGrantRole: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserGrantRoleResponse), nil
 }
 
-func (s *KVServer) UserGet(ctx context.Context, r *pb.AuthUserGetRequest) (*pb.AuthUserGetResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserGet: r})
+func (ra *Replica) UserGet(ctx context.Context, r *pb.AuthUserGetRequest) (*pb.AuthUserGetResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserGet: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserGetResponse), nil
 }
 
-func (s *KVServer) UserList(ctx context.Context, r *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserList: r})
+func (ra *Replica) UserList(ctx context.Context, r *pb.AuthUserListRequest) (*pb.AuthUserListResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserList: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserListResponse), nil
 }
 
-func (s *KVServer) UserRevokeRole(ctx context.Context, r *pb.AuthUserRevokeRoleRequest) (*pb.AuthUserRevokeRoleResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthUserRevokeRole: r})
+func (ra *Replica) UserRevokeRole(ctx context.Context, r *pb.AuthUserRevokeRoleRequest) (*pb.AuthUserRevokeRoleResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthUserRevokeRole: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthUserRevokeRoleResponse), nil
 }
 
-func (s *KVServer) RoleAdd(ctx context.Context, r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleAdd: r})
+func (ra *Replica) RoleAdd(ctx context.Context, r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleAdd: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleAddResponse), nil
 }
 
-func (s *KVServer) RoleGrantPermission(ctx context.Context, r *pb.AuthRoleGrantPermissionRequest) (*pb.AuthRoleGrantPermissionResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleGrantPermission: r})
+func (ra *Replica) RoleGrantPermission(ctx context.Context, r *pb.AuthRoleGrantPermissionRequest) (*pb.AuthRoleGrantPermissionResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleGrantPermission: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleGrantPermissionResponse), nil
 }
 
-func (s *KVServer) RoleGet(ctx context.Context, r *pb.AuthRoleGetRequest) (*pb.AuthRoleGetResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleGet: r})
+func (ra *Replica) RoleGet(ctx context.Context, r *pb.AuthRoleGetRequest) (*pb.AuthRoleGetResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleGet: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleGetResponse), nil
 }
 
-func (s *KVServer) RoleList(ctx context.Context, r *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleList: r})
+func (ra *Replica) RoleList(ctx context.Context, r *pb.AuthRoleListRequest) (*pb.AuthRoleListResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleList: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleListResponse), nil
 }
 
-func (s *KVServer) RoleRevokePermission(ctx context.Context, r *pb.AuthRoleRevokePermissionRequest) (*pb.AuthRoleRevokePermissionResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleRevokePermission: r})
+func (ra *Replica) RoleRevokePermission(ctx context.Context, r *pb.AuthRoleRevokePermissionRequest) (*pb.AuthRoleRevokePermissionResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleRevokePermission: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleRevokePermissionResponse), nil
 }
 
-func (s *KVServer) RoleDelete(ctx context.Context, r *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error) {
-	shardID, ok := s.isReadyInternalReplica()
-	if !ok {
-		return nil, ErrNoInternalReplica
-	}
-	resp, err := s.raftRequest(ctx, shardID, pb.InternalRaftRequest{AuthRoleDelete: r})
+func (ra *Replica) RoleDelete(ctx context.Context, r *pb.AuthRoleDeleteRequest) (*pb.AuthRoleDeleteResponse, error) {
+	resp, err := ra.raftRequest(ctx, pb.InternalRaftRequest{AuthRoleDelete: r})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.AuthRoleDeleteResponse), nil
 }
 
-func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (proto.Message, error) {
-	result, err := s.processInternalRaftRequestOnce(ctx, shardID, r)
+func (ra *Replica) raftRequestOnce(ctx context.Context, r pb.InternalRaftRequest) (proto.Message, error) {
+	result, err := ra.processInternalRaftRequestOnce(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -824,8 +750,8 @@ func (s *KVServer) raftRequestOnce(ctx context.Context, shardID uint64, r pb.Int
 	return result.resp, nil
 }
 
-func (s *KVServer) raftRequest(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (proto.Message, error) {
-	return s.raftRequestOnce(ctx, shardID, r)
+func (ra *Replica) raftRequest(ctx context.Context, r pb.InternalRaftRequest) (proto.Message, error) {
+	return ra.raftRequestOnce(ctx, r)
 }
 
 // doSerialize handles the auth logic, with permissions checked by "chk", for a serialized request "get". Returns a non-nil error on authentication failure.
@@ -853,12 +779,7 @@ func doSerialize(ctx context.Context, ra *Replica, chk func(*auth.AuthInfo) erro
 	return nil
 }
 
-func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID uint64, r pb.InternalRaftRequest) (*applyResult, error) {
-	ra, exists := s.getReplica(shardID)
-	if !exists {
-		return nil, ErrShardNotFound
-	}
-
+func (ra *Replica) processInternalRaftRequestOnce(ctx context.Context, r pb.InternalRaftRequest) (*applyResult, error) {
 	ai := ra.getAppliedIndex()
 	ci := ra.getCommittedIndex()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
@@ -886,25 +807,43 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 		return nil, err
 	}
 
-	if len(data) > int(s.MaxRequestBytes) {
+	if len(data) > int(ra.MaxRequestBytes) {
 		return nil, ErrRequestTooLarge
 	}
 
 	id := r.Header.ID
 	ch := ra.w.Register(id)
 
-	cctx, cancel := context.WithTimeout(ctx, s.ReqTimeout())
+	cctx, cancel := context.WithTimeout(ctx, ra.ReqTimeout())
 	defer cancel()
 
 	start := time.Now()
 
-	session := s.nh.GetNoOPSession(shardID)
-	_, err = s.nh.SyncPropose(cctx, session, data)
-	if err != nil {
-		proposalsFailed.Inc()
-		ra.w.Trigger(id, nil) // GC wait
-		return nil, err
+	rc := make(chan any, 1)
+	ec := make(chan error, 1)
+
+	req := &replicaRequest{
+		shardID: ra.ShardID(),
+		nodeID:  ra.NodeID(),
+		syncPropose: &replicaSyncPropose{
+			ctx:  cctx,
+			data: data,
+			rc:   rc,
+			ec:   ec,
+		},
 	}
+
+	ra.s.ReplicaRequest(req)
+	select {
+	case <-rc:
+	case err = <-ec:
+		if err != nil {
+			proposalsFailed.Inc()
+			ra.w.Trigger(id, nil) // GC wait
+			return nil, err
+		}
+	}
+
 	proposalsPending.Inc()
 	defer proposalsPending.Dec()
 
@@ -914,8 +853,8 @@ func (s *KVServer) processInternalRaftRequestOnce(ctx context.Context, shardID u
 	case <-cctx.Done():
 		proposalsFailed.Inc()
 		ra.w.Trigger(id, nil) // GC wait
-		return nil, s.parseProposeCtxErr(cctx.Err(), start)
-	case <-s.done:
+		return nil, ra.parseProposeCtxErr(cctx.Err(), start)
+	case <-ra.done:
 		return nil, ErrStopped
 	}
 }

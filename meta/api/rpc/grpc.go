@@ -38,7 +38,7 @@ type AuthGetter interface {
 	AuthStore() auth.AuthStore
 }
 
-func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInterceptor, gopts ...grpc.ServerOption) *grpc.Server {
+func Server(ra *server.Replica, tls *tls.Config, interceptor grpc.UnaryServerInterceptor, gopts ...grpc.ServerOption) *grpc.Server {
 	var opts []grpc.ServerOption
 	encoding.RegisterCodec(&codec{})
 	if tls != nil {
@@ -46,8 +46,8 @@ func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInt
 		opts = append(opts, grpc.Creds(bundle.TransportCredentials()))
 	}
 	chainUnaryInterceptors := []grpc.UnaryServerInterceptor{
-		newLogUnaryInterceptor(s),
-		newUnaryInterceptor(s),
+		newLogUnaryInterceptor(ra),
+		newUnaryInterceptor(ra),
 		grpc_prometheus.UnaryServerInterceptor,
 	}
 	if interceptor != nil {
@@ -55,29 +55,29 @@ func Server(s *server.KVServer, tls *tls.Config, interceptor grpc.UnaryServerInt
 	}
 
 	chainStreamInterceptors := []grpc.StreamServerInterceptor{
-		newStreamInterceptor(s),
+		newStreamInterceptor(ra),
 		grpc_prometheus.StreamServerInterceptor,
 	}
 
-	if s.ExperimentalEnableDistributedTracing {
-		chainUnaryInterceptors = append(chainUnaryInterceptors, otelgrpc.UnaryServerInterceptor(s.ExperimentalTracerOptions...))
-		chainStreamInterceptors = append(chainStreamInterceptors, otelgrpc.StreamServerInterceptor(s.ExperimentalTracerOptions...))
+	if ra.ExperimentalEnableDistributedTracing {
+		chainUnaryInterceptors = append(chainUnaryInterceptors, otelgrpc.UnaryServerInterceptor(ra.ExperimentalTracerOptions...))
+		chainStreamInterceptors = append(chainStreamInterceptors, otelgrpc.StreamServerInterceptor(ra.ExperimentalTracerOptions...))
 	}
 
 	opts = append(opts, grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(chainUnaryInterceptors...)))
 	opts = append(opts, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(chainStreamInterceptors...)))
 
-	opts = append(opts, grpc.MaxRecvMsgSize(int(s.MaxRequestBytes+grpcOverheadBytes)))
+	opts = append(opts, grpc.MaxRecvMsgSize(int(ra.MaxRequestBytes+grpcOverheadBytes)))
 	opts = append(opts, grpc.MaxSendMsgSize(maxSendBytes))
-	opts = append(opts, grpc.MaxConcurrentStreams(s.MaxConcurrentStreams))
+	opts = append(opts, grpc.MaxConcurrentStreams(ra.MaxConcurrentStreams))
 
 	grpcServer := grpc.NewServer(append(opts, gopts...)...)
 
-	pb.RegisterKVServer(grpcServer, NewKVServer(s))
-	pb.RegisterWatchServer(grpcServer, NewWatchServer(s))
-	pb.RegisterLeaseServer(grpcServer, NewLeaseServer(s))
+	pb.RegisterKVServer(grpcServer, NewKVServer(ra))
+	pb.RegisterWatchServer(grpcServer, NewWatchServer(ra))
+	pb.RegisterLeaseServer(grpcServer, NewLeaseServer(ra))
 	//pb.RegisterClusterServer(grpcServer, NewClusterServer(s))
-	pb.RegisterAuthServer(grpcServer, NewAuthServer(s))
+	pb.RegisterAuthServer(grpcServer, NewAuthServer(ra))
 	//pb.RegisterMaintenanceServer(grpcServer, NewMaintenanceServer(s))
 
 	// server should register all the services manually

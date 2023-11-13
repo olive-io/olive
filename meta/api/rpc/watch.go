@@ -34,37 +34,31 @@ type watchServer struct {
 }
 
 // NewWatchServer returns a new watch server.
-func NewWatchServer(s *server.KVServer) pb.WatchServer {
-	cluster, err := s.InternalCluster()
-	if err != nil {
-		panic(err)
-	}
-
-	ra := cluster.(*server.Replica)
+func NewWatchServer(ra *server.Replica) pb.WatchServer {
 	srv := &watchServer{
-		lg: s.Logger(),
+		lg: ra.Logger(),
 
-		shardID: cluster.ShardID(),
-		nodeID:  cluster.NodeID(),
+		shardID: ra.ShardID(),
+		nodeID:  ra.NodeID(),
 
-		maxRequestBytes: int(s.MaxRequestBytes + grpcOverheadBytes),
+		maxRequestBytes: int(ra.MaxRequestBytes + grpcOverheadBytes),
 
-		sg:        cluster,
+		sg:        ra,
 		watchable: ra.Watchable(),
 		ag:        ra,
 	}
 	if srv.lg == nil {
 		srv.lg = zap.NewNop()
 	}
-	if s.WatchProgressNotifyInterval > 0 {
-		if s.WatchProgressNotifyInterval < minWatchProgressInterval {
+	if ra.WatchProgressNotifyInterval > 0 {
+		if ra.WatchProgressNotifyInterval < minWatchProgressInterval {
 			srv.lg.Warn(
 				"adjusting watch progress notify interval to minimum period",
 				zap.Duration("min-watch-progress-notify-interval", minWatchProgressInterval),
 			)
-			s.WatchProgressNotifyInterval = minWatchProgressInterval
+			ra.WatchProgressNotifyInterval = minWatchProgressInterval
 		}
-		SetProgressReportInterval(s.WatchProgressNotifyInterval)
+		SetProgressReportInterval(ra.WatchProgressNotifyInterval)
 	}
 	return srv
 }

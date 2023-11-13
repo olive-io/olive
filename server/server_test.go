@@ -18,7 +18,7 @@ const (
 	testAddress3 = "localhost:60003"
 )
 
-func newServer(t *testing.T, dirname, address string) *server.KVServer {
+func newServer(t *testing.T, dirname, address string) *server.OliveServer {
 	dir, err := os.MkdirTemp(t.TempDir(), dirname)
 	if err != nil {
 		panic(err)
@@ -60,14 +60,18 @@ func TestNewServer(t *testing.T) {
 		return
 	}
 
+	s.ShardView(shard)
+
+	ra, _ := s.GetReplica(shard)
+
 	ctx := context.Background()
 	req := &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
-	_, err = s.Put(ctx, shard, req)
+	_, err = ra.Put(ctx, req)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	rsp, err := s.Range(ctx, shard, &pb.RangeRequest{Key: []byte("foo"), Limit: 1})
+	rsp, err := ra.Range(ctx, &pb.RangeRequest{Key: []byte("foo"), Limit: 1})
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -108,14 +112,17 @@ func TestNewCluster(t *testing.T) {
 
 	s3.ShardView(shard)
 
+	ra1, _ := s1.GetReplica(shard)
+	ra2, _ := s3.GetReplica(shard)
+
 	ctx := context.Background()
 	req := &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
-	_, err = s1.Put(ctx, shard, req)
+	_, err = ra1.Put(ctx, req)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	rsp, err := s2.Range(ctx, shard, &pb.RangeRequest{Key: []byte("foo"), Limit: 1, Serializable: true})
+	rsp, err := ra2.Range(ctx, &pb.RangeRequest{Key: []byte("foo"), Limit: 1, Serializable: true})
 	if !assert.NoError(t, err) {
 		return
 	}

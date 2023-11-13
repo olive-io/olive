@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+
 	"github.com/lni/dragonboat/v4/raftio"
 )
 
@@ -52,3 +54,31 @@ func (sel *systemEventListener) SnapshotCompacted(info raftio.SnapshotInfo) {}
 func (sel *systemEventListener) LogCompacted(info raftio.EntryInfo) {}
 
 func (sel *systemEventListener) LogDBCompacted(info raftio.EntryInfo) {}
+
+type replicaRequest struct {
+	shardID     uint64
+	nodeID      uint64
+	staleRead   *replicaStaleRead
+	syncRead    *replicaSyncRead
+	syncPropose *replicaSyncPropose
+}
+
+type replicaStaleRead struct {
+	query any
+	rc    chan any
+	ec    chan error
+}
+
+type replicaSyncRead struct {
+	ctx   context.Context
+	query any
+	rc    chan any
+	ec    chan error
+}
+
+type replicaSyncPropose struct {
+	ctx  context.Context
+	data []byte
+	rc   chan any
+	ec   chan error
+}

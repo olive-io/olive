@@ -42,6 +42,8 @@ type RaftStatusGetter interface {
 type Replica struct {
 	*config.ServerConfig
 
+	s *OliveServer
+
 	lg *zap.Logger
 
 	id     uint64
@@ -75,7 +77,7 @@ type Replica struct {
 	lead           uint64 // must use atomic operations to access; keep 64-bit aligned.
 }
 
-func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
+func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	cfg := s.ServerConfig
 	lg := s.Logger()
@@ -111,6 +113,8 @@ func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 	ctx, cancel := context.WithCancel(s.ctx)
 	ra := &Replica{
 		ServerConfig: cfg,
+
+		s: s,
 
 		lg: s.Logger(),
 
@@ -159,7 +163,7 @@ func (s *KVServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	go func() {
 		select {
-		case <-ra.ratopping:
+		case <-ra.stopping:
 			s.rmu.Lock()
 			delete(s.replicas, shardID)
 			s.rmu.Unlock()
@@ -173,7 +177,7 @@ func (ra *Replica) run() {
 	defer close(ra.done)
 	for {
 		select {
-		case <-ra.ratopping:
+		case <-ra.stopping:
 			return
 		case <-ra.changec:
 			// TODO: trigger raft group change
@@ -199,13 +203,13 @@ func (ra *Replica) Open(done <-chan struct{}) (uint64, error) {
 	}
 
 	index := binary.LittleEndian.Uint64(rsp.Kvs[0].Value)
-	ra.raetAppliedIndex(index)
+	ra.setAppliedIndex(index)
 	return index, nil
 }
 
 func (ra *Replica) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	if length := len(entries); length > 0 {
-		ra.raetCommittedIndex(entries[length-1].Index)
+		ra.setCommittedIndex(entries[length-1].Index)
 	}
 
 	if entries[0].Index < ra.getAppliedIndex() {
@@ -216,12 +220,13 @@ func (ra *Replica) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	for i := range entries {
 		entry := entries[i]
 		ra.applyEntryNormal(&entry)
-		ra.raetAppliedIndex(entry.Index)
+		ra.setAppliedIndex(entry.Index)
 		entry.Result = sm.Result{Value: uint64(len(entry.Cmd))}
 		last = i
 	}
 
 	lastIndex := entries[last].Index
+	ra.applyWait.Trigger(lastIndex)
 	ctx, cancel := context.WithCancel(ra.ctx)
 	defer cancel()
 	r := &pb.PutRequest{Key: bytesutil.PathJoin(ra.prefix(), lastAppliedIndex)}
@@ -381,10 +386,10 @@ func (ra *Replica) applyEntryNormal(ent *sm.Entry) {
 
 func (ra *Replica) Close() error {
 	select {
-	case <-ra.ratopping:
+	case <-ra.stopping:
 		return nil
 	default:
-		close(ra.ratopping)
+		close(ra.stopping)
 	}
 
 	<-ra.done
@@ -409,6 +414,10 @@ func (ra *Replica) Backend() backend.IBackend {
 
 func (ra *Replica) AuthStore() auth.AuthStore { return ra.authStore }
 
+func (ra *Replica) Logger() *zap.Logger {
+	return ra.lg
+}
+
 func (ra *Replica) CleanUp() {
 	ra.bemu.Lock()
 	defer ra.bemu.Unlock()
@@ -418,6 +427,8 @@ func (ra *Replica) CleanUp() {
 		ra.lg.Error("close backend", zap.Error(err))
 	}
 }
+
+func (ra *Replica) ApplyWait() <-chan struct{} { return ra.applyWait.Wait(ra.getCommittedIndex()) }
 
 func (ra *Replica) isLeader() bool {
 	leaderID := ra.getLead()

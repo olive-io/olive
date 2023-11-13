@@ -23,7 +23,7 @@ type streamsMap struct {
 	streams map[grpc.ServerStream]struct{}
 }
 
-func newUnaryInterceptor(s *server.KVServer) grpc.UnaryServerInterceptor {
+func newUnaryInterceptor(ra *server.Replica) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		//if s.IsMemberExist(s.ID()) && s.IsLearner() && !isRPCSupportedForLearner(req) {
 		//	return nil, rpctypes.ErrGPRCNotSupportedForLearner
@@ -48,11 +48,11 @@ func newUnaryInterceptor(s *server.KVServer) grpc.UnaryServerInterceptor {
 	}
 }
 
-func newLogUnaryInterceptor(s *server.KVServer) grpc.UnaryServerInterceptor {
+func newLogUnaryInterceptor(ra *server.Replica) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		startTime := time.Now()
 		resp, err := handler(ctx, req)
-		lg := s.Logger()
+		lg := ra.Logger()
 		if lg != nil { // acquire stats if debug level is enabled or request is expensive
 			defer logUnaryRequestStats(ctx, lg, info, startTime, req, resp)
 		}
@@ -183,7 +183,7 @@ func logExpensiveRequestStats(lg *zap.Logger, startTime time.Time, duration time
 	)
 }
 
-func newStreamInterceptor(s *server.KVServer) grpc.StreamServerInterceptor {
+func newStreamInterceptor(ra *server.Replica) grpc.StreamServerInterceptor {
 	//smap := monitorLeader(s)
 
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
@@ -275,43 +275,43 @@ type serverStreamWithCtx struct {
 
 func (ssc serverStreamWithCtx) Context() context.Context { return ssc.ctx }
 
-func monitorLeader(s *server.KVServer) *streamsMap {
+func monitorLeader(ra *server.Replica) *streamsMap {
 	smap := &streamsMap{
 		streams: make(map[grpc.ServerStream]struct{}),
 	}
-
-	s.GoAttach(func() {
-		election := time.Duration(s.RTTMillisecond) * time.Duration(s.ElectionTTL) * time.Millisecond
-		//noLeaderCnt := 0
-
-		for {
-			select {
-			case <-s.StoppingNotify():
-				return
-			case <-time.After(election):
-				//if s.Leader() == types.ID(raft.None) {
-				//	noLeaderCnt++
-				//} else {
-				//	noLeaderCnt = 0
-				//}
-				//
-				//// We are more conservative on canceling existing streams. Reconnecting streams
-				//// cost much more than just rejecting new requests. So we wait until the member
-				//// cannot find a leader for maxNoLeaderCnt election timeouts to cancel existing streams.
-				//if noLeaderCnt >= maxNoLeaderCnt {
-				//	smap.mu.Lock()
-				//	for ss := range smap.streams {
-				//		if ssWithCtx, ok := ss.(serverStreamWithCtx); ok {
-				//			ssWithCtx.ctx.Cancel(rpctypes.ErrGRPCNoLeader)
-				//			<-ss.Context().Done()
-				//		}
-				//	}
-				//	smap.streams = make(map[grpc.ServerStream]struct{})
-				//	smap.mu.Unlock()
-				//}
-			}
-		}
-	})
+	//
+	//ra.GoAttach(func() {
+	//	election := time.Duration(s.RTTMillisecond) * time.Duration(s.ElectionTTL) * time.Millisecond
+	//	//noLeaderCnt := 0
+	//
+	//	for {
+	//		select {
+	//		case <-s.StoppingNotify():
+	//			return
+	//		case <-time.After(election):
+	//			//if s.Leader() == types.ID(raft.None) {
+	//			//	noLeaderCnt++
+	//			//} else {
+	//			//	noLeaderCnt = 0
+	//			//}
+	//			//
+	//			//// We are more conservative on canceling existing streams. Reconnecting streams
+	//			//// cost much more than just rejecting new requests. So we wait until the member
+	//			//// cannot find a leader for maxNoLeaderCnt election timeouts to cancel existing streams.
+	//			//if noLeaderCnt >= maxNoLeaderCnt {
+	//			//	smap.mu.Lock()
+	//			//	for ss := range smap.streams {
+	//			//		if ssWithCtx, ok := ss.(serverStreamWithCtx); ok {
+	//			//			ssWithCtx.ctx.Cancel(rpctypes.ErrGRPCNoLeader)
+	//			//			<-ss.Context().Done()
+	//			//		}
+	//			//	}
+	//			//	smap.streams = make(map[grpc.ServerStream]struct{})
+	//			//	smap.mu.Unlock()
+	//			//}
+	//		}
+	//	}
+	//})
 
 	return smap
 }

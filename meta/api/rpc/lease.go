@@ -17,8 +17,8 @@ type LeaseServer struct {
 	le  server.ILessor
 }
 
-func NewLeaseServer(s *server.KVServer) pb.LeaseServer {
-	srv := &LeaseServer{lg: s.Logger(), le: s, hdr: newHeader(s)}
+func NewLeaseServer(ra *server.Replica) pb.LeaseServer {
+	srv := &LeaseServer{lg: ra.Logger(), le: ra, hdr: newHeader(ra)}
 	if srv.lg == nil {
 		srv.lg = zap.NewNop()
 	}

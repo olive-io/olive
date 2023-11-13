@@ -12,18 +12,11 @@ type header struct {
 	rev     func() int64
 }
 
-func newHeader(s *server.KVServer) header {
-	cluster, err := s.InternalCluster()
-	if err != nil {
-		panic(err)
-	}
-
-	ra := cluster.(*server.Replica)
-
+func newHeader(ra *server.Replica) header {
 	return header{
-		shardID: cluster.ShardID(),
-		nodeID:  cluster.NodeID(),
-		sg:      cluster,
+		shardID: ra.ShardID(),
+		nodeID:  ra.NodeID(),
+		sg:      ra,
 		rev:     func() int64 { return ra.KV().Rev() },
 	}
 }

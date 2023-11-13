@@ -11,8 +11,8 @@ type AuthServer struct {
 	authenticator server.Authenticator
 }
 
-func NewAuthServer(s *server.KVServer) *AuthServer {
-	return &AuthServer{authenticator: s}
+func NewAuthServer(ra *server.Replica) *AuthServer {
+	return &AuthServer{authenticator: ra}
 }
 
 func (as *AuthServer) AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error) {

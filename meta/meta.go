@@ -44,7 +44,7 @@ type Server struct {
 	gs       *grpc.Server
 	listener net.Listener
 
-	kvs *server.KVServer
+	osv *server.OliveServer
 
 	shardID uint64
 
@@ -60,7 +60,7 @@ func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
 		lg = zap.NewExample()
 	}
 
-	kvs, err := server.NewServer(lg, cfg.ServerConfig)
+	osv, err := server.NewServer(lg, cfg.ServerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func NewServer(lg *zap.Logger, cfg Config) (*Server, error) {
 
 		lg: lg,
 
-		kvs: kvs,
+		osv: osv,
 
 		errorc: make(chan error, 1),
 		startc: make(chan struct{}, 1),
@@ -94,7 +94,7 @@ func (s *Server) Start() error {
 
 	defer close(s.startc)
 
-	s.kvs.Start()
+	s.osv.Start()
 
 	name := s.cfg.Name
 	scfg := config.ShardConfig{
@@ -108,7 +108,7 @@ func (s *Server) Start() error {
 		scfg.ElectionTimeout = s.cfg.ElectionTimeout
 	}
 
-	err := s.kvs.StartInternalReplica(scfg)
+	err := s.osv.StartReplica(scfg)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (s *Server) GracefulStop() error {
 		return err
 	}
 
-	s.kvs.Stop()
+	s.osv.Stop()
 
 	s.wg.Wait()
 	return nil
@@ -211,7 +211,12 @@ func (s *Server) newGRPCServe() (*grpc.Server, error) {
 		opts = append(opts, grpc.MaxRecvMsgSize(int(s.cfg.MaxGRPCReceiveMessageSize)))
 	}
 
-	gs := rpc.Server(s.kvs, tc, nil, opts...)
+	ra, ok := s.osv.GetReplica(metaShard)
+	if !ok {
+		return nil, server.ErrShardNotFound
+	}
+
+	gs := rpc.Server(ra, tc, nil, opts...)
 	return gs, nil
 }
 

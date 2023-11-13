@@ -26,7 +26,7 @@ func (a revision) GreaterThan(b revision) bool {
 	if a.main < b.main {
 		return false
 	}
-	return a.raub > b.sub
+	return a.sub > b.sub
 }
 
 func newRevBytes() []byte {
