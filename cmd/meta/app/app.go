@@ -16,7 +16,7 @@ func NewMetaCommand() *cobra.Command {
 	app := &cobra.Command{
 		Use:           "olive-meta",
 		Short:         "a component of olive",
-		Version:       version.GoV(),
+		Version:       version.Version,
 		RunE:          runMeta,
 		SilenceErrors: true,
 		SilenceUsage:  true,

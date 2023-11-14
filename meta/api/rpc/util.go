@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/olive-io/olive/api/rpctypes"
+	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/server"
 	"github.com/olive-io/olive/server/lease"
 	"github.com/olive-io/olive/server/mvcc"
@@ -93,4 +94,15 @@ func isClientCtxErr(ctxErr error, err error) bool {
 		}
 	}
 	return false
+}
+
+func isRPCSupportedForLearner(req interface{}) bool {
+	switch r := req.(type) {
+	case *pb.StatusRequest:
+		return true
+	case *pb.RangeRequest:
+		return r.Serializable
+	default:
+		return false
+	}
 }

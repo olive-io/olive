@@ -78,6 +78,10 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*OliveServer, error) {
 		KeyFile:             cfg.KeyFile,
 	}
 
+	if err := nhc.Validate(); err != nil {
+		return nil, err
+	}
+
 	nh, err := dragonboat.NewNodeHost(nhc)
 	if err != nil {
 		return nil, err

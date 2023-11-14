@@ -5,10 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/olive-io/olive/api/rpctypes"
 	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
 
@@ -25,24 +27,24 @@ type streamsMap struct {
 
 func newUnaryInterceptor(ra *server.Replica) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		//if s.IsMemberExist(s.ID()) && s.IsLearner() && !isRPCSupportedForLearner(req) {
-		//	return nil, rpctypes.ErrGPRCNotSupportedForLearner
-		//}
-		//
-		//md, ok := metadata.FromIncomingContext(ctx)
-		//if ok {
-		//	ver, vs := "unknown", md.Get(rpctypes.MetadataClientAPIVersionKey)
-		//	if len(vs) > 0 {
-		//		ver = vs[0]
-		//	}
-		//	clientRequests.WithLabelValues("unary", ver).Inc()
-		//
-		//	if ks := md[rpctypes.MetadataRequireLeaderKey]; len(ks) > 0 && ks[0] == rpctypes.MetadataHasLeader {
-		//		if s.Leader() == types.ID(raft.None) {
-		//			return nil, rpctypes.ErrGRPCNoLeader
-		//		}
-		//	}
-		//}
+		if ra.IsMemberExist(ra.NodeID()) && ra.IsLearner() && !isRPCSupportedForLearner(req) {
+			return nil, rpctypes.ErrGPRCNotSupportedForLearner
+		}
+
+		md, ok := metadata.FromIncomingContext(ctx)
+		if ok {
+			ver, vs := "unknown", md.Get(rpctypes.MetadataClientAPIVersionKey)
+			if len(vs) > 0 {
+				ver = vs[0]
+			}
+			clientRequests.WithLabelValues("unary", ver).Inc()
+
+			if ks := md[rpctypes.MetadataRequireLeaderKey]; len(ks) > 0 && ks[0] == rpctypes.MetadataHasLeader {
+				if ra.Leader() == 0 {
+					return nil, rpctypes.ErrGRPCNoLeader
+				}
+			}
+		}
 
 		return handler(ctx, req)
 	}
@@ -184,42 +186,42 @@ func logExpensiveRequestStats(lg *zap.Logger, startTime time.Time, duration time
 }
 
 func newStreamInterceptor(ra *server.Replica) grpc.StreamServerInterceptor {
-	//smap := monitorLeader(s)
+	smap := monitorLeader(ra)
 
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		//if s.IsMemberExist(s.ID()) && s.IsLearner() && info.FullMethod != snapshotMethod { // learner does not support stream RPC except Snapshot
-		//	return rpctypes.ErrGPRCNotSupportedForLearner
-		//}
-		//
-		//md, ok := metadata.FromIncomingContext(ss.Context())
-		//if ok {
-		//	ver, vs := "unknown", md.Get(rpctypes.MetadataClientAPIVersionKey)
-		//	if len(vs) > 0 {
-		//		ver = vs[0]
-		//	}
-		//	clientRequests.WithLabelValues("stream", ver).Inc()
-		//
-		//	if ks := md[rpctypes.MetadataRequireLeaderKey]; len(ks) > 0 && ks[0] == rpctypes.MetadataHasLeader {
-		//		if s.Leader() == types.ID(raft.None) {
-		//			return rpctypes.ErrGRPCNoLeader
-		//		}
-		//
-		//		ctx := newCancellableContext(ss.Context())
-		//		ss = serverStreamWithCtx{ctx: ctx, ServerStream: ss}
-		//
-		//		smap.mu.Lock()
-		//		smap.streams[ss] = struct{}{}
-		//		smap.mu.Unlock()
-		//
-		//		defer func() {
-		//			smap.mu.Lock()
-		//			delete(smap.streams, ss)
-		//			smap.mu.Unlock()
-		//			// TODO: investigate whether the reason for cancellation here is useful to know
-		//			ctx.Cancel(nil)
-		//		}()
-		//	}
-		//}
+		if ra.IsMemberExist(ra.NodeID()) && ra.IsLearner() && info.FullMethod != snapshotMethod { // learner does not support stream RPC except Snapshot
+			return rpctypes.ErrGPRCNotSupportedForLearner
+		}
+
+		md, ok := metadata.FromIncomingContext(ss.Context())
+		if ok {
+			ver, vs := "unknown", md.Get(rpctypes.MetadataClientAPIVersionKey)
+			if len(vs) > 0 {
+				ver = vs[0]
+			}
+			clientRequests.WithLabelValues("stream", ver).Inc()
+
+			if ks := md[rpctypes.MetadataRequireLeaderKey]; len(ks) > 0 && ks[0] == rpctypes.MetadataHasLeader {
+				if ra.Leader() == 0 {
+					return rpctypes.ErrGRPCNoLeader
+				}
+
+				ctx := newCancellableContext(ss.Context())
+				ss = serverStreamWithCtx{ctx: ctx, ServerStream: ss}
+
+				smap.mu.Lock()
+				smap.streams[ss] = struct{}{}
+				smap.mu.Unlock()
+
+				defer func() {
+					smap.mu.Lock()
+					delete(smap.streams, ss)
+					smap.mu.Unlock()
+					// TODO: investigate whether the reason for cancellation here is useful to know
+					ctx.Cancel(nil)
+				}()
+			}
+		}
 
 		return handler(srv, ss)
 	}
@@ -279,39 +281,39 @@ func monitorLeader(ra *server.Replica) *streamsMap {
 	smap := &streamsMap{
 		streams: make(map[grpc.ServerStream]struct{}),
 	}
-	//
-	//ra.GoAttach(func() {
-	//	election := time.Duration(s.RTTMillisecond) * time.Duration(s.ElectionTTL) * time.Millisecond
-	//	//noLeaderCnt := 0
-	//
-	//	for {
-	//		select {
-	//		case <-s.StoppingNotify():
-	//			return
-	//		case <-time.After(election):
-	//			//if s.Leader() == types.ID(raft.None) {
-	//			//	noLeaderCnt++
-	//			//} else {
-	//			//	noLeaderCnt = 0
-	//			//}
-	//			//
-	//			//// We are more conservative on canceling existing streams. Reconnecting streams
-	//			//// cost much more than just rejecting new requests. So we wait until the member
-	//			//// cannot find a leader for maxNoLeaderCnt election timeouts to cancel existing streams.
-	//			//if noLeaderCnt >= maxNoLeaderCnt {
-	//			//	smap.mu.Lock()
-	//			//	for ss := range smap.streams {
-	//			//		if ssWithCtx, ok := ss.(serverStreamWithCtx); ok {
-	//			//			ssWithCtx.ctx.Cancel(rpctypes.ErrGRPCNoLeader)
-	//			//			<-ss.Context().Done()
-	//			//		}
-	//			//	}
-	//			//	smap.streams = make(map[grpc.ServerStream]struct{})
-	//			//	smap.mu.Unlock()
-	//			//}
-	//		}
-	//	}
-	//})
+
+	ra.GoAttach(func() {
+		election := time.Duration(ra.RTTMillisecond) * time.Duration(ra.ElectionTTL) * time.Millisecond
+		noLeaderCnt := 0
+
+		for {
+			select {
+			case <-ra.StoppingNotify():
+				return
+			case <-time.After(election):
+				if ra.Leader() == 0 {
+					noLeaderCnt++
+				} else {
+					noLeaderCnt = 0
+				}
+
+				// We are more conservative on canceling existing streams. Reconnecting streams
+				// cost much more than just rejecting new requests. So we wait until the member
+				// cannot find a leader for maxNoLeaderCnt election timeouts to cancel existing streams.
+				if noLeaderCnt >= maxNoLeaderCnt {
+					smap.mu.Lock()
+					for ss := range smap.streams {
+						if ssWithCtx, ok := ss.(serverStreamWithCtx); ok {
+							ssWithCtx.ctx.Cancel(rpctypes.ErrGRPCNoLeader)
+							<-ss.Context().Done()
+						}
+					}
+					smap.streams = make(map[grpc.ServerStream]struct{})
+					smap.mu.Unlock()
+				}
+			}
+		}
+	})
 
 	return smap
 }

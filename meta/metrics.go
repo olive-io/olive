@@ -29,7 +29,7 @@ func init() {
 	prometheus.MustRegister(currentGoVersion)
 
 	currentVersion.With(prometheus.Labels{
-		"meta_version": version.GoV(),
+		"meta_version": version.Version,
 	}).Set(1)
 	currentGoVersion.With(prometheus.Labels{
 		"meta_go_version": goruntime.Version(),

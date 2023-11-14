@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/olive-io/olive/api/rpctypes"
@@ -46,10 +47,10 @@ func (ls *LeaseServer) LeaseRevoke(ctx context.Context, rr *pb.LeaseRevokeReques
 
 func (ls *LeaseServer) LeaseTimeToLive(ctx context.Context, rr *pb.LeaseTimeToLiveRequest) (*pb.LeaseTimeToLiveResponse, error) {
 	resp, err := ls.le.LeaseTimeToLive(ctx, rr)
-	if err != nil && err != lease.ErrLeaseNotFound {
+	if err != nil && !errors.Is(err, lease.ErrLeaseNotFound) {
 		return nil, togRPCError(err)
 	}
-	if err == lease.ErrLeaseNotFound {
+	if errors.Is(err, lease.ErrLeaseNotFound) {
 		resp = &pb.LeaseTimeToLiveResponse{
 			Header: &pb.ResponseHeader{},
 			ID:     rr.ID,
@@ -62,10 +63,10 @@ func (ls *LeaseServer) LeaseTimeToLive(ctx context.Context, rr *pb.LeaseTimeToLi
 
 func (ls *LeaseServer) LeaseLeases(ctx context.Context, rr *pb.LeaseLeasesRequest) (*pb.LeaseLeasesResponse, error) {
 	resp, err := ls.le.LeaseLeases(ctx, rr)
-	if err != nil && err != lease.ErrLeaseNotFound {
+	if err != nil && !errors.Is(err, lease.ErrLeaseNotFound) {
 		return nil, togRPCError(err)
 	}
-	if err == lease.ErrLeaseNotFound {
+	if errors.Is(err, lease.ErrLeaseNotFound) {
 		resp = &pb.LeaseLeasesResponse{
 			Header: &pb.ResponseHeader{},
 			Leases: []*pb.LeaseStatus{},
@@ -85,7 +86,7 @@ func (ls *LeaseServer) LeaseKeepAlive(stream pb.Lease_LeaseKeepAliveServer) (err
 	case <-stream.Context().Done():
 		// the only server-side cancellation is noleader for now.
 		err = stream.Context().Err()
-		if err == context.Canceled {
+		if errors.Is(err, context.Canceled) {
 			err = rpctypes.ErrGRPCNoLeader
 		}
 	}
@@ -118,7 +119,7 @@ func (ls *LeaseServer) leaseKeepAlive(stream pb.Lease_LeaseKeepAliveServer) erro
 		ls.hdr.fill(resp.Header)
 
 		ttl, err := ls.le.LeaseRenew(stream.Context(), lease.LeaseID(req.ID))
-		if err == lease.ErrLeaseNotFound {
+		if errors.Is(err, lease.ErrLeaseNotFound) {
 			err = nil
 			ttl = 0
 		}

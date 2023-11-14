@@ -136,6 +136,48 @@ service Lease {
   }
 }
 
+service Cluster {
+  // MemberAdd adds a member into the cluster.
+  rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/add"
+      body: "*"
+    };
+  }
+
+  // MemberRemove removes an existing member from the cluster.
+  rpc MemberRemove(MemberRemoveRequest) returns (MemberRemoveResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/remove"
+      body: "*"
+    };
+  }
+
+  // MemberUpdate updates the member configuration.
+  rpc MemberUpdate(MemberUpdateRequest) returns (MemberUpdateResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/update"
+      body: "*"
+    };
+  }
+
+  // MemberList lists all the members in the cluster.
+  rpc MemberList(MemberListRequest) returns (MemberListResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/list"
+      body: "*"
+    };
+  }
+
+  // MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
+  rpc MemberPromote(MemberPromoteRequest) returns (MemberPromoteResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/promote"
+      body: "*"
+    };
+  }
+}
+
 service Auth {
   // AuthEnable enables authentication.
   rpc AuthEnable(AuthEnableRequest) returns (AuthEnableResponse) {

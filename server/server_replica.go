@@ -4,47 +4,49 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net/url"
 	"time"
 
 	"github.com/lni/dragonboat/v4"
-	dbc "github.com/lni/dragonboat/v4/config"
 	"github.com/olive-io/olive/server/config"
 	"go.uber.org/zap"
 )
 
+type replicaRequest struct {
+	shardID     uint64
+	nodeID      uint64
+	staleRead   *replicaStaleRead
+	syncRead    *replicaSyncRead
+	syncPropose *replicaSyncPropose
+}
+
+type replicaStaleRead struct {
+	query any
+	rc    chan any
+	ec    chan error
+}
+
+type replicaSyncRead struct {
+	ctx   context.Context
+	query any
+	rc    chan any
+	ec    chan error
+}
+
+type replicaSyncPropose struct {
+	ctx  context.Context
+	data []byte
+	rc   chan any
+	ec   chan error
+}
+
 func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
-
-	rc := dbc.Config{
-		ShardID:             cfg.ShardID,
-		CheckQuorum:         true,
-		PreVote:             s.PreVote,
-		ElectionRTT:         s.ElectionTTL,
-		HeartbeatRTT:        s.HeartBeatTTL,
-		SnapshotEntries:     10,
-		CompactionOverhead:  5,
-		OrderedConfigChange: true,
-		WaitReady:           true,
-	}
-
-	join := cfg.NewCluster
-
-	members := map[uint64]string{}
-	for key, urlText := range cfg.PeerURLs {
-		URL, err := url.Parse(urlText.String())
-		if err != nil {
-			return fmt.Errorf("invalid url: %v", urlText.String())
-		}
-		replicaID := GenHash([]byte(key))
-		peerAddress := URL.Host
-		if peerAddress == s.ListenerPeerAddress {
-			rc.ReplicaID = replicaID
-		}
-		members[replicaID] = peerAddress
+	ra, members, join, rc, err := s.NewReplica(cfg)
+	if err != nil {
+		return err
 	}
 
 	start := time.Now()
-	err := s.nh.StartOnDiskReplica(members, join, s.NewDiskKV, rc)
+	err = s.nh.StartOnDiskReplica(members, join, ra.NewDiskStateMachine, rc)
 	if err != nil {
 		return err
 	}
@@ -72,6 +74,7 @@ func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
 				zap.Uint64("leader", leaderID),
 				zap.Uint64("term", term),
 				zap.Duration("duration", time.Now().Sub(start)))
+
 			break
 		}
 		if e1 != nil {

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coreos/go-semver/semver"
 	pb "github.com/olive-io/olive/api/serverpb"
 	leasepb "github.com/olive-io/olive/server/lease/leasepb"
 	"github.com/olive-io/olive/server/mvcc/backend"
@@ -23,6 +24,8 @@ const NoLease = LeaseID(0)
 
 // MaxLeaseTTL is the maximum lease TTL value
 const MaxLeaseTTL = 9000000000
+
+var v1_0 = semver.Version{Major: 1, Minor: 0}
 
 var (
 	forever = time.Time{}
@@ -169,6 +172,13 @@ type lessor struct {
 	expiredLeaseRetryInterval time.Duration
 	// whether lessor should always persist remaining TTL (always enabled in v3.6).
 	checkpointPersist bool
+	// cluster is used to adapt lessor logic based on cluster version
+	cluster cluster
+}
+
+type cluster interface {
+	// Version is the cluster-wide minimum major.minor version.
+	Version() *semver.Version
 }
 
 type LessorConfig struct {
@@ -178,11 +188,11 @@ type LessorConfig struct {
 	CheckpointPersist          bool
 }
 
-func NewLessor(lg *zap.Logger, b backend.IBackend, cfg LessorConfig) ILessor {
-	return newLessor(lg, b, cfg)
+func NewLessor(lg *zap.Logger, b backend.IBackend, cluster cluster, cfg LessorConfig) ILessor {
+	return newLessor(lg, b, cluster, cfg)
 }
 
-func newLessor(lg *zap.Logger, b backend.IBackend, cfg LessorConfig) *lessor {
+func newLessor(lg *zap.Logger, b backend.IBackend, cluster cluster, cfg LessorConfig) *lessor {
 	checkpointInterval := cfg.CheckpointInterval
 	expiredLeaseRetryInterval := cfg.ExpiredLeasesRetryInterval
 	if checkpointInterval == 0 {
@@ -206,6 +216,7 @@ func newLessor(lg *zap.Logger, b backend.IBackend, cfg LessorConfig) *lessor {
 		stopC:    make(chan struct{}),
 		doneC:    make(chan struct{}),
 		lg:       lg,
+		cluster:  cluster,
 	}
 	l.initAndRecover()
 
@@ -354,7 +365,12 @@ func (le *lessor) Checkpoint(id LeaseID, remainingTTL int64) error {
 }
 
 func (le *lessor) shouldPersistCheckpoints() bool {
-	return le.checkpointPersist
+	cv := le.cluster.Version()
+	return le.checkpointPersist || (cv != nil && greaterOrEqual(*cv, v1_0))
+}
+
+func greaterOrEqual(first, second semver.Version) bool {
+	return !first.LessThan(second)
 }
 
 // Renew renews an existing lease. If the given lease does not exist or

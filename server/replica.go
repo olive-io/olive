@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/url"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
+	dbc "github.com/lni/dragonboat/v4/config"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	pb "github.com/olive-io/olive/api/serverpb"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -18,6 +21,7 @@ import (
 	"github.com/olive-io/olive/server/cindex"
 	"github.com/olive-io/olive/server/config"
 	"github.com/olive-io/olive/server/lease"
+	"github.com/olive-io/olive/server/membership"
 	"github.com/olive-io/olive/server/mvcc"
 	"github.com/olive-io/olive/server/mvcc/backend"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -42,12 +46,21 @@ type RaftStatusGetter interface {
 type Replica struct {
 	*config.ServerConfig
 
+	SCfg config.ShardConfig
+
 	s *OliveServer
 
 	lg *zap.Logger
 
 	id     uint64
 	nodeID uint64
+
+	msmu    sync.RWMutex
+	members map[uint64]string
+
+	cluster *membership.RaftCluster
+
+	isLearner bool
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -71,16 +84,64 @@ type Replica struct {
 	done     chan struct{}
 	changec  chan struct{}
 
+	// wgMu blocks concurrent waitgroup mutation while server stopping
+	wgMu sync.RWMutex
+	// wg is used to wait for the goroutines that depends on the server state
+	// to exit when stopping the server.
+	wg sync.WaitGroup
+
 	appliedIndex   uint64 // must use atomic operations to access; keep 64-bit aligned.
 	committedIndex uint64 // must use atomic operations to access; keep 64-bit aligned.
 	term           uint64 // must use atomic operations to access; keep 64-bit aligned.
 	lead           uint64 // must use atomic operations to access; keep 64-bit aligned.
 }
 
-func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
-
+func (s *OliveServer) NewReplica(sc config.ShardConfig) (ra *Replica, members map[uint64]string, join bool, rc dbc.Config, err error) {
 	cfg := s.ServerConfig
 	lg := s.Logger()
+
+	rc = dbc.Config{
+		ShardID:             sc.ShardID,
+		CheckQuorum:         true,
+		PreVote:             s.PreVote,
+		ElectionRTT:         s.ElectionTTL,
+		HeartbeatRTT:        s.HeartBeatTTL,
+		SnapshotEntries:     10,
+		CompactionOverhead:  5,
+		OrderedConfigChange: true,
+		WaitReady:           true,
+	}
+
+	members = map[uint64]string{}
+	for key, urlText := range sc.PeerURLs {
+		URL, e1 := url.Parse(urlText.String())
+		if e1 != nil {
+			err = fmt.Errorf("invalid url: %v", urlText.String())
+			return
+		}
+
+		id, _ := strconv.ParseUint(key, 10, 64)
+		if id == 0 {
+			id = GenHash([]byte(key))
+		}
+		replicaID := id
+		peerAddress := URL.Host
+		if peerAddress == s.ListenerPeerAddress {
+			rc.ReplicaID = replicaID
+		}
+		members[replicaID] = peerAddress
+	}
+
+	if err = rc.Validate(); err != nil {
+		return
+	}
+
+	if len(members) == 0 || rc.IsNonVoting || rc.IsWitness {
+		join = true
+	}
+
+	shardID := rc.ShardID
+	nodeID := rc.ReplicaID
 
 	if cfg.MaxRequestBytes > recommendedMaxRequestBytes {
 		lg.Warn(
@@ -94,6 +155,14 @@ func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	be := openBackend(lg, shardID, nodeID, *cfg, nil)
 
+	var cl *membership.RaftCluster
+	cl, err = membership.NewClusterFromURLsMap(lg, sc.Token, sc.PeerURLs)
+	if err != nil {
+		return
+	}
+	cl.SetBackend(be)
+	cl.SetID(shardID, nodeID)
+
 	ci := cindex.NewConsistentIndex(be, shardID, nodeID)
 
 	heartbeat := time.Millisecond * time.Duration(cfg.RTTMillisecond) * time.Duration(cfg.HeartBeatTTL)
@@ -101,7 +170,7 @@ func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 	// always recover lessor before kv. When we recover the mvcc.KV it will reattach keys to its leases.
 	// If we recover mvcc.KV first, it will attach the keys to the wrong lessor before it recovers.
-	lessor := lease.NewLessor(lg, be, lease.LessorConfig{
+	lessor := lease.NewLessor(lg, be, cl, lease.LessorConfig{
 		MinLeaseTTL:                int64(math.Ceil(minTTL.Seconds())),
 		CheckpointInterval:         cfg.LeaseCheckpointInterval,
 		CheckpointPersist:          cfg.LeaseCheckpointPersist,
@@ -111,8 +180,9 @@ func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 	kv := mvcc.New(lg, be, lessor, mvcc.StoreConfig{CompactionBatchLimit: cfg.CompactionBatchLimit})
 
 	ctx, cancel := context.WithCancel(s.ctx)
-	ra := &Replica{
+	ra = &Replica{
 		ServerConfig: cfg,
+		SCfg:         sc,
 
 		s: s,
 
@@ -120,6 +190,9 @@ func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
 		id:     shardID,
 		nodeID: nodeID,
+
+		members: members,
+		cluster: cl,
 
 		ctx:    ctx,
 		cancel: cancel,
@@ -147,26 +220,31 @@ func (s *OliveServer) NewDiskKV(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 		time.Duration(cfg.TokenTTL)*time.Second,
 	)
 	if err != nil {
-		lg.Panic("failed to create token provider", zap.Error(err))
+		return
 	}
 
 	ra.authStore = auth.NewAuthStore(lg, be, tp, int(cfg.BcryptCost))
 	ra.apply = ra.newApplier()
 
-	s.rmu.Lock()
-	s.replicas[shardID] = ra
-	s.rmu.Unlock()
+	return
+}
 
-	s.done = make(chan struct{}, 1)
+func (ra *Replica) NewDiskStateMachine(shardID, nodeID uint64) sm.IOnDiskStateMachine {
 
-	go s.run()
+	ra.s.rmu.Lock()
+	ra.s.replicas[shardID] = ra
+	ra.s.rmu.Unlock()
+
+	ra.done = make(chan struct{}, 1)
+
+	go ra.run()
 
 	go func() {
 		select {
 		case <-ra.stopping:
-			s.rmu.Lock()
-			delete(s.replicas, shardID)
-			s.rmu.Unlock()
+			ra.s.rmu.Lock()
+			delete(ra.s.replicas, shardID)
+			ra.s.rmu.Unlock()
 		}
 	}()
 
@@ -430,6 +508,30 @@ func (ra *Replica) CleanUp() {
 
 func (ra *Replica) ApplyWait() <-chan struct{} { return ra.applyWait.Wait(ra.getCommittedIndex()) }
 
+// StoppingNotify returns a channel that receives an empty struct
+// when the Replica is being stopped.
+func (ra *Replica) StoppingNotify() <-chan struct{} { return ra.stopping }
+
+// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
+// The passed function should interrupt on s.StoppingNotify().
+func (ra *Replica) GoAttach(f func()) {
+	ra.wgMu.RLock() // this blocks with ongoing close(s.stopping)
+	defer ra.wgMu.RUnlock()
+	select {
+	case <-ra.stopping:
+		ra.lg.Warn("server has stopped; skipping GoAttach")
+		return
+	default:
+	}
+
+	// now safe to add since waitgroup wait has not started yet
+	ra.wg.Add(1)
+	go func() {
+		defer ra.wg.Done()
+		f()
+	}()
+}
+
 func (ra *Replica) isLeader() bool {
 	leaderID := ra.getLead()
 	return leaderID != 0 && leaderID == ra.nodeID
@@ -497,4 +599,19 @@ func (ra *Replica) CommittedIndex() uint64 {
 
 func (ra *Replica) Term() uint64 {
 	return ra.getTerm()
+}
+
+func (ra *Replica) IsLearner() bool {
+	return ra.isLearner
+}
+
+func (ra *Replica) IsMemberExist(id uint64) bool {
+	ra.msmu.RLock()
+	defer ra.msmu.RUnlock()
+	_, ok := ra.members[id]
+	return ok
+}
+
+func (ra *Replica) Cluster() *membership.RaftCluster {
+	return ra.cluster
 }

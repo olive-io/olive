@@ -564,6 +564,114 @@ message LeaseLeasesResponse {
 }
 
 
+message Member {
+  // ID is the member ID for this member.
+  uint64 ID = 1;
+  // name is the human-readable name of the member. If the member is not started, the name will be an empty string.
+  string name = 2;
+  // peerURLs is the list of URLs the member exposes to the cluster for communication.
+  repeated string peerURLs = 3;
+  // clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+  repeated string clientURLs = 4;
+  // isLearner indicates if the member is raft learner.
+  bool isLearner = 5;
+}
+
+message MemberAddRequest {
+  // peerURLs is the list of URLs the added member will use to communicate with the cluster.
+  repeated string peerURLs = 1;
+  // isLearner indicates if the added member is raft learner.
+  bool isLearner = 2;
+}
+
+message MemberAddResponse {
+  ResponseHeader header = 1;
+  // member is the member information for the added member.
+  Member member = 2;
+  // members is a list of all members after adding the new member.
+  repeated Member members = 3;
+}
+
+message MemberRemoveRequest {
+  // ID is the member ID of the member to remove.
+  uint64 ID = 1;
+}
+
+message MemberRemoveResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members after removing the member.
+  repeated Member members = 2;
+}
+
+message MemberUpdateRequest {
+  // ID is the member ID of the member to update.
+  uint64 ID = 1;
+  // peerURLs is the new list of URLs the member will use to communicate with the cluster.
+  repeated string peerURLs = 2;
+}
+
+message MemberUpdateResponse{
+  ResponseHeader header = 1;
+  // members is a list of all members after updating the member.
+  repeated Member members = 2;
+}
+
+message MemberListRequest {
+  bool linearizable = 1;
+}
+
+message MemberListResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members associated with the cluster.
+  repeated Member members = 2;
+}
+
+message MemberPromoteRequest {
+  // ID is the member ID of the member to promote.
+  uint64 ID = 1;
+}
+
+message MemberPromoteResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members after promoting the member.
+  repeated Member members = 2;
+}
+
+message DefragmentRequest {
+}
+
+message DefragmentResponse {
+  ResponseHeader header = 1;
+}
+
+message MoveLeaderRequest {
+  // targetID is the node ID for the new leader.
+  uint64 targetID = 1;
+}
+
+message MoveLeaderResponse {
+  ResponseHeader header = 1;
+}
+
+message StatusRequest {
+}
+
+message StatusResponse {
+  ResponseHeader header = 1;
+  // leader is the member ID which the responding member believes is the current leader.
+  uint64 leader = 2;
+  // raftIndex is the current raft committed index of the responding member.
+  uint64 raftIndex = 3;
+  // raftTerm is the current raft term of the responding member.
+  uint64 raftTerm = 4;
+  // raftAppliedIndex is the current raft applied index of the responding member.
+  uint64 raftAppliedIndex = 5;
+  // errors contains alarm/health information and status.
+  repeated string errors = 6;
+  // isLearner indicates if the member is raft learner.
+  bool isLearner = 7;
+}
+
 message AuthEnableRequest {
 }
 

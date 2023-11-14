@@ -11,6 +11,11 @@ var (
 	metaBucketName  = []byte("meta")
 	leaseBucketName = []byte("lease")
 
+	clusterBucketName = []byte("cluster")
+
+	membersBucketName        = []byte("members")
+	membersRemovedBucketName = []byte("members_removed")
+
 	authBucketName      = []byte("auth")
 	authUsersBucketName = []byte("authUsers")
 	authRolesBucketName = []byte("authRoles")
@@ -22,6 +27,11 @@ var (
 	Key   = backend.IBucket(bucket{id: 1, name: keyBucketName, safeRangeBucket: true})
 	Meta  = backend.IBucket(bucket{id: 2, name: metaBucketName, safeRangeBucket: false})
 	Lease = backend.IBucket(bucket{id: 3, name: leaseBucketName, safeRangeBucket: false})
+
+	Cluster = backend.IBucket(bucket{id: 5, name: clusterBucketName, safeRangeBucket: false})
+
+	Members        = backend.IBucket(bucket{id: 10, name: membersBucketName, safeRangeBucket: false})
+	MembersRemoved = backend.IBucket(bucket{id: 11, name: membersRemovedBucketName, safeRangeBucket: false})
 
 	Auth      = backend.IBucket(bucket{id: 20, name: authBucketName, safeRangeBucket: false})
 	AuthUsers = backend.IBucket(bucket{id: 21, name: authUsersBucketName, safeRangeBucket: false})

@@ -346,6 +346,8 @@ type ShardConfig struct {
 
 	ShardID uint64 `json:"shardID"`
 
+	Token string
+
 	PeerURLs types.URLsMap
 
 	NewCluster bool
