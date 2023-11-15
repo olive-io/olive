@@ -14,6 +14,7 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 	json "github.com/json-iterator/go"
+	"github.com/olive-io/olive/api/raftpb"
 	"github.com/olive-io/olive/pkg/netutil"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/server/mvcc/backend"
@@ -188,7 +189,7 @@ func (c *RaftCluster) String() string {
 	c.Lock()
 	defer c.Unlock()
 	b := &bytes.Buffer{}
-	fmt.Fprintf(b, "{ClusterID:%s ", c.cid)
+	fmt.Fprintf(b, "{ClusterID:%d ", c.cid)
 	var ms []string
 	for _, m := range c.members {
 		ms = append(ms, fmt.Sprintf("%+v", m))
@@ -255,92 +256,90 @@ func (c *RaftCluster) Recover(onSet func(*zap.Logger, *semver.Version)) {
 	}
 }
 
-//
-//// ValidateConfigurationChange takes a proposed ConfChange and
-//// ensures that it is still valid.
-//func (c *RaftCluster) ValidateConfigurationChange(cc raftpb.ConfChange) error {
-//	// TODO: this must be switched to backend as well.
-//	members, removed := membersFromStore(c.lg, c.v2store)
-//	id := types.ID(cc.NodeID)
-//	if removed[id] {
-//		return ErrIDRemoved
-//	}
-//	switch cc.Type {
-//	case raftpb.ConfChangeAddNode, raftpb.ConfChangeAddLearnerNode:
-//		confChangeContext := new(ConfigChangeContext)
-//		if err := json.Unmarshal(cc.Context, confChangeContext); err != nil {
-//			c.lg.Panic("failed to unmarshal confChangeContext", zap.Error(err))
-//		}
-//
-//		if confChangeContext.IsPromote { // promoting a learner member to voting member
-//			if members[id] == nil {
-//				return ErrIDNotFound
-//			}
-//			if !members[id].IsLearner {
-//				return ErrMemberNotLearner
-//			}
-//		} else { // adding a new member
-//			if members[id] != nil {
-//				return ErrIDExists
-//			}
-//
-//			urls := make(map[string]bool)
-//			for _, m := range members {
-//				for _, u := range m.PeerURLs {
-//					urls[u] = true
-//				}
-//			}
-//			for _, u := range confChangeContext.Member.PeerURLs {
-//				if urls[u] {
-//					return ErrPeerURLexists
-//				}
-//			}
-//
-//			if confChangeContext.Member.IsLearner { // the new member is a learner
-//				numLearners := 0
-//				for _, m := range members {
-//					if m.IsLearner {
-//						numLearners++
-//					}
-//				}
-//				if numLearners+1 > maxLearners {
-//					return ErrTooManyLearners
-//				}
-//			}
-//		}
-//	case raftpb.ConfChangeRemoveNode:
-//		if members[id] == nil {
-//			return ErrIDNotFound
-//		}
-//
-//	case raftpb.ConfChangeUpdateNode:
-//		if members[id] == nil {
-//			return ErrIDNotFound
-//		}
-//		urls := make(map[string]bool)
-//		for _, m := range members {
-//			if m.ID == id {
-//				continue
-//			}
-//			for _, u := range m.PeerURLs {
-//				urls[u] = true
-//			}
-//		}
-//		m := new(Member)
-//		if err := json.Unmarshal(cc.Context, m); err != nil {
-//			c.lg.Panic("failed to unmarshal member", zap.Error(err))
-//		}
-//		for _, u := range m.PeerURLs {
-//			if urls[u] {
-//				return ErrPeerURLexists
-//			}
-//		}
-//
-//	default:
-//		c.lg.Panic("unknown ConfChange type", zap.String("type", cc.Type.String()))
-//	}
-//	return nil
-//}
+// ValidateConfigurationChange takes a proposed ConfChange and
+// ensures that it is still valid.
+func (c *RaftCluster) ValidateConfigurationChange(cc raftpb.ConfChange) error {
+	members, removed := membersFromBackend(c.lg, c.be)
+	id := cc.NodeID
+	if removed[id] {
+		return ErrIDRemoved
+	}
+	switch cc.Type {
+	case raftpb.ConfChangeType_ConfChangeAddNode, raftpb.ConfChangeType_ConfChangeAddLearnerNode:
+		confChangeContext := new(ConfigChangeContext)
+		if err := json.Unmarshal(cc.Context, confChangeContext); err != nil {
+			c.lg.Panic("failed to unmarshal confChangeContext", zap.Error(err))
+		}
+
+		if confChangeContext.IsPromote { // promoting a learner member to voting member
+			if members[id] == nil {
+				return ErrIDNotFound
+			}
+			if !members[id].IsLearner {
+				return ErrMemberNotLearner
+			}
+		} else { // adding a new member
+			if members[id] != nil {
+				return ErrIDExists
+			}
+
+			urls := make(map[string]bool)
+			for _, m := range members {
+				for _, u := range m.PeerURLs {
+					urls[u] = true
+				}
+			}
+			for _, u := range confChangeContext.Member.PeerURLs {
+				if urls[u] {
+					return ErrPeerURLexists
+				}
+			}
+
+			if confChangeContext.Member.IsLearner { // the new member is a learner
+				numLearners := 0
+				for _, m := range members {
+					if m.IsLearner {
+						numLearners++
+					}
+				}
+				if numLearners+1 > maxLearners {
+					return ErrTooManyLearners
+				}
+			}
+		}
+	case raftpb.ConfChangeType_ConfChangeRemoveNode:
+		if members[id] == nil {
+			return ErrIDNotFound
+		}
+
+	case raftpb.ConfChangeType_ConfChangeUpdateNode:
+		if members[id] == nil {
+			return ErrIDNotFound
+		}
+		urls := make(map[string]bool)
+		for _, m := range members {
+			if m.ID == id {
+				continue
+			}
+			for _, u := range m.PeerURLs {
+				urls[u] = true
+			}
+		}
+		m := new(Member)
+		if err := json.Unmarshal(cc.Context, m); err != nil {
+			c.lg.Panic("failed to unmarshal member", zap.Error(err))
+		}
+		for _, u := range m.PeerURLs {
+			if urls[u] {
+				return ErrPeerURLexists
+			}
+		}
+
+	default:
+		c.lg.Panic("unknown ConfChange type", zap.String("type", cc.Type.String()))
+	}
+	return nil
+}
 
 // AddMember adds a new Member into the cluster, and saves the given member's
 // raftAttributes into the store. The given member should have empty attributes.
@@ -693,12 +692,6 @@ func ValidateClusterAndAssignIDs(lg *zap.Logger, local *RaftCluster, existing *R
 	return nil
 }
 
-// IsValidVersionChange checks the two scenario when version is valid to change:
-// 1. Downgrade: cluster version is 1 minor version higher than local version,
-// cluster version should change.
-// 2. Cluster start: when not all members version are available, cluster version
-// is set to MinVersion(3.0), when all members are at higher version, cluster version
-// is lower than local version, cluster version should change
 func IsValidVersionChange(cv *semver.Version, lv *semver.Version) bool {
 	cv = &semver.Version{Major: cv.Major, Minor: cv.Minor}
 	lv = &semver.Version{Major: lv.Major, Minor: lv.Minor}

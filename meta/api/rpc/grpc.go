@@ -76,7 +76,7 @@ func Server(ra *server.Replica, tls *tls.Config, interceptor grpc.UnaryServerInt
 	pb.RegisterKVServer(grpcServer, NewKVServer(ra))
 	pb.RegisterWatchServer(grpcServer, NewWatchServer(ra))
 	pb.RegisterLeaseServer(grpcServer, NewLeaseServer(ra))
-	//pb.RegisterClusterServer(grpcServer, NewClusterServer(ra))
+	pb.RegisterClusterServer(grpcServer, NewClusterServer(ra))
 	pb.RegisterAuthServer(grpcServer, NewAuthServer(ra))
 	//pb.RegisterMaintenanceServer(grpcServer, NewMaintenanceServer(s))
 

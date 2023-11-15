@@ -6,17 +6,21 @@ import (
 	"math"
 	"time"
 
+	json "github.com/json-iterator/go"
 	"github.com/lni/dragonboat/v4"
+	"github.com/olive-io/olive/api/raftpb"
 	"github.com/olive-io/olive/server/config"
+	"github.com/olive-io/olive/server/membership"
 	"go.uber.org/zap"
 )
 
 type replicaRequest struct {
-	shardID     uint64
-	nodeID      uint64
-	staleRead   *replicaStaleRead
-	syncRead    *replicaSyncRead
-	syncPropose *replicaSyncPropose
+	shardID        uint64
+	nodeID         uint64
+	staleRead      *replicaStaleRead
+	syncRead       *replicaSyncRead
+	syncPropose    *replicaSyncPropose
+	syncConfChange *replicaSyncConfChange
 }
 
 type replicaStaleRead struct {
@@ -37,6 +41,12 @@ type replicaSyncPropose struct {
 	data []byte
 	rc   chan any
 	ec   chan error
+}
+
+type replicaSyncConfChange struct {
+	ctx context.Context
+	cc  raftpb.ConfChange
+	rc  chan any
 }
 
 func (s *OliveServer) StartReplica(cfg config.ShardConfig) error {
@@ -101,19 +111,12 @@ func (s *OliveServer) processReplicaEvent() {
 	}
 }
 
-func (s *OliveServer) ReplicaRequest(r *replicaRequest) {
-	select {
-	case <-s.stopping:
-	case s.replicaRequest <- r:
-	}
-}
-
 func (s *OliveServer) processReplicaRequest() {
 	for {
 		select {
 		case <-s.stopping:
 			return
-		case req := <-s.replicaRequest:
+		case req := <-s.replicaRequestC:
 			if rr := req.staleRead; rr != nil {
 				s.requestStaleRead(req.shardID, rr)
 			}
@@ -122,6 +125,9 @@ func (s *OliveServer) processReplicaRequest() {
 			}
 			if rr := req.syncPropose; rr != nil {
 				s.requestSyncPropose(req.shardID, rr)
+			}
+			if rr := req.syncConfChange; rr != nil {
+				s.requestConfChange(req.shardID, rr)
 			}
 		}
 	}
@@ -153,6 +159,34 @@ func (s *OliveServer) requestSyncPropose(shardID uint64, r *replicaSyncPropose) 
 		return
 	}
 	r.rc <- result
+}
+
+func (s *OliveServer) requestConfChange(shardID uint64, r *replicaSyncConfChange) {
+	ctx := r.ctx
+	cc := r.cc
+
+	resp := &confChangeResponse{}
+	defer func() { r.rc <- resp }()
+
+	ms, err := s.nh.SyncGetShardMembership(ctx, shardID)
+	if err != nil {
+		resp.err = err
+		return
+	}
+
+	var memb *membership.Member
+	_ = json.Unmarshal(cc.Context, &memb)
+
+	switch cc.Type {
+	case raftpb.ConfChangeType_ConfChangeAddNode:
+		resp.err = s.nh.SyncRequestAddReplica(ctx, shardID, memb.ID, memb.PickPeerURL(), ms.ConfigChangeID)
+	case raftpb.ConfChangeType_ConfChangeUpdateNode:
+
+	case raftpb.ConfChangeType_ConfChangeRemoveNode:
+		resp.err = s.nh.SyncRequestDeleteReplica(ctx, shardID, memb.ID, ms.ConfigChangeID)
+	case raftpb.ConfChangeType_ConfChangeAddLearnerNode:
+		resp.err = s.nh.SyncRequestAddNonVoting(ctx, shardID, memb.ID, memb.PickPeerURL(), ms.ConfigChangeID)
+	}
 }
 
 func (s *OliveServer) GetReplica(shardID uint64) (*Replica, bool) {

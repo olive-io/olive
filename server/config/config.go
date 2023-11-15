@@ -126,6 +126,8 @@ type ServerConfig struct {
 
 	WarningApplyDuration time.Duration `json:"warning-apply-duration"`
 
+	StrictReconfigCheck bool
+
 	// TxnModeWriteWithSharedBuffer enable write transaction to use
 	// a shared buffer in its readonly check operations.
 	TxnModeWriteWithSharedBuffer bool `json:"txn-mode-write-with-shared-buffer"`

@@ -49,7 +49,7 @@ func TestBackendSnapshot(t *testing.T) {
 	}
 
 	snap := b.Snapshot()
-	if _, err := snap.WriteTo([]byte("test/f"), f); err != nil {
+	if _, err := snap.WriteTo(f); err != nil {
 		t.Fatal(err)
 	}
 	assert.NoError(t, snap.Close())

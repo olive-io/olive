@@ -1,0 +1,36 @@
+syntax = "proto2";
+
+package raftpb;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/olive-io/olive/api/raftpb;raftpb";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+
+enum ConfChangeType {
+  ConfChangeAddNode = 0;
+  ConfChangeRemoveNode = 1;
+  ConfChangeUpdateNode = 2;
+  ConfChangeAddLearnerNode = 3;
+}
+
+message ConfChange {
+  optional ConfChangeType  type = 2 [(gogoproto.nullable) = false];
+  optional uint64          node_id = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "NodeID"];
+  optional bytes           context = 4;
+
+  // NB: this is used only by etcd to thread through a unique identifier.
+  // Ideally it should really use the Context instead. No counterpart to
+  // this field exists in ConfChangeV2.
+  optional uint64          id = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+// ConfChangeSingle is an individual configuration change operation. Multiple
+// such operations can be carried out atomically via a ConfChangeV2.
+message ConfChangeSingle {
+  optional ConfChangeType  type = 1 [(gogoproto.nullable) = false];
+  optional uint64          node_id = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "NodeID"];
+}

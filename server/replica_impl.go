@@ -136,7 +136,7 @@ func (ra *Replica) Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResp
 	}
 
 	get := func() {
-		ra.s.ReplicaRequest(req)
+		ra.ReplicaRequest(req)
 		select {
 		case result := <-rc:
 			var ok bool
@@ -226,7 +226,7 @@ func (ra *Replica) Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, 
 		}
 
 		get = func() {
-			ra.s.ReplicaRequest(req)
+			ra.ReplicaRequest(req)
 			select {
 			case result := <-rc:
 				var ok bool
@@ -510,26 +510,6 @@ func (ra *Replica) LeaseLeases(ctx context.Context, r *pb.LeaseLeasesRequest) (*
 	}
 	return &pb.LeaseLeasesResponse{Header: newHeader(ra), Leases: lss}, nil
 }
-
-//func (s *OliveServer) waitLeader(ctx context.Context) (*membership.Member, error) {
-//	leader := s.cluster.Member(s.Leader())
-//	for leader == nil {
-//		// wait an election
-//		dur := time.Duration(s.Cfg.ElectionTicks) * time.Duration(s.Cfg.TickMs) * time.Millisecond
-//		select {
-//		case <-time.After(dur):
-//			leader = s.cluster.Member(s.Leader())
-//		case <-s.stopping:
-//			return nil, ErrStopped
-//		case <-ctx.Done():
-//			return nil, ErrNoLeader
-//		}
-//	}
-//	if leader == nil || len(leader.PeerURLs) == 0 {
-//		return nil, ErrNoLeader
-//	}
-//	return leader, nil
-//}
 
 func (ra *Replica) AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error) {
 	resp, err := ra.raftRequestOnce(ctx, pb.InternalRaftRequest{AuthEnable: r})
@@ -833,7 +813,7 @@ func (ra *Replica) processInternalRaftRequestOnce(ctx context.Context, r pb.Inte
 		},
 	}
 
-	ra.s.ReplicaRequest(req)
+	ra.ReplicaRequest(req)
 	select {
 	case <-rc:
 	case err = <-ec:
@@ -856,6 +836,13 @@ func (ra *Replica) processInternalRaftRequestOnce(ctx context.Context, r pb.Inte
 		return nil, ra.parseProposeCtxErr(cctx.Err(), start)
 	case <-ra.done:
 		return nil, ErrStopped
+	}
+}
+
+func (ra *Replica) ReplicaRequest(r *replicaRequest) {
+	select {
+	case <-ra.stopping:
+	case ra.replicaRequestC <- r:
 	}
 }
 

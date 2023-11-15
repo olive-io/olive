@@ -42,9 +42,9 @@ type OliveServer struct {
 
 	raftEventCh chan raftio.LeaderInfo
 
-	rmu            sync.RWMutex
-	replicas       map[uint64]*Replica
-	replicaRequest chan *replicaRequest
+	rmu             sync.RWMutex
+	replicas        map[uint64]*Replica
+	replicaRequestC chan *replicaRequest
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -88,13 +88,13 @@ func NewServer(lg *zap.Logger, cfg config.ServerConfig) (*OliveServer, error) {
 	}
 
 	s := &OliveServer{
-		ServerConfig:   &cfg,
-		nh:             nh,
-		lgMu:           new(sync.RWMutex),
-		lg:             lg,
-		raftEventCh:    raftChannel,
-		replicas:       map[uint64]*Replica{},
-		replicaRequest: make(chan *replicaRequest, 128),
+		ServerConfig:    &cfg,
+		nh:              nh,
+		lgMu:            new(sync.RWMutex),
+		lg:              lg,
+		raftEventCh:     raftChannel,
+		replicas:        map[uint64]*Replica{},
+		replicaRequestC: make(chan *replicaRequest, 128),
 	}
 
 	return s, nil

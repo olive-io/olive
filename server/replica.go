@@ -16,7 +16,6 @@ import (
 	dbc "github.com/lni/dragonboat/v4/config"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	pb "github.com/olive-io/olive/api/serverpb"
-	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/server/auth"
 	"github.com/olive-io/olive/server/cindex"
 	"github.com/olive-io/olive/server/config"
@@ -83,6 +82,8 @@ type Replica struct {
 	stopping chan struct{}
 	done     chan struct{}
 	changec  chan struct{}
+
+	replicaRequestC chan *replicaRequest
 
 	// wgMu blocks concurrent waitgroup mutation while server stopping
 	wgMu sync.RWMutex
@@ -208,10 +209,13 @@ func (s *OliveServer) NewReplica(sc config.ShardConfig) (ra *Replica, members ma
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}),
 		changec:  make(chan struct{}, 5),
+
+		replicaRequestC: s.replicaRequestC,
 	}
 
 	ra.w = wait.New()
 	ra.applyWait = wait.NewTimeList()
+	ra.isLearner = rc.IsNonVoting
 
 	tp, err := auth.NewTokenProvider(lg, cfg.AuthToken,
 		func(index uint64) <-chan struct{} {
@@ -269,7 +273,7 @@ func (ra *Replica) Open(done <-chan struct{}) (uint64, error) {
 	ctx, cancel := context.WithCancel(ra.ctx)
 	defer cancel()
 	r := &pb.RangeRequest{
-		Key:   bytesutil.PathJoin(ra.prefix(), lastAppliedIndex),
+		Key:   lastAppliedIndex,
 		Limit: 1,
 	}
 	rsp, err := ra.apply.Range(ctx, nil, r)
@@ -307,7 +311,7 @@ func (ra *Replica) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	ra.applyWait.Trigger(lastIndex)
 	ctx, cancel := context.WithCancel(ra.ctx)
 	defer cancel()
-	r := &pb.PutRequest{Key: bytesutil.PathJoin(ra.prefix(), lastAppliedIndex)}
+	r := &pb.PutRequest{Key: lastAppliedIndex}
 	r.Value = make([]byte, 8)
 	binary.LittleEndian.PutUint64(r.Value, lastIndex)
 	_, _, err := ra.apply.Put(ctx, nil, r)
@@ -342,7 +346,7 @@ func (ra *Replica) PrepareSnapshot() (interface{}, error) {
 
 func (ra *Replica) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snapshot := ctx.(backend.ISnapshot)
-	_, err := snapshot.WriteTo(ra.prefix(), writer)
+	_, err := snapshot.WriteTo(writer)
 	if err != nil {
 		return err
 	}
@@ -357,10 +361,6 @@ func (ra *Replica) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) e
 	}
 
 	return nil
-}
-
-func (ra *Replica) prefix() []byte {
-	return []byte(fmt.Sprintf("/%d/%d", ra.id, ra.nodeID))
 }
 
 func (ra *Replica) parseProposeCtxErr(err error, start time.Time) error {

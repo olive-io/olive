@@ -11,7 +11,7 @@ import (
 
 type ISnapshot interface {
 	// WriteTo writes the snapshot into the given writer.
-	WriteTo(prefix []byte, w io.Writer) (n int64, err error)
+	WriteTo(w io.Writer) (n int64, err error)
 	// Close closes the snapshot.
 	Close() error
 }
@@ -22,21 +22,15 @@ type snapshot struct {
 	donec chan struct{}
 }
 
-func (s *snapshot) WriteTo(prefix []byte, w io.Writer) (n int64, err error) {
+func (s *snapshot) WriteTo(w io.Writer) (n int64, err error) {
 	ro := &pebble.IterOptions{}
 	iter := s.sn.NewIter(ro)
 	defer iter.Close()
 
 	values := make([]*pb.RaftInternalKV, 0)
 
-	if len(prefix) != 0 {
-		iter.SetBounds(prefix, nil)
-	}
 	for iter.First(); iteratorIsValid(iter); iter.Next() {
 		key := iter.Key()
-		if len(prefix) != 0 && !bytes.HasPrefix(key, prefix) {
-			continue
-		}
 		val := iter.Value()
 		rkv := &pb.RaftInternalKV{
 			Key:   bytes.Clone(key),
