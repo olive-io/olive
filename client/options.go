@@ -26,12 +26,12 @@ var (
 	defaultMaxCallRecvMsgSize = grpc.MaxCallRecvMsgSize(math.MaxInt32)
 
 	// client-side non-streaming retry limit, only applied to requests where server responds with
-	// a error code clearly indicating it was unable to process the request such as codes.Unavailable.
+	// an error code clearly indicating it was unable to process the request such as codes.Unavailable.
 	// If set to 0, retry is disabled.
 	defaultUnaryMaxRetries uint = 100
 
 	// client-side streaming retry limit, only applied to requests where server responds with
-	// a error code clearly indicating it was unable to process the request such as codes.Unavailable.
+	// an error code clearly indicating it was unable to process the request such as codes.Unavailable.
 	// If set to 0, retry is disabled.
 	defaultStreamMaxRetries = ^uint(0) // max uint
 

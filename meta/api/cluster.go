@@ -2,7 +2,7 @@ package api
 
 import "github.com/olive-io/olive/server/membership"
 
-// Cluster is an interface representing a collection of members in one etcd cluster.
+// Cluster is an interface representing a collection of members in one olive cluster.
 type Cluster interface {
 	// ID returns the cluster ID
 	ID() uint64

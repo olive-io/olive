@@ -92,7 +92,7 @@ func SetProgressReportInterval(newTimeout time.Duration) {
 	progressReportIntervalMu.Unlock()
 }
 
-// We send ctrl response inside the read loop. We do not want
+// We send ctrl response inside the read loop. We do not want to
 // send to block read, but we still want ctrl response we sent to
 // be serialized. Thus we use a buffered chan to solve the problem.
 // A small buffer should be OK for most cases, since we expect the
@@ -262,15 +262,15 @@ func (sws *serverWatchStream) recvLoop() error {
 			err := sws.isWatchPermitted(creq)
 			if err != nil {
 				var cancelReason string
-				switch err {
-				case auth.ErrInvalidAuthToken:
+				switch {
+				case errors.Is(err, auth.ErrInvalidAuthToken):
 					cancelReason = rpctypes.ErrGRPCInvalidAuthToken.Error()
-				case auth.ErrAuthOldRevision:
+				case errors.Is(err, auth.ErrAuthOldRevision):
 					cancelReason = rpctypes.ErrGRPCAuthOldRevision.Error()
-				case auth.ErrUserEmpty:
+				case errors.Is(err, auth.ErrUserEmpty):
 					cancelReason = rpctypes.ErrGRPCUserEmpty.Error()
 				default:
-					if err != auth.ErrPermissionDenied {
+					if !errors.Is(err, auth.ErrPermissionDenied) {
 						sws.lg.Error("unexpected error code", zap.Error(err))
 					}
 					cancelReason = rpctypes.ErrGRPCPermissionDenied.Error()
@@ -363,7 +363,7 @@ func (sws *serverWatchStream) recvLoop() error {
 			}
 		default:
 			// we probably should not shutdown the entire stream when
-			// receive an valid command.
+			// receive a valid command.
 			// so just do nothing instead.
 			continue
 		}
@@ -399,9 +399,9 @@ func (sws *serverWatchStream) sendLoop() {
 				return
 			}
 
-			// TODO: evs is []mvccpb.Event type
-			// either return []*mvccpb.Event from the mvcc package
-			// or define protocol buffer with []mvccpb.Event.
+			// TODO: evs is []serverpb.Event type
+			// either return []*serverpb.Event from the mvcc package
+			// or define protocol buffer with []serverpb.Event.
 			evs := wresp.Events
 			events := make([]*pb.Event, len(evs))
 			sws.mu.RLock()

@@ -12,7 +12,7 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/types"
 )
 
-// RaftAttributes represents the raft related attributes of an etcd member.
+// RaftAttributes represents the raft related attributes of an olive member.
 type RaftAttributes struct {
 	// PeerURLs is the list of peers in the raft cluster.
 	// TODO(philips): ensure these are URLs
@@ -21,7 +21,7 @@ type RaftAttributes struct {
 	IsLearner bool `json:"isLearner,omitempty"`
 }
 
-// Attributes represents all the non-raft related attributes of an etcd member.
+// Attributes represents all the non-raft related attributes of an olive member.
 type Attributes struct {
 	Name       string   `json:"name,omitempty"`
 	ClientURLs []string `json:"clientURLs,omitempty"`

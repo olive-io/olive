@@ -75,7 +75,7 @@ type ConfChange struct {
 	Type    ConfChangeType `protobuf:"varint,2,opt,name=type,enum=raftpb.ConfChangeType" json:"type"`
 	NodeID  uint64         `protobuf:"varint,3,opt,name=node_id,json=nodeId" json:"node_id"`
 	Context []byte         `protobuf:"bytes,4,opt,name=context" json:"context"`
-	// NB: this is used only by etcd to thread through a unique identifier.
+	// NB: this is used only by olive to thread through a unique identifier.
 	// Ideally it should really use the Context instead. No counterpart to
 	// this field exists in ConfChangeV2.
 	ID uint64 `protobuf:"varint,1,opt,name=id" json:"id"`

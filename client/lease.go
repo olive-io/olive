@@ -115,9 +115,6 @@ type ILease interface {
 	// The returned "LeaseKeepAliveResponse" channel closes if underlying keep
 	// alive stream is interrupted in some way the client cannot handle itself;
 	// given context "ctx" is canceled or timed out.
-	//
-	// TODO(v4.0): post errors to last keep alive message before closing
-	// (see https://github.com/olive-io/olive/pull/7866)
 	KeepAlive(ctx context.Context, id LeaseID) (<-chan *LeaseKeepAliveResponse, error)
 
 	// KeepAliveOnce renews the lease once. The response corresponds to the

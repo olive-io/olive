@@ -22,7 +22,7 @@ message ConfChange {
   optional uint64          node_id = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "NodeID"];
   optional bytes           context = 4;
 
-  // NB: this is used only by etcd to thread through a unique identifier.
+  // NB: this is used only by olive to thread through a unique identifier.
   // Ideally it should really use the Context instead. No counterpart to
   // this field exists in ConfChangeV2.
   optional uint64          id = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];

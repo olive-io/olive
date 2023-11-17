@@ -485,7 +485,7 @@ func (s *watchableStore) progressIfSync(watchers map[WatchID]*watcher, responseW
 	// notification on first watcher. Note that all watchers
 	// should have the same underlying stream, and the progress
 	// notification will be broadcasted client-side if required
-	// (see dispatchEvent in client/v3/watch.go)
+	// (see dispatchEvent in client/watch.go)
 	for _, w := range watchers {
 		w.send(WatchResponse{WatchID: responseWatchID, Revision: s.rev()})
 		return true

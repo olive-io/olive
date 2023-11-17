@@ -15,7 +15,7 @@ import (
 
 func (ra *Replica) checkMembershipOperationPermission(ctx context.Context) error {
 	if ra.authStore == nil {
-		// In the context of ordinary etcd process, s.authStore will never be nil.
+		// In the context of ordinary olive process, s.authStore will never be nil.
 		// This branch is for handling cases in server_test.go
 		return nil
 	}

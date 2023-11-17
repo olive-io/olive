@@ -245,7 +245,7 @@ func (c *Client) getToken(ctx context.Context) error {
 
 	resp, err := c.IAuth.Authenticate(ctx, c.Username, c.Password)
 	if err != nil {
-		if err == rpctypes.ErrAuthNotEnabled {
+		if errors.Is(err, rpctypes.ErrAuthNotEnabled) {
 			return nil
 		}
 		return err
