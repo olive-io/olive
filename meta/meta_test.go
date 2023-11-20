@@ -4,17 +4,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestNewOliveMetaServer(t *testing.T) {
 	cfg, cancel := TestConfig()
-	if !assert.NoError(t, cfg.Apply()) {
+	if !assert.NoError(t, cfg.Validate()) {
 		return
 	}
 	defer cancel()
 
-	s, err := NewServer(zap.NewExample(), cfg)
+	s, err := NewServer(cfg)
 	if !assert.NoError(t, err) {
 		return
 	}

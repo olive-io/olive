@@ -7,9 +7,7 @@ import (
 	"github.com/olive-io/olive/meta"
 	"github.com/olive-io/olive/pkg/signalutil"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/olive-io/olive/server/config"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 func NewMetaCommand() *cobra.Command {
@@ -24,8 +22,6 @@ func NewMetaCommand() *cobra.Command {
 
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	config.AddServerFlagSet(flags)
-	config.AddLogFlagSet(flags)
 	meta.AddFlagSet(flags)
 
 	return app
@@ -34,33 +30,23 @@ func NewMetaCommand() *cobra.Command {
 func runMeta(cmd *cobra.Command, _ []string) error {
 	flags := cmd.PersistentFlags()
 
-	lcfg, err := config.LoggerConfigFromFlagSet(flags)
+	cfg, err := meta.ConfigFromFlagSet(flags)
 	if err != nil {
 		return err
 	}
-	if err = lcfg.Apply(); err != nil {
+	if err = cfg.Validate(); err != nil {
 		return err
 	}
 
-	logger := lcfg.GetLogger()
-
-	mcfg, err := meta.ConfigFromFlagSet(flags)
-	if err != nil {
-		return err
-	}
-	if err = mcfg.Apply(); err != nil {
-		return err
-	}
-
-	if err = setupMetaServer(logger, mcfg); err != nil {
+	if err = setupMetaServer(cfg); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func setupMetaServer(lg *zap.Logger, cfg meta.Config) error {
-	ms, err := meta.NewServer(lg, cfg)
+func setupMetaServer(cfg meta.Config) error {
+	ms, err := meta.NewServer(cfg)
 	if err != nil {
 		return err
 	}

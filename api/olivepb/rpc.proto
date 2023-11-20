@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package olivepb;
+
+option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+import "github.com/olive-io/olive/api/olivepb/internal.proto";
+
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+service BpmnRPC {
+  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definition/deploy"
+      body: "*"
+    };
+  };
+  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions"
+    };
+  };
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/v1/definition/{id}"
+    };
+  };
+  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definition/remove"
+      body: "*"
+    };
+  };
+  rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definition/execute"
+      body: "*"
+    };
+  };
+}
+
+message DeployDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  bytes content = 3;
+}
+
+message DeployDefinitionResponse {
+  olivepb.ResponseHeader header = 1;
+  int64 version = 2;
+}
+
+message ListDefinitionRequest {}
+
+message ListDefinitionResponse {
+  olivepb.ResponseHeader header = 1;
+  repeated olivepb.Definition definitions = 2;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+  int64 version = 2;
+}
+
+message GetDefinitionResponse {
+  olivepb.ResponseHeader header = 1;
+  olivepb.Definition definition = 2;
+}
+
+message RemoveDefinitionRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message RemoveDefinitionResponse {
+  olivepb.ResponseHeader header = 1;
+}
+
+message ExecuteDefinitionRequest {
+  string id = 1;
+  string name = 2;
+  map<string, string> header = 3;
+}
+
+message ExecuteDefinitionResponse {
+  olivepb.ResponseHeader header = 1;
+  olivepb.ProcessInstance instance = 2;
+}
+
+service RunnerRPC {
+  rpc RegistryRunner(RegistryRunnerRequest) returns (RegistryRunnerResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message RegistryRunnerRequest {
+  olivepb.Runner runner = 1;
+}
+
+message RegistryRunnerResponse {
+  uint64 id = 1;
+}
+
+message HeartbeatRequest {}
+
+message HeartbeatResponse {}

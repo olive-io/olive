@@ -317,58 +317,7 @@ service Auth {
 }
 
 
-service DefinitionRPC {
-  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse);
-  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse);
-  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
-  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse);
-  rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse);
-}
-
-message DeployDefinitionRequest {
-  string id = 1;
-  string name = 2;
-  bytes content = 3;
-}
-
-message DeployDefinitionResponse {
-  serverpb.ResponseHeader header = 1;
-  int64 version = 2;
-}
-
-message ListDefinitionRequest {}
-
-message ListDefinitionResponse {
-  serverpb.ResponseHeader header = 1;
-  repeated serverpb.Definition definitions = 2;
-}
-
-message GetDefinitionRequest {
-  string id = 1;
-  int64 version = 2;
-}
-
-message GetDefinitionResponse {
-  serverpb.ResponseHeader header = 1;
-  serverpb.Definition definition = 2;
-}
-
 message RemoveDefinitionRequest {
   string id = 1;
   string name = 2;
-}
-
-message RemoveDefinitionResponse {
-  serverpb.ResponseHeader header = 1;
-}
-
-message ExecuteDefinitionRequest {
-  string id = 1;
-  string name = 2;
-  map<string, string> header = 3;
-}
-
-message ExecuteDefinitionResponse {
-  serverpb.ResponseHeader header = 1;
-  serverpb.ProcessInstance instance = 2;
 }

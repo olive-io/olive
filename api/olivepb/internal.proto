@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package olivepb;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+
+message OliveHeader {
+  string raftGroup = 1;
+  int64 rev = 2;
+}
+
+message ResponseHeader {
+
+}
+
+message Runner {
+  uint64 id = 1;
+  string advertiseListen = 2;
+  string peerListen = 3;
+}
+
+message RaftGroup {
+  uint64 id = 1;
+  string name = 2;
+  repeated uint64 replica = 3;
+}
+
+message Definition {
+  OliveHeader header = 100;
+
+  string id = 1;
+  string name = 2;
+  bytes content = 3;
+  int64 version = 4;
+}
+
+message ProcessInstance {
+  OliveHeader header = 100;
+
+  string definition = 1;
+}

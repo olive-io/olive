@@ -1,18 +1,15 @@
 package meta
 
 import (
-	"fmt"
-	"os"
-	"time"
+	"net/url"
 
-	"github.com/olive-io/olive/server/config"
 	"github.com/spf13/pflag"
-	"go.etcd.io/etcd/client/pkg/v3/types"
+	"go.etcd.io/etcd/server/v3/embed"
 )
 
 const (
 	DefaultName                  = "default"
-	DefaultListenerClientAddress = "localhost:7379"
+	DefaultListenerClientAddress = "http://localhost:4379"
 )
 
 var (
@@ -41,102 +38,38 @@ const (
 )
 
 type Config struct {
-	config.ServerConfig
+	*embed.Config
+}
 
-	Name string
+func NewConfig() Config {
+	ec := embed.NewConfig()
+	ec.Dir = DefaultName
+	clientURL, _ := url.Parse(DefaultListenerClientAddress)
+	ec.ListenClientUrls = []url.URL{*clientURL}
+	ec.AdvertiseClientUrls = ec.ListenClientUrls
+	cfg := Config{Config: ec}
 
-	InitialCluster      types.URLsMap
-	InitialClusterState string
-
-	ElectionTimeout time.Duration
-
-	ListenerClientAddress string
-
-	MaxGRPCReceiveMessageSize int64
-	MaxGRPCSendMessageSize    int64
+	return cfg
 }
 
 func ConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
-	var scfg config.ServerConfig
-	scfg, err = config.ServerConfigFromFlagSet(flags)
-	if err != nil {
-		return
-	}
-
-	cfg.ServerConfig = scfg
-	cfg.Name, err = flags.GetString("name")
-	if err != nil {
-		return
-	}
-
-	var peerString string
-	peerString, err = flags.GetString("initial-cluster")
-	if err != nil {
-		return
-	}
-	cfg.InitialCluster, err = types.NewURLsMap(peerString)
-	if err != nil {
-		return
-	}
-
-	cfg.InitialClusterState, err = flags.GetString("initial-cluster-state")
-	if err != nil {
-		return
-	}
-
-	cfg.ListenerClientAddress, err = flags.GetString("listener-client-address")
-	if err != nil {
-		return
-	}
-
-	cfg.ElectionTimeout, err = flags.GetDuration("election-timeout")
-	if err != nil {
-		return
-	}
+	cfg = NewConfig()
 
 	return
 }
 
 // TestConfig get Config for testing
 func TestConfig() (Config, func()) {
-	scfg := config.NewServerConfig(config.DefaultLogOutput, config.DefaultListenerPeerAddress)
-	peer, _ := types.NewURLsMap("test=http://" + config.DefaultListenerPeerAddress)
-	cfg := Config{
-		ServerConfig:          scfg,
-		Name:                  "test",
-		InitialCluster:        peer,
-		ElectionTimeout:       time.Second * 5,
-		ListenerClientAddress: DefaultListenerClientAddress,
-		InitialClusterState:   NewCluster,
-	}
+	cfg := NewConfig()
 
-	cancel := func() { os.RemoveAll("default") }
+	cancel := func() {}
 
 	return cfg, cancel
 }
 
-func (cfg *Config) Apply() (err error) {
-	if err = cfg.ServerConfig.Apply(); err != nil {
-		return err
-	}
-
-	if cfg.Name == "" {
-		return fmt.Errorf("missing the name of server")
-	}
-
-	if cfg.ListenerClientAddress == "" {
-		return fmt.Errorf("missing the address to listen on for client traffic")
-	}
-
-	if cfg.InitialCluster.Len() == 0 {
-		cfg.InitialCluster, _ = types.NewURLsMap(cfg.Name + "=" + "http://" + cfg.ListenerPeerAddress)
-	}
-
-	if cfg.MaxGRPCReceiveMessageSize == 0 {
-		cfg.MaxGRPCReceiveMessageSize = int64(cfg.MaxRequestBytes)
-	}
-	if cfg.MaxGRPCSendMessageSize == 0 {
-		cfg.MaxGRPCSendMessageSize = int64(cfg.MaxRequestBytes)
+func (cfg *Config) Validate() (err error) {
+	if err = cfg.Config.Validate(); err != nil {
+		return
 	}
 
 	return
