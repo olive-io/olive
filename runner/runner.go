@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/pebble"
 	pb "github.com/olive-io/olive/api/olivepb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -16,6 +17,8 @@ type Runner struct {
 	cancel context.CancelFunc
 
 	ec *clientv3.Client
+
+	db *pebble.DB
 
 	stopping chan struct{}
 	done     chan struct{}
@@ -34,14 +37,21 @@ func NewRunner(cfg Config) (*Runner, error) {
 		return nil, err
 	}
 
+	db, err := newStorage(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	runner := &Runner{
 		Config: cfg,
-		ec:     ec,
 
 		ctx:    ctx,
 		cancel: cancel,
+
+		ec: ec,
+		db: db,
 
 		regionMap: make(map[uint64]*pb.Region),
 
@@ -68,17 +78,17 @@ func (r *Runner) start() error {
 	conn := r.ec.ActiveConnection()
 	rc := pb.NewRunnerRPCClient(conn)
 
-	rmsg := &pb.Runner{
+	pr := &pb.Runner{
 		AdvertiseListen: r.AdvertiseListen,
 		PeerListen:      r.PeerListen,
 		HeartbeatMs:     r.HeartbeatMs,
 	}
-	req := &pb.RegistryRunnerRequest{Runner: rmsg}
+	req := &pb.RegistryRunnerRequest{Runner: pr}
 	rsp, err := rc.RegistryRunner(r.ctx, req)
 	if err != nil {
 		return err
 	}
-	rmsg.Id = rsp.Id
+	pr.Id = rsp.Id
 
 	go r.run()
 	return nil
