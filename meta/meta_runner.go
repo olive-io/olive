@@ -3,15 +3,15 @@ package meta
 import (
 	"context"
 
-	"github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/olivepb"
 )
 
-func (s *Server) RegistryRunner(ctx context.Context, req *olivepb.RegistryRunnerRequest) (resp *olivepb.RegistryRunnerResponse, err error) {
-	resp = &olivepb.RegistryRunnerResponse{}
+func (s *Server) RegistryRunner(ctx context.Context, req *pb.RegistryRunnerRequest) (resp *pb.RegistryRunnerResponse, err error) {
+	resp = &pb.RegistryRunnerResponse{}
 	return
 }
 
-func (s *Server) Heartbeat(ctx context.Context, req *olivepb.HeartbeatRequest) (resp *olivepb.HeartbeatResponse, err error) {
-	resp = &olivepb.HeartbeatResponse{}
+func (s *Server) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (resp *pb.HeartbeatResponse, err error) {
+	resp = &pb.HeartbeatResponse{}
 	return
 }

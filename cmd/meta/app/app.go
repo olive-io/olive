@@ -63,5 +63,9 @@ func setupMetaServer(cfg meta.Config) error {
 	case <-ch:
 	}
 
-	return ms.GracefulStop()
+	if err = ms.HardStop(); err != nil {
+		return err
+	}
+
+	return nil
 }

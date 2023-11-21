@@ -21,8 +21,8 @@ type Runner struct {
 	done     chan struct{}
 	stop     chan struct{}
 
-	rmu        sync.RWMutex
-	raftGroups map[uint64]*pb.RaftGroup
+	rmu       sync.RWMutex
+	regionMap map[uint64]*pb.Region
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -42,6 +42,8 @@ func NewRunner(cfg Config) (*Runner, error) {
 
 		ctx:    ctx,
 		cancel: cancel,
+
+		regionMap: make(map[uint64]*pb.Region),
 
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -69,6 +71,7 @@ func (r *Runner) start() error {
 	rmsg := &pb.Runner{
 		AdvertiseListen: r.AdvertiseListen,
 		PeerListen:      r.PeerListen,
+		HeartbeatMs:     r.HeartbeatMs,
 	}
 	req := &pb.RegistryRunnerRequest{Runner: rmsg}
 	rsp, err := rc.RegistryRunner(r.ctx, req)
@@ -82,7 +85,7 @@ func (r *Runner) start() error {
 }
 
 func (r *Runner) heartbeat() {
-	ticker := time.NewTicker(r.HeartbeatInterval)
+	ticker := time.NewTicker(time.Duration(r.HeartbeatMs) * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
@@ -98,7 +101,10 @@ func (r *Runner) watching() {
 	ctx, cancel := context.WithCancel(r.ctx)
 	defer cancel()
 
-	wch := r.ec.Watch(ctx, "")
+	wopts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+	}
+	wch := r.ec.Watch(ctx, "/", wopts...)
 	for {
 		select {
 		case <-r.stopping:

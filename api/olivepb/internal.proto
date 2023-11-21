@@ -11,7 +11,7 @@ option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 
 message OliveHeader {
-  string raftGroup = 1;
+  uint64 region = 1;
   int64 rev = 2;
 }
 
@@ -23,9 +23,10 @@ message Runner {
   uint64 id = 1;
   string advertiseListen = 2;
   string peerListen = 3;
+  int64 heartbeatMs = 4;
 }
 
-message RaftGroup {
+message Region {
   uint64 id = 1;
   string name = 2;
   repeated uint64 replica = 3;

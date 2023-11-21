@@ -2,8 +2,6 @@ package meta
 
 import (
 	"context"
-	"errors"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -16,16 +14,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	ErrAlreadyStarted = errors.New("olive-meta: already started")
-	ErrServerStart    = errors.New("olive-meta: start server")
-	ErrServerStop     = errors.New("olive-meta: start stop")
-)
-
-const (
-	metaShard = uint64(128)
-)
-
 type Server struct {
 	cfg Config
 
@@ -34,12 +22,7 @@ type Server struct {
 
 	lg *zap.Logger
 
-	gs       *grpc.Server
-	listener net.Listener
-
 	etcd *embed.Etcd
-
-	shardID uint64
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -92,56 +75,22 @@ func (s *Server) Start() error {
 
 	<-s.etcd.Server.ReadyNotify()
 
-	//mux := s.newHttpMux()
-	//
-	//var err error
-	//s.gs, err = s.newGRPCServe()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//handler := grpcHandlerFunc(s.gs, mux)
-	//srv := &http.Server{
-	//	Handler: handler,
-	//}
-	//
-	//s.wg.Add(1)
-	//go func() {
-	//	defer s.wg.Done()
-	//	if err := srv.Serve(s.listener); err != nil {
-	//		s.errorc <- fmt.Errorf("%w: %v", ErrServerStart, err)
-	//	}
-	//}()
-	//
-	//s.wg.Add(1)
-	//go func() {
-	//	defer s.wg.Done()
-	//
-	//	select {
-	//	case <-s.stopc:
-	//	}
-	//
-	//	ctx := context.Background()
-	//	if err := srv.Shutdown(ctx); err != nil {
-	//		s.errorc <- fmt.Errorf("%w: %v", ErrServerStop, err)
-	//	}
-	//}()
-
 	return nil
 }
 
 func (s *Server) Stop() error {
+	s.etcd.Server.HardStop()
 	return nil
 }
 
-func (s *Server) GracefulStop() error {
+func (s *Server) HardStop() error {
 	if err := s.Stop(); err != nil {
 		return err
 	}
 
-	s.etcd.Server.HardStop()
-
 	<-s.etcd.Server.StopNotify()
+
+	s.cancel()
 
 	s.wg.Wait()
 	return nil

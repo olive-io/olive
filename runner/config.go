@@ -1,8 +1,6 @@
 package runner
 
 import (
-	"time"
-
 	"github.com/spf13/pflag"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -16,7 +14,7 @@ const (
 	DefaultPeerListen   = "127.0.0.1:5380"
 	DefaultClientListen = "127.0.0.1:5379"
 
-	DefaultHeartbeatInterval = time.Second * 5
+	DefaultHeartbeatMs = 5000
 )
 
 func init() {
@@ -34,7 +32,7 @@ type Config struct {
 	ClientListen    string
 	AdvertiseListen string
 
-	HeartbeatInterval time.Duration
+	HeartbeatMs int64
 }
 
 func NewConfig() Config {
@@ -43,10 +41,10 @@ func NewConfig() Config {
 			Endpoints: []string{DefaultEndpoints},
 		},
 
-		PeerListen:        DefaultPeerListen,
-		ClientListen:      DefaultClientListen,
-		AdvertiseListen:   DefaultClientListen,
-		HeartbeatInterval: DefaultHeartbeatInterval,
+		PeerListen:      DefaultPeerListen,
+		ClientListen:    DefaultClientListen,
+		AdvertiseListen: DefaultClientListen,
+		HeartbeatMs:     DefaultHeartbeatMs,
 	}
 
 	return cfg
