@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cockroachdb/pebble"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/runner/backend"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -18,7 +18,7 @@ type Runner struct {
 
 	ec *clientv3.Client
 
-	db *pebble.DB
+	be backend.IBackend
 
 	stopping chan struct{}
 	done     chan struct{}
@@ -37,7 +37,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 		return nil, err
 	}
 
-	db, err := newStorage(&cfg)
+	be := newBackend(&cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 		cancel: cancel,
 
 		ec: ec,
-		db: db,
+		be: be,
 
 		regionMap: make(map[uint64]*pb.Region),
 

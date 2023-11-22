@@ -36,7 +36,12 @@ type Config struct {
 	*clientv3.Config
 
 	DataDir   string
-	CacheSize int64
+	CacheSize uint64
+
+	// BackendBatchInterval is the maximum time before commit the backend transaction.
+	BackendBatchInterval time.Duration
+	// BackendBatchLimit is the maximum operations before commit the backend transaction.
+	BackendBatchLimit int
 
 	PeerListen      string
 	ClientListen    string
