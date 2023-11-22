@@ -40,6 +40,7 @@ func TestBackendSnapshot(t *testing.T) {
 	tx.Lock()
 	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
+	tx.UnsafePut(buckets.Test, []byte("foo1"), []byte("bar"))
 	tx.Unlock()
 	b.ForceCommit()
 
@@ -82,8 +83,8 @@ func TestBackendSnapshot(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(ks) != 1 {
-		t.Errorf("len(kvs) = %d, want 1", len(ks))
+	if len(ks) != 2 {
+		t.Errorf("len(kvs) = %d, want 2", len(ks))
 	}
 	newTx.Unlock()
 }

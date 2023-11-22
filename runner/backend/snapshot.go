@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/cockroachdb/pebble"
-	pb "github.com/olive-io/olive/api/serverpb"
+	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 type ISnapshot interface {
@@ -27,12 +27,12 @@ func (s *snapshot) WriteTo(w io.Writer, prefix []byte) (n int64, err error) {
 	iter := s.sn.NewIter(ro)
 	defer iter.Close()
 
-	values := make([]*pb.RaftInternalKV, 0)
+	values := make([]*pb.InternalKV, 0)
 
 	for iter.SeekPrefixGE(prefix); iteratorIsValid(iter); iter.Next() {
 		key := iter.Key()
 		val := iter.Value()
-		rkv := &pb.RaftInternalKV{
+		rkv := &pb.InternalKV{
 			Key:   bytes.Clone(key),
 			Value: bytes.Clone(val),
 		}
@@ -46,8 +46,8 @@ func (s *snapshot) WriteTo(w io.Writer, prefix []byte) (n int64, err error) {
 	if c, err = w.Write(sz); err != nil {
 		return 0, err
 	}
-
 	n += int64(c)
+
 	for _, rkv := range values {
 		data, err := rkv.Marshal()
 		if err != nil {

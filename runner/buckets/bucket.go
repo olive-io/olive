@@ -7,15 +7,17 @@ import (
 )
 
 var (
-	keyBucketName  = []byte("key")
-	metaBucketName = []byte("meta")
+	keyBucketName    = []byte("key")
+	metaBucketName   = []byte("meta")
+	regionBucketName = []byte("region")
 
 	testBucketName = []byte("test")
 )
 
 var (
-	Key  = backend.IBucket(bucket{id: 1, name: keyBucketName, safeRangeBucket: true})
-	Meta = backend.IBucket(bucket{id: 2, name: metaBucketName, safeRangeBucket: false})
+	Key    = backend.IBucket(bucket{id: 1, name: keyBucketName, safeRangeBucket: true})
+	Meta   = backend.IBucket(bucket{id: 2, name: metaBucketName, safeRangeBucket: false})
+	Region = backend.IBucket(bucket{id: 3, name: regionBucketName, safeRangeBucket: true})
 
 	Test = backend.IBucket(bucket{id: 100, name: testBucketName, safeRangeBucket: false})
 )

@@ -16,6 +16,7 @@ type IReadTx interface {
 	RLock()
 	RUnlock()
 
+	UnsafeGet(bucket IBucket, key []byte) (value []byte, err error)
 	UnsafeRange(bucket IBucket, key, endKey []byte, limit int64) (keys [][]byte, vals [][]byte, err error)
 	UnsafeForEach(bucket IBucket, visitor func(k, v []byte) error) error
 }
@@ -94,6 +95,19 @@ type baseReadTx struct {
 	buckets map[BucketID]*localBucket
 	// txWg protects tx from being rolled back at the end of a batch interval until all reads using this tx are done.
 	txWg *sync.WaitGroup
+}
+
+func (tx *baseReadTx) UnsafeGet(bucket IBucket, key []byte) (value []byte, err error) {
+	_, vals, err := tx.UnsafeRange(bucket, key, nil, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(vals) == 0 {
+		err = pebble.ErrNotFound
+		return
+	}
+
+	return vals[0], nil
 }
 
 func (tx *baseReadTx) UnsafeForEach(bucket IBucket, visitor func(k, v []byte) error) error {

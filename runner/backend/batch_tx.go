@@ -135,6 +135,18 @@ func (t *batchTx) unsafePut(bucketType IBucket, key []byte, value []byte, seq bo
 	t.pending++
 }
 
+// UnsafeGet must be called holding the lock on the tx.
+func (t *batchTx) UnsafeGet(bucket IBucket, key []byte) ([]byte, error) {
+	_, vals, err := t.UnsafeRange(bucket, key, nil, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(vals) == 0 {
+		return nil, pebble.ErrNotFound
+	}
+	return vals[0], nil
+}
+
 // UnsafeRange must be called holding the lock on the tx.
 func (t *batchTx) UnsafeRange(bucket IBucket, key, endKey []byte, limit int64) ([][]byte, [][]byte, error) {
 	//bucket := t.tx.Bucket(bucketType.Name())

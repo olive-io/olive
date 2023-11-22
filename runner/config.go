@@ -22,6 +22,8 @@ const (
 	DefaultClientListen = "127.0.0.1:5379"
 
 	DefaultHeartbeatMs = 5000
+
+	DefaultRaftRTTMillisecond = 500
 )
 
 func init() {
@@ -47,7 +49,8 @@ type Config struct {
 	ClientListen    string
 	AdvertiseListen string
 
-	HeartbeatMs int64
+	HeartbeatMs        int64
+	RaftRTTMillisecond uint64
 }
 
 func NewConfig() Config {
@@ -62,10 +65,11 @@ func NewConfig() Config {
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
 
-		PeerListen:      DefaultPeerListen,
-		ClientListen:    DefaultClientListen,
-		AdvertiseListen: DefaultClientListen,
-		HeartbeatMs:     DefaultHeartbeatMs,
+		PeerListen:         DefaultPeerListen,
+		ClientListen:       DefaultClientListen,
+		AdvertiseListen:    DefaultClientListen,
+		HeartbeatMs:        DefaultHeartbeatMs,
+		RaftRTTMillisecond: DefaultRaftRTTMillisecond,
 	}
 
 	return cfg
@@ -88,7 +92,7 @@ func (cfg *Config) WALDir() string {
 	return filepath.Join(cfg.DataDir, "wal")
 }
 
-func (cfg *Config) RegionRoot() string {
+func (cfg *Config) RegionDir() string {
 	return filepath.Join(cfg.DataDir, "regions")
 }
 

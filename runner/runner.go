@@ -24,8 +24,7 @@ type Runner struct {
 	done     chan struct{}
 	stop     chan struct{}
 
-	rmu       sync.RWMutex
-	regionMap map[uint64]*pb.Region
+	raftGroup *MultiRaftGroup
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -38,10 +37,6 @@ func NewRunner(cfg Config) (*Runner, error) {
 	}
 
 	be := newBackend(&cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	runner := &Runner{
@@ -52,8 +47,6 @@ func NewRunner(cfg Config) (*Runner, error) {
 
 		ec: ec,
 		be: be,
-
-		regionMap: make(map[uint64]*pb.Region),
 
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -75,6 +68,21 @@ func (r *Runner) Start() error {
 }
 
 func (r *Runner) start() error {
+	var err error
+	r.raftGroup, err = r.newMultiRaftGroup()
+	if err != nil {
+		return err
+	}
+
+	if err = r.registry(); err != nil {
+		return err
+	}
+
+	go r.run()
+	return nil
+}
+
+func (r *Runner) registry() error {
 	conn := r.ec.ActiveConnection()
 	rc := pb.NewRunnerRPCClient(conn)
 
@@ -89,8 +97,6 @@ func (r *Runner) start() error {
 		return err
 	}
 	pr.Id = rsp.Id
-
-	go r.run()
 	return nil
 }
 
