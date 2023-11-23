@@ -44,14 +44,14 @@ message Runner {
   string version = 8;
 }
 
-message RunnerStat {
-  enum State {
-    UnKnown = 0;
-    Ready = 1;
-    NotReady = 2;
-    Alarm = 3;
-  }
+enum State {
+  UnKnown = 0;
+  Ready = 1;
+  NotReady = 2;
+  Alarm = 3;
+}
 
+message RunnerStat {
   uint64 id = 1;
   int32 cpuPer = 2;
   int32 memoryPer = 3;
@@ -95,6 +95,9 @@ message RegionStat {
   uint64 bpmnProcesses = 12;
   uint64 bpmnEvents = 13;
   uint64 bpmnTasks = 14;
+
+  State state = 21;
+  string error = 22;
 }
 
 message Definition {

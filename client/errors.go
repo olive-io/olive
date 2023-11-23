@@ -14,8 +14,9 @@
 
 package client
 
-import clientv3 "go.etcd.io/etcd/client/v3"
+import "github.com/cockroachdb/errors"
 
-type Config struct {
-	clientv3.Config
-}
+var (
+	ErrNoAvailableEndpoints = errors.New("olive-client: no available endpoints")
+	ErrBadFormatDefinitions = errors.New("olive-client: bad format definitions")
+)

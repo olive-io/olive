@@ -109,7 +109,7 @@ message ExecuteDefinitionResponse {
 
 service RunnerRPC {
   rpc RegistryRunner(RegistryRunnerRequest) returns (RegistryRunnerResponse);
-  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc ReportRunner(ReportRunnerRequest) returns (ReportRunnerResponse);
 }
 
 message RegistryRunnerRequest {
@@ -120,6 +120,10 @@ message RegistryRunnerResponse {
   uint64 id = 1;
 }
 
-message HeartbeatRequest {}
+message ReportRunnerRequest {
+  uint64 id = 1;
+  olivepb.RunnerStat runner = 2;
+  repeated olivepb.RegionStat regions = 3;
+}
 
-message HeartbeatResponse {}
+message ReportRunnerResponse {}
