@@ -1,12 +1,28 @@
+// Copyright 2023 Lack (xingyys@gmail.com).
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package runner
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"sync/atomic"
 	"time"
 
+	"github.com/cockroachdb/pebble"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/runner/backend"
@@ -34,7 +50,7 @@ type Region struct {
 	leader    uint64
 }
 
-func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) (sm.IOnDiskStateMachine, error) {
+func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	region := &Region{
 		shardId:  shardId,
@@ -45,24 +61,31 @@ func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) (sm.IOnD
 		be:       mrg.be,
 	}
 
-	return region, nil
+	return region
 }
 
 func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
+	applyIndex, err := r.readApplyIndex()
+	if err != nil {
+		return 0, err
+	}
+	r.setApplied(applyIndex)
 
+	return applyIndex, nil
+}
+
+func (r *Region) readApplyIndex() (uint64, error) {
 	tx := r.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
 
 	applyKey := r.putPrefix()
 	value, err := tx.UnsafeGet(buckets.Key, applyKey)
-	if err != nil {
+	if err != nil && !errors.Is(err, pebble.ErrNotFound) {
 		return 0, err
 	}
 
 	applied := binary.LittleEndian.Uint64(value)
-	r.setApplied(applied)
-
 	return applied, nil
 }
 
@@ -118,6 +141,13 @@ func (r *Region) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) err
 	if err != nil {
 		return err
 	}
+
+	applyIndex, err := r.readApplyIndex()
+	if err != nil {
+		return err
+	}
+	r.setApplied(applyIndex)
+
 	return nil
 }
 
