@@ -26,6 +26,7 @@ install:
 generate:
 	cd $(GOPATH)/src && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/olivepb/internal.proto && \
+	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/olivepb/raft.proto && \
 	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf -I $(GOPATH)/src/github.com/google/protobuf --gogo_out=:. --grpc-gateway_out=:. $(ROOT)/api/olivepb/rpc.proto
 
 docker:
