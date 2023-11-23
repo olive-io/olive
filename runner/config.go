@@ -15,11 +15,14 @@
 package runner
 
 import (
+	"context"
+	"errors"
 	"path/filepath"
 	"time"
 
+	"github.com/gofrs/flock"
+	"github.com/olive-io/olive/client"
 	"github.com/spf13/pflag"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
 
@@ -40,16 +43,14 @@ const (
 	DefaultRaftRTTMillisecond = 500
 )
 
-func init() {
-
-}
+func init() {}
 
 func AddFlagSet(flags *pflag.FlagSet) {
 	flags.AddFlagSet(runnerFlagSet)
 }
 
 type Config struct {
-	*clientv3.Config
+	client.Config
 
 	DataDir   string
 	CacheSize uint64
@@ -70,11 +71,13 @@ type Config struct {
 func NewConfig() Config {
 
 	lg := zap.NewExample()
+
+	clientCfg := client.Config{}
+	clientCfg.Endpoints = []string{DefaultEndpoints}
+	clientCfg.Logger = lg
+
 	cfg := Config{
-		Config: &clientv3.Config{
-			Endpoints: []string{DefaultEndpoints},
-			Logger:    lg,
-		},
+		Config: clientCfg,
 
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
@@ -96,6 +99,18 @@ func NewConfigFromFlagSet(flags *pflag.FlagSet) (Config, error) {
 
 func (cfg *Config) Validate() error {
 	return nil
+}
+
+func (cfg *Config) LockDataDir() (*flock.Flock, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	lock := flock.New(filepath.Join(cfg.DataDir, "olive-runner.lock"))
+	ok, err := lock.TryLockContext(ctx, time.Millisecond*100)
+	if err != nil || !ok {
+		return nil, errors.New("data directory be used")
+	}
+
+	return lock, nil
 }
 
 func (cfg *Config) DBDir() string {

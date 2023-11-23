@@ -18,14 +18,10 @@ import (
 	"context"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 )
 
 func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
 	//TODO implement me
-	client := v3client.New(s.etcd.Server)
-
-	client.Get(ctx, req.Id)
 	return
 }
 

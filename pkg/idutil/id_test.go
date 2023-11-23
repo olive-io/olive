@@ -8,6 +8,7 @@ import (
 
 	"github.com/olive-io/olive/pkg/runtime"
 	"go.etcd.io/etcd/server/v3/embed"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 )
 
 func newEtcd() (*embed.Etcd, func()) {
@@ -34,7 +35,7 @@ func TestNewGenerator(t *testing.T) {
 
 	key := path.Join(runtime.DefaultOliveMeta, "runner", "id")
 
-	gen, err := NewGenerator(key, etcd.Server)
+	gen, err := NewGenerator(key, v3client.New(etcd.Server))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +54,7 @@ func BenchmarkNext(b *testing.B) {
 
 	key := path.Join(runtime.DefaultOliveMeta, "runner", "id")
 
-	gen, err := NewGenerator(key, etcd.Server)
+	gen, err := NewGenerator(key, v3client.New(etcd.Server))
 	if err != nil {
 		panic(err)
 	}

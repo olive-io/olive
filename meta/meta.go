@@ -20,8 +20,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/olive-io/olive/api/olivepb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -36,7 +39,10 @@ type Server struct {
 
 	lg *zap.Logger
 
-	etcd *embed.Etcd
+	etcd  *embed.Etcd
+	v3cli *clientv3.Client
+
+	registry *registry
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -81,13 +87,19 @@ func (s *Server) Start() error {
 	//	"/": mux,
 	//}
 
-	etcd, err := embed.StartEtcd(ec)
+	var err error
+	s.etcd, err = embed.StartEtcd(ec)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "start embed etcd")
 	}
-	s.etcd = etcd
 
 	<-s.etcd.Server.ReadyNotify()
+	s.v3cli = v3client.New(s.etcd.Server)
+
+	s.registry, err = s.newRegistry()
+	if err != nil {
+		return errors.Wrap(err, "initial registry")
+	}
 
 	return nil
 }

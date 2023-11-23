@@ -20,8 +20,6 @@ import (
 	"sync/atomic"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/server/v3/etcdserver"
-	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 )
 
@@ -32,9 +30,7 @@ type Generator struct {
 	id     uint64
 }
 
-func NewGenerator(key string, s *etcdserver.EtcdServer) (*Generator, error) {
-	client := v3client.New(s)
-
+func NewGenerator(key string, client *clientv3.Client) (*Generator, error) {
 	id, err := get(context.TODO(), client, key)
 	if err != nil {
 		return nil, err
@@ -42,7 +38,7 @@ func NewGenerator(key string, s *etcdserver.EtcdServer) (*Generator, error) {
 	g := &Generator{
 		key:    key,
 		client: client,
-		lg:     s.Logger(),
+		lg:     client.GetLogger(),
 		id:     id,
 	}
 
@@ -73,6 +69,7 @@ func get(ctx context.Context, client *clientv3.Client, key string) (uint64, erro
 	if len(rsp.Kvs) == 0 {
 		return 0, nil
 	}
-	id := binary.LittleEndian.Uint64(rsp.Kvs[0].Value)
+	val := rsp.Kvs[0].Value[0:8]
+	id := binary.LittleEndian.Uint64(val)
 	return id, nil
 }

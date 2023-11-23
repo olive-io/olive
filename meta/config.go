@@ -24,6 +24,7 @@ import (
 const (
 	DefaultName                  = "default"
 	DefaultListenerClientAddress = "http://localhost:4379"
+	DefaultListenerPeerAddress   = "http://localhost:4380"
 )
 
 var (
@@ -38,6 +39,8 @@ func init() {
 		"Initial cluster state ('new' or 'existing').")
 	metaFlagSet.String("listener-client-address", DefaultListenerClientAddress,
 		"Sets the address to listen on for client traffic.")
+	metaFlagSet.String("listener-peer-address", DefaultListenerPeerAddress,
+		"Sets the address to listen on for peer traffic.")
 	metaFlagSet.Duration("election-timeout", 0,
 		"Sets the timeout to waiting for electing")
 }
@@ -61,6 +64,8 @@ func NewConfig() Config {
 	clientURL, _ := url.Parse(DefaultListenerClientAddress)
 	ec.ListenClientUrls = []url.URL{*clientURL}
 	ec.AdvertiseClientUrls = ec.ListenClientUrls
+	peerURL, _ := url.Parse(DefaultListenerPeerAddress)
+	ec.ListenPeerUrls = []url.URL{*peerURL}
 	cfg := Config{Config: ec}
 
 	return cfg

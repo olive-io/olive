@@ -16,12 +16,23 @@ package runner
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
+	"github.com/dustin/go-humanize"
+	"github.com/gofrs/flock"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/pkg/runtime"
+	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/backend"
+	"github.com/olive-io/olive/runner/buckets"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
 )
 
 type Runner struct {
@@ -30,28 +41,38 @@ type Runner struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	ec *clientv3.Client
+	gLock *flock.Flock
+
+	oct *client.Client
 
 	be backend.IBackend
+
+	raftGroup *MultiRaftGroup
 
 	stopping chan struct{}
 	done     chan struct{}
 	stop     chan struct{}
-
-	raftGroup *MultiRaftGroup
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
 }
 
 func NewRunner(cfg Config) (*Runner, error) {
-	ec, err := clientv3.New(*cfg.Config)
+	lg := cfg.Logger
+
+	gLock, err := cfg.LockDataDir()
+	if err != nil {
+		return nil, err
+	}
+	lg.Debug("protected directory: " + cfg.DataDir)
+
+	oct, err := client.New(cfg.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	be := newBackend(&cfg)
 	ctx, cancel := context.WithCancel(context.Background())
+	be := newBackend(&cfg)
 
 	runner := &Runner{
 		Config: cfg,
@@ -59,8 +80,10 @@ func NewRunner(cfg Config) (*Runner, error) {
 		ctx:    ctx,
 		cancel: cancel,
 
-		ec: ec,
-		be: be,
+		gLock: gLock,
+
+		oct: oct,
+		be:  be,
 
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -75,7 +98,7 @@ func (r *Runner) Start() error {
 		return err
 	}
 
-	r.GoAttach(r.heartbeat)
+	r.GoAttach(r.intervalReport)
 	r.GoAttach(r.watching)
 
 	return nil
@@ -83,6 +106,14 @@ func (r *Runner) Start() error {
 
 func (r *Runner) start() error {
 	var err error
+
+	defer r.be.ForceCommit()
+	tx := r.be.BatchTx()
+	tx.Lock()
+	tx.UnsafeCreateBucket(buckets.Meta)
+	tx.UnsafeCreateBucket(buckets.Region)
+	tx.Unlock()
+
 	r.raftGroup, err = r.newMultiRaftGroup()
 	if err != nil {
 		return err
@@ -97,28 +128,60 @@ func (r *Runner) start() error {
 }
 
 func (r *Runner) registry() error {
-	conn := r.ec.ActiveConnection()
-	rc := pb.NewRunnerRPCClient(conn)
+	key := []byte("runner")
+	bucket := buckets.Meta
+	runner := new(pb.Runner)
 
-	pr := &pb.Runner{
-		AdvertiseListen: r.AdvertiseListen,
-		PeerListen:      r.PeerListen,
-		HeartbeatMs:     r.HeartbeatMs,
+	readTx := r.be.ReadTx()
+	data, _ := readTx.UnsafeGet(bucket, key)
+	if len(data) != 0 {
+		_ = runner.Unmarshal(data)
 	}
-	req := &pb.RegistryRunnerRequest{Runner: pr}
+
+	cpus, err := cpu.Counts(false)
+	if err != nil {
+		return errors.Wrap(err, "read system cpu")
+	}
+	vm, err := mem.VirtualMemory()
+	if err != nil {
+		return errors.Wrap(err, "read system memory")
+	}
+
+	runner.AdvertiseListen = r.AdvertiseListen
+	runner.PeerListen = r.PeerListen
+	runner.HeartbeatMs = r.HeartbeatMs
+	runner.Hostname, _ = os.Hostname()
+	runner.Cpus = uint32(cpus)
+	runner.Memory = vm.Total
+	runner.Version = version.Version
 
 	ctx, cancel := context.WithCancel(r.ctx)
 	defer cancel()
-	rsp, err := rc.RegistryRunner(ctx, req)
+
+	id, err := r.oct.RegistryRunner(ctx, runner)
 	if err != nil {
 		return err
 	}
-	pr.Id = rsp.Id
+	runner.Id = id
+
+	r.Logger.Info("olive-runner registered",
+		zap.Uint64("id", runner.Id),
+		zap.String("advertise-listen", runner.AdvertiseListen),
+		zap.String("peer-listen", runner.PeerListen),
+		zap.Uint32("cpu-core", runner.Cpus),
+		zap.String("memory", humanize.IBytes(runner.Memory)),
+		zap.String("version", runner.Version))
+
+	tx := r.be.BatchTx()
+	tx.Lock()
+	defer tx.RLock()
+	data, _ = runner.Marshal()
+	tx.UnsafePut(bucket, key, data)
 
 	return nil
 }
 
-func (r *Runner) heartbeat() {
+func (r *Runner) intervalReport() {
 	ticker := time.NewTicker(time.Duration(r.HeartbeatMs) * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -138,7 +201,7 @@ func (r *Runner) watching() {
 	wopts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 	}
-	wch := r.ec.Watch(ctx, "/", wopts...)
+	wch := r.oct.Watch(ctx, runtime.DefaultOliveRunner, wopts...)
 	for {
 		select {
 		case <-r.stopping:
@@ -191,6 +254,8 @@ func (r *Runner) Stop() {
 }
 
 func (r *Runner) run() {
+	lg := r.Logger
+
 	defer func() {
 		r.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
 		close(r.stopping)
@@ -199,6 +264,9 @@ func (r *Runner) run() {
 
 		// wait for goroutines before closing raft so wal stays open
 		r.wg.Wait()
+		if err := r.gLock.Unlock(); err != nil {
+			lg.Error("released "+r.DataDir, zap.Error(err))
+		}
 
 		close(r.done)
 	}()

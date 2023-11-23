@@ -39,8 +39,8 @@ message Runner {
   string peerListen = 3;
   int64 heartbeatMs = 4;
   string hostname = 5;
-  int32 cpus = 6;
-  int64 total = 7;
+  uint32 cpus = 6;
+  uint64 memory = 7;
   string version = 8;
 }
 
