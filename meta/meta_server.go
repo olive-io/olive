@@ -34,6 +34,10 @@ func (s *Server) RegisterRunner(ctx context.Context, req *pb.RegisterRunnerReque
 
 func (s *Server) ReportRunner(ctx context.Context, req *pb.ReportRunnerRequest) (resp *pb.ReportRunnerResponse, err error) {
 	resp = &pb.ReportRunnerResponse{}
+
+	//runner := req.Runner
+	//regions := req.Regions
+
 	return
 }
 
