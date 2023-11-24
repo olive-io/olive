@@ -78,8 +78,8 @@ func (s *Server) Start() error {
 	ec := s.cfg.Config
 	ec.EnableGRPCGateway = true
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		olivepb.RegisterBpmnRPCServer(gs, s)
 		olivepb.RegisterRunnerRPCServer(gs, s)
+		olivepb.RegisterBpmnRPCServer(gs, s)
 	}
 
 	//mux := newHttpMux()

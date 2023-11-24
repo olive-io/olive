@@ -76,8 +76,8 @@ func newClient(cfg *Config) (*Client, error) {
 		client.callOpts = callOpts
 	}
 
-	client.BpmnRPC = NewBpmnRPC(client)
 	client.RunnerRPC = NewRunnerRPC(client)
+	client.BpmnRPC = NewBpmnRPC(client)
 
 	return client, nil
 }

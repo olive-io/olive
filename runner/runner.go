@@ -133,7 +133,9 @@ func (r *Runner) registry() error {
 	runner := new(pb.Runner)
 
 	readTx := r.be.ReadTx()
+	readTx.RLock()
 	data, _ := readTx.UnsafeGet(bucket, key)
+	readTx.RUnlock()
 	if len(data) != 0 {
 		_ = runner.Unmarshal(data)
 	}
@@ -158,7 +160,7 @@ func (r *Runner) registry() error {
 	ctx, cancel := context.WithCancel(r.ctx)
 	defer cancel()
 
-	id, err := r.oct.RegistryRunner(ctx, runner)
+	id, err := r.oct.RegisterRunner(ctx, runner)
 	if err != nil {
 		return err
 	}
@@ -174,7 +176,7 @@ func (r *Runner) registry() error {
 
 	tx := r.be.BatchTx()
 	tx.Lock()
-	defer tx.RLock()
+	defer tx.Unlock()
 	data, _ = runner.Marshal()
 	tx.UnsafePut(bucket, key, data)
 

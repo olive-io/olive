@@ -27,8 +27,6 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type registry struct {
@@ -79,9 +77,20 @@ func (s *Server) newRegistry() (*registry, error) {
 func (r *registry) Register(ctx context.Context, runner *pb.Runner) (uint64, error) {
 	id := runner.Id
 	if id == 0 {
-		id = r.idGen.Next(ctx)
+		exists := false
+		for _, ri := range r.runners {
+			if ri.AdvertiseListen == runner.AdvertiseListen &&
+				ri.PeerListen == runner.PeerListen {
+				exists = true
+				id = ri.Id
+			}
+		}
+		if !exists {
+			id = r.idGen.Next(ctx)
+		}
 	}
 
+	runner.Id = id
 	data, _ := runner.Marshal()
 	key := path.Join(r.prefix, fmt.Sprintf("%d", id))
 	_, err := r.v3cli.Put(ctx, key, string(data))
@@ -123,7 +132,11 @@ func (r *registry) Get(ctx context.Context, id uint64) (*pb.Runner, bool) {
 		r.lg.Error("unmarshal runner data",
 			zap.Uint64("id", id),
 			zap.Error(err))
-		r.v3cli.Delete(ctx, key)
+		if _, err = r.v3cli.Delete(ctx, key); err != nil {
+			r.lg.Error("delete bad runner",
+				zap.Uint64("id", id),
+				zap.Error(err))
+		}
 		return nil, false
 	}
 
@@ -132,20 +145,4 @@ func (r *registry) Get(ctx context.Context, id uint64) (*pb.Runner, bool) {
 	r.mu.Unlock()
 
 	return runner, true
-}
-
-func (s *Server) RegistryRunner(ctx context.Context, req *pb.RegistryRunnerRequest) (resp *pb.RegistryRunnerResponse, err error) {
-	if req.Runner == nil {
-		return resp, status.New(codes.InvalidArgument, "missing runner").Err()
-	}
-
-	resp = &pb.RegistryRunnerResponse{}
-
-	resp.Id, err = s.registry.Register(ctx, req.Runner)
-	return
-}
-
-func (s *Server) ReportRunner(ctx context.Context, req *pb.ReportRunnerRequest) (resp *pb.ReportRunnerResponse, err error) {
-	resp = &pb.ReportRunnerResponse{}
-	return
 }

@@ -210,7 +210,7 @@ func (t *batchTx) commit(stop bool) {
 		start := time.Now()
 
 		// gofail: var beforeCommit struct{}
-		err := t.tx.Commit(t.pwo)
+		err := t.tx.Commit(&pebble.WriteOptions{Sync: true})
 		// gofail: var afterCommit struct{}
 
 		//writeSec.Observe(t.tx.CommitStats().TotalDuration.Seconds())

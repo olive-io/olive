@@ -43,6 +43,25 @@ type retryBpmnClient struct {
 	bc pb.BpmnRPCClient
 }
 
+type retryRunnerClient struct {
+	rc pb.RunnerRPCClient
+}
+
+// RetryRunnerClient implements a RunnerRPCClient.
+func RetryRunnerClient(c *Client) pb.RunnerRPCClient {
+	return &retryRunnerClient{
+		rc: pb.NewRunnerRPCClient(c.ActiveConnection()),
+	}
+}
+
+func (rrc *retryRunnerClient) RegisterRunner(ctx context.Context, in *pb.RegisterRunnerRequest, opts ...grpc.CallOption) (*pb.RegisterRunnerResponse, error) {
+	return rrc.rc.RegisterRunner(ctx, in, withRetryPolicy(repeatable))
+}
+
+func (rrc *retryRunnerClient) ReportRunner(ctx context.Context, in *pb.ReportRunnerRequest, opts ...grpc.CallOption) (*pb.ReportRunnerResponse, error) {
+	return rrc.rc.ReportRunner(ctx, in, withRetryPolicy(repeatable))
+}
+
 // RetryBpmnClient implements a BpmnRPCClient.
 func RetryBpmnClient(c *Client) pb.BpmnRPCClient {
 	return &retryBpmnClient{
@@ -68,23 +87,4 @@ func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveD
 
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
 	return rbc.bc.ExecuteDefinition(ctx, in, withRetryPolicy(repeatable))
-}
-
-type retryRunnerClient struct {
-	rc pb.RunnerRPCClient
-}
-
-// RetryRunnerClient implements a RunnerRPCClient.
-func RetryRunnerClient(c *Client) pb.RunnerRPCClient {
-	return &retryRunnerClient{
-		rc: pb.NewRunnerRPCClient(c.ActiveConnection()),
-	}
-}
-
-func (rrc *retryRunnerClient) RegistryRunner(ctx context.Context, in *pb.RegistryRunnerRequest, opts ...grpc.CallOption) (*pb.RegistryRunnerResponse, error) {
-	return rrc.rc.RegistryRunner(ctx, in, withRetryPolicy(repeatable))
-}
-
-func (rrc *retryRunnerClient) ReportRunner(ctx context.Context, in *pb.ReportRunnerRequest, opts ...grpc.CallOption) (*pb.ReportRunnerResponse, error) {
-	return rrc.rc.ReportRunner(ctx, in, withRetryPolicy(repeatable))
 }

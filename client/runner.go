@@ -22,7 +22,7 @@ import (
 )
 
 type RunnerRPC interface {
-	RegistryRunner(ctx context.Context, runner *pb.Runner) (uint64, error)
+	RegisterRunner(ctx context.Context, runner *pb.Runner) (uint64, error)
 	ReportRunner(ctx context.Context, id uint64, runner *pb.RunnerStat, regions []*pb.RegionStat) error
 }
 
@@ -39,11 +39,11 @@ func NewRunnerRPC(c *Client) RunnerRPC {
 	return api
 }
 
-func (rc *runnerRPC) RegistryRunner(ctx context.Context, runner *pb.Runner) (uint64, error) {
-	r := &pb.RegistryRunnerRequest{
+func (rc *runnerRPC) RegisterRunner(ctx context.Context, runner *pb.Runner) (uint64, error) {
+	r := &pb.RegisterRunnerRequest{
 		Runner: runner,
 	}
-	resp, err := rc.remote.RegistryRunner(ctx, r, rc.callOpts...)
+	resp, err := rc.remote.RegisterRunner(ctx, r, rc.callOpts...)
 	if err != nil {
 		return 0, toErr(ctx, err)
 	}

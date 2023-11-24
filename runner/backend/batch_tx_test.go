@@ -8,6 +8,7 @@ import (
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/backend/testing"
 	"github.com/olive-io/olive/runner/buckets"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBatchTxPut(t *testing.T) {
@@ -33,6 +34,28 @@ func TestBatchTxPut(t *testing.T) {
 			t.Errorf("v = %s, want %s", string(gv[0]), string(v))
 		}
 		tx.Commit()
+	}
+}
+
+func TestBatchTxGet(t *testing.T) {
+	b, _ := betesting.NewTmpBackend(t, time.Hour, 10000)
+	defer betesting.Close(t, b)
+
+	tx := b.BatchTx()
+
+	tx.Lock()
+
+	// put
+	v := []byte("bar")
+	tx.UnsafeCreateBucket(buckets.Meta)
+	tx.UnsafePut(buckets.Meta, []byte("runner"), v)
+
+	tx.Unlock()
+
+	// check put result before and after tx is committed
+	val, _ := b.ReadTx().UnsafeGet(buckets.Meta, []byte("runner"))
+	if !assert.Equal(t, v, val) {
+		return
 	}
 }
 

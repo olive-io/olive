@@ -29,6 +29,155 @@ var _ = ebinary.BigEndian
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+type RegisterRunnerRequest struct {
+	Runner *Runner `protobuf:"bytes,1,opt,name=runner,proto3" json:"runner,omitempty"`
+}
+
+func (m *RegisterRunnerRequest) Reset()         { *m = RegisterRunnerRequest{} }
+func (m *RegisterRunnerRequest) String() string { return proto.CompactTextString(m) }
+func (*RegisterRunnerRequest) ProtoMessage()    {}
+func (*RegisterRunnerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7ae00687161e2646, []int{0}
+}
+func (m *RegisterRunnerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterRunnerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterRunnerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterRunnerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterRunnerRequest.Merge(m, src)
+}
+func (m *RegisterRunnerRequest) XXX_Size() int {
+	return m.XSize()
+}
+func (m *RegisterRunnerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterRunnerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterRunnerRequest proto.InternalMessageInfo
+
+type RegisterRunnerResponse struct {
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *RegisterRunnerResponse) Reset()         { *m = RegisterRunnerResponse{} }
+func (m *RegisterRunnerResponse) String() string { return proto.CompactTextString(m) }
+func (*RegisterRunnerResponse) ProtoMessage()    {}
+func (*RegisterRunnerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7ae00687161e2646, []int{1}
+}
+func (m *RegisterRunnerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterRunnerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterRunnerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterRunnerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterRunnerResponse.Merge(m, src)
+}
+func (m *RegisterRunnerResponse) XXX_Size() int {
+	return m.XSize()
+}
+func (m *RegisterRunnerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterRunnerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterRunnerResponse proto.InternalMessageInfo
+
+type ReportRunnerRequest struct {
+	Id      uint64        `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Runner  *RunnerStat   `protobuf:"bytes,2,opt,name=runner,proto3" json:"runner,omitempty"`
+	Regions []*RegionStat `protobuf:"bytes,3,rep,name=regions,proto3" json:"regions,omitempty"`
+}
+
+func (m *ReportRunnerRequest) Reset()         { *m = ReportRunnerRequest{} }
+func (m *ReportRunnerRequest) String() string { return proto.CompactTextString(m) }
+func (*ReportRunnerRequest) ProtoMessage()    {}
+func (*ReportRunnerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7ae00687161e2646, []int{2}
+}
+func (m *ReportRunnerRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReportRunnerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReportRunnerRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReportRunnerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportRunnerRequest.Merge(m, src)
+}
+func (m *ReportRunnerRequest) XXX_Size() int {
+	return m.XSize()
+}
+func (m *ReportRunnerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportRunnerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportRunnerRequest proto.InternalMessageInfo
+
+type ReportRunnerResponse struct {
+}
+
+func (m *ReportRunnerResponse) Reset()         { *m = ReportRunnerResponse{} }
+func (m *ReportRunnerResponse) String() string { return proto.CompactTextString(m) }
+func (*ReportRunnerResponse) ProtoMessage()    {}
+func (*ReportRunnerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7ae00687161e2646, []int{3}
+}
+func (m *ReportRunnerResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ReportRunnerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ReportRunnerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ReportRunnerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReportRunnerResponse.Merge(m, src)
+}
+func (m *ReportRunnerResponse) XXX_Size() int {
+	return m.XSize()
+}
+func (m *ReportRunnerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReportRunnerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReportRunnerResponse proto.InternalMessageInfo
+
 type DeployDefinitionRequest struct {
 	Id      string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -39,7 +188,7 @@ func (m *DeployDefinitionRequest) Reset()         { *m = DeployDefinitionRequest
 func (m *DeployDefinitionRequest) String() string { return proto.CompactTextString(m) }
 func (*DeployDefinitionRequest) ProtoMessage()    {}
 func (*DeployDefinitionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{0}
+	return fileDescriptor_7ae00687161e2646, []int{4}
 }
 func (m *DeployDefinitionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -77,7 +226,7 @@ func (m *DeployDefinitionResponse) Reset()         { *m = DeployDefinitionRespon
 func (m *DeployDefinitionResponse) String() string { return proto.CompactTextString(m) }
 func (*DeployDefinitionResponse) ProtoMessage()    {}
 func (*DeployDefinitionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{1}
+	return fileDescriptor_7ae00687161e2646, []int{5}
 }
 func (m *DeployDefinitionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -113,7 +262,7 @@ func (m *ListDefinitionRequest) Reset()         { *m = ListDefinitionRequest{} }
 func (m *ListDefinitionRequest) String() string { return proto.CompactTextString(m) }
 func (*ListDefinitionRequest) ProtoMessage()    {}
 func (*ListDefinitionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{2}
+	return fileDescriptor_7ae00687161e2646, []int{6}
 }
 func (m *ListDefinitionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -151,7 +300,7 @@ func (m *ListDefinitionResponse) Reset()         { *m = ListDefinitionResponse{}
 func (m *ListDefinitionResponse) String() string { return proto.CompactTextString(m) }
 func (*ListDefinitionResponse) ProtoMessage()    {}
 func (*ListDefinitionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{3}
+	return fileDescriptor_7ae00687161e2646, []int{7}
 }
 func (m *ListDefinitionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -189,7 +338,7 @@ func (m *GetDefinitionRequest) Reset()         { *m = GetDefinitionRequest{} }
 func (m *GetDefinitionRequest) String() string { return proto.CompactTextString(m) }
 func (*GetDefinitionRequest) ProtoMessage()    {}
 func (*GetDefinitionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{4}
+	return fileDescriptor_7ae00687161e2646, []int{8}
 }
 func (m *GetDefinitionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -227,7 +376,7 @@ func (m *GetDefinitionResponse) Reset()         { *m = GetDefinitionResponse{} }
 func (m *GetDefinitionResponse) String() string { return proto.CompactTextString(m) }
 func (*GetDefinitionResponse) ProtoMessage()    {}
 func (*GetDefinitionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{5}
+	return fileDescriptor_7ae00687161e2646, []int{9}
 }
 func (m *GetDefinitionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -265,7 +414,7 @@ func (m *RemoveDefinitionRequest) Reset()         { *m = RemoveDefinitionRequest
 func (m *RemoveDefinitionRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveDefinitionRequest) ProtoMessage()    {}
 func (*RemoveDefinitionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{6}
+	return fileDescriptor_7ae00687161e2646, []int{10}
 }
 func (m *RemoveDefinitionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -302,7 +451,7 @@ func (m *RemoveDefinitionResponse) Reset()         { *m = RemoveDefinitionRespon
 func (m *RemoveDefinitionResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveDefinitionResponse) ProtoMessage()    {}
 func (*RemoveDefinitionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{7}
+	return fileDescriptor_7ae00687161e2646, []int{11}
 }
 func (m *RemoveDefinitionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -341,7 +490,7 @@ func (m *ExecuteDefinitionRequest) Reset()         { *m = ExecuteDefinitionReque
 func (m *ExecuteDefinitionRequest) String() string { return proto.CompactTextString(m) }
 func (*ExecuteDefinitionRequest) ProtoMessage()    {}
 func (*ExecuteDefinitionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{8}
+	return fileDescriptor_7ae00687161e2646, []int{12}
 }
 func (m *ExecuteDefinitionRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -379,7 +528,7 @@ func (m *ExecuteDefinitionResponse) Reset()         { *m = ExecuteDefinitionResp
 func (m *ExecuteDefinitionResponse) String() string { return proto.CompactTextString(m) }
 func (*ExecuteDefinitionResponse) ProtoMessage()    {}
 func (*ExecuteDefinitionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{9}
+	return fileDescriptor_7ae00687161e2646, []int{13}
 }
 func (m *ExecuteDefinitionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -408,156 +557,11 @@ func (m *ExecuteDefinitionResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ExecuteDefinitionResponse proto.InternalMessageInfo
 
-type RegistryRunnerRequest struct {
-	Runner *Runner `protobuf:"bytes,1,opt,name=runner,proto3" json:"runner,omitempty"`
-}
-
-func (m *RegistryRunnerRequest) Reset()         { *m = RegistryRunnerRequest{} }
-func (m *RegistryRunnerRequest) String() string { return proto.CompactTextString(m) }
-func (*RegistryRunnerRequest) ProtoMessage()    {}
-func (*RegistryRunnerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{10}
-}
-func (m *RegistryRunnerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RegistryRunnerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RegistryRunnerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RegistryRunnerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegistryRunnerRequest.Merge(m, src)
-}
-func (m *RegistryRunnerRequest) XXX_Size() int {
-	return m.XSize()
-}
-func (m *RegistryRunnerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegistryRunnerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegistryRunnerRequest proto.InternalMessageInfo
-
-type RegistryRunnerResponse struct {
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (m *RegistryRunnerResponse) Reset()         { *m = RegistryRunnerResponse{} }
-func (m *RegistryRunnerResponse) String() string { return proto.CompactTextString(m) }
-func (*RegistryRunnerResponse) ProtoMessage()    {}
-func (*RegistryRunnerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{11}
-}
-func (m *RegistryRunnerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RegistryRunnerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RegistryRunnerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *RegistryRunnerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegistryRunnerResponse.Merge(m, src)
-}
-func (m *RegistryRunnerResponse) XXX_Size() int {
-	return m.XSize()
-}
-func (m *RegistryRunnerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegistryRunnerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RegistryRunnerResponse proto.InternalMessageInfo
-
-type ReportRunnerRequest struct {
-	Id      uint64        `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Runner  *RunnerStat   `protobuf:"bytes,2,opt,name=runner,proto3" json:"runner,omitempty"`
-	Regions []*RegionStat `protobuf:"bytes,3,rep,name=regions,proto3" json:"regions,omitempty"`
-}
-
-func (m *ReportRunnerRequest) Reset()         { *m = ReportRunnerRequest{} }
-func (m *ReportRunnerRequest) String() string { return proto.CompactTextString(m) }
-func (*ReportRunnerRequest) ProtoMessage()    {}
-func (*ReportRunnerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{12}
-}
-func (m *ReportRunnerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ReportRunnerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ReportRunnerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ReportRunnerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReportRunnerRequest.Merge(m, src)
-}
-func (m *ReportRunnerRequest) XXX_Size() int {
-	return m.XSize()
-}
-func (m *ReportRunnerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReportRunnerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ReportRunnerRequest proto.InternalMessageInfo
-
-type ReportRunnerResponse struct {
-}
-
-func (m *ReportRunnerResponse) Reset()         { *m = ReportRunnerResponse{} }
-func (m *ReportRunnerResponse) String() string { return proto.CompactTextString(m) }
-func (*ReportRunnerResponse) ProtoMessage()    {}
-func (*ReportRunnerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7ae00687161e2646, []int{13}
-}
-func (m *ReportRunnerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ReportRunnerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ReportRunnerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ReportRunnerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReportRunnerResponse.Merge(m, src)
-}
-func (m *ReportRunnerResponse) XXX_Size() int {
-	return m.XSize()
-}
-func (m *ReportRunnerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ReportRunnerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ReportRunnerResponse proto.InternalMessageInfo
-
 func init() {
+	proto.RegisterType((*RegisterRunnerRequest)(nil), "olivepb.RegisterRunnerRequest")
+	proto.RegisterType((*RegisterRunnerResponse)(nil), "olivepb.RegisterRunnerResponse")
+	proto.RegisterType((*ReportRunnerRequest)(nil), "olivepb.ReportRunnerRequest")
+	proto.RegisterType((*ReportRunnerResponse)(nil), "olivepb.ReportRunnerResponse")
 	proto.RegisterType((*DeployDefinitionRequest)(nil), "olivepb.DeployDefinitionRequest")
 	proto.RegisterType((*DeployDefinitionResponse)(nil), "olivepb.DeployDefinitionResponse")
 	proto.RegisterType((*ListDefinitionRequest)(nil), "olivepb.ListDefinitionRequest")
@@ -569,10 +573,6 @@ func init() {
 	proto.RegisterType((*ExecuteDefinitionRequest)(nil), "olivepb.ExecuteDefinitionRequest")
 	proto.RegisterMapType((map[string]string)(nil), "olivepb.ExecuteDefinitionRequest.HeaderEntry")
 	proto.RegisterType((*ExecuteDefinitionResponse)(nil), "olivepb.ExecuteDefinitionResponse")
-	proto.RegisterType((*RegistryRunnerRequest)(nil), "olivepb.RegistryRunnerRequest")
-	proto.RegisterType((*RegistryRunnerResponse)(nil), "olivepb.RegistryRunnerResponse")
-	proto.RegisterType((*ReportRunnerRequest)(nil), "olivepb.ReportRunnerRequest")
-	proto.RegisterType((*ReportRunnerResponse)(nil), "olivepb.ReportRunnerResponse")
 }
 
 func init() {
@@ -580,56 +580,113 @@ func init() {
 }
 
 var fileDescriptor_7ae00687161e2646 = []byte{
-	// 772 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x96, 0x4b, 0x6f, 0xd3, 0x4a,
-	0x14, 0x80, 0xe3, 0xa4, 0xb7, 0xb9, 0x3d, 0xe9, 0xed, 0x63, 0x9a, 0x87, 0xaf, 0xdb, 0xfa, 0xa6,
-	0xb3, 0xb9, 0x51, 0x51, 0x62, 0x91, 0x16, 0x09, 0x8a, 0x90, 0xaa, 0x3e, 0x04, 0xa8, 0x2c, 0x8a,
-	0x59, 0x20, 0xb1, 0x73, 0x93, 0x21, 0x35, 0x4d, 0x66, 0x8c, 0x3d, 0x89, 0x88, 0x50, 0x25, 0xe8,
-	0x2f, 0x40, 0xe2, 0x67, 0xf0, 0x27, 0x58, 0x76, 0x59, 0x89, 0x05, 0x2c, 0xa1, 0xe5, 0x87, 0x20,
-	0x8f, 0x1f, 0x71, 0x9c, 0xb8, 0xad, 0xb2, 0xca, 0x78, 0xce, 0xe3, 0x3b, 0x8f, 0x39, 0x47, 0x01,
-	0xad, 0x65, 0xf2, 0xe3, 0xee, 0x51, 0xad, 0xc1, 0x3a, 0x1a, 0x6b, 0x9b, 0x3d, 0x52, 0x35, 0x99,
-	0x77, 0xd0, 0x0c, 0xcb, 0xf4, 0x4e, 0xd6, 0x91, 0x66, 0x5b, 0x8d, 0x9a, 0x65, 0x33, 0xce, 0x50,
-	0xd6, 0xbf, 0x52, 0xf2, 0x2d, 0xd6, 0x62, 0xe2, 0x4e, 0x73, 0x4f, 0x9e, 0x58, 0xd9, 0xbc, 0x9d,
-	0x3f, 0x93, 0x72, 0x62, 0x53, 0xa3, 0xed, 0x5b, 0xad, 0xb4, 0x18, 0x6b, 0xb5, 0x3d, 0x15, 0x83,
-	0x52, 0xc6, 0x0d, 0x6e, 0x32, 0xea, 0x78, 0x52, 0xfc, 0x12, 0x4a, 0x7b, 0xc4, 0x6a, 0xb3, 0xfe,
-	0x1e, 0x79, 0x6d, 0x52, 0xd3, 0x15, 0xe9, 0xe4, 0x6d, 0x97, 0x38, 0x1c, 0xcd, 0x41, 0xda, 0x6c,
-	0xca, 0x52, 0x59, 0xaa, 0xcc, 0xe8, 0x69, 0xb3, 0x89, 0x10, 0x4c, 0x51, 0xa3, 0x43, 0xe4, 0xb4,
-	0xb8, 0x11, 0x67, 0x24, 0x43, 0xb6, 0xc1, 0x28, 0x27, 0x94, 0xcb, 0x99, 0xb2, 0x54, 0x99, 0xd5,
-	0x83, 0x4f, 0x4c, 0x40, 0x1e, 0x75, 0xec, 0x58, 0x8c, 0x3a, 0x04, 0x69, 0x30, 0x7d, 0x4c, 0x8c,
-	0x26, 0xb1, 0x85, 0xf7, 0x5c, 0xbd, 0x54, 0xf3, 0x63, 0xaf, 0x05, 0x2a, 0x4f, 0x84, 0x58, 0xf7,
-	0xd5, 0x5c, 0x4c, 0x8f, 0xd8, 0x8e, 0xc9, 0xa8, 0xa0, 0x67, 0xf4, 0xe0, 0x13, 0x97, 0xa0, 0xf0,
-	0xcc, 0x74, 0xf8, 0x48, 0xf4, 0xf8, 0x83, 0x04, 0xc5, 0xb8, 0x64, 0x52, 0xfc, 0x3d, 0xc8, 0x35,
-	0x43, 0x37, 0x8e, 0x9c, 0x2e, 0x67, 0x2a, 0xb9, 0xfa, 0x52, 0x68, 0x15, 0x41, 0x44, 0xf5, 0xf0,
-	0x36, 0xe4, 0x1f, 0x13, 0x7e, 0x73, 0x61, 0x93, 0xb3, 0x3b, 0x85, 0x42, 0xcc, 0xc3, 0xa4, 0x29,
-	0x6c, 0x00, 0x0c, 0x42, 0x13, 0x98, 0x84, 0x0c, 0x22, 0x6a, 0xf8, 0x11, 0x94, 0x74, 0xd2, 0x61,
-	0x3d, 0x32, 0xd1, 0xe3, 0xc0, 0x07, 0x20, 0x8f, 0x9a, 0x4f, 0x98, 0x00, 0xfe, 0x2a, 0x81, 0xbc,
-	0xff, 0x8e, 0x34, 0xba, 0x7c, 0xb2, 0x68, 0xd0, 0x7e, 0x48, 0xcc, 0x88, 0xfe, 0x55, 0x43, 0x62,
-	0x92, 0xdb, 0x9a, 0x17, 0xc2, 0x3e, 0xe5, 0x76, 0x3f, 0x88, 0x43, 0x79, 0x00, 0xb9, 0xc8, 0x35,
-	0x5a, 0x80, 0xcc, 0x09, 0xe9, 0xfb, 0x68, 0xf7, 0x88, 0xf2, 0xf0, 0x57, 0xcf, 0x68, 0x77, 0x03,
-	0xb8, 0xf7, 0xb1, 0x95, 0xbe, 0x2f, 0xe1, 0x33, 0x09, 0xfe, 0x1d, 0xc3, 0x9a, 0xb4, 0xa5, 0x9b,
-	0xf0, 0xb7, 0x49, 0x1d, 0x6e, 0xd0, 0x06, 0xf1, 0x1b, 0x2a, 0x87, 0x26, 0x87, 0x36, 0x6b, 0x10,
-	0xc7, 0x79, 0xea, 0xcb, 0xf5, 0x50, 0x13, 0x6f, 0x43, 0x41, 0x27, 0x2d, 0xd3, 0x71, 0x73, 0xea,
-	0x52, 0x4a, 0xec, 0xa0, 0x86, 0xff, 0xc3, 0xb4, 0x2d, 0x2e, 0x7c, 0xfe, 0xfc, 0x80, 0xef, 0xe9,
-	0xf9, 0x62, 0x5c, 0x81, 0x62, 0xdc, 0x83, 0x9f, 0xc2, 0xa0, 0x0d, 0x53, 0x6e, 0x1b, 0xf0, 0x47,
-	0x09, 0x96, 0x74, 0x62, 0x31, 0x9b, 0x0f, 0xa3, 0x62, 0x7a, 0xe8, 0x4e, 0x88, 0x8e, 0x3f, 0x4c,
-	0xcf, 0xee, 0x05, 0x37, 0x78, 0x80, 0x47, 0x55, 0xc8, 0xda, 0xa4, 0x25, 0x06, 0x31, 0x13, 0x1b,
-	0x44, 0x5d, 0xdc, 0x0b, 0xed, 0x40, 0x07, 0x17, 0x21, 0x3f, 0x1c, 0x82, 0x17, 0x6b, 0xfd, 0xfb,
-	0x14, 0x64, 0x77, 0xac, 0x0e, 0xd5, 0x0f, 0x77, 0x51, 0x1f, 0x16, 0xe2, 0xbb, 0x0a, 0x95, 0x23,
-	0xc3, 0x31, 0x76, 0x3f, 0x2a, 0x6b, 0xd7, 0x68, 0x78, 0x10, 0x5c, 0x3e, 0xfb, 0xf6, 0xfb, 0x73,
-	0x5a, 0xc1, 0x05, 0xad, 0x77, 0x57, 0x1b, 0x0c, 0x96, 0xd6, 0x14, 0x06, 0x5b, 0xd2, 0x3a, 0x7a,
-	0x03, 0x73, 0xc3, 0x5b, 0x0a, 0xa9, 0xa1, 0xdb, 0xb1, 0x8b, 0x4d, 0xf9, 0x2f, 0x51, 0xee, 0x43,
-	0x4b, 0x02, 0xba, 0x88, 0xe6, 0x87, 0xa1, 0x0e, 0x3a, 0x81, 0x7f, 0x86, 0xb6, 0x09, 0x5a, 0x0d,
-	0x5d, 0x8d, 0xdb, 0x53, 0x8a, 0x9a, 0x24, 0xf6, 0x41, 0xcb, 0x02, 0x54, 0x40, 0x4b, 0xb1, 0xec,
-	0xde, 0x9b, 0xcd, 0x53, 0xb7, 0xa6, 0xf1, 0xe1, 0x8f, 0xd4, 0x34, 0x61, 0xad, 0x44, 0x6a, 0x9a,
-	0xb4, 0x39, 0x12, 0x6b, 0x6a, 0x0b, 0x03, 0xb7, 0xa6, 0xa7, 0xb0, 0x38, 0x32, 0x66, 0x68, 0xed,
-	0xc6, 0x71, 0x57, 0xf0, 0x75, 0x2a, 0x3e, 0x7d, 0x4d, 0xd0, 0x97, 0x71, 0x31, 0x46, 0x27, 0x9e,
-	0xc5, 0x96, 0xb4, 0x5e, 0xff, 0x22, 0xc1, 0x8c, 0xff, 0xd8, 0x0e, 0x77, 0xd1, 0x73, 0x98, 0x1b,
-	0x9e, 0x96, 0x48, 0x83, 0xc7, 0x0e, 0x62, 0xa4, 0xc1, 0x09, 0x63, 0x76, 0x00, 0xb3, 0xd1, 0x27,
-	0x8d, 0x56, 0x22, 0x06, 0x23, 0xc3, 0xa6, 0xac, 0x26, 0x48, 0x3d, 0x67, 0x3b, 0x07, 0xe7, 0xbf,
-	0xd4, 0xd4, 0xf9, 0xa5, 0x2a, 0x5d, 0x5c, 0xaa, 0xd2, 0xcf, 0x4b, 0x55, 0xfa, 0x74, 0xa5, 0xa6,
-	0x2e, 0xae, 0xd4, 0xd4, 0x8f, 0x2b, 0x35, 0xf5, 0xaa, 0x7a, 0xab, 0xbf, 0x1c, 0x0f, 0xfd, 0xdf,
-	0xa3, 0x69, 0xf1, 0xa7, 0x62, 0xe3, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x9b, 0x0d, 0x59, 0x7b,
-	0xfa, 0x08, 0x00, 0x00,
+	// 791 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0x4d, 0x4f, 0xe3, 0x46,
+	0x18, 0x8e, 0x13, 0x4a, 0xca, 0x0b, 0xe5, 0x63, 0xf2, 0xe5, 0x1a, 0xea, 0x86, 0xb9, 0x14, 0x51,
+	0x25, 0x56, 0x81, 0x4a, 0x6d, 0xaa, 0x4a, 0x88, 0x82, 0xda, 0x8a, 0x1e, 0x90, 0x7b, 0xa8, 0xd4,
+	0x9b, 0x49, 0xa6, 0x61, 0x4a, 0x32, 0x63, 0xec, 0x49, 0xd4, 0xa8, 0x42, 0xda, 0xe5, 0x17, 0xac,
+	0xb4, 0x7f, 0x68, 0x8f, 0x1c, 0x91, 0xf6, 0xb0, 0x7b, 0xdc, 0x85, 0xbd, 0xec, 0xbf, 0x58, 0x79,
+	0x3c, 0x09, 0xfe, 0x88, 0x01, 0xe5, 0x94, 0xf1, 0xbc, 0xcf, 0xbc, 0xcf, 0xf3, 0x3e, 0xf1, 0x3c,
+	0x32, 0x58, 0x5d, 0x2a, 0xce, 0x06, 0xa7, 0xcd, 0x36, 0xef, 0x5b, 0xbc, 0x47, 0x87, 0xa4, 0x41,
+	0x79, 0xb8, 0xb0, 0x1c, 0x97, 0x86, 0x2b, 0xf7, 0xd4, 0xf2, 0xdc, 0x76, 0xd3, 0xf5, 0xb8, 0xe0,
+	0xa8, 0xa8, 0xb6, 0x8c, 0x72, 0x97, 0x77, 0xb9, 0xdc, 0xb3, 0x82, 0x55, 0x58, 0x36, 0xf6, 0x9e,
+	0xd6, 0x8f, 0x32, 0x41, 0x3c, 0xe6, 0xf4, 0xd4, 0xa9, 0x8d, 0x2e, 0xe7, 0xdd, 0x5e, 0x08, 0x71,
+	0x18, 0xe3, 0xc2, 0x11, 0x94, 0x33, 0x3f, 0xac, 0xe2, 0x7d, 0xa8, 0xd8, 0xa4, 0x4b, 0x7d, 0x41,
+	0x3c, 0x7b, 0xc0, 0x18, 0xf1, 0x6c, 0x72, 0x31, 0x20, 0xbe, 0x40, 0xdf, 0xc0, 0xbc, 0x27, 0x37,
+	0x74, 0xad, 0xae, 0x6d, 0x2d, 0xee, 0xac, 0x34, 0x55, 0xff, 0xa6, 0xc2, 0xa9, 0x32, 0xde, 0x82,
+	0x6a, 0xb2, 0x83, 0xef, 0x72, 0xe6, 0x13, 0xb4, 0x0c, 0x79, 0xda, 0x91, 0xc7, 0xe7, 0xec, 0x3c,
+	0xed, 0xe0, 0xe7, 0x1a, 0x94, 0x6c, 0xe2, 0x72, 0x4f, 0xc4, 0xa9, 0x12, 0x38, 0xf4, 0xed, 0x84,
+	0x3a, 0x2f, 0xa9, 0x4b, 0x09, 0xea, 0x3f, 0x85, 0x23, 0xc6, 0xf4, 0xa8, 0x01, 0x45, 0x8f, 0x74,
+	0x83, 0x89, 0xf4, 0x42, 0xbd, 0x10, 0x47, 0xcb, 0x7d, 0x89, 0x1e, 0x63, 0x70, 0x15, 0xca, 0x71,
+	0x09, 0xa1, 0x56, 0xfc, 0x17, 0xd4, 0x0e, 0x89, 0xdb, 0xe3, 0xa3, 0x43, 0xf2, 0x0f, 0x65, 0x34,
+	0xb0, 0x28, 0x2d, 0x6f, 0x41, 0xca, 0x43, 0x30, 0xc7, 0x9c, 0x3e, 0x91, 0xe2, 0x16, 0x6c, 0xb9,
+	0x46, 0x3a, 0x14, 0xdb, 0x9c, 0x09, 0xc2, 0x84, 0x5e, 0xa8, 0x6b, 0x5b, 0x4b, 0xf6, 0xf8, 0x11,
+	0x13, 0xd0, 0xd3, 0x8d, 0x95, 0x41, 0x16, 0xcc, 0x9f, 0x11, 0xa7, 0x33, 0xf1, 0xb8, 0x16, 0x91,
+	0x1e, 0x42, 0x7e, 0x93, 0x65, 0x5b, 0xc1, 0x02, 0x9a, 0x21, 0xf1, 0x7c, 0xca, 0x99, 0x64, 0x2f,
+	0xd8, 0xe3, 0x47, 0x5c, 0x83, 0xca, 0x1f, 0xd4, 0x17, 0x29, 0xf5, 0xf8, 0x99, 0x06, 0xd5, 0x64,
+	0x65, 0x56, 0xfa, 0xef, 0x61, 0xb1, 0x33, 0x69, 0xe3, 0xeb, 0xf9, 0x84, 0xdf, 0x11, 0x8a, 0x28,
+	0x0e, 0xef, 0x43, 0xf9, 0x57, 0x22, 0x1e, 0x37, 0x36, 0x7b, 0xba, 0x4b, 0xa8, 0x24, 0x3a, 0xcc,
+	0x3a, 0xc2, 0x2e, 0xc0, 0xbd, 0xb4, 0xd4, 0xfb, 0x15, 0x61, 0x88, 0xc0, 0xf0, 0xcf, 0x50, 0xb3,
+	0x49, 0x9f, 0x0f, 0xc9, 0x4c, 0x2f, 0x07, 0x3e, 0x06, 0x3d, 0x7d, 0x7c, 0xc6, 0x01, 0xf0, 0x2b,
+	0x0d, 0xf4, 0xa3, 0xff, 0x48, 0x7b, 0x20, 0x66, 0x53, 0x83, 0x8e, 0x26, 0x8c, 0xe1, 0x7d, 0x69,
+	0x4c, 0x18, 0xb3, 0xda, 0x36, 0x43, 0x09, 0x47, 0x4c, 0x78, 0xa3, 0xb1, 0x0e, 0xe3, 0x47, 0x58,
+	0x8c, 0x6c, 0xa3, 0x55, 0x28, 0x9c, 0x93, 0x91, 0xa2, 0x0e, 0x96, 0xa8, 0x0c, 0x9f, 0x0d, 0x9d,
+	0xde, 0x60, 0x4c, 0x1e, 0x3e, 0xb4, 0xf2, 0x3f, 0x68, 0xf8, 0x4a, 0x83, 0x2f, 0xa7, 0x70, 0xcd,
+	0xfa, 0x97, 0xee, 0xc1, 0xe7, 0x94, 0xf9, 0xc2, 0x61, 0x6d, 0xa2, 0xfe, 0x50, 0x7d, 0x72, 0xe4,
+	0xc4, 0xe3, 0x6d, 0xe2, 0xfb, 0xbf, 0xab, 0xba, 0x3d, 0x41, 0xee, 0x7c, 0xd4, 0x60, 0x41, 0x65,
+	0xc0, 0xc9, 0x2f, 0xe8, 0x02, 0x96, 0xe3, 0x21, 0x86, 0xcc, 0x58, 0x8c, 0xa4, 0xf2, 0xd1, 0xf8,
+	0x3a, 0xb3, 0xae, 0x12, 0xc5, 0xbc, 0x7a, 0xfd, 0xe1, 0x65, 0x5e, 0xc7, 0x25, 0x6b, 0xf8, 0x9d,
+	0x15, 0x86, 0x95, 0xe5, 0x29, 0x68, 0x4b, 0xdb, 0x46, 0x14, 0x96, 0xa2, 0x49, 0x84, 0x36, 0x22,
+	0x0d, 0x53, 0x19, 0x69, 0x7c, 0x95, 0x51, 0x55, 0x64, 0x1b, 0x92, 0xac, 0x8a, 0xd7, 0x62, 0x64,
+	0x01, 0xb0, 0xa5, 0x6d, 0xef, 0xbc, 0x99, 0x83, 0xe2, 0x81, 0xdb, 0x67, 0xc1, 0xa4, 0x23, 0x58,
+	0x4d, 0xe6, 0x11, 0xaa, 0x47, 0x2e, 0xc0, 0xd4, 0x0c, 0x34, 0x36, 0x1f, 0x40, 0x28, 0x09, 0x75,
+	0x29, 0xc1, 0xc0, 0x95, 0x40, 0xc2, 0xfd, 0xe5, 0xb1, 0x3a, 0xf2, 0x40, 0x30, 0xf1, 0xbf, 0xb0,
+	0x1c, 0x4f, 0xa2, 0x88, 0xc9, 0x53, 0xc3, 0x2b, 0x62, 0xf2, 0xf4, 0x08, 0xc3, 0x35, 0x49, 0xba,
+	0x86, 0x56, 0xe2, 0xa4, 0x3e, 0x3a, 0x87, 0x2f, 0x62, 0x89, 0x81, 0xee, 0x0d, 0x9c, 0x96, 0x45,
+	0x86, 0x99, 0x55, 0x56, 0x44, 0xeb, 0x92, 0xa8, 0x82, 0x4a, 0x89, 0xe9, 0xfe, 0xa7, 0x9d, 0xcb,
+	0xc0, 0xd3, 0xe4, 0x05, 0x8f, 0x78, 0x9a, 0x11, 0x1d, 0x11, 0x4f, 0xb3, 0xd2, 0x21, 0xd3, 0x53,
+	0x4f, 0x1e, 0x08, 0x3c, 0xbd, 0x84, 0xb5, 0xd4, 0x55, 0x42, 0x9b, 0x8f, 0x5e, 0x69, 0x03, 0x3f,
+	0x04, 0x51, 0xec, 0x9b, 0x92, 0x7d, 0x1d, 0x57, 0x13, 0xec, 0x24, 0x3c, 0xd1, 0xd2, 0xb6, 0x0f,
+	0x8e, 0xaf, 0xdf, 0x9b, 0xb9, 0xeb, 0x5b, 0x53, 0xbb, 0xb9, 0x35, 0xb5, 0x77, 0xb7, 0xa6, 0xf6,
+	0xe2, 0xce, 0xcc, 0xdd, 0xdc, 0x99, 0xb9, 0xb7, 0x77, 0x66, 0xee, 0xef, 0xc6, 0x93, 0x3e, 0x58,
+	0x7e, 0x52, 0xbf, 0xa7, 0xf3, 0xf2, 0x93, 0x64, 0xf7, 0x53, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb6,
+	0x3c, 0xae, 0x0a, 0x38, 0x09, 0x00, 0x00,
+}
+
+func (m *RegisterRunnerRequest) XSize() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Runner != nil {
+		l = m.Runner.XSize()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	return n
+}
+
+func (m *RegisterRunnerResponse) XSize() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovRpc(uint64(m.Id))
+	}
+	return n
+}
+
+func (m *ReportRunnerRequest) XSize() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovRpc(uint64(m.Id))
+	}
+	if m.Runner != nil {
+		l = m.Runner.XSize()
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if len(m.Regions) > 0 {
+		for _, e := range m.Regions {
+			l = e.XSize()
+			n += 1 + l + sovRpc(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ReportRunnerResponse) XSize() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
 }
 
 func (m *DeployDefinitionRequest) XSize() (n int) {
@@ -802,68 +859,152 @@ func (m *ExecuteDefinitionResponse) XSize() (n int) {
 	return n
 }
 
-func (m *RegistryRunnerRequest) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Runner != nil {
-		l = m.Runner.XSize()
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	return n
-}
-
-func (m *RegistryRunnerResponse) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Id != 0 {
-		n += 1 + sovRpc(uint64(m.Id))
-	}
-	return n
-}
-
-func (m *ReportRunnerRequest) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Id != 0 {
-		n += 1 + sovRpc(uint64(m.Id))
-	}
-	if m.Runner != nil {
-		l = m.Runner.XSize()
-		n += 1 + l + sovRpc(uint64(l))
-	}
-	if len(m.Regions) > 0 {
-		for _, e := range m.Regions {
-			l = e.XSize()
-			n += 1 + l + sovRpc(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *ReportRunnerResponse) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
 func sovRpc(x uint64) (n int) {
 	return (bits.Len64(x|1) + 6) / 7
 }
 func sozRpc(x uint64) (n int) {
 	return sovRpc(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (m *RegisterRunnerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.XSize()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterRunnerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.XSize()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterRunnerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Runner != nil {
+		{
+			size, err := m.Runner.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterRunnerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.XSize()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterRunnerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.XSize()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterRunnerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Id != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ReportRunnerRequest) Marshal() (dAtA []byte, err error) {
+	size := m.XSize()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReportRunnerRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.XSize()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ReportRunnerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Regions) > 0 {
+		for iNdEx := len(m.Regions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Regions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRpc(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.Runner != nil {
+		{
+			size, err := m.Runner.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRpc(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Id != 0 {
+		i = encodeVarintRpc(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ReportRunnerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.XSize()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ReportRunnerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.XSize()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ReportRunnerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func (m *DeployDefinitionRequest) Marshal() (dAtA []byte, err error) {
 	size := m.XSize()
 	dAtA = make([]byte, size)
@@ -1277,146 +1418,6 @@ func (m *ExecuteDefinitionResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *RegistryRunnerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RegistryRunnerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RegistryRunnerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Runner != nil {
-		{
-			size, err := m.Runner.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *RegistryRunnerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RegistryRunnerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *RegistryRunnerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Id != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ReportRunnerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ReportRunnerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ReportRunnerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Regions) > 0 {
-		for iNdEx := len(m.Regions) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Regions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintRpc(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if m.Runner != nil {
-		{
-			size, err := m.Runner.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintRpc(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Id != 0 {
-		i = encodeVarintRpc(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ReportRunnerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ReportRunnerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ReportRunnerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintRpc(dAtA []byte, offset int, v uint64) int {
 	offset -= sovRpc(v)
 	base := offset
@@ -1427,6 +1428,350 @@ func encodeVarintRpc(dAtA []byte, offset int, v uint64) int {
 	}
 	dAtA[offset] = uint8(v)
 	return base
+}
+func (m *RegisterRunnerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterRunnerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterRunnerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Runner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Runner == nil {
+				m.Runner = &Runner{}
+			}
+			if err := m.Runner.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterRunnerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterRunnerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterRunnerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReportRunnerRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReportRunnerRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReportRunnerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Runner", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Runner == nil {
+				m.Runner = &RunnerStat{}
+			}
+			if err := m.Runner.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Regions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Regions = append(m.Regions, &RegionStat{})
+			if err := m.Regions[len(m.Regions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ReportRunnerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ReportRunnerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ReportRunnerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *DeployDefinitionRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2637,350 +2982,6 @@ func (m *ExecuteDefinitionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *RegistryRunnerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RegistryRunnerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RegistryRunnerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Runner", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Runner == nil {
-				m.Runner = &Runner{}
-			}
-			if err := m.Runner.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RegistryRunnerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RegistryRunnerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RegistryRunnerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ReportRunnerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ReportRunnerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ReportRunnerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Runner", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Runner == nil {
-				m.Runner = &RunnerStat{}
-			}
-			if err := m.Runner.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Regions", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRpc
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRpc
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Regions = append(m.Regions, &RegionStat{})
-			if err := m.Regions[len(m.Regions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ReportRunnerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ReportRunnerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ReportRunnerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func skipRpc(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3065,6 +3066,114 @@ var (
 	ErrIntOverflowRpc          = fmt.Errorf("proto: integer overflow")
 	ErrUnexpectedEndOfGroupRpc = fmt.Errorf("proto: unexpected end of group")
 )
+
+// RunnerRPCClient is the client API for RunnerRPC service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type RunnerRPCClient interface {
+	RegisterRunner(ctx context.Context, in *RegisterRunnerRequest, opts ...grpc.CallOption) (*RegisterRunnerResponse, error)
+	ReportRunner(ctx context.Context, in *ReportRunnerRequest, opts ...grpc.CallOption) (*ReportRunnerResponse, error)
+}
+
+type runnerRPCClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewRunnerRPCClient(cc *grpc.ClientConn) RunnerRPCClient {
+	return &runnerRPCClient{cc}
+}
+
+func (c *runnerRPCClient) RegisterRunner(ctx context.Context, in *RegisterRunnerRequest, opts ...grpc.CallOption) (*RegisterRunnerResponse, error) {
+	out := new(RegisterRunnerResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/RegisterRunner", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runnerRPCClient) ReportRunner(ctx context.Context, in *ReportRunnerRequest, opts ...grpc.CallOption) (*ReportRunnerResponse, error) {
+	out := new(ReportRunnerResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/ReportRunner", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RunnerRPCServer is the server API for RunnerRPC service.
+type RunnerRPCServer interface {
+	RegisterRunner(context.Context, *RegisterRunnerRequest) (*RegisterRunnerResponse, error)
+	ReportRunner(context.Context, *ReportRunnerRequest) (*ReportRunnerResponse, error)
+}
+
+// UnimplementedRunnerRPCServer can be embedded to have forward compatible implementations.
+type UnimplementedRunnerRPCServer struct {
+}
+
+func (*UnimplementedRunnerRPCServer) RegisterRunner(ctx context.Context, req *RegisterRunnerRequest) (*RegisterRunnerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterRunner not implemented")
+}
+func (*UnimplementedRunnerRPCServer) ReportRunner(ctx context.Context, req *ReportRunnerRequest) (*ReportRunnerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportRunner not implemented")
+}
+
+func RegisterRunnerRPCServer(s *grpc.Server, srv RunnerRPCServer) {
+	s.RegisterService(&_RunnerRPC_serviceDesc, srv)
+}
+
+func _RunnerRPC_RegisterRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRunnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RunnerRPCServer).RegisterRunner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RunnerRPC/RegisterRunner",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RunnerRPCServer).RegisterRunner(ctx, req.(*RegisterRunnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RunnerRPC_ReportRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReportRunnerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RunnerRPCServer).ReportRunner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RunnerRPC/ReportRunner",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RunnerRPCServer).ReportRunner(ctx, req.(*ReportRunnerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _RunnerRPC_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.RunnerRPC",
+	HandlerType: (*RunnerRPCServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterRunner",
+			Handler:    _RunnerRPC_RegisterRunner_Handler,
+		},
+		{
+			MethodName: "ReportRunner",
+			Handler:    _RunnerRPC_ReportRunner_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+}
 
 // BpmnRPCClient is the client API for BpmnRPC service.
 //
@@ -3276,114 +3385,6 @@ var _BpmnRPC_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExecuteDefinition",
 			Handler:    _BpmnRPC_ExecuteDefinition_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
-}
-
-// RunnerRPCClient is the client API for RunnerRPC service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type RunnerRPCClient interface {
-	RegistryRunner(ctx context.Context, in *RegistryRunnerRequest, opts ...grpc.CallOption) (*RegistryRunnerResponse, error)
-	ReportRunner(ctx context.Context, in *ReportRunnerRequest, opts ...grpc.CallOption) (*ReportRunnerResponse, error)
-}
-
-type runnerRPCClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewRunnerRPCClient(cc *grpc.ClientConn) RunnerRPCClient {
-	return &runnerRPCClient{cc}
-}
-
-func (c *runnerRPCClient) RegistryRunner(ctx context.Context, in *RegistryRunnerRequest, opts ...grpc.CallOption) (*RegistryRunnerResponse, error) {
-	out := new(RegistryRunnerResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/RegistryRunner", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runnerRPCClient) ReportRunner(ctx context.Context, in *ReportRunnerRequest, opts ...grpc.CallOption) (*ReportRunnerResponse, error) {
-	out := new(ReportRunnerResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/ReportRunner", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// RunnerRPCServer is the server API for RunnerRPC service.
-type RunnerRPCServer interface {
-	RegistryRunner(context.Context, *RegistryRunnerRequest) (*RegistryRunnerResponse, error)
-	ReportRunner(context.Context, *ReportRunnerRequest) (*ReportRunnerResponse, error)
-}
-
-// UnimplementedRunnerRPCServer can be embedded to have forward compatible implementations.
-type UnimplementedRunnerRPCServer struct {
-}
-
-func (*UnimplementedRunnerRPCServer) RegistryRunner(ctx context.Context, req *RegistryRunnerRequest) (*RegistryRunnerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegistryRunner not implemented")
-}
-func (*UnimplementedRunnerRPCServer) ReportRunner(ctx context.Context, req *ReportRunnerRequest) (*ReportRunnerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReportRunner not implemented")
-}
-
-func RegisterRunnerRPCServer(s *grpc.Server, srv RunnerRPCServer) {
-	s.RegisterService(&_RunnerRPC_serviceDesc, srv)
-}
-
-func _RunnerRPC_RegistryRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegistryRunnerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RunnerRPCServer).RegistryRunner(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/olivepb.RunnerRPC/RegistryRunner",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RunnerRPCServer).RegistryRunner(ctx, req.(*RegistryRunnerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RunnerRPC_ReportRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportRunnerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RunnerRPCServer).ReportRunner(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/olivepb.RunnerRPC/ReportRunner",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RunnerRPCServer).ReportRunner(ctx, req.(*ReportRunnerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _RunnerRPC_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "olivepb.RunnerRPC",
-	HandlerType: (*RunnerRPCServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "RegistryRunner",
-			Handler:    _RunnerRPC_RegistryRunner_Handler,
-		},
-		{
-			MethodName: "ReportRunner",
-			Handler:    _RunnerRPC_ReportRunner_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

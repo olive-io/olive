@@ -34,6 +34,9 @@ const (
 	DefaultDataDir   = "default"
 	DefaultCacheSize = 4 * 1024 * 1024
 
+	DefaultBackendBatchInterval = time.Hour
+	DefaultBackendBatchLimit    = 10000
+
 	DefaultEndpoints    = "http://127.0.0.1:4379"
 	DefaultPeerListen   = "127.0.0.1:5380"
 	DefaultClientListen = "127.0.0.1:5379"
@@ -81,6 +84,9 @@ func NewConfig() Config {
 
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
+
+		BackendBatchInterval: DefaultBackendBatchInterval,
+		BackendBatchLimit:    DefaultBackendBatchLimit,
 
 		PeerListen:         DefaultPeerListen,
 		ClientListen:       DefaultClientListen,
