@@ -27,7 +27,6 @@ func (s *Server) RegisterRunner(ctx context.Context, req *pb.RegisterRunnerReque
 	}
 
 	resp = &pb.RegisterRunnerResponse{}
-
 	resp.Id, err = s.registry.Register(ctx, req.Runner)
 	return
 }

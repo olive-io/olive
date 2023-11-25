@@ -24,14 +24,28 @@ type scheduler struct {
 
 	lg      *zap.Logger
 	activeQ string
+
+	stopping <-chan struct{}
 }
 
 func (s *Server) newScheduler() (*scheduler, error) {
-	sc := &scheduler{}
+	sc := &scheduler{
+		stopping: s.StoppingNotify(),
+	}
 
+	go sc.run()
 	return sc, nil
 }
 
 func (s *scheduler) schedulingCycle() error {
 	return nil
+}
+
+func (s *scheduler) run() {
+	for {
+		select {
+		case <-s.stopping:
+			return
+		}
+	}
 }

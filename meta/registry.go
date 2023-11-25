@@ -113,16 +113,6 @@ func (r *registry) Register(ctx context.Context, runner *pb.Runner) (uint64, err
 	return id, nil
 }
 
-func (r *registry) List() []*pb.Runner {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	runners := make([]*pb.Runner, 0)
-	for i := range r.runners {
-		runners = append(runners, r.runners[i])
-	}
-	return runners
-}
-
 func (r *registry) Get(ctx context.Context, id uint64) (*pb.Runner, bool) {
 	r.mu.RLock()
 	runner, ok := r.runners[id]
