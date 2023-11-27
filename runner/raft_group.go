@@ -15,10 +15,15 @@
 package runner
 
 import (
+	"sync"
+
+	"github.com/coreos/go-semver/semver"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/lni/dragonboat/v4/raftio"
+	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/runner/backend"
+	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
@@ -28,8 +33,14 @@ type MultiRaftGroup struct {
 	leaderCh chan raftio.LeaderInfo
 
 	be backend.IBackend
+	w  wait.Wait
 
 	lg *zap.Logger
+
+	pr *pb.Runner
+
+	rmu     sync.RWMutex
+	regions map[uint64]*pb.Region
 
 	stopping <-chan struct{}
 	done     chan struct{}
@@ -73,7 +84,10 @@ func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
 		nh:       nh,
 		leaderCh: leaderCh,
 		be:       be,
+		w:        wait.New(),
+		pr:       r.pr,
 		lg:       lg,
+		regions:  make(map[uint64]*pb.Region),
 		stopping: r.StoppingNotify(),
 		done:     make(chan struct{}, 1),
 	}
@@ -104,6 +118,29 @@ func (mrg *MultiRaftGroup) Stop() {
 	}
 }
 
+func (mrg *MultiRaftGroup) runnerStat() ([]uint64, []string) {
+	mrg.rmu.RLock()
+	defer mrg.rmu.RUnlock()
+
+	regions := make([]uint64, 0)
+	leaders := make([]string, 0)
+	for _, region := range mrg.regions {
+		regions = append(regions, region.Id)
+		if region.Leader != 0 {
+			replica, ok := region.Replicas[region.Leader]
+			if ok && replica.Runner == mrg.pr.Id {
+				sv := semver.Version{
+					Major: int64(replica.Runner),
+					Minor: int64(replica.Id),
+				}
+				leaders = append(leaders, sv.String())
+			}
+		}
+	}
+
+	return regions, leaders
+}
+
 func (mrg *MultiRaftGroup) CreateRegion() error {
 	members := map[uint64]string{}
 	join := false
@@ -122,7 +159,6 @@ func (mrg *MultiRaftGroup) CreateRegion() error {
 		EntryCompressionType:    0,
 		DisableAutoCompactions:  false,
 		IsNonVoting:             false,
-		IsObserver:              false,
 		IsWitness:               false,
 		Quiesce:                 false,
 		WaitReady:               true,
@@ -131,6 +167,20 @@ func (mrg *MultiRaftGroup) CreateRegion() error {
 	if err != nil {
 		return err
 	}
+
+	ech := mrg.w.Register(cfg.ShardID)
+
+	select {
+	case ch := <-ech:
+		err = ch.(error)
+	}
+
+	if err != nil {
+		// handle error
+	}
+
+	//ms, _ := mrg.nh.SyncGetShardMembership(context.TODO(), cfg.ShardID)
+	//info := mrg.nh.GetNodeHostInfo(dragonboat.DefaultNodeHostInfoOption)
 
 	return nil
 }

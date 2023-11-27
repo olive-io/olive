@@ -43,25 +43,6 @@ type retryBpmnClient struct {
 	bc pb.BpmnRPCClient
 }
 
-type retryRunnerClient struct {
-	rc pb.RunnerRPCClient
-}
-
-// RetryRunnerClient implements a RunnerRPCClient.
-func RetryRunnerClient(c *Client) pb.RunnerRPCClient {
-	return &retryRunnerClient{
-		rc: pb.NewRunnerRPCClient(c.ActiveConnection()),
-	}
-}
-
-func (rrc *retryRunnerClient) RegisterRunner(ctx context.Context, in *pb.RegisterRunnerRequest, opts ...grpc.CallOption) (*pb.RegisterRunnerResponse, error) {
-	return rrc.rc.RegisterRunner(ctx, in, withRetryPolicy(repeatable))
-}
-
-func (rrc *retryRunnerClient) ReportRunner(ctx context.Context, in *pb.ReportRunnerRequest, opts ...grpc.CallOption) (*pb.ReportRunnerResponse, error) {
-	return rrc.rc.ReportRunner(ctx, in, withRetryPolicy(repeatable))
-}
-
 // RetryBpmnClient implements a BpmnRPCClient.
 func RetryBpmnClient(c *Client) pb.BpmnRPCClient {
 	return &retryBpmnClient{

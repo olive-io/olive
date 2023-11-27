@@ -25,8 +25,9 @@ option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 
 message OliveHeader {
-  uint64 region = 1;
-  int64 rev = 2;
+  uint64 runner = 1;
+  uint64 region = 2;
+  int64 rev = 3;
 }
 
 message ResponseHeader {
@@ -53,37 +54,41 @@ enum State {
 
 message RunnerStat {
   uint64 id = 1;
-  int32 cpuPer = 2;
-  int32 memoryPer = 3;
+  double cpuPer = 11;
+  double memoryPer = 12;
 
-  repeated uint64 regions = 11;
-  repeated uint64 leaders = 12;
-  uint64 definitions = 13;
-  uint64 bpmnProcesses = 14;
-  uint64 bpmnEvents = 15;
-  uint64 bpmnTasks = 16;
+  repeated uint64 regions = 21;
+  repeated string leaders = 22;
+  uint64 definitions = 23;
+  uint64 bpmnProcesses = 24;
+  uint64 bpmnEvents = 25;
+  uint64 bpmnTasks = 26;
 
-  State state = 100;
-  string error = 101;
+  State state = 101;
+  string error = 102;
+  int64 timestamp = 103;
 }
 
 message Region {
-  uint64 id = 1;
-  string name = 2;
+  uint64 runner = 1;
+  uint64 id = 2;
+  string name = 3;
 
   // replicaID => runnerId
-  map<uint64, uint64> members = 3;
-  map<uint64, RegionReplica> replicas = 4;
+  map<uint64, uint64> members = 4;
+  map<uint64, RegionReplica> replicas = 5;
 
-  uint64 electionRTT = 5;
-  uint64 heartbeatRTT = 6;
+  uint64 electionRTT = 6;
+  uint64 heartbeatRTT = 7;
+  uint64 leader = 8;
 }
 
 message RegionReplica {
-  uint64 region = 1;
-  uint64 id = 2;
-  bool isNonVoting = 3;
-  bool isWitness = 4;
+  uint64 runner = 1;
+  uint64 region = 2;
+  uint64 id = 3;
+  bool isNonVoting = 4;
+  bool isWitness = 5;
 }
 
 message RegionStat {
@@ -96,8 +101,9 @@ message RegionStat {
   uint64 bpmnEvents = 13;
   uint64 bpmnTasks = 14;
 
-  State state = 21;
-  string error = 22;
+  State state = 101;
+  string error = 102;
+  int64 timestamp = 103;
 }
 
 message Definition {

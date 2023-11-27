@@ -25,6 +25,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.10
 	go.etcd.io/etcd/pkg/v3 v3.5.10
 	go.etcd.io/etcd/server/v3 v3.5.10
+	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.18.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231012201019-e917dd12ba7a

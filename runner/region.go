@@ -38,7 +38,8 @@ type Region struct {
 
 	lg *zap.Logger
 
-	w wait.Wait
+	w        wait.Wait
+	openWait wait.Wait
 
 	reqIDGen *idutil.Generator
 
@@ -57,6 +58,7 @@ func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDi
 		id:       nodeId,
 		lg:       mrg.lg,
 		w:        wait.New(),
+		openWait: mrg.w,
 		reqIDGen: reqIDGen,
 		be:       mrg.be,
 	}
@@ -67,9 +69,11 @@ func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDi
 func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	applyIndex, err := r.readApplyIndex()
 	if err != nil {
+		r.openWait.Trigger(r.id, err)
 		return 0, err
 	}
 	r.setApplied(applyIndex)
+	r.openWait.Trigger(r.id, nil)
 
 	return applyIndex, nil
 }

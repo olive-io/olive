@@ -16,21 +16,14 @@ package runner
 
 import (
 	"context"
-	"os"
 	"sync"
-	"time"
 
-	"github.com/cockroachdb/errors"
-	"github.com/dustin/go-humanize"
 	"github.com/gofrs/flock"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/runtime"
-	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
@@ -48,6 +41,7 @@ type Runner struct {
 	be backend.IBackend
 
 	raftGroup *MultiRaftGroup
+	pr        *pb.Runner
 
 	stopping chan struct{}
 	done     chan struct{}
@@ -98,7 +92,7 @@ func (r *Runner) Start() error {
 		return err
 	}
 
-	r.GoAttach(r.intervalReport)
+	r.GoAttach(r.registry)
 	r.GoAttach(r.watching)
 
 	return nil
@@ -119,81 +113,13 @@ func (r *Runner) start() error {
 		return err
 	}
 
-	if err = r.registry(); err != nil {
+	r.pr, err = r.register()
+	if err != nil {
 		return err
 	}
 
 	go r.run()
 	return nil
-}
-
-func (r *Runner) registry() error {
-	key := []byte("runner")
-	bucket := buckets.Meta
-	runner := new(pb.Runner)
-
-	readTx := r.be.ReadTx()
-	readTx.RLock()
-	data, _ := readTx.UnsafeGet(bucket, key)
-	readTx.RUnlock()
-	if len(data) != 0 {
-		_ = runner.Unmarshal(data)
-	}
-
-	cpus, err := cpu.Counts(false)
-	if err != nil {
-		return errors.Wrap(err, "read system cpu")
-	}
-	vm, err := mem.VirtualMemory()
-	if err != nil {
-		return errors.Wrap(err, "read system memory")
-	}
-
-	runner.AdvertiseListen = r.AdvertiseListen
-	runner.PeerListen = r.PeerListen
-	runner.HeartbeatMs = r.HeartbeatMs
-	runner.Hostname, _ = os.Hostname()
-	runner.Cpus = uint32(cpus)
-	runner.Memory = vm.Total
-	runner.Version = version.Version
-
-	ctx, cancel := context.WithCancel(r.ctx)
-	defer cancel()
-
-	id, err := r.oct.RegisterRunner(ctx, runner)
-	if err != nil {
-		return err
-	}
-	runner.Id = id
-
-	r.Logger.Info("olive-runner registered",
-		zap.Uint64("id", runner.Id),
-		zap.String("advertise-listen", runner.AdvertiseListen),
-		zap.String("peer-listen", runner.PeerListen),
-		zap.Uint32("cpu-core", runner.Cpus),
-		zap.String("memory", humanize.IBytes(runner.Memory)),
-		zap.String("version", runner.Version))
-
-	tx := r.be.BatchTx()
-	tx.Lock()
-	defer tx.Unlock()
-	data, _ = runner.Marshal()
-	tx.UnsafePut(bucket, key, data)
-
-	return nil
-}
-
-func (r *Runner) intervalReport() {
-	ticker := time.NewTicker(time.Duration(r.HeartbeatMs) * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-r.stopping:
-			return
-		case <-ticker.C:
-
-		}
-	}
 }
 
 func (r *Runner) watching() {
@@ -203,7 +129,7 @@ func (r *Runner) watching() {
 	wopts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 	}
-	wch := r.oct.Watch(ctx, runtime.DefaultOliveRunner, wopts...)
+	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
 	for {
 		select {
 		case <-r.stopping:

@@ -28,7 +28,6 @@ import (
 // Client provides and manages an olive-meta client session.
 type Client struct {
 	BpmnRPC
-	RunnerRPC
 
 	*clientv3.Client
 
@@ -76,10 +75,13 @@ func newClient(cfg *Config) (*Client, error) {
 		client.callOpts = callOpts
 	}
 
-	client.RunnerRPC = NewRunnerRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
 
 	return client, nil
+}
+
+func (c *Client) ActiveEtcdClient() *clientv3.Client {
+	return c.Client
 }
 
 func toErr(ctx context.Context, err error) error {

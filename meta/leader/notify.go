@@ -12,20 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package runtime
+package leader
 
-import "path"
-
-const (
-	DefaultOlivePrefix = "_olive"
+import (
+	"go.etcd.io/etcd/server/v3/etcdserver"
 )
 
-var (
-	DefaultOliveMeta = path.Join(DefaultOlivePrefix, "meta")
-)
+type Notifier interface {
+	ChangeNotify() <-chan struct{}
+	ReadyNotify() <-chan struct{}
+	IsLeader() bool
+}
 
-var (
-	DefaultOliveRunner            = path.Join(DefaultOlivePrefix, "runner")
-	DefaultOliveRunnerDefinitions = path.Join(DefaultOliveRunner, "definitions")
-	DefaultOliveRunnerRegion      = path.Join(DefaultOliveRunner, "region")
-)
+type notifier struct {
+	s *etcdserver.EtcdServer
+}
+
+func NewNotify(s *etcdserver.EtcdServer) Notifier {
+	return &notifier{s: s}
+}
+
+func (n *notifier) ChangeNotify() <-chan struct{} {
+	return n.s.LeaderChangedNotify()
+}
+
+func (n *notifier) ReadyNotify() <-chan struct{} {
+	return n.s.ReadyNotify()
+}
+
+func (n *notifier) IsLeader() bool {
+	return n.s.ID() == n.s.Leader()
+}

@@ -28,37 +28,6 @@ import "github.com/olive-io/olive/api/olivepb/internal.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
-service RunnerRPC {
-  rpc RegisterRunner(RegisterRunnerRequest) returns (RegisterRunnerResponse) {
-    option (google.api.http) = {
-      post: "/v1/runner/register"
-      body: "*"
-    };
-  };
-  rpc ReportRunner(ReportRunnerRequest) returns (ReportRunnerResponse) {
-    option (google.api.http) = {
-      post: "/v1/runner/report"
-      body: "*"
-    };
-  };
-}
-
-message RegisterRunnerRequest {
-  olivepb.Runner runner = 1;
-}
-
-message RegisterRunnerResponse {
-  uint64 id = 1;
-}
-
-message ReportRunnerRequest {
-  uint64 id = 1;
-  olivepb.RunnerStat runner = 2;
-  repeated olivepb.RegionStat regions = 3;
-}
-
-message ReportRunnerResponse {}
-
 service BpmnRPC {
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
     option (google.api.http) = {

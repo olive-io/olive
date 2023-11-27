@@ -17,59 +17,103 @@ package idutil
 import (
 	"context"
 	"encoding/binary"
+	"path"
 	"sync/atomic"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.uber.org/zap"
 )
 
 type Generator struct {
+	ctx    context.Context
 	key    string
 	client *clientv3.Client
 	lg     *zap.Logger
 	id     uint64
+	rev    int64
 }
 
-func NewGenerator(key string, client *clientv3.Client) (*Generator, error) {
-	id, err := get(context.TODO(), client, key)
-	if err != nil {
-		return nil, err
-	}
+func NewGenerator(ctx context.Context, key string, client *clientv3.Client) (*Generator, error) {
 	g := &Generator{
+		ctx:    ctx,
 		key:    key,
 		client: client,
 		lg:     client.GetLogger(),
-		id:     id,
 	}
+	err := g.load()
+	if err != nil {
+		return nil, err
+	}
+	go g.watching()
 
 	return g, nil
 }
 
-func (g *Generator) Next(ctx context.Context) uint64 {
+func (g *Generator) Next() uint64 {
 	next := atomic.AddUint64(&g.id, 1)
-	err := set(ctx, g.client, g.key, next)
+	err := g.set(next)
 	if err != nil {
 		g.lg.Error("generate next id", zap.Error(err))
 	}
 	return next
 }
 
-func set(ctx context.Context, client *clientv3.Client, key string, id uint64) error {
-	val := make([]byte, 8)
-	binary.LittleEndian.PutUint64(val, id)
-	_, err := client.Put(ctx, key, string(val))
-	return err
+func (g *Generator) watching() {
+	wch := g.client.Watch(g.ctx, g.key)
+	for {
+		select {
+		case <-g.ctx.Done():
+			return
+		case ch := <-wch:
+			if ch.IsProgressNotify() || ch.Canceled {
+				break
+			}
+
+			for _, event := range ch.Events {
+				if event.Kv.ModRevision > atomic.LoadInt64(&g.rev) {
+					val := event.Kv.Value[0:8]
+					g.id = binary.LittleEndian.Uint64(val)
+					atomic.StoreInt64(&g.rev, event.Kv.ModRevision)
+				}
+			}
+		}
+	}
 }
 
-func get(ctx context.Context, client *clientv3.Client, key string) (uint64, error) {
-	rsp, err := client.Get(ctx, key)
+func (g *Generator) set(id uint64) error {
+	ctx := g.ctx
+	val := make([]byte, 8)
+	binary.LittleEndian.PutUint64(val, id)
+	session, err := concurrency.NewSession(g.client)
 	if err != nil {
-		return 0, err
+		return err
+	}
+	defer session.Close()
+	mu := concurrency.NewMutex(session, path.Join(g.key, "lock"))
+	if err = mu.Lock(ctx); err != nil {
+		return err
+	}
+	defer mu.Unlock(ctx)
+	rsp, err := g.client.Put(ctx, g.key, string(val))
+	if err != nil {
+		return err
+	}
+	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+
+	return nil
+}
+
+func (g *Generator) load() error {
+	rsp, err := g.client.Get(g.ctx, g.key)
+	if err != nil {
+		return err
 	}
 	if len(rsp.Kvs) == 0 {
-		return 0, nil
+		return nil
 	}
 	val := rsp.Kvs[0].Value[0:8]
-	id := binary.LittleEndian.Uint64(val)
-	return id, nil
+	g.id = binary.LittleEndian.Uint64(val)
+	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+	return nil
 }

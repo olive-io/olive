@@ -18,27 +18,7 @@ import (
 	"context"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/api/rpctypes"
 )
-
-func (s *Server) RegisterRunner(ctx context.Context, req *pb.RegisterRunnerRequest) (resp *pb.RegisterRunnerResponse, err error) {
-	if req.Runner == nil {
-		return resp, rpctypes.ErrGRPCInvalidRunner
-	}
-
-	resp = &pb.RegisterRunnerResponse{}
-	resp.Id, err = s.registry.Register(ctx, req.Runner)
-	return
-}
-
-func (s *Server) ReportRunner(ctx context.Context, req *pb.ReportRunnerRequest) (resp *pb.ReportRunnerResponse, err error) {
-	resp = &pb.ReportRunnerResponse{}
-
-	//runner := req.Runner
-	//regions := req.Regions
-
-	return
-}
 
 func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
 	//TODO implement me

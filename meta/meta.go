@@ -22,6 +22,8 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/meta/leader"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
@@ -42,7 +44,9 @@ type Server struct {
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
 
-	registry *registry
+	notifier leader.Notifier
+
+	scheduler *scheduler
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -77,15 +81,14 @@ func NewServer(cfg Config) (*Server, error) {
 func (s *Server) Start() error {
 	ec := s.cfg.Config
 	ec.EnableGRPCGateway = true
-	ec.ServiceRegister = func(gs *grpc.Server) {
-		olivepb.RegisterRunnerRPCServer(gs, s)
-		olivepb.RegisterBpmnRPCServer(gs, s)
+
+	ec.UserHandlers = map[string]http.Handler{
+		"/metrics": promhttp.Handler(),
 	}
 
-	//mux := newHttpMux()
-	//ec.UserHandlers = map[string]http.Handler{
-	//	"/": mux,
-	//}
+	ec.ServiceRegister = func(gs *grpc.Server) {
+		olivepb.RegisterBpmnRPCServer(gs, s)
+	}
 
 	var err error
 	s.etcd, err = embed.StartEtcd(ec)
@@ -95,10 +98,11 @@ func (s *Server) Start() error {
 
 	<-s.etcd.Server.ReadyNotify()
 	s.v3cli = v3client.New(s.etcd.Server)
+	s.notifier = leader.NewNotify(s.etcd.Server)
 
-	s.registry, err = s.newRegistry()
-	if err != nil {
-		return errors.Wrap(err, "initial registry")
+	s.scheduler = s.newScheduler()
+	if err = s.scheduler.Start(); err != nil {
+		return err
 	}
 
 	return nil

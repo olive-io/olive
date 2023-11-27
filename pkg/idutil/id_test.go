@@ -33,16 +33,15 @@ func TestNewGenerator(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOliveMeta, "runner", "id")
+	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
 
-	gen, err := NewGenerator(key, v3client.New(etcd.Server))
+	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.TODO()
-	id := gen.Next(ctx)
-	id2 := gen.Next(ctx)
+	id := gen.Next()
+	id2 := gen.Next()
 	if id == id2 {
 		t.Errorf("generate the same id %x", id)
 	}
@@ -52,17 +51,15 @@ func BenchmarkNext(b *testing.B) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOliveMeta, "runner", "id")
+	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
 
-	gen, err := NewGenerator(key, v3client.New(etcd.Server))
+	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
 		panic(err)
 	}
 
-	ctx := context.TODO()
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		gen.Next(ctx)
+		gen.Next()
 	}
 }
