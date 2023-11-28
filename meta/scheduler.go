@@ -176,7 +176,7 @@ func (sc *scheduler) Start() error {
 	return nil
 }
 
-func (sc *scheduler) schedulingCycle() error {
+func (sc *scheduler) schedulingRunnerCycle() error {
 	return nil
 }
 
@@ -230,7 +230,6 @@ func (sc *scheduler) run() {
 				for _, event := range wr.Events {
 					sc.processEvent(event)
 				}
-
 			}
 		}
 	}

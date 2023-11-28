@@ -31,7 +31,12 @@ message OliveHeader {
 }
 
 message ResponseHeader {
-
+  // cluster_id is the ID of the cluster which sent the response.
+  uint64 cluster_id = 1;
+  // member_id is the ID of the member which sent the response.
+  uint64 member_id = 2;
+  // raft_term is the raft term when the request was applied.
+  uint64 raft_term = 3;
 }
 
 message Runner {
@@ -112,7 +117,15 @@ message Definition {
   string id = 1;
   string name = 2;
   bytes content = 3;
-  int64 version = 4;
+  uint64 version = 4;
+}
+
+message DefinitionMeta {
+  string id = 1;
+  uint64 version = 2;
+  uint64 region = 3;
+  int64 startRev = 4;
+  int64 EndRev = 5;
 }
 
 message ProcessInstance {

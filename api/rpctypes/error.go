@@ -19,15 +19,33 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// server-side error
 var (
-	ErrGRPCKeyNotFound   = status.New(codes.InvalidArgument, "olive-meta: key not found").Err()
-	ErrGRPCInvalidRunner = status.New(codes.InvalidArgument, "olive-meta: runner is invalid").Err()
+	ErrGRPCEmptyKey      = status.New(codes.InvalidArgument, "olive: key is not provided").Err()
+	ErrGRPCKeyNotFound   = status.New(codes.InvalidArgument, "olive: key not found").Err()
+	ErrGRPCInvalidRunner = status.New(codes.InvalidArgument, "olive: runner is invalid").Err()
+
+	ErrGRPCNoLeader  = status.New(codes.Unavailable, "olive: no leader").Err()
+	ErrGRPCNotLeader = status.New(codes.FailedPrecondition, "olive: not leader").Err()
 
 	errStringToError = map[string]error{
+		ErrorDesc(ErrGRPCEmptyKey):    ErrGRPCEmptyKey,
 		ErrorDesc(ErrGRPCKeyNotFound): ErrGRPCKeyNotFound,
 
+		ErrorDesc(ErrGRPCNoLeader):      ErrGRPCNoLeader,
+		ErrorDesc(ErrGRPCNotLeader):     ErrGRPCNotLeader,
 		ErrorDesc(ErrGRPCInvalidRunner): ErrGRPCInvalidRunner,
 	}
+)
+
+// client-side error
+var (
+	ErrEmptyKey      = Error(ErrGRPCEmptyKey)
+	ErrKeyNotFound   = Error(ErrGRPCKeyNotFound)
+	ErrInvalidRunner = Error(ErrGRPCInvalidRunner)
+
+	ErrNoLeader  = Error(ErrGRPCNoLeader)
+	ErrNotLeader = Error(ErrGRPCNotLeader)
 )
 
 type OliveError struct {

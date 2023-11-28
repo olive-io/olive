@@ -41,5 +41,6 @@ func (n *notifier) ReadyNotify() <-chan struct{} {
 }
 
 func (n *notifier) IsLeader() bool {
-	return n.s.ID() == n.s.Leader()
+	lead := n.s.Leader()
+	return n.s.ID() == lead && lead != 0
 }

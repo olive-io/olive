@@ -67,19 +67,24 @@ message DeployDefinitionRequest {
 
 message DeployDefinitionResponse {
   olivepb.ResponseHeader header = 1;
-  int64 version = 2;
+  uint64 version = 2;
+  uint64 region = 3;
 }
 
-message ListDefinitionRequest {}
+message ListDefinitionRequest {
+  int64 limit = 1;
+  string continue = 21;
+}
 
 message ListDefinitionResponse {
   olivepb.ResponseHeader header = 1;
   repeated olivepb.Definition definitions = 2;
+  string continueToken = 3;
 }
 
 message GetDefinitionRequest {
   string id = 1;
-  int64 version = 2;
+  uint64 version = 2;
 }
 
 message GetDefinitionResponse {

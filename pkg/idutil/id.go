@@ -17,9 +17,11 @@ package idutil
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"path"
 	"sync/atomic"
 
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"go.uber.org/zap"
@@ -45,9 +47,12 @@ func NewGenerator(ctx context.Context, key string, client *clientv3.Client) (*Ge
 	if err != nil {
 		return nil, err
 	}
-	go g.watching()
-
 	return g, nil
+}
+
+// Current returns the current id number
+func (g *Generator) Current() uint64 {
+	return atomic.LoadUint64(&g.id)
 }
 
 func (g *Generator) Next() uint64 {
@@ -57,6 +62,10 @@ func (g *Generator) Next() uint64 {
 		g.lg.Error("generate next id", zap.Error(err))
 	}
 	return next
+}
+
+func (g *Generator) Start() {
+	go g.watching()
 }
 
 func (g *Generator) watching() {
@@ -106,7 +115,7 @@ func (g *Generator) set(id uint64) error {
 
 func (g *Generator) load() error {
 	rsp, err := g.client.Get(g.ctx, g.key)
-	if err != nil {
+	if err != nil && !errors.Is(err, rpctypes.ErrKeyNotFound) {
 		return err
 	}
 	if len(rsp.Kvs) == 0 {
