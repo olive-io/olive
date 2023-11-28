@@ -22,32 +22,32 @@ type INode interface {
 	ID() uint64
 }
 
-type PriorityRunnerQueue[T INode] struct {
+type PriorityQueue[T INode] struct {
 	pq      priorityQueue[T]
 	m       map[uint64]*item[T]
-	gradeFn GradeFn[T]
+	chaosFn ChaosFn[T]
 }
 
-func NewRunnerQueue[T INode](fn GradeFn[T]) *PriorityRunnerQueue[T] {
-	queue := &PriorityRunnerQueue[T]{
+func New[T INode](fn ChaosFn[T]) *PriorityQueue[T] {
+	queue := &PriorityQueue[T]{
 		pq:      priorityQueue[T]{},
 		m:       map[uint64]*item[T]{},
-		gradeFn: fn,
+		chaosFn: fn,
 	}
 
 	return queue
 }
 
-func (q *PriorityRunnerQueue[T]) Push(val T) {
+func (q *PriorityQueue[T]) Push(val T) {
 	it := &item[T]{
 		value: val,
-		fn:    q.gradeFn,
+		fn:    q.chaosFn,
 	}
 	heap.Push(&q.pq, it)
 	q.m[val.ID()] = it
 }
 
-func (q *PriorityRunnerQueue[T]) Pop() (any, bool) {
+func (q *PriorityQueue[T]) Pop() (any, bool) {
 	if q.pq.Len() == 0 {
 		return nil, false
 	}
@@ -57,17 +57,17 @@ func (q *PriorityRunnerQueue[T]) Pop() (any, bool) {
 	return it.value, true
 }
 
-func (q *PriorityRunnerQueue[T]) Set(val T) {
+func (q *PriorityQueue[T]) Set(val T) {
 	v, ok := q.m[val.ID()]
 	if !ok {
 		q.Push(val)
 		return
 	}
 	v.value = val
-	q.pq.update(v, val, q.gradeFn)
+	q.pq.update(v, val, q.chaosFn)
 	q.m[val.ID()] = v
 }
 
-func (q *PriorityRunnerQueue[T]) Len() int {
+func (q *PriorityQueue[T]) Len() int {
 	return q.pq.Len()
 }

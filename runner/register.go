@@ -46,10 +46,16 @@ func (r *Runner) register() (*pb.Runner, error) {
 		_ = runner.Unmarshal(data)
 	}
 
+	cpuTotal := uint64(0)
 	cpus, err := cpu.Counts(false)
 	if err != nil {
 		return nil, errors.Wrap(err, "read system cpu")
 	}
+	cpuInfos, _ := cpu.Info()
+	if len(cpuInfos) > 0 {
+		cpuTotal = uint64(cpus) * uint64(cpuInfos[0].Mhz)
+	}
+
 	vm, err := mem.VirtualMemory()
 	if err != nil {
 		return nil, errors.Wrap(err, "read system memory")
@@ -59,7 +65,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	runner.PeerListen = r.PeerListen
 	runner.HeartbeatMs = r.HeartbeatMs
 	runner.Hostname, _ = os.Hostname()
-	runner.Cpus = uint32(cpus)
+	runner.Cpu = cpuTotal
 	runner.Memory = vm.Total
 	runner.Version = version.Version
 
@@ -99,7 +105,7 @@ func (r *Runner) registry() {
 		zap.Uint64("id", runner.Id),
 		zap.String("advertise-listen", runner.AdvertiseListen),
 		zap.String("peer-listen", runner.PeerListen),
-		zap.Uint32("cpu-core", runner.Cpus),
+		zap.Uint64("cpu-total", runner.Cpu),
 		zap.String("memory", humanize.IBytes(runner.Memory)),
 		zap.String("version", runner.Version))
 
@@ -128,8 +134,6 @@ func (r *Runner) processRunnerStat() *pb.RunnerStat {
 	lg := r.Logger
 	stat := &pb.RunnerStat{
 		Id:            r.pr.Id,
-		CpuPer:        0,
-		MemoryPer:     0,
 		Definitions:   uint64(definitionsCounter.Get()),
 		BpmnProcesses: uint64(processCounter.Get()),
 		BpmnEvents:    uint64(eventCounter.Get()),

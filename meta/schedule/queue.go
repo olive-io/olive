@@ -18,11 +18,11 @@ import (
 	"container/heap"
 )
 
-type GradeFn[T any] func(v T) int64
+type ChaosFn[T any] func(v T) int
 
 type item[T any] struct {
 	value T
-	fn    GradeFn[T]
+	fn    ChaosFn[T]
 	index int
 }
 
@@ -34,7 +34,7 @@ func (pq *priorityQueue[T]) Len() int { return len(pq.list) }
 
 func (pq *priorityQueue[T]) Less(i, j int) bool {
 	x, y := pq.list[i], pq.list[j]
-	return x.fn(x.value) < y.fn(y.value)
+	return x.fn(x.value) > y.fn(y.value)
 }
 
 func (pq *priorityQueue[T]) Swap(i, j int) {
@@ -60,7 +60,7 @@ func (pq *priorityQueue[T]) Pop() any {
 	return item
 }
 
-func (pq *priorityQueue[T]) update(item *item[T], value T, fn GradeFn[T]) {
+func (pq *priorityQueue[T]) update(item *item[T], value T, fn ChaosFn[T]) {
 	item.value = value
 	if fn != nil {
 		item.fn = fn

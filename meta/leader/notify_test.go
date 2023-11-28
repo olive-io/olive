@@ -29,7 +29,6 @@ func Test_Notify(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	etcd.Server.MoveLeader()
 	nr := NewNotify(etcd.Server)
 	select {
 	case <-nr.ChangeNotify():

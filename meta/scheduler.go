@@ -16,16 +16,22 @@ package meta
 
 import (
 	"context"
+	"math"
 	"strings"
 	"sync"
-	"time"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/meta/schedule"
 	"github.com/olive-io/olive/pkg/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
+
+type scheduleLimit struct {
+	RegionLimit     int
+	DefinitionLimit int
+}
 
 type scheduler struct {
 	ctx    context.Context
@@ -42,6 +48,14 @@ type scheduler struct {
 	rgmu    sync.RWMutex
 	regions map[uint64]*pb.Region
 
+	rumu        sync.Mutex
+	runnerQueue *schedule.PriorityQueue[*pb.RunnerStat]
+
+	remu        sync.Mutex
+	regionQueue *schedule.PriorityQueue[*pb.RegionStat]
+
+	limit scheduleLimit
+
 	stopping <-chan struct{}
 }
 
@@ -56,13 +70,58 @@ func (s *Server) newScheduler() *scheduler {
 		notifier: s.notifier,
 		runners:  map[uint64]*pb.Runner{},
 		regions:  map[uint64]*pb.Region{},
+		limit: scheduleLimit{
+			RegionLimit:     s.cfg.RegionLimit,
+			DefinitionLimit: s.cfg.RegionDefinitionLimit,
+		},
 		stopping: s.StoppingNotify(),
 	}
+
+	runnerStatQueue := schedule.New[*pb.RunnerStat](sc.runnerGetter())
+	sc.runnerQueue = runnerStatQueue
+
+	regionStateQueue := schedule.New[*pb.RegionStat](sc.regionGetter())
+	sc.regionQueue = regionStateQueue
 
 	return sc
 }
 
-func (sc *scheduler) Start() error {
+func (sc *scheduler) runnerGetter() schedule.ChaosFn[*pb.RunnerStat] {
+	return func(stat *pb.RunnerStat) int {
+		sc.rmu.RLock()
+		runner, ok := sc.runners[stat.Id]
+		sc.rmu.RUnlock()
+		if !ok {
+			return math.MaxInt64
+		}
+		cpus := float64(runner.Cpu)
+		memory := float64(runner.Memory / 1024 / 1024)
+
+		chaos := int((100-stat.CpuPer)/100*cpus)%30 +
+			int((100-stat.MemoryPer)/100*memory)%30 +
+			(sc.limit.RegionLimit - len(stat.Regions)%30) +
+			(sc.limit.RegionLimit - len(stat.Leaders)%10)
+
+		return chaos
+	}
+}
+
+func (sc *scheduler) regionGetter() schedule.ChaosFn[*pb.RegionStat] {
+	return func(stat *pb.RegionStat) int {
+		sc.rmu.RLock()
+		_, ok := sc.regions[stat.Id]
+		sc.rmu.RUnlock()
+		if !ok {
+			return math.MaxInt64
+		}
+
+		chaos := int(float64(stat.Definitions) / float64(sc.limit.DefinitionLimit) * 100)
+
+		return chaos
+	}
+}
+
+func (sc *scheduler) sync() error {
 	ctx := sc.ctx
 	client := sc.v3cli
 	runners := make(map[uint64]*pb.Runner)
@@ -105,6 +164,13 @@ func (sc *scheduler) Start() error {
 	sc.rgmu.Lock()
 	sc.regions = regions
 	sc.rgmu.Unlock()
+	return nil
+}
+
+func (sc *scheduler) Start() error {
+	if err := sc.sync(); err != nil {
+		return err
+	}
 
 	go sc.run()
 	return nil
@@ -130,10 +196,13 @@ func (sc *scheduler) waitUtilLeader() bool {
 }
 
 func (sc *scheduler) run() {
-	interval := time.Millisecond * 500
 	for {
 		if !sc.waitUtilLeader() {
-			time.Sleep(interval)
+			select {
+			case <-sc.stopping:
+				return
+			default:
+			}
 			continue
 		}
 
@@ -148,32 +217,75 @@ func (sc *scheduler) run() {
 
 	LOOP:
 		for {
-			var wr clientv3.WatchResponse
 			select {
 			case <-sc.stopping:
 				return
 			case <-sc.notifier.ChangeNotify():
 				break LOOP
-			case wr = <-wch:
-			}
+			case wr := <-wch:
+				if wr.Canceled {
+					break LOOP
+				}
 
-			if wr.Canceled {
-				break LOOP
-			}
+				for _, event := range wr.Events {
+					sc.processEvent(event)
+				}
 
-			for _, event := range wr.Events {
-				sc.processEvent(event)
 			}
 		}
 	}
 }
 
 func (sc *scheduler) processEvent(event *clientv3.Event) {
+	lg := sc.lg
 	kv := event.Kv
 	key := string(kv.Key)
 	switch {
 	case strings.HasPrefix(key, runtime.DefaultMetaRunnerStat):
+		rs := new(pb.RunnerStat)
+		if err := rs.Unmarshal(kv.Value); err != nil {
+			lg.Error("unmarshal RunnerState", zap.Error(err))
+			return
+		}
+
+		sc.handleRunnerStat(rs)
 	case strings.HasPrefix(key, runtime.DefaultMetaRegionStat):
-	case strings.HasPrefix(key, runtime.DefaultRunnerPrefix):
+		rs := new(pb.RegionStat)
+		if err := rs.Unmarshal(kv.Value); err != nil {
+			lg.Error("unmarshal RegionState", zap.Error(err))
+			return
+		}
+
+		sc.handleRegionStat(rs)
+	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistry):
+		runner := new(pb.Runner)
+		if err := runner.Unmarshal(kv.Value); err != nil {
+			lg.Error("unmarshal Runner", zap.Error(err))
+			return
+		}
+
+		sc.handleRunner(runner)
 	}
+}
+
+func (sc *scheduler) handleRunnerStat(stat *pb.RunnerStat) {
+	sc.rumu.Lock()
+	defer sc.rumu.Unlock()
+	sc.runnerQueue.Set(stat)
+}
+
+func (sc *scheduler) handleRegionStat(stat *pb.RegionStat) {
+	sc.remu.Lock()
+	defer sc.remu.Unlock()
+	sc.regionQueue.Set(stat)
+}
+
+func (sc *scheduler) handleRunner(runner *pb.Runner) {
+	if runner.Id == 0 {
+		return
+	}
+
+	sc.rmu.Lock()
+	defer sc.rmu.Unlock()
+	sc.runners[runner.Id] = runner
 }

@@ -25,6 +25,8 @@ const (
 	DefaultName                  = "default"
 	DefaultListenerClientAddress = "http://localhost:4379"
 	DefaultListenerPeerAddress   = "http://localhost:4380"
+	DefaultRegionLimit           = 100
+	DefaultRegionDefinitionLimit = 500
 )
 
 var (
@@ -56,6 +58,11 @@ const (
 
 type Config struct {
 	*embed.Config
+
+	// The maximum number of regions for a runner
+	RegionLimit int
+	// The maximum number of bpmn definitions for a region
+	RegionDefinitionLimit int
 }
 
 func NewConfig() Config {
@@ -66,7 +73,12 @@ func NewConfig() Config {
 	ec.AdvertiseClientUrls = ec.ListenClientUrls
 	peerURL, _ := url.Parse(DefaultListenerPeerAddress)
 	ec.ListenPeerUrls = []url.URL{*peerURL}
-	cfg := Config{Config: ec}
+
+	cfg := Config{
+		Config:                ec,
+		RegionLimit:           DefaultRegionLimit,
+		RegionDefinitionLimit: DefaultRegionDefinitionLimit,
+	}
 
 	return cfg
 }
