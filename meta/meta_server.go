@@ -25,11 +25,12 @@ import (
 	"github.com/olive-io/olive/meta/pagation"
 	"github.com/olive-io/olive/pkg/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
 )
 
 const (
 	// maxLimit is a maximum page limit increase used when fetching objects from etcd.
-	// This limit is used only for increasing page size by kube-apiserver. If request
+	// This limit is used only for increasing page size by olive. If request
 	// specifies larger limit initially, it won't be changed.
 	maxLimit = 10000
 )
@@ -39,8 +40,8 @@ type definitionMeta struct {
 	client *clientv3.Client
 }
 
-// Deploy deploys a new version definitions to storage (etcd)
-func (dm *definitionMeta) Deploy(ctx context.Context, definition *pb.Definition) error {
+// Save saves a new version definitions to storage (etcd)
+func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) error {
 	newVersion := dm.Version + 1
 
 	definition.Header.Region = dm.Region
@@ -80,10 +81,6 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 		return nil, err
 	}
 
-	if dm.Region == 0 {
-		// select region
-	}
-
 	definition := &pb.Definition{
 		Header:  &pb.OliveHeader{},
 		Id:      req.Id,
@@ -91,12 +88,20 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 		Content: req.Content,
 	}
 
-	if err = dm.Deploy(ctx, definition); err != nil {
+	if err = dm.Save(ctx, definition); err != nil {
 		return
 	}
-
 	resp.Version = dm.Version
 	resp.Header = s.responseHeader()
+
+	if dm.Region == 0 {
+		_, _, err = s.scheduler.BindRegion(ctx, dm.DefinitionMeta)
+		if err != nil {
+			s.lg.Error("binding region",
+				zap.String("definition", definition.Id),
+				zap.Error(err))
+		}
+	}
 
 	return
 }
@@ -203,8 +208,6 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 		}
 
 		if limit < maxLimit {
-			// We got incomplete result due to field/label selector dropping the object.
-			// Double page size to reduce total number of calls to etcd.
 			limit *= 2
 			if limit > maxLimit {
 				limit = maxLimit

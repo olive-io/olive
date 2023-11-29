@@ -61,8 +61,17 @@ func (r *Runner) register() (*pb.Runner, error) {
 		return nil, errors.Wrap(err, "read system memory")
 	}
 
-	runner.AdvertiseListen = r.AdvertiseListen
-	runner.PeerListen = r.PeerListen
+	listenPeerURL := r.AdvertisePeerURL
+	if len(listenPeerURL) == 0 {
+		listenPeerURL = r.ListenPeerURL
+	}
+	listenClientURL := r.AdvertisePeerURL
+	if len(listenClientURL) == 0 {
+		listenClientURL = r.ListenClientURL
+	}
+
+	runner.ListenPeerURL = listenPeerURL
+	runner.ListenClientURL = listenClientURL
 	runner.HeartbeatMs = r.HeartbeatMs
 	runner.Hostname, _ = os.Hostname()
 	runner.Cpu = cpuTotal
@@ -103,8 +112,8 @@ func (r *Runner) registry() {
 
 	r.Logger.Info("olive-runner registered",
 		zap.Uint64("id", runner.Id),
-		zap.String("advertise-listen", runner.AdvertiseListen),
-		zap.String("peer-listen", runner.PeerListen),
+		zap.String("listen-client-url", runner.ListenClientURL),
+		zap.String("listen-peer-url", runner.ListenPeerURL),
 		zap.Uint64("cpu-total", runner.Cpu),
 		zap.String("memory", humanize.IBytes(runner.Memory)),
 		zap.String("version", runner.Version))

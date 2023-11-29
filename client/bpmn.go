@@ -25,7 +25,7 @@ import (
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, id, name string, body []byte) (int64, error)
+	DeployDefinition(ctx context.Context, id, name string, body []byte) (uint64, error)
 }
 
 type bpmnRPC struct {
@@ -41,7 +41,7 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (int64, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (uint64, error) {
 	var definitions schema.Definitions
 
 	if err := xml.Unmarshal(body, &definitions); err != nil {

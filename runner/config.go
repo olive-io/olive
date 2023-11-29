@@ -17,6 +17,8 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -27,7 +29,9 @@ import (
 )
 
 var (
-	runnerFlagSet = pflag.NewFlagSet("runner", pflag.ExitOnError)
+	flagSet = pflag.NewFlagSet("runner", pflag.ExitOnError)
+
+	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
 )
 
 const (
@@ -37,19 +41,25 @@ const (
 	DefaultBackendBatchInterval = time.Hour
 	DefaultBackendBatchLimit    = 10000
 
-	DefaultEndpoints    = "http://127.0.0.1:4379"
-	DefaultPeerListen   = "127.0.0.1:5380"
-	DefaultClientListen = "127.0.0.1:5379"
+	DefaultListenPeerURL   = "http://127.0.0.1:5380"
+	DefaultListenClientURL = "http://127.0.0.1:5379"
 
 	DefaultHeartbeatMs = 5000
 
 	DefaultRaftRTTMillisecond = 500
 )
 
-func init() {}
+func init() {
+	flagSet.String("data-dir", DefaultDataDir, "Path to the data directory.")
+	flagSet.StringArray("endpoints", DefaultEndpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
+	flagSet.String("listen-peer-url", DefaultListenPeerURL, "Set the URL to listen on for peer traffic.")
+	flagSet.String("advertise-peer-url", DefaultListenPeerURL, "Set advertise URL to listen on for peer traffic.")
+	flagSet.String("listen-client-url", DefaultListenClientURL, "Set the URL to listen on for client traffic.")
+	flagSet.String("advertise-client-url", DefaultListenClientURL, "Set advertise URL to listen on for client traffic.")
+}
 
 func AddFlagSet(flags *pflag.FlagSet) {
-	flags.AddFlagSet(runnerFlagSet)
+	flags.AddFlagSet(flagSet)
 }
 
 type Config struct {
@@ -63,9 +73,10 @@ type Config struct {
 	// BackendBatchLimit is the maximum operations before commit the backend transaction.
 	BackendBatchLimit int
 
-	PeerListen      string
-	ClientListen    string
-	AdvertiseListen string
+	ListenPeerURL      string
+	AdvertisePeerURL   string
+	ListenClientURL    string
+	AdvertiseClientURL string
 
 	HeartbeatMs        int64
 	RaftRTTMillisecond uint64
@@ -76,7 +87,7 @@ func NewConfig() Config {
 	lg := zap.NewExample()
 
 	clientCfg := client.Config{}
-	clientCfg.Endpoints = []string{DefaultEndpoints}
+	clientCfg.Endpoints = DefaultEndpoints
 	clientCfg.Logger = lg
 
 	cfg := Config{
@@ -88,9 +99,8 @@ func NewConfig() Config {
 		BackendBatchInterval: DefaultBackendBatchInterval,
 		BackendBatchLimit:    DefaultBackendBatchLimit,
 
-		PeerListen:         DefaultPeerListen,
-		ClientListen:       DefaultClientListen,
-		AdvertiseListen:    DefaultClientListen,
+		ListenPeerURL:      DefaultListenPeerURL,
+		ListenClientURL:    DefaultListenClientURL,
 		HeartbeatMs:        DefaultHeartbeatMs,
 		RaftRTTMillisecond: DefaultRaftRTTMillisecond,
 	}
@@ -98,18 +108,52 @@ func NewConfig() Config {
 	return cfg
 }
 
-func NewConfigFromFlagSet(flags *pflag.FlagSet) (Config, error) {
-	cfg := NewConfig()
+func NewConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
+	cfg = NewConfig()
+	if cfg.DataDir, err = flags.GetString("data-dir"); err != nil {
+		return
+	}
+	if cfg.Endpoints, err = flags.GetStringArray("endpoints"); err != nil {
+		return
+	}
+	if cfg.ListenPeerURL, err = flags.GetString("listen-peer-url"); err != nil {
+		return
+	}
+	if cfg.AdvertisePeerURL, err = flags.GetString("advertise-peer-url"); err != nil {
+		return
+	}
+	if cfg.ListenClientURL, err = flags.GetString("listen-client-url"); err != nil {
+		return
+	}
+	if cfg.AdvertiseClientURL, err = flags.GetString("advertise-client-url"); err != nil {
+		return
+	}
+
 	return cfg, nil
 }
 
 func (cfg *Config) Validate() error {
+	stat, err := os.Stat(cfg.DataDir)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+
+		if err = os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+	if !stat.IsDir() {
+		return fmt.Errorf("data-dir is not a directory")
+	}
+
 	return nil
 }
 
 func (cfg *Config) LockDataDir() (*flock.Flock, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
+
 	lock := flock.New(filepath.Join(cfg.DataDir, "olive-runner.lock"))
 	ok, err := lock.TryLockContext(ctx, time.Millisecond*100)
 	if err != nil || !ok {

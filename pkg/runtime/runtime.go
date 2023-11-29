@@ -27,7 +27,6 @@ var (
 	DefaultMetaRunnerPrefix     = path.Join(DefaultMetaPrefix, "runner")
 	DefaultMetaDefinitionPrefix = path.Join(DefaultMetaPrefix, "definitions")
 	DefaultMetaDefinitionMeta   = path.Join(DefaultMetaDefinitionPrefix, "meta")
-	DefaultMetaDefinitionWait   = path.Join(DefaultMetaDefinitionPrefix, "wait")
 	DefaultMetaRunnerRegistry   = path.Join(DefaultMetaRunnerPrefix, "registry")
 	DefaultMetaRunnerStat       = path.Join(DefaultMetaRunnerPrefix, "stat")
 	DefaultMetaRegionStat       = path.Join(DefaultMetaRunnerPrefix, "region", "stat")

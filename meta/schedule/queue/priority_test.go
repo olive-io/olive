@@ -1,4 +1,4 @@
-package schedule
+package queue
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 )
 
 func TestNewRunnerQueue(t *testing.T) {
-	q := New[*pb.RunnerStat](func(v *pb.RunnerStat) int {
-		return int(((100-v.CpuPer)/100*4*2500 + (100-v.MemoryPer)/100*16) + float64(len(v.Regions))*-1)
+	q := New[*pb.RunnerStat](func(v *pb.RunnerStat) int64 {
+		return int64(((100-v.CpuPer)/100*4*2500 + (100-v.MemoryPer)/100*16) + float64(len(v.Regions))*-1)
 	})
 
 	r1 := &pb.RunnerStat{

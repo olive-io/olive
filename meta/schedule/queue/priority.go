@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schedule
+package queue
 
 import (
 	"container/heap"
+	"sync"
 )
 
 type INode interface {
@@ -69,5 +70,42 @@ func (q *PriorityQueue[T]) Set(val T) {
 }
 
 func (q *PriorityQueue[T]) Len() int {
+	return q.pq.Len()
+}
+
+type SyncPriorityQueue[T INode] struct {
+	mu sync.RWMutex
+	pq *PriorityQueue[T]
+}
+
+func NewSync[T INode](fn ChaosFn[T]) *SyncPriorityQueue[T] {
+	pq := New(fn)
+	queue := &SyncPriorityQueue[T]{pq: pq}
+
+	return queue
+}
+
+func (q *SyncPriorityQueue[T]) Push(val T) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.pq.Push(val)
+}
+
+func (q *SyncPriorityQueue[T]) Pop() (T, bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	result, ok := q.pq.Pop()
+	return result.(T), ok
+}
+
+func (q *SyncPriorityQueue[T]) Set(val T) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.pq.Set(val)
+}
+
+func (q *SyncPriorityQueue[T]) Len() int {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
 	return q.pq.Len()
 }

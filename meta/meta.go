@@ -23,6 +23,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/meta/schedule"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
@@ -46,7 +47,7 @@ type Server struct {
 
 	notifier leader.Notifier
 
-	scheduler *scheduler
+	scheduler *schedule.Scheduler
 
 	wgMu sync.RWMutex
 	wg   sync.WaitGroup
@@ -100,7 +101,11 @@ func (s *Server) Start() error {
 	s.v3cli = v3client.New(s.etcd.Server)
 	s.notifier = leader.NewNotify(s.etcd.Server)
 
-	s.scheduler = s.newScheduler()
+	sLimit := schedule.Limit{
+		RegionLimit:     s.cfg.RegionLimit,
+		DefinitionLimit: s.cfg.RegionDefinitionLimit,
+	}
+	s.scheduler = schedule.New(s.ctx, s.lg, s.v3cli, s.notifier, sLimit, s.StoppingNotify())
 	if err = s.scheduler.Start(); err != nil {
 		return err
 	}

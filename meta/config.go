@@ -30,25 +30,25 @@ const (
 )
 
 var (
-	metaFlagSet = pflag.NewFlagSet("meta", pflag.ExitOnError)
+	flagSet = pflag.NewFlagSet("meta", pflag.ExitOnError)
 )
 
 func init() {
-	metaFlagSet.String("name", DefaultName, "Human-readable name for this member.")
-	metaFlagSet.String("initial-cluster", "",
+	flagSet.String("name", DefaultName, "Human-readable name for this member.")
+	flagSet.String("initial-cluster", "",
 		"Initial cluster configuration for bootstrapping.")
-	metaFlagSet.String("initial-cluster-state", NewCluster,
+	flagSet.String("initial-cluster-state", NewCluster,
 		"Initial cluster state ('new' or 'existing').")
-	metaFlagSet.String("listener-client-address", DefaultListenerClientAddress,
+	flagSet.String("listener-client-address", DefaultListenerClientAddress,
 		"Sets the address to listen on for client traffic.")
-	metaFlagSet.String("listener-peer-address", DefaultListenerPeerAddress,
+	flagSet.String("listener-peer-address", DefaultListenerPeerAddress,
 		"Sets the address to listen on for peer traffic.")
-	metaFlagSet.Duration("election-timeout", 0,
+	flagSet.Duration("election-timeout", 0,
 		"Sets the timeout to waiting for electing")
 }
 
 func AddFlagSet(flags *pflag.FlagSet) {
-	flags.AddFlagSet(metaFlagSet)
+	flags.AddFlagSet(flagSet)
 }
 
 const (

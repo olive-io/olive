@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schedule
+package queue
 
 import (
 	"container/heap"
 )
 
-type ChaosFn[T any] func(v T) int
+type ChaosFn[T any] func(v T) int64
 
 type item[T any] struct {
 	value T

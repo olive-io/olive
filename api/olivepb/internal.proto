@@ -41,8 +41,8 @@ message ResponseHeader {
 
 message Runner {
   uint64 id = 1;
-  string advertiseListen = 2;
-  string peerListen = 3;
+  string listenPeerURL = 2;
+  string listenClientURL = 3;
   int64 heartbeatMs = 4;
   string hostname = 5;
   uint64 cpu = 6;
@@ -75,9 +75,9 @@ message RunnerStat {
 }
 
 message Region {
-  uint64 runner = 1;
-  uint64 id = 2;
-  string name = 3;
+  uint64 id = 1;
+  string name = 2;
+  uint64 deploymentId = 3;
 
   // replicaID => runnerId
   map<uint64, uint64> members = 4;
@@ -86,6 +86,8 @@ message Region {
   uint64 electionRTT = 6;
   uint64 heartbeatRTT = 7;
   uint64 leader = 8;
+
+  uint64 definitions = 11;
 }
 
 message RegionReplica {
@@ -98,8 +100,9 @@ message RegionReplica {
 
 message RegionStat {
   uint64 id = 1;
-  uint64 leader = 3;
-  uint64 term = 4;
+  uint64 leader = 2;
+  uint64 term = 3;
+  int32 replicas = 4;
 
   uint64 definitions = 11;
   uint64 bpmnProcesses = 12;

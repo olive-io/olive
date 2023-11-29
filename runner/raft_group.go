@@ -15,6 +15,7 @@
 package runner
 
 import (
+	"net/url"
 	"sync"
 
 	"github.com/coreos/go-semver/semver"
@@ -53,6 +54,12 @@ func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
 		lg = zap.NewExample()
 	}
 
+	peerURL, err := url.Parse(cfg.ListenPeerURL)
+	if err != nil {
+		return nil, err
+	}
+	peerAddr := peerURL.Host
+
 	leaderCh := make(chan raftio.LeaderInfo, 10)
 	el := newEventListener(leaderCh)
 
@@ -62,7 +69,7 @@ func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
 	nhConfig := config.NodeHostConfig{
 		NodeHostDir:         dir,
 		RTTMillisecond:      cfg.RaftRTTMillisecond,
-		RaftAddress:         cfg.PeerListen,
+		RaftAddress:         peerAddr,
 		EnableMetrics:       true,
 		RaftEventListener:   el,
 		SystemEventListener: sl,
@@ -72,7 +79,7 @@ func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
 	lg.Debug("start multi raft group",
 		zap.String("module", "dragonboat"),
 		zap.String("dir", dir),
-		zap.String("listen", cfg.PeerListen))
+		zap.String("listen", peerAddr))
 
 	nh, err := dragonboat.NewNodeHost(nhConfig)
 	if err != nil {
