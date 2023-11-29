@@ -302,7 +302,7 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, e
 		if !ok {
 			sc.lg.Panic("call runnerQ.Pop()")
 		}
-		rts[i] = rs
+		rts[i] = rs.(*pb.RunnerStat)
 	}
 
 	recycle := func(list *[]*pb.RunnerStat) {
@@ -335,10 +335,11 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 	if sc.regionQ.Len() == 0 {
 		return nil, false, nil
 	}
-	rs, ok := sc.regionQ.Pop()
+	x, ok := sc.regionQ.Pop()
 	if !ok {
 		return nil, false, nil
 	}
+	rs := x.(*pb.RegionStat)
 
 	sc.rgmu.RLock()
 	region, has := sc.regions[rs.Id]
@@ -430,10 +431,11 @@ func (sc *Scheduler) run() {
 			case <-ticker.C:
 				ticker.Reset(tickDuration)
 
-				dm, has := sc.definitionQ.Pop()
+				x, has := sc.definitionQ.Pop()
 				if !has {
 					break
 				}
+				dm := x.(*pb.DefinitionMeta)
 
 				if _, _, err := sc.BindRegion(sc.ctx, dm); err != nil {
 					sc.lg.Error("binding region",

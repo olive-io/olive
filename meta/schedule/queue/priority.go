@@ -91,11 +91,11 @@ func (q *SyncPriorityQueue[T]) Push(val T) {
 	q.pq.Push(val)
 }
 
-func (q *SyncPriorityQueue[T]) Pop() (T, bool) {
+func (q *SyncPriorityQueue[T]) Pop() (any, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Pop()
-	return result.(T), ok
+	return result, ok
 }
 
 func (q *SyncPriorityQueue[T]) Set(val T) {
