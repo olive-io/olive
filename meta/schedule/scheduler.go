@@ -101,7 +101,7 @@ func New(
 	return sc
 }
 
-func (sc *Scheduler) runnerGetter() queue.ChaosFn[*pb.RunnerStat] {
+func (sc *Scheduler) runnerGetter() queue.ScoreFn[*pb.RunnerStat] {
 	return func(stat *pb.RunnerStat) int64 {
 		sc.rmu.RLock()
 		runner, ok := sc.runners[stat.Id]
@@ -112,16 +112,16 @@ func (sc *Scheduler) runnerGetter() queue.ChaosFn[*pb.RunnerStat] {
 		cpus := float64(runner.Cpu)
 		memory := float64(runner.Memory / 1024 / 1024)
 
-		chaos := int((100-stat.CpuPer)/100*cpus)%30 +
+		score := int((100-stat.CpuPer)/100*cpus)%30 +
 			int((100-stat.MemoryPer)/100*memory)%30 +
-			(sc.limit.RegionLimit - len(stat.Regions)%30) +
-			(sc.limit.RegionLimit - len(stat.Leaders)%10)
+			(sc.limit.RegionLimit-len(stat.Regions))%30 +
+			(sc.limit.RegionLimit-len(stat.Leaders))%10
 
-		return int64(chaos)
+		return int64(score)
 	}
 }
 
-func (sc *Scheduler) regionGetter() queue.ChaosFn[*pb.RegionStat] {
+func (sc *Scheduler) regionGetter() queue.ScoreFn[*pb.RegionStat] {
 	return func(stat *pb.RegionStat) int64 {
 		sc.rmu.RLock()
 		_, ok := sc.regions[stat.Id]
@@ -130,10 +130,10 @@ func (sc *Scheduler) regionGetter() queue.ChaosFn[*pb.RegionStat] {
 			return math.MaxInt64
 		}
 
-		chaos := int64(float64(stat.Definitions)/float64(sc.limit.DefinitionLimit)*100)%70 +
+		score := int64(float64(stat.Definitions)/float64(sc.limit.DefinitionLimit)*100)%70 +
 			int64(stat.Replicas*10)%30
 
-		return chaos
+		return score
 	}
 }
 
@@ -200,7 +200,7 @@ func (sc *Scheduler) dispatchMessage(m imessage) {
 	}
 }
 
-func (sc *Scheduler) AllocateRegion(ctx context.Context) (*pb.Region, error) {
+func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	runners, err := sc.schedulingRunnerCycle(ctx)
 	if err != nil {
 		return nil, err
@@ -233,6 +233,18 @@ func (sc *Scheduler) AllocateRegion(ctx context.Context) (*pb.Region, error) {
 			Id:     mid,
 		}
 	}
+
+	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
+	data, _ := region.Marshal()
+	resp, err := sc.v3cli.Put(ctx, key, string(data))
+	if err != nil {
+		return nil, err
+	}
+	region.Rev = resp.Header.Revision
+
+	sc.rgmu.Lock()
+	sc.regions[region.Id] = region
+	sc.rgmu.Unlock()
 
 	return region, nil
 }
@@ -285,7 +297,6 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 
 func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, error) {
 	lg := sc.lg
-	runners := make([]*pb.Runner, 0, 3)
 
 	length := sc.runnerQ.Len()
 	if length == 0 {
@@ -296,7 +307,8 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, e
 	if length < replicaNum {
 		rc = length
 	}
-	rts := make([]*pb.RunnerStat, 0, rc)
+	runners := make([]*pb.Runner, rc)
+	rts := make([]*pb.RunnerStat, rc)
 	for i := 0; i < rc; i++ {
 		rs, ok := sc.runnerQ.Pop()
 		if !ok {
@@ -313,7 +325,7 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, e
 	}
 	defer recycle(&rts)
 
-	if sc.runnerGetter()(rts[0]) > 100 {
+	if score := sc.runnerGetter()(rts[0]); score > 100 {
 		return nil, ErrRunnerBusy
 	}
 
@@ -508,21 +520,11 @@ func (sc *Scheduler) processMessage(m imessage) {
 
 func (sc *Scheduler) processAllocRegion(ctx context.Context) {
 	lg := sc.lg
-	region, err := sc.AllocateRegion(ctx)
+	region, err := sc.AllocRegion(ctx)
 	if err != nil {
 		lg.Error("allocate region", zap.Error(err))
 		return
 	}
 
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
-	resp, err := sc.v3cli.Put(ctx, key, string(data))
-	if err != nil {
-		lg.Error("save region to etcd", zap.Error(err))
-		return
-	}
-
-	lg.Info("allocate new region",
-		zap.Stringer("region", region),
-		zap.Int64("revision", resp.Header.Revision))
+	lg.Info("allocate new region", zap.Stringer("region", region))
 }

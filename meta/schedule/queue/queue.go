@@ -18,11 +18,11 @@ import (
 	"container/heap"
 )
 
-type ChaosFn[T any] func(v T) int64
+type ScoreFn[T any] func(v T) int64
 
 type item[T any] struct {
 	value T
-	fn    ChaosFn[T]
+	fn    ScoreFn[T]
 	index int
 }
 
@@ -60,7 +60,7 @@ func (pq *priorityQueue[T]) Pop() any {
 	return item
 }
 
-func (pq *priorityQueue[T]) update(item *item[T], value T, fn ChaosFn[T]) {
+func (pq *priorityQueue[T]) update(item *item[T], value T, fn ScoreFn[T]) {
 	item.value = value
 	if fn != nil {
 		item.fn = fn

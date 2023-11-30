@@ -84,11 +84,9 @@ type Config struct {
 
 func NewConfig() Config {
 
-	lg := zap.NewExample()
-
 	clientCfg := client.Config{}
 	clientCfg.Endpoints = DefaultEndpoints
-	clientCfg.Logger = lg
+	clientCfg.Logger = zap.NewExample()
 
 	cfg := Config{
 		Config: clientCfg,
@@ -110,6 +108,12 @@ func NewConfig() Config {
 
 func NewConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
 	cfg = NewConfig()
+	if cfg.Logger == nil {
+		cfg.Logger, err = zap.NewProduction()
+		if err != nil {
+			return
+		}
+	}
 	if cfg.DataDir, err = flags.GetString("data-dir"); err != nil {
 		return
 	}

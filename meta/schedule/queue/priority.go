@@ -26,14 +26,14 @@ type INode interface {
 type PriorityQueue[T INode] struct {
 	pq      priorityQueue[T]
 	m       map[uint64]*item[T]
-	chaosFn ChaosFn[T]
+	scoreFn ScoreFn[T]
 }
 
-func New[T INode](fn ChaosFn[T]) *PriorityQueue[T] {
+func New[T INode](fn ScoreFn[T]) *PriorityQueue[T] {
 	queue := &PriorityQueue[T]{
 		pq:      priorityQueue[T]{},
 		m:       map[uint64]*item[T]{},
-		chaosFn: fn,
+		scoreFn: fn,
 	}
 
 	return queue
@@ -42,7 +42,7 @@ func New[T INode](fn ChaosFn[T]) *PriorityQueue[T] {
 func (q *PriorityQueue[T]) Push(val T) {
 	it := &item[T]{
 		value: val,
-		fn:    q.chaosFn,
+		fn:    q.scoreFn,
 	}
 	heap.Push(&q.pq, it)
 	q.m[val.ID()] = it
@@ -65,7 +65,7 @@ func (q *PriorityQueue[T]) Set(val T) {
 		return
 	}
 	v.value = val
-	q.pq.update(v, val, q.chaosFn)
+	q.pq.update(v, val, q.scoreFn)
 	q.m[val.ID()] = v
 }
 
@@ -78,7 +78,7 @@ type SyncPriorityQueue[T INode] struct {
 	pq *PriorityQueue[T]
 }
 
-func NewSync[T INode](fn ChaosFn[T]) *SyncPriorityQueue[T] {
+func NewSync[T INode](fn ScoreFn[T]) *SyncPriorityQueue[T] {
 	pq := New(fn)
 	queue := &SyncPriorityQueue[T]{pq: pq}
 

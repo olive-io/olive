@@ -88,6 +88,7 @@ message Region {
   uint64 leader = 8;
 
   uint64 definitions = 11;
+  int64 rev = 12;
 }
 
 message RegionReplica {
