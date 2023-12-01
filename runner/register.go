@@ -164,7 +164,7 @@ func (r *Runner) processRunnerStat() *pb.RunnerStat {
 	if vm != nil {
 		stat.MemoryPer = vm.UsedPercent
 	}
-	stat.Regions, stat.Leaders = r.raftGroup.runnerStat()
+	stat.Regions, stat.Leaders = r.controller.RunnerStat()
 
 	return stat
 }

@@ -12,23 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package runner
+package raft
 
 import (
-	"net/url"
 	"sync"
+	"time"
 
-	"github.com/coreos/go-semver/semver"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/lni/dragonboat/v4/raftio"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/runner/backend"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
-type MultiRaftGroup struct {
+type Controller struct {
+	Config
+
 	nh *dragonboat.NodeHost
 
 	leaderCh chan raftio.LeaderInfo
@@ -36,39 +38,37 @@ type MultiRaftGroup struct {
 	be backend.IBackend
 	w  wait.Wait
 
+	oct *client.Client
+
 	lg *zap.Logger
 
 	pr *pb.Runner
 
 	rmu     sync.RWMutex
-	regions map[uint64]*pb.Region
+	regions map[uint64]*Region
 
 	stopping <-chan struct{}
 	done     chan struct{}
 }
 
-func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
-	cfg := r.Config
+func NewController(cfg Config, oct *client.Client, be backend.IBackend, pr *pb.Runner, stopping <-chan struct{}) (*Controller, error) {
 	lg := cfg.Logger
 	if lg == nil {
 		lg = zap.NewExample()
 	}
-
-	peerURL, err := url.Parse(cfg.ListenPeerURL)
-	if err != nil {
-		return nil, err
-	}
-	peerAddr := peerURL.Host
 
 	leaderCh := make(chan raftio.LeaderInfo, 10)
 	el := newEventListener(leaderCh)
 
 	sl := newSystemListener()
 
-	dir := cfg.RegionDir()
+	dir := cfg.DataDir
+	peerAddr := cfg.RaftAddress
+	raftRTTMs := cfg.RaftRTTMillisecond
+
 	nhConfig := config.NodeHostConfig{
 		NodeHostDir:         dir,
-		RTTMillisecond:      cfg.RaftRTTMillisecond,
+		RTTMillisecond:      raftRTTMs,
 		RaftAddress:         peerAddr,
 		EnableMetrics:       true,
 		RaftEventListener:   el,
@@ -79,76 +79,82 @@ func (r *Runner) newMultiRaftGroup() (*MultiRaftGroup, error) {
 	lg.Debug("start multi raft group",
 		zap.String("module", "dragonboat"),
 		zap.String("dir", dir),
-		zap.String("listen", peerAddr))
+		zap.String("listen", peerAddr),
+		zap.Duration("raft-rtt", time.Millisecond*time.Duration(int64(raftRTTMs))))
 
 	nh, err := dragonboat.NewNodeHost(nhConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	be := r.be
-	mrg := &MultiRaftGroup{
+	// deep copy *pb.Runner
+	runner := new(pb.Runner)
+	*runner = *pr
+
+	controller := &Controller{
 		nh:       nh,
 		leaderCh: leaderCh,
 		be:       be,
 		w:        wait.New(),
-		pr:       r.pr,
+		oct:      oct,
+		pr:       runner,
 		lg:       lg,
-		regions:  make(map[uint64]*pb.Region),
-		stopping: r.StoppingNotify(),
+		regions:  make(map[uint64]*Region),
+		stopping: stopping,
 		done:     make(chan struct{}, 1),
 	}
 
-	go mrg.run()
-	return mrg, nil
+	go controller.run()
+	return controller, nil
 }
 
-func (mrg *MultiRaftGroup) run() {
-	defer mrg.Stop()
+func (c *Controller) run() {
+	defer c.Stop()
 	for {
 		select {
-		case <-mrg.stopping:
+		case <-c.stopping:
 			return
-		case leaderInfo := <-mrg.leaderCh:
+		case leaderInfo := <-c.leaderCh:
 			_ = leaderInfo
 		}
 	}
 }
 
-func (mrg *MultiRaftGroup) Stop() {
-	mrg.nh.Close()
+func (c *Controller) Stop() {
+	c.nh.Close()
 
 	select {
-	case <-mrg.done:
+	case <-c.done:
 	default:
-		close(mrg.done)
+		close(c.done)
 	}
 }
 
-func (mrg *MultiRaftGroup) runnerStat() ([]uint64, []string) {
-	mrg.rmu.RLock()
-	defer mrg.rmu.RUnlock()
+func (c *Controller) RunnerStat() ([]uint64, []string) {
+	c.rmu.RLock()
+	defer c.rmu.RUnlock()
 
 	regions := make([]uint64, 0)
 	leaders := make([]string, 0)
-	for _, region := range mrg.regions {
-		regions = append(regions, region.Id)
-		if region.Leader != 0 {
-			replica, ok := region.Replicas[region.Leader]
-			if ok && replica.Runner == mrg.pr.Id {
-				sv := semver.Version{
-					Major: int64(replica.Runner),
-					Minor: int64(replica.Id),
-				}
-				leaders = append(leaders, sv.String())
-			}
-		}
+	for _, region := range c.regions {
+		lead := region.getLeader()
+		regions = append(regions, lead)
+		//if lead != 0 {
+		//	replica, ok := region.Replicas[region.Leader]
+		//	if ok && replica.Runner == mrg.pr.Id {
+		//		sv := semver.Version{
+		//			Major: int64(replica.Runner),
+		//			Minor: int64(replica.Id),
+		//		}
+		//		leaders = append(leaders, sv.String())
+		//	}
+		//}
 	}
 
 	return regions, leaders
 }
 
-func (mrg *MultiRaftGroup) CreateRegion() error {
+func (c *Controller) CreateRegion(region *pb.Region) error {
 	members := map[uint64]string{}
 	join := false
 	cfg := config.Config{
@@ -170,12 +176,12 @@ func (mrg *MultiRaftGroup) CreateRegion() error {
 		Quiesce:                 false,
 		WaitReady:               true,
 	}
-	err := mrg.nh.StartOnDiskReplica(members, join, mrg.InitDiskStateMachine, cfg)
+	err := c.nh.StartOnDiskReplica(members, join, c.InitDiskStateMachine, cfg)
 	if err != nil {
 		return err
 	}
 
-	ech := mrg.w.Register(cfg.ShardID)
+	ech := c.w.Register(cfg.ShardID)
 
 	select {
 	case ch := <-ech:

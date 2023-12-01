@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package runner
+package raft
 
 import (
 	"encoding/binary"
@@ -51,16 +51,16 @@ type Region struct {
 	leader    uint64
 }
 
-func (mrg *MultiRaftGroup) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
+func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	region := &Region{
 		shardId:  shardId,
 		id:       nodeId,
-		lg:       mrg.lg,
+		lg:       c.lg,
 		w:        wait.New(),
-		openWait: mrg.w,
+		openWait: c.w,
 		reqIDGen: reqIDGen,
-		be:       mrg.be,
+		be:       c.be,
 	}
 
 	return region

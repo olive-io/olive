@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
 	"path"
 	"testing"
@@ -52,9 +53,20 @@ var (
 	}
 )
 
+func randInt(n int) int {
+	rn := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rn.Intn(n)
+}
+
 func newScheduler(t *testing.T) (*Scheduler, *clientv3.Client, func()) {
 	cfg := embed.NewConfig()
 	cfg.Dir = "testdata"
+	peerPort := 11000 + randInt(500)
+	peerURL, _ := url.Parse("http://localhost:" + fmt.Sprintf("%d", peerPort))
+	cfg.ListenPeerUrls = []url.URL{*peerURL}
+	clientPort := 12000 + randInt(500)
+	clientURL, _ := url.Parse("http://localhost:" + fmt.Sprintf("%d", clientPort))
+	cfg.ListenClientUrls = []url.URL{*clientURL}
 	etcd, err := embed.StartEtcd(cfg)
 	if !assert.NoError(t, err) {
 		return nil, nil, nil
@@ -112,11 +124,6 @@ func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 }
 
 func runnerHeartbeat(t *testing.T, client *clientv3.Client, runner *pb.Runner) {
-	randInt := func(n int) int {
-		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
-		return rn.Intn(n)
-	}
-
 	stat := &pb.RunnerStat{
 		Id:        runner.Id,
 		CpuPer:    float64(randInt(50)),
@@ -134,11 +141,6 @@ func runnerHeartbeat(t *testing.T, client *clientv3.Client, runner *pb.Runner) {
 }
 
 func regionHeartbeat(t *testing.T, client *clientv3.Client, region *pb.Region) {
-	randInt := func(n int) int {
-		rn := rand.New(rand.NewSource(time.Now().UnixNano()))
-		return rn.Intn(n)
-	}
-
 	stat := &pb.RegionStat{
 		Id:          region.Id,
 		Leader:      region.Leader,

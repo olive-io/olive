@@ -220,6 +220,8 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		Replicas:     map[uint64]*pb.RegionReplica{},
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
+		State:        pb.State_NotReady,
+		Timestamp:    time.Now().Unix(),
 	}
 	for i, runner := range runners {
 		mid := uint64(i + 1)
@@ -414,7 +416,7 @@ func (sc *Scheduler) run() {
 
 		ticker.Reset(time.Second)
 
-		ctx := sc.ctx
+		ctx, cancel := context.WithCancel(sc.ctx)
 		prefix := runtime.DefaultMetaRunnerPrefix
 		options := []clientv3.OpOption{
 			clientv3.WithPrefix(),
@@ -425,6 +427,7 @@ func (sc *Scheduler) run() {
 		for {
 			select {
 			case <-sc.stopping:
+				cancel()
 				return
 			case <-sc.notifier.ChangeNotify():
 				break LOOP
@@ -456,6 +459,8 @@ func (sc *Scheduler) run() {
 				}
 			}
 		}
+
+		cancel()
 	}
 }
 

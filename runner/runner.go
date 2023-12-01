@@ -16,6 +16,7 @@ package runner
 
 import (
 	"context"
+	"net/url"
 	"sync"
 
 	"github.com/gofrs/flock"
@@ -24,6 +25,7 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	"github.com/olive-io/olive/runner/raft"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
@@ -40,8 +42,8 @@ type Runner struct {
 
 	be backend.IBackend
 
-	raftGroup *MultiRaftGroup
-	pr        *pb.Runner
+	controller *raft.Controller
+	pr         *pb.Runner
 
 	stopping chan struct{}
 	done     chan struct{}
@@ -108,12 +110,26 @@ func (r *Runner) start() error {
 	tx.UnsafeCreateBucket(buckets.Region)
 	tx.Unlock()
 
-	r.raftGroup, err = r.newMultiRaftGroup()
+	r.pr, err = r.register()
 	if err != nil {
 		return err
 	}
 
-	r.pr, err = r.register()
+	listenPeerURL, err := url.Parse(r.ListenPeerURL)
+	if err != nil {
+		return err
+	}
+	raftAddr := listenPeerURL.Host
+
+	cc := raft.Config{
+		DataDir:            r.RegionDir(),
+		RaftAddress:        raftAddr,
+		HeartbeatMs:        r.HeartbeatMs,
+		RaftRTTMillisecond: r.RaftRTTMillisecond,
+		Logger:             r.Logger,
+	}
+
+	r.controller, err = raft.NewController(cc, r.oct, r.be, r.pr, r.StoppingNotify())
 	if err != nil {
 		return err
 	}

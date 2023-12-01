@@ -89,6 +89,10 @@ message Region {
 
   uint64 definitions = 11;
   int64 rev = 12;
+
+  State state = 21;
+  string error = 22;
+  int64 timestamp = 23;
 }
 
 message RegionReplica {
