@@ -65,7 +65,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	if len(listenPeerURL) == 0 {
 		listenPeerURL = r.ListenPeerURL
 	}
-	listenClientURL := r.AdvertisePeerURL
+	listenClientURL := r.AdvertiseClientURL
 	if len(listenClientURL) == 0 {
 		listenClientURL = r.ListenClientURL
 	}

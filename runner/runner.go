@@ -129,8 +129,13 @@ func (r *Runner) start() error {
 		Logger:             r.Logger,
 	}
 
-	r.controller, err = raft.NewController(cc, r.oct, r.be, r.pr, r.StoppingNotify())
+	r.controller, err = raft.NewController(cc, r.be, r.pr)
 	if err != nil {
+		return err
+	}
+
+	r.Logger.Info("start raft container")
+	if err = r.controller.Start(r.StoppingNotify()); err != nil {
 		return err
 	}
 

@@ -19,11 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cockroachdb/pebble"
 	sm "github.com/lni/dragonboat/v4/statemachine"
+	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
@@ -45,6 +47,9 @@ type Region struct {
 
 	be backend.IBackend
 
+	rimu       sync.RWMutex
+	regionInfo *pb.Region
+
 	applied   uint64
 	committed uint64
 	term      uint64
@@ -58,7 +63,7 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		id:       nodeId,
 		lg:       c.lg,
 		w:        wait.New(),
-		openWait: c.w,
+		openWait: c.regionW,
 		reqIDGen: reqIDGen,
 		be:       c.be,
 	}
@@ -73,7 +78,7 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 		return 0, err
 	}
 	r.setApplied(applyIndex)
-	r.openWait.Trigger(r.id, nil)
+	r.openWait.Trigger(r.id, r)
 
 	return applyIndex, nil
 }
@@ -162,6 +167,22 @@ func (r *Region) Close() error {
 func (r *Region) putPrefix() []byte {
 	sb := []byte(fmt.Sprintf("%d", r.shardId))
 	return sb
+}
+
+func (r *Region) updateInfo(info *pb.Region) {
+	r.rimu.Lock()
+	defer r.rimu.Unlock()
+	r.regionInfo = info
+}
+
+func (r *Region) getReplicas() map[uint64]*pb.RegionReplica {
+	r.rimu.RLock()
+	defer r.rimu.RUnlock()
+	return r.regionInfo.Replicas
+}
+
+func (r *Region) getID() uint64 {
+	return r.id
 }
 
 func (r *Region) setApplied(applied uint64) {

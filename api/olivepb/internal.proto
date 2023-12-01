@@ -96,11 +96,13 @@ message Region {
 }
 
 message RegionReplica {
-  uint64 runner = 1;
-  uint64 region = 2;
-  uint64 id = 3;
-  bool isNonVoting = 4;
-  bool isWitness = 5;
+  uint64 id = 1;
+  uint64 runner = 2;
+  uint64 region = 3;
+  string raftAddress = 4;
+  bool isNonVoting = 5;
+  bool isWitness = 6;
+  bool isJoin = 7;
 }
 
 message RegionStat {

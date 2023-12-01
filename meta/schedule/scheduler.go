@@ -230,9 +230,10 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		}
 		region.Members[mid] = runner.Id
 		region.Replicas[mid] = &pb.RegionReplica{
-			Runner: runner.Id,
-			Region: rid,
-			Id:     mid,
+			Id:          mid,
+			Runner:      runner.Id,
+			Region:      rid,
+			RaftAddress: runner.ListenPeerURL,
 		}
 	}
 
