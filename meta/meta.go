@@ -88,6 +88,7 @@ func (s *Server) Start() error {
 	}
 
 	ec.ServiceRegister = func(gs *grpc.Server) {
+		olivepb.RegisterMetaRPCServer(gs, s)
 		olivepb.RegisterBpmnRPCServer(gs, s)
 	}
 

@@ -39,14 +39,29 @@ func (rp retryPolicy) String() string {
 	}
 }
 
+type retryMetaClient struct {
+	mc pb.MetaRPCClient
+}
+
+// RetryMetaClient implements a MetaRPCClient.
+func RetryMetaClient(conn *grpc.ClientConn) pb.MetaRPCClient {
+	return &retryMetaClient{
+		mc: pb.NewMetaRPCClient(conn),
+	}
+}
+
+func (rmc *retryMetaClient) GetMeta(ctx context.Context, in *pb.GetMetaRequest, opts ...grpc.CallOption) (resp *pb.GetMetaResponse, err error) {
+	return rmc.mc.GetMeta(ctx, in, withRetryPolicy(repeatable))
+}
+
 type retryBpmnClient struct {
 	bc pb.BpmnRPCClient
 }
 
 // RetryBpmnClient implements a BpmnRPCClient.
-func RetryBpmnClient(c *Client) pb.BpmnRPCClient {
+func RetryBpmnClient(conn *grpc.ClientConn) pb.BpmnRPCClient {
 	return &retryBpmnClient{
-		bc: pb.NewBpmnRPCClient(c.ActiveConnection()),
+		bc: pb.NewBpmnRPCClient(conn),
 	}
 }
 

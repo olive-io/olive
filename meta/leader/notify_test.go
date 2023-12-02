@@ -25,6 +25,17 @@ func newEtcd() (*embed.Etcd, func()) {
 	return etcd, cancel
 }
 
+func TestEtcdCluster(t *testing.T) {
+	etcd, cancel := newEtcd()
+	defer cancel()
+
+	<-etcd.Server.ReadyNotify()
+
+	leader := etcd.Server.Leader()
+	members := etcd.Server.Cluster().Members()
+	t.Logf("leader=%d, members=%+v\n", leader, members)
+}
+
 func Test_Notify(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()

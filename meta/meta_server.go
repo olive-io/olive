@@ -67,6 +67,29 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 	return err
 }
 
+func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.GetMetaResponse, err error) {
+	cluster := s.etcd.Server.Cluster()
+	meta := &pb.Meta{
+		ClusterId: uint64(cluster.ID()),
+		Leader:    uint64(s.etcd.Server.Leader()),
+		Members:   make([]*pb.MetaMember, 0),
+	}
+
+	for _, member := range cluster.Members() {
+		m := &pb.MetaMember{
+			Id:         uint64(member.ID),
+			ClientURLs: member.ClientURLs,
+			PeerURLs:   member.PeerURLs,
+		}
+		meta.Members = append(meta.Members, m)
+	}
+
+	resp = &pb.GetMetaResponse{
+		Meta: meta,
+	}
+	return resp, nil
+}
+
 func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
 	if err = s.requestPrepare(ctx); err != nil {
 		return

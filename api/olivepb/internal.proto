@@ -39,6 +39,18 @@ message ResponseHeader {
   uint64 raft_term = 3;
 }
 
+message Meta {
+  uint64 clusterId = 1;
+  uint64 leader = 2;
+  repeated MetaMember members = 3;
+}
+
+message MetaMember {
+  uint64 id = 1;
+  repeated string clientURLs = 2;
+  repeated string peerURLs = 3;
+}
+
 message Runner {
   uint64 id = 1;
   string listenPeerURL = 2;

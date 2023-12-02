@@ -28,6 +28,20 @@ import "github.com/olive-io/olive/api/olivepb/internal.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
+service MetaRPC {
+  rpc GetMeta(GetMetaRequest) returns (GetMetaResponse) {
+    option (google.api.http) = {
+      get: "/v1/meta/get"
+    };
+  };
+}
+
+message GetMetaRequest {}
+
+message GetMetaResponse {
+  olivepb.Meta meta = 1;
+}
+
 service BpmnRPC {
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
     option (google.api.http) = {
@@ -94,7 +108,6 @@ message GetDefinitionResponse {
 
 message RemoveDefinitionRequest {
   string id = 1;
-  string name = 2;
 }
 
 message RemoveDefinitionResponse {
