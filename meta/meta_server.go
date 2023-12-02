@@ -36,7 +36,7 @@ const (
 )
 
 type definitionMeta struct {
-	*pb.DefinitionMeta
+	pb.DefinitionMeta
 	client *clientv3.Client
 }
 
@@ -97,11 +97,12 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 
 	resp = &pb.DeployDefinitionResponse{}
 	dm, err := s.definitionMeta(ctx, req.Id)
-	if errors.Is(err, rpctypes.ErrGRPCKeyNotFound) {
-		dm = &definitionMeta{client: dm.client}
+	if err != nil {
+		if !errors.Is(err, rpctypes.ErrGRPCKeyNotFound) {
+			return nil, err
+		}
+		dm = &definitionMeta{client: s.v3cli}
 		dm.Id = req.Id
-	} else {
-		return nil, err
 	}
 
 	definition := &pb.Definition{
@@ -118,7 +119,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 	resp.Header = s.responseHeader()
 
 	if dm.Region == 0 {
-		_, _, err = s.scheduler.BindRegion(ctx, dm.DefinitionMeta)
+		_, _, err = s.scheduler.BindRegion(ctx, &dm.DefinitionMeta)
 		if err != nil {
 			s.lg.Error("binding region",
 				zap.String("definition", definition.Id),
@@ -322,8 +323,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 
 func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta, error) {
 	dm := &definitionMeta{
-		DefinitionMeta: &pb.DefinitionMeta{},
-		client:         s.v3cli,
+		client: s.v3cli,
 	}
 
 	key := path.Join(runtime.DefaultMetaDefinitionMeta, id)
@@ -333,7 +333,7 @@ func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta
 		return nil, err
 	}
 	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrKeyNotFound
+		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
 
 	_ = dm.DefinitionMeta.Unmarshal(rsp.Kvs[0].Value)

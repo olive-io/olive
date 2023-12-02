@@ -199,6 +199,10 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	return nil
 }
 
+func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
+	return nil
+}
+
 // prepareRegions loads regions from backend.IBackend and start raft regions
 func (c *Controller) prepareRegions() error {
 	regions := make([]*pb.Region, 0)

@@ -34,16 +34,11 @@ type BpmnRPC interface {
 
 type bpmnRPC struct {
 	client   *Client
-	remote   pb.BpmnRPCClient
 	callOpts []grpc.CallOption
 }
 
 func NewBpmnRPC(c *Client) BpmnRPC {
-	conn := c.ActiveConnection()
-	api := &bpmnRPC{
-		client: c,
-		remote: RetryBpmnClient(conn),
-	}
+	api := &bpmnRPC{client: c}
 	if c != nil {
 		api.callOpts = c.callOpts
 	}
@@ -51,15 +46,16 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 }
 
 func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.Definition, error) {
-	endpoints := bc.client.Endpoints()
-	defer bc.client.SetEndpoints(endpoints...)
-
+	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
-		bc.client.SetEndpoints(leaderEndpoints...)
+		conn, err = bc.client.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var definitions schema.Definitions
@@ -72,7 +68,7 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		Name:    name,
 		Content: body,
 	}
-	resp, err := bc.remote.DeployDefinition(ctx, r, bc.callOpts...)
+	resp, err := bc.remoteClient(conn).DeployDefinition(ctx, r, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
@@ -106,11 +102,12 @@ func WithContinue(token string) ListDefinitionOption {
 }
 
 func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*pb.Definition, string, error) {
+	conn := bc.client.conn
 	in := pb.ListDefinitionRequest{}
 	for _, option := range options {
 		option(&in)
 	}
-	rsp, err := bc.remote.ListDefinition(ctx, &in, bc.callOpts...)
+	rsp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
 	if err != nil {
 		return nil, "", toErr(ctx, err)
 	}
@@ -119,12 +116,13 @@ func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitio
 }
 
 func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error) {
+	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
 		Version: version,
 	}
 
-	rsp, err := bc.remote.GetDefinition(ctx, in, bc.callOpts...)
+	rsp, err := bc.remoteClient(conn).GetDefinition(ctx, in, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
@@ -132,19 +130,20 @@ func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64)
 }
 
 func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
-	endpoints := bc.client.Endpoints()
-	defer bc.client.SetEndpoints(endpoints...)
-
+	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
 		return err
 	}
 	if len(leaderEndpoints) > 0 {
-		bc.client.SetEndpoints(leaderEndpoints...)
+		conn, err = bc.client.Dial(leaderEndpoints[0])
+		if err != nil {
+			return err
+		}
 	}
 
 	in := &pb.RemoveDefinitionRequest{Id: id}
-	_, err = bc.remote.RemoveDefinition(ctx, in, bc.callOpts...)
+	_, err = bc.remoteClient(conn).RemoveDefinition(ctx, in, bc.callOpts...)
 	if err != nil {
 		return toErr(ctx, err)
 	}
@@ -166,25 +165,29 @@ func WithHeader(headers map[string]string) ExecDefinitionOption {
 }
 
 func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error) {
-	endpoints := bc.client.Endpoints()
-	defer bc.client.SetEndpoints(endpoints...)
-
+	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
-		bc.client.SetEndpoints(leaderEndpoints...)
+		conn, err = bc.client.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	in := &pb.ExecuteDefinitionRequest{Id: id}
 	for _, option := range options {
 		option(in)
 	}
 
-	rsp, err := bc.remote.ExecuteDefinition(ctx, in, bc.callOpts...)
+	rsp, err := bc.remoteClient(conn).ExecuteDefinition(ctx, in, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
 	return rsp.Instance, nil
+}
+
+func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {
+	return pb.NewBpmnRPCClient(conn)
 }

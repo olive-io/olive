@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
@@ -115,9 +116,19 @@ func (r *Runner) start() error {
 		return err
 	}
 
-	listenPeerURL, err := url.Parse(r.ListenPeerURL)
+	r.controller, err = r.startRaftController()
 	if err != nil {
 		return err
+	}
+
+	go r.run()
+	return nil
+}
+
+func (r *Runner) startRaftController() (*raft.Controller, error) {
+	listenPeerURL, err := url.Parse(r.ListenPeerURL)
+	if err != nil {
+		return nil, err
 	}
 	raftAddr := listenPeerURL.Host
 
@@ -129,18 +140,43 @@ func (r *Runner) start() error {
 		Logger:             r.Logger,
 	}
 
-	r.controller, err = raft.NewController(cc, r.be, r.pr)
+	controller, err := raft.NewController(cc, r.be, r.pr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	r.Logger.Info("start raft container")
 	if err = r.controller.Start(r.StoppingNotify()); err != nil {
-		return err
+		return nil, err
 	}
 
-	go r.run()
-	return nil
+	ctx := r.ctx
+	regionPrefix := runtime.DefaultRunnerRegion
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := r.oct.Get(ctx, regionPrefix, options...)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch regions from olive-meta")
+	}
+
+	regions := make([]*pb.Region, rsp.Count)
+	for i, kv := range rsp.Kvs {
+		region := new(pb.Region)
+		err = region.Unmarshal(kv.Value)
+		if err != nil {
+			continue
+		}
+		regions[i] = region
+	}
+	for _, region := range regions {
+		if err = controller.SyncRegion(ctx, region); err != nil {
+			return nil, errors.Wrap(err, "sync region")
+		}
+	}
+
+	return controller, nil
 }
 
 func (r *Runner) watching() {

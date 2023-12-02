@@ -54,7 +54,7 @@ var (
 	RunningDefinitionsCounter = metrics.NewGauge(prometheus.GaugeOpts{
 		Namespace: "olive",
 		Subsystem: "runner",
-		Name:      "bpmn_definitions",
+		Name:      "bpmn_running_definitions",
 		Help:      "The counts of running bpmn definitions in all regions",
 	})
 
