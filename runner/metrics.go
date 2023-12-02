@@ -17,7 +17,6 @@ package runner
 import (
 	goruntime "runtime"
 
-	"github.com/olive-io/olive/pkg/metrics"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -37,59 +36,11 @@ var (
 		Help:      "Which Go version runner is running with. 1 for 'runner_go_version' label with current version.",
 	},
 		[]string{"runner_go_version"})
-
-	regionCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "region",
-		Help:      "The counts of region on localhost",
-	})
-
-	leaderCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "leader",
-		Help:      "The counts of leader region on localhost",
-	})
-
-	definitionsCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "bpmn_definitions",
-		Help:      "The counts of bpmn definitions in all regions",
-	})
-
-	processCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "bpmn_process",
-		Help:      "The counts of bpmn processes in all regions",
-	})
-
-	eventCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "bpmn_event",
-		Help:      "The counts of bpmn events in all regions",
-	})
-
-	taskCounter = metrics.NewGauge(prometheus.GaugeOpts{
-		Namespace: "olive",
-		Subsystem: "runner",
-		Name:      "bpmn_task",
-		Help:      "The counts of bpmn tasks in all regions",
-	})
 )
 
 func init() {
 	prometheus.MustRegister(currentVersion)
 	prometheus.MustRegister(currentGoVersion)
-	prometheus.MustRegister(regionCounter)
-	prometheus.MustRegister(leaderCounter)
-	prometheus.MustRegister(definitionsCounter)
-	prometheus.MustRegister(processCounter)
-	prometheus.MustRegister(eventCounter)
-	prometheus.MustRegister(taskCounter)
 
 	currentVersion.With(prometheus.Labels{
 		"runner_version": version.Version,

@@ -131,7 +131,15 @@ func (c *Controller) run() {
 		case <-c.stopping:
 			return
 		case leaderInfo := <-c.leaderCh:
-			_ = leaderInfo
+			c.rmu.Lock()
+			region, ok := c.regions[leaderInfo.ShardID]
+			c.rmu.Unlock()
+			if !ok {
+				break
+			}
+			region.setLeader(leaderInfo.LeaderID)
+			region.setTerm(leaderInfo.Term)
+			region.notifyAboutChange()
 		}
 	}
 }
@@ -160,7 +168,7 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 			continue
 		}
 
-		replicas := region.getReplicas()
+		replicas := region.getInfo().Replicas
 		if replica := replicas[lead]; replica.Runner == c.pr.Id {
 			sv := semver.Version{
 				Major: int64(region.id),
@@ -169,7 +177,8 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 			leaders = append(leaders, sv.String())
 		}
 	}
-
+	RegionCounter.Set(float64(len(regions)))
+	LeaderCounter.Set(float64(len(leaders)))
 	return regions, leaders
 }
 
@@ -186,9 +195,6 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	tx.UnsafePut(buckets.Region, []byte(key), data)
 	tx.Unlock()
 	tx.Commit()
-
-	//ms, _ := mrg.nh.SyncGetShardMembership(context.TODO(), cfg.ShardID)
-	//info := mrg.nh.GetNodeHostInfo(dragonboat.DefaultNodeHostInfoOption)
 
 	return nil
 }
@@ -221,6 +227,7 @@ func (c *Controller) prepareRegions() error {
 		if err != nil {
 			return err
 		}
+		DefinitionsCounter.Add(float64(region.Definitions))
 
 		lg.Info("start raft region",
 			zap.Uint64("id", region.Id))
@@ -303,7 +310,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	c.rmu.Lock()
 	region.updateInfo(ri)
 	c.regions[region.getID()] = region
-	defer c.rmu.Unlock()
+	c.rmu.Unlock()
 
 	return region, nil
 }

@@ -112,9 +112,10 @@ message RegionStat {
   int32 replicas = 4;
 
   uint64 definitions = 11;
-  uint64 bpmnProcesses = 12;
-  uint64 bpmnEvents = 13;
-  uint64 bpmnTasks = 14;
+  uint64 runningDefinitions = 12;
+  uint64 bpmnProcesses = 13;
+  uint64 bpmnEvents = 14;
+  uint64 bpmnTasks = 15;
 
   State state = 101;
   string error = 102;

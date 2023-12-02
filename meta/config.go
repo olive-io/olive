@@ -73,6 +73,7 @@ func NewConfig() Config {
 	ec.AdvertiseClientUrls = ec.ListenClientUrls
 	peerURL, _ := url.Parse(DefaultListenerPeerAddress)
 	ec.ListenPeerUrls = []url.URL{*peerURL}
+	ec.AdvertisePeerUrls = []url.URL{*peerURL}
 
 	cfg := Config{
 		Config:                ec,

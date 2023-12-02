@@ -34,6 +34,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	appliedIndex = []byte("applied_index")
+)
+
 type Region struct {
 	shardId uint64
 	id      uint64
@@ -49,23 +53,34 @@ type Region struct {
 
 	rimu       sync.RWMutex
 	regionInfo *pb.Region
+	metric     *regionMetrics
 
 	applied   uint64
 	committed uint64
 	term      uint64
 	leader    uint64
+
+	heartbeatMs int64
+
+	changeCMu sync.RWMutex
+	changeC   chan struct{}
+	stopping  <-chan struct{}
 }
 
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	region := &Region{
-		shardId:  shardId,
-		id:       nodeId,
-		lg:       c.lg,
-		w:        wait.New(),
-		openWait: c.regionW,
-		reqIDGen: reqIDGen,
-		be:       c.be,
+		shardId:     shardId,
+		id:          nodeId,
+		lg:          c.lg,
+		w:           wait.New(),
+		openWait:    c.regionW,
+		reqIDGen:    reqIDGen,
+		be:          c.be,
+		heartbeatMs: c.HeartbeatMs,
+		regionInfo:  &pb.Region{},
+		changeC:     make(chan struct{}),
+		stopping:    c.stopping,
 	}
 
 	return region
@@ -80,7 +95,27 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	r.setApplied(applyIndex)
 	r.openWait.Trigger(r.id, r)
 
+	r.metric, err = newRegionMetrics(r.id)
+	if err != nil {
+		return 0, err
+	}
+
+	go r.heartbeat()
 	return applyIndex, nil
+}
+
+func (r *Region) waitUtilLeader() bool {
+	for {
+		if r.isLeader() {
+			return true
+		}
+
+		select {
+		case <-r.stopping:
+			return false
+		case <-r.changeNotify():
+		}
+	}
 }
 
 func (r *Region) readApplyIndex() (uint64, error) {
@@ -88,7 +123,7 @@ func (r *Region) readApplyIndex() (uint64, error) {
 	tx.RLock()
 	defer tx.RUnlock()
 
-	applyKey := r.putPrefix()
+	applyKey := bytesutil.PathJoin(r.putPrefix(), appliedIndex)
 	value, err := tx.UnsafeGet(buckets.Key, applyKey)
 	if err != nil && !errors.Is(err, pebble.ErrNotFound) {
 		return 0, err
@@ -96,6 +131,20 @@ func (r *Region) readApplyIndex() (uint64, error) {
 
 	applied := binary.LittleEndian.Uint64(value)
 	return applied, nil
+}
+
+func (r *Region) writeApplyIndex(index uint64) {
+	data := make([]byte, 8)
+	binary.LittleEndian.PutUint64(data, index)
+	applyKey := bytesutil.PathJoin(r.putPrefix(), appliedIndex)
+
+	tx := r.be.BatchTx()
+	tx.Lock()
+	tx.UnsafePut(buckets.Key, applyKey, data)
+	tx.Unlock()
+	tx.Commit()
+
+	r.setApplied(index)
 }
 
 func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
@@ -114,9 +163,10 @@ func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
 }
 
 func (r *Region) applyEntry(entry sm.Entry) {
-	r.setApplied(entry.Index)
+	index := entry.Index
 
-	if entry.Index == r.getCommitted() {
+	r.writeApplyIndex(index)
+	if index == r.getCommitted() {
 		r.w.Trigger(r.id, nil)
 	}
 }
@@ -136,8 +186,8 @@ func (r *Region) PrepareSnapshot() (interface{}, error) {
 
 func (r *Region) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snap := ctx.(backend.ISnapshot)
-	prefix := r.putPrefix()
-	_, err := snap.WriteTo(writer, bytesutil.PathJoin(buckets.Key.Name(), prefix))
+	prefix := bytesutil.PathJoin(buckets.Key.Name(), r.putPrefix())
+	_, err := snap.WriteTo(writer, prefix)
 	if err != nil {
 		return err
 	}
@@ -164,6 +214,20 @@ func (r *Region) Close() error {
 	return nil
 }
 
+func (r *Region) notifyAboutChange() {
+	r.changeCMu.Lock()
+	changeClose := r.changeC
+	r.changeC = make(chan struct{})
+	r.changeCMu.Unlock()
+	close(changeClose)
+}
+
+func (r *Region) changeNotify() <-chan struct{} {
+	r.changeCMu.RLock()
+	defer r.changeCMu.RUnlock()
+	return r.changeC
+}
+
 func (r *Region) putPrefix() []byte {
 	sb := []byte(fmt.Sprintf("%d", r.shardId))
 	return sb
@@ -175,10 +239,10 @@ func (r *Region) updateInfo(info *pb.Region) {
 	r.regionInfo = info
 }
 
-func (r *Region) getReplicas() map[uint64]*pb.RegionReplica {
+func (r *Region) getInfo() *pb.Region {
 	r.rimu.RLock()
 	defer r.rimu.RUnlock()
-	return r.regionInfo.Replicas
+	return r.regionInfo
 }
 
 func (r *Region) getID() uint64 {
@@ -215,4 +279,9 @@ func (r *Region) setLeader(leader uint64) {
 
 func (r *Region) getLeader() uint64 {
 	return atomic.LoadUint64(&r.leader)
+}
+
+func (r *Region) isLeader() bool {
+	lead := r.getLeader()
+	return lead != 0 && lead == r.getID()
 }

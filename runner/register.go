@@ -28,6 +28,7 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/buckets"
+	"github.com/olive-io/olive/runner/raft"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
@@ -143,10 +144,10 @@ func (r *Runner) processRunnerStat() *pb.RunnerStat {
 	lg := r.Logger
 	stat := &pb.RunnerStat{
 		Id:            r.pr.Id,
-		Definitions:   uint64(definitionsCounter.Get()),
-		BpmnProcesses: uint64(processCounter.Get()),
-		BpmnEvents:    uint64(eventCounter.Get()),
-		BpmnTasks:     uint64(taskCounter.Get()),
+		Definitions:   uint64(raft.DefinitionsCounter.Get()),
+		BpmnProcesses: uint64(raft.ProcessCounter.Get()),
+		BpmnEvents:    uint64(raft.EventCounter.Get()),
+		BpmnTasks:     uint64(raft.TaskCounter.Get()),
 	}
 	interval := time.Millisecond * 100
 	percents, err := cpu.Percent(interval, false)
