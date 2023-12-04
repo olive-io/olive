@@ -17,6 +17,7 @@ package runner
 import (
 	"context"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/cockroachdb/errors"
@@ -146,7 +147,7 @@ func (r *Runner) startRaftController() (*raft.Controller, error) {
 	}
 
 	r.Logger.Info("start raft container")
-	if err = r.controller.Start(r.StoppingNotify()); err != nil {
+	if err = controller.Start(r.StoppingNotify()); err != nil {
 		return nil, err
 	}
 
@@ -193,9 +194,7 @@ func (r *Runner) watching() {
 			return
 		case resp := <-wch:
 			for _, event := range resp.Events {
-				switch {
-				case event.IsModify():
-				}
+				r.processEvent(r.ctx, event)
 			}
 		}
 	}
@@ -261,5 +260,59 @@ func (r *Runner) run() {
 		case <-r.stop:
 			return
 		}
+	}
+}
+
+func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
+	kv := event.Kv
+	key := string(kv.Key)
+	switch {
+	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+		r.processBpmnDefinition(ctx, event)
+	case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+		r.processRegion(ctx, event)
+	}
+}
+
+func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
+	kv := event.Kv
+	if event.Type == clientv3.EventTypeDelete {
+		return
+	}
+
+	definition := new(pb.Definition)
+	if err := definition.Unmarshal(kv.Value); err != nil {
+		r.Logger.Error("unmarshal definition data", zap.Error(err))
+		return
+	}
+}
+
+func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
+	kv := event.Kv
+	if event.Type == clientv3.EventTypeDelete {
+		return
+	}
+
+	region := new(pb.Region)
+	err := region.Unmarshal(kv.Value)
+	if err != nil {
+		r.Logger.Error("unmarshal region data", zap.Error(err))
+		return
+	}
+
+	if event.IsCreate() {
+		r.Logger.Info("create region", zap.Stringer("body", region))
+		if err = r.controller.CreateRegion(ctx, region); err != nil {
+			r.Logger.Error("create region", zap.Error(err))
+		}
+		return
+	}
+
+	if event.IsModify() {
+		r.Logger.Info("sync region", zap.Stringer("body", region))
+		if err = r.controller.SyncRegion(ctx, region); err != nil {
+			r.Logger.Error("sync region", zap.Error(err))
+		}
+		return
 	}
 }

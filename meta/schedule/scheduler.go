@@ -37,7 +37,7 @@ const (
 	replicaNum      = 3
 
 	defaultRegionElectionTTL  = 10
-	defaultRegionHeartbeatTTL = 2
+	defaultRegionHeartbeatTTL = 1
 )
 
 type Limit struct {

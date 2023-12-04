@@ -9,12 +9,14 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
 	github.com/coreos/go-semver v0.3.1
 	github.com/dustin/go-humanize v1.0.1
+	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/gofrs/flock v0.8.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.3
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
+	github.com/mattbaird/jsonpatch v0.0.0-20230413205102-771768614e91
 	github.com/olive-io/bpmn v0.6.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/shirou/gopsutil/v3 v3.23.10
@@ -44,6 +46,7 @@ require (
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/evanphx/json-patch v0.5.2 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

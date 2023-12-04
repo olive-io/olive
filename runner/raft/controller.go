@@ -17,6 +17,7 @@ package raft
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/lni/dragonboat/v4/raftio"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"go.etcd.io/etcd/pkg/v3/wait"
@@ -44,8 +46,6 @@ type Controller struct {
 	be      backend.IBackend
 	regionW wait.Wait
 
-	lg *zap.Logger
-
 	pr *pb.Runner
 
 	rmu     sync.RWMutex
@@ -56,12 +56,12 @@ type Controller struct {
 }
 
 func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller, error) {
-	lg := cfg.Logger
-	if lg == nil {
-		lg = zap.NewExample()
+	if cfg.Logger == nil {
+		cfg.Logger = zap.NewExample()
 	}
+	lg := cfg.Logger
 
-	leaderCh := make(chan raftio.LeaderInfo, 10)
+	leaderCh := make(chan raftio.LeaderInfo, 100)
 	el := newEventListener(leaderCh)
 
 	sl := newSystemListener()
@@ -97,6 +97,7 @@ func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller,
 
 	ctx, cancel := context.WithCancel(context.Background())
 	controller := &Controller{
+		Config:   cfg,
 		ctx:      ctx,
 		cancel:   cancel,
 		nh:       nh,
@@ -104,10 +105,10 @@ func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller,
 		be:       be,
 		regionW:  wait.New(),
 		pr:       runner,
-		lg:       lg,
 		regions:  make(map[uint64]*Region),
 	}
 
+	go controller.listening()
 	return controller, nil
 }
 
@@ -124,22 +125,35 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	return nil
 }
 
+func (c *Controller) listening() {
+	for {
+		select {
+		case <-c.stopping:
+			return
+		case leaderInfo := <-c.leaderCh:
+			region, ok := c.popRegion(leaderInfo.ShardID)
+			if !ok {
+				break
+			}
+			lead := leaderInfo.LeaderID
+			term := leaderInfo.Term
+			region.setLeader(lead)
+			region.setTerm(term)
+			region.notifyAboutChange()
+			if lead != 0 {
+				region.notifyAboutReady()
+			}
+			c.setRegion(region)
+		}
+	}
+}
+
 func (c *Controller) run() {
 	defer c.Stop()
 	for {
 		select {
 		case <-c.stopping:
 			return
-		case leaderInfo := <-c.leaderCh:
-			c.rmu.Lock()
-			region, ok := c.regions[leaderInfo.ShardID]
-			c.rmu.Unlock()
-			if !ok {
-				break
-			}
-			region.setLeader(leaderInfo.LeaderID)
-			region.setTerm(leaderInfo.Term)
-			region.notifyAboutChange()
 		}
 	}
 }
@@ -164,11 +178,14 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 	for _, region := range c.regions {
 		regions = append(regions, region.id)
 		lead := region.getLeader()
-		if lead != 0 {
+		if lead == 0 {
 			continue
 		}
 
 		replicas := region.getInfo().Replicas
+		if len(replicas) == 0 {
+			continue
+		}
 		if replica := replicas[lead]; replica.Runner == c.pr.Id {
 			sv := semver.Version{
 				Major: int64(region.id),
@@ -200,7 +217,21 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 }
 
 func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
-	return nil
+	local, ok := c.getRegion(region.Id)
+	if !ok {
+		return c.CreateRegion(ctx, region)
+	}
+
+	regionInfo := local.getInfo()
+	patch, err := jsonpatch.CreateJSONPatch(region, regionInfo)
+	if err != nil {
+		return err
+	}
+	if patch.Len() == 0 {
+		return nil
+	}
+
+	return c.patchRegion(ctx, patch)
 }
 
 // prepareRegions loads regions from backend.IBackend and start raft regions
@@ -214,6 +245,7 @@ func (c *Controller) prepareRegions() error {
 		if err != nil {
 			return err
 		}
+		regions = append(regions, region)
 
 		return nil
 	})
@@ -240,13 +272,21 @@ func (c *Controller) prepareRegions() error {
 	return nil
 }
 
+func (c *Controller) patchRegion(ctx context.Context, patch *jsonpatch.Patch) error {
+	return nil
+}
+
 func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
 	members := map[uint64]string{}
 	join := false
 
 	replicaId := uint64(0)
 	for id, replica := range ri.Replicas {
-		members[id] = replica.RaftAddress
+		peerURL, err := url.Parse(replica.RaftAddress)
+		if err != nil {
+			return nil, err
+		}
+		members[id] = peerURL.Host
 		if replica.Runner == c.pr.Id {
 			replicaId = id
 		}
@@ -279,7 +319,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		CompactionOverhead:  compactionOverhead,
 		OrderedConfigChange: true,
 		MaxInMemLogSize:     maxInMemLogSize,
-		WaitReady:           true,
+		WaitReady:           false,
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -311,10 +351,40 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		return nil, err
 	}
 
-	c.rmu.Lock()
+	<-region.ReadyNotify()
+	if region.leader != region.getMember() && region.isLeader() {
+		if err = c.nh.RequestLeaderTransfer(region.id, region.leader); err != nil {
+			return nil, err
+		}
+	}
+
 	region.updateInfo(ri)
-	c.regions[region.getID()] = region
-	c.rmu.Unlock()
+	c.setRegion(region)
 
 	return region, nil
+}
+
+func (c *Controller) getRegion(id uint64) (*Region, bool) {
+	c.rmu.RLock()
+	region, ok := c.regions[id]
+	c.rmu.RUnlock()
+	return region, ok
+}
+
+func (c *Controller) popRegion(id uint64) (*Region, bool) {
+	c.rmu.Lock()
+	region, ok := c.regions[id]
+	if !ok {
+		c.rmu.Unlock()
+		return nil, false
+	}
+	delete(c.regions, id)
+	c.rmu.Unlock()
+	return region, ok
+}
+
+func (c *Controller) setRegion(region *Region) {
+	c.rmu.Lock()
+	c.regions[region.id] = region
+	c.rmu.Unlock()
 }

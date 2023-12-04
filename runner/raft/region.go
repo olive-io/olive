@@ -39,8 +39,8 @@ var (
 )
 
 type Region struct {
-	shardId uint64
-	id      uint64
+	id       uint64
+	memberId uint64
 
 	lg *zap.Logger
 
@@ -64,15 +64,19 @@ type Region struct {
 
 	changeCMu sync.RWMutex
 	changeC   chan struct{}
-	stopping  <-chan struct{}
+
+	readyCMu sync.RWMutex
+	readyC   chan struct{}
+
+	stopping <-chan struct{}
 }
 
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	region := &Region{
-		shardId:     shardId,
-		id:          nodeId,
-		lg:          c.lg,
+		id:          shardId,
+		memberId:    nodeId,
+		lg:          c.Logger,
 		w:           wait.New(),
 		openWait:    c.regionW,
 		reqIDGen:    reqIDGen,
@@ -80,8 +84,10 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		heartbeatMs: c.HeartbeatMs,
 		regionInfo:  &pb.Region{},
 		changeC:     make(chan struct{}),
+		readyC:      make(chan struct{}),
 		stopping:    c.stopping,
 	}
+	c.setRegion(region)
 
 	return region
 }
@@ -101,6 +107,7 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	}
 
 	go r.heartbeat()
+	go r.run()
 	return applyIndex, nil
 }
 
@@ -125,7 +132,10 @@ func (r *Region) readApplyIndex() (uint64, error) {
 
 	applyKey := bytesutil.PathJoin(r.putPrefix(), appliedIndex)
 	value, err := tx.UnsafeGet(buckets.Key, applyKey)
-	if err != nil && !errors.Is(err, pebble.ErrNotFound) {
+	if err != nil {
+		if errors.Is(err, pebble.ErrNotFound) {
+			return 0, nil
+		}
 		return 0, err
 	}
 
@@ -214,6 +224,15 @@ func (r *Region) Close() error {
 	return nil
 }
 
+func (r *Region) run() {
+	for {
+		select {
+		case <-r.stopping:
+			return
+		}
+	}
+}
+
 func (r *Region) notifyAboutChange() {
 	r.changeCMu.Lock()
 	changeClose := r.changeC
@@ -228,8 +247,22 @@ func (r *Region) changeNotify() <-chan struct{} {
 	return r.changeC
 }
 
+func (r *Region) notifyAboutReady() {
+	r.readyCMu.Lock()
+	readyClose := r.readyC
+	r.readyC = make(chan struct{})
+	r.readyCMu.Unlock()
+	close(readyClose)
+}
+
+func (r *Region) ReadyNotify() <-chan struct{} {
+	r.readyCMu.RLock()
+	defer r.readyCMu.RUnlock()
+	return r.readyC
+}
+
 func (r *Region) putPrefix() []byte {
-	sb := []byte(fmt.Sprintf("%d", r.shardId))
+	sb := []byte(fmt.Sprintf("%d", r.id))
 	return sb
 }
 
@@ -247,6 +280,10 @@ func (r *Region) getInfo() *pb.Region {
 
 func (r *Region) getID() uint64 {
 	return r.id
+}
+
+func (r *Region) getMember() uint64 {
+	return r.memberId
 }
 
 func (r *Region) setApplied(applied uint64) {
@@ -283,5 +320,5 @@ func (r *Region) getLeader() uint64 {
 
 func (r *Region) isLeader() bool {
 	lead := r.getLeader()
-	return lead != 0 && lead == r.getID()
+	return lead != 0 && lead == r.getMember()
 }

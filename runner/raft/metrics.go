@@ -115,7 +115,7 @@ func newRegionMetrics(id uint64) (*regionMetrics, error) {
 	taskMetrics := metrics.NewGauge(prometheus.GaugeOpts{
 		Namespace:   "olive",
 		Subsystem:   "runner_region",
-		Name:        "bpmn_definition",
+		Name:        "bpmn_task",
 		Help:        "The counts of running bpmn tasks the region",
 		ConstLabels: constLabels,
 	})
