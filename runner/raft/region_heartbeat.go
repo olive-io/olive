@@ -1,24 +1,16 @@
-// MIT License
+// Copyright 2023 The olive Authors
 //
-// Copyright (c) 2023 Lack
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package raft
 
@@ -60,17 +52,19 @@ func (r *Region) heartbeat() {
 }
 
 func (r *Region) stat() *pb.RegionStat {
-	replicas := int32(len(r.getInfo().Replicas))
+	info := r.getInfo()
+	replicas := int32(len(info.Replicas))
 	rs := &pb.RegionStat{
-		Id:            r.getID(),
-		Leader:        r.getLeader(),
-		Term:          r.getTerm(),
-		Replicas:      replicas,
-		Definitions:   0,
-		BpmnProcesses: 0,
-		BpmnEvents:    0,
-		BpmnTasks:     0,
-		Timestamp:     time.Now().Unix(),
+		Id:                 r.getID(),
+		Leader:             r.getLeader(),
+		Term:               r.getTerm(),
+		Replicas:           replicas,
+		Definitions:        info.Definitions,
+		RunningDefinitions: uint64(r.metric.definition.Get()),
+		BpmnProcesses:      uint64(r.metric.process.Get()),
+		BpmnEvents:         uint64(r.metric.event.Get()),
+		BpmnTasks:          uint64(r.metric.task.Get()),
+		Timestamp:          time.Now().Unix(),
 	}
 
 	return rs
