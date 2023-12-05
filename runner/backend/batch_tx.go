@@ -162,15 +162,15 @@ func (t *batchTx) UnsafeGet(bucket IBucket, key []byte) ([]byte, error) {
 }
 
 // UnsafeRange must be called holding the lock on the tx.
-func (t *batchTx) UnsafeRange(bucket IBucket, key, endKey []byte, limit int64) ([][]byte, [][]byte, error) {
-	//bucket := t.tx.Bucket(bucketType.Name())
-	//if bucket == nil {
-	//	t.backend.lg.Fatal(
-	//		"failed to find a bucket",
-	//		zap.Stringer("bucket-name", bucketType),
-	//		zap.Stack("stack"),
-	//	)
-	//}
+func (t *batchTx) UnsafeRange(bucketType IBucket, key, endKey []byte, limit int64) ([][]byte, [][]byte, error) {
+	bucket, _ := readBucket(t.tx, bucketType.Name())
+	if bucket == nil {
+		t.backend.lg.Fatal(
+			"failed to find a bucket",
+			zap.Stringer("bucket-name", bucketType),
+			zap.Stack("stack"),
+		)
+	}
 	return unsafeRange(t.tx, bucket, key, endKey, limit)
 }
 

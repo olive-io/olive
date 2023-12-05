@@ -16,6 +16,7 @@ package runner
 
 import (
 	"context"
+	"encoding/binary"
 	"net/url"
 	"strings"
 	"sync"
@@ -45,6 +46,7 @@ type Runner struct {
 	be backend.IBackend
 
 	controller *raft.Controller
+	rch        raft.RegionStatWatchChan
 	pr         *pb.Runner
 
 	stopping chan struct{}
@@ -110,26 +112,30 @@ func (r *Runner) start() error {
 	tx.Lock()
 	tx.UnsafeCreateBucket(buckets.Meta)
 	tx.UnsafeCreateBucket(buckets.Region)
+	tx.UnsafeCreateBucket(buckets.Key)
 	tx.Unlock()
+	tx.Commit()
 
 	r.pr, err = r.register()
 	if err != nil {
 		return err
 	}
 
-	r.controller, err = r.startRaftController()
+	var rWatcher raft.RegionStatWatcher
+	r.controller, rWatcher, err = r.startRaftController()
 	if err != nil {
 		return err
 	}
+	r.rch = rWatcher.Watch(r.ctx)
 
 	go r.run()
 	return nil
 }
 
-func (r *Runner) startRaftController() (*raft.Controller, error) {
+func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher, error) {
 	listenPeerURL, err := url.Parse(r.ListenPeerURL)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	raftAddr := listenPeerURL.Host
 
@@ -141,51 +147,88 @@ func (r *Runner) startRaftController() (*raft.Controller, error) {
 		Logger:             r.Logger,
 	}
 
-	controller, err := raft.NewController(cc, r.be, r.pr)
+	controller, err := raft.NewController(r.ctx, cc, r.be, r.pr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	r.Logger.Info("start raft container")
 	if err = controller.Start(r.StoppingNotify()); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ctx := r.ctx
-	regionPrefix := runtime.DefaultRunnerRegion
+	prefix := runtime.DefaultRunnerRegion
+	rev := r.getRev()
+
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
-	}
-	rsp, err := r.oct.Get(ctx, regionPrefix, options...)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetch regions from olive-meta")
+		clientv3.WithRev(rev),
 	}
 
-	regions := make([]*pb.Region, rsp.Count)
-	for i, kv := range rsp.Kvs {
-		region := new(pb.Region)
-		err = region.Unmarshal(kv.Value)
-		if err != nil {
-			continue
+	rsp, err := r.oct.Get(ctx, prefix, append(options, clientv3.WithMinModRev(rev+1))...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	regions := make([]*pb.Region, 0)
+	definitions := make([]*pb.Definition, 0)
+	for _, kv := range rsp.Kvs {
+		rev = kv.ModRevision
+		key := string(kv.Value)
+		switch {
+		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+			region := new(pb.Region)
+			err = region.Unmarshal(kv.Value)
+			if err != nil {
+				continue
+			}
+			need := false
+			for _, runner := range region.Members {
+				if runner == r.pr.Id {
+					need = true
+					break
+				}
+			}
+			if need {
+				regions = append(regions, region)
+			}
+		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+			definition := new(pb.Definition)
+			err = definition.Unmarshal(kv.Value)
+			if err != nil {
+				continue
+			}
+			if definition.Header == nil || definition.Header.Region == 0 {
+				continue
+			}
+			definitions = append(definitions, definition)
 		}
-		regions[i] = region
 	}
 	for _, region := range regions {
 		if err = controller.SyncRegion(ctx, region); err != nil {
-			return nil, errors.Wrap(err, "sync region")
+			return nil, nil, errors.Wrap(err, "sync region")
+		}
+	}
+	for _, definition := range definitions {
+		if err = controller.DeployDefinition(ctx, definition); err != nil {
+			return nil, nil, errors.Wrap(err, "deploy definition")
 		}
 	}
 
-	return controller, nil
+	r.setRev(rev)
+	return controller, controller.GetRegionWatcher(), nil
 }
 
 func (r *Runner) watching() {
 	ctx, cancel := context.WithCancel(r.ctx)
 	defer cancel()
 
+	rev := r.getRev()
 	wopts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
+		clientv3.WithRev(rev + 1),
 	}
 	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
 	for {
@@ -194,10 +237,38 @@ func (r *Runner) watching() {
 			return
 		case resp := <-wch:
 			for _, event := range resp.Events {
+				if event.Kv.ModRevision > rev {
+					rev = event.Kv.ModRevision
+					r.setRev(rev)
+				}
 				r.processEvent(r.ctx, event)
 			}
 		}
 	}
+}
+
+func (r *Runner) getRev() int64 {
+	key := []byte("cur_rev")
+	tx := r.be.ReadTx()
+	tx.RLock()
+	value, err := tx.UnsafeGet(buckets.Meta, key)
+	tx.RUnlock()
+	if err != nil || len(value) == 0 {
+		return 0
+	}
+	value = value[:8]
+	return int64(binary.LittleEndian.Uint64(value))
+}
+
+func (r *Runner) setRev(rev int64) {
+	key := []byte("cur_rev")
+	value := make([]byte, 8)
+	binary.LittleEndian.PutUint64(value, uint64(rev))
+	tx := r.be.BatchTx()
+	tx.Lock()
+	tx.UnsafePut(buckets.Meta, key, value)
+	tx.Unlock()
+	tx.Commit()
 }
 
 // StopNotify returns a channel that receives an empty struct
@@ -266,6 +337,17 @@ func (r *Runner) run() {
 func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 	kv := event.Kv
 	key := string(kv.Key)
+	if event.Type == clientv3.EventTypeDelete {
+		rev := event.Kv.CreateRevision
+		options := []clientv3.OpOption{clientv3.WithRev(rev)}
+		rsp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
+		if err != nil {
+			r.Logger.Error("get key-value")
+		}
+		if len(rsp.Kvs) > 0 {
+			event.Kv = rsp.Kvs[0]
+		}
+	}
 	switch {
 	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
 		r.processBpmnDefinition(ctx, event)
@@ -283,6 +365,13 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 	definition := new(pb.Definition)
 	if err := definition.Unmarshal(kv.Value); err != nil {
 		r.Logger.Error("unmarshal definition data", zap.Error(err))
+		return
+	}
+
+	if err := r.controller.DeployDefinition(ctx, definition); err != nil {
+		r.Logger.Error("definition deploy",
+			zap.String("id", definition.Id),
+			zap.Error(err))
 		return
 	}
 }

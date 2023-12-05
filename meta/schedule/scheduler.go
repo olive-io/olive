@@ -180,6 +180,23 @@ func (sc *Scheduler) sync() error {
 	sc.rgmu.Lock()
 	sc.regions = regions
 	sc.rgmu.Unlock()
+
+	key = runtime.DefaultMetaDefinitionMeta
+	resp, err = client.Get(ctx, key, options...)
+	if err != nil {
+		return err
+	}
+	for _, kv := range resp.Kvs {
+		dm := new(pb.DefinitionMeta)
+		err = dm.Unmarshal(kv.Value)
+		if err != nil {
+			continue
+		}
+		if dm.Region == 0 {
+			sc.definitionQ.Set(dm)
+		}
+	}
+
 	return nil
 }
 
@@ -453,10 +470,17 @@ func (sc *Scheduler) run() {
 				}
 				dm := x.(*pb.DefinitionMeta)
 
-				if _, _, err := sc.BindRegion(sc.ctx, dm); err != nil {
+				_, ok, err := sc.BindRegion(sc.ctx, dm)
+				if err != nil {
 					sc.lg.Error("binding region",
 						zap.String("definition", dm.Id),
 						zap.Error(err))
+				}
+
+				if ok && dm.Region > 0 {
+					sc.lg.Info("binding definition",
+						zap.String("definition", dm.Id),
+						zap.Uint64("region", dm.Region))
 				}
 			}
 		}

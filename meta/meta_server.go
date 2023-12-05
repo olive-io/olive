@@ -119,12 +119,18 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 	resp.Header = s.responseHeader()
 
 	if dm.Region == 0 {
-		_, _, err = s.scheduler.BindRegion(ctx, &dm.DefinitionMeta)
-		if err != nil {
-			s.lg.Error("binding region",
-				zap.String("definition", definition.Id),
-				zap.Error(err))
-		}
+		go func() {
+			ok, _ := s.bindDefinition(ctx, &dm.DefinitionMeta)
+			if ok {
+				definition.Header.Region = dm.Region
+				key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+				data, _ := definition.Marshal()
+				_, e1 := dm.client.Put(ctx, key, string(data))
+				if e1 != nil {
+					s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
+				}
+			}
+		}()
 	}
 
 	return
@@ -266,11 +272,11 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	resp = &pb.GetDefinitionResponse{}
 
 	version := req.Version
+	dm, err := s.definitionMeta(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
 	if version == 0 {
-		dm, err := s.definitionMeta(ctx, req.Id)
-		if err != nil {
-			return nil, err
-		}
 		version = dm.Version
 	}
 
@@ -280,12 +286,38 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	if err != nil || len(rsp.Kvs) == 0 {
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
-	definitions := &pb.Definition{}
-	if err = definitions.Unmarshal(rsp.Kvs[0].Value); err != nil {
+	definition := &pb.Definition{}
+	if err = definition.Unmarshal(rsp.Kvs[0].Value); err != nil {
 		return nil, err
 	}
+	if definition.Header == nil {
+		definition.Header = &pb.OliveHeader{Rev: dm.EndRev}
+	}
 	resp.Header = s.responseHeader()
-	resp.Definition = definitions
+	resp.Definition = definition
+
+	if dm.Region == 0 {
+		go func() {
+			ok, _ := s.bindDefinition(ctx, &dm.DefinitionMeta)
+			if ok {
+				definition.Header.Region = dm.Region
+				key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+				data, _ := definition.Marshal()
+				_, e1 := dm.client.Put(ctx, key, string(data))
+				if e1 != nil {
+					s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
+				}
+			}
+		}()
+	} else if dm.Region != definition.Header.Region {
+		definition.Header.Region = dm.Region
+		key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+		data, _ := definition.Marshal()
+		_, e1 := dm.client.Put(ctx, key, string(data))
+		if e1 != nil {
+			s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
+		}
+	}
 
 	return
 }
@@ -338,6 +370,23 @@ func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta
 
 	_ = dm.DefinitionMeta.Unmarshal(rsp.Kvs[0].Value)
 	return dm, nil
+}
+
+func (s *Server) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (bool, error) {
+	_, ok, err := s.scheduler.BindRegion(ctx, dm)
+	if err != nil {
+		s.lg.Error("binding region",
+			zap.String("definition", dm.Id),
+			zap.Error(err))
+	}
+
+	if ok && dm.Region > 0 {
+		s.lg.Info("binding definition",
+			zap.String("definition", dm.Id),
+			zap.Uint64("region", dm.Region))
+	}
+
+	return ok, err
 }
 
 func (s *Server) requestPrepare(ctx context.Context) error {

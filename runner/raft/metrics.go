@@ -83,10 +83,11 @@ func init() {
 }
 
 type regionMetrics struct {
-	definition metrics.Gauge
-	process    metrics.Gauge
-	event      metrics.Gauge
-	task       metrics.Gauge
+	definition        metrics.Gauge
+	runningDefinition metrics.Gauge
+	process           metrics.Gauge
+	event             metrics.Gauge
+	task              metrics.Gauge
 }
 
 func newRegionMetrics(id uint64) (*regionMetrics, error) {
@@ -95,6 +96,13 @@ func newRegionMetrics(id uint64) (*regionMetrics, error) {
 		Namespace:   "olive",
 		Subsystem:   "runner_region",
 		Name:        "bpmn_definition",
+		Help:        "The total of bpmn definitions the region",
+		ConstLabels: constLabels,
+	})
+	runningDefinitionMetrics := metrics.NewGauge(prometheus.GaugeOpts{
+		Namespace:   "olive",
+		Subsystem:   "runner_region",
+		Name:        "running_bpmn_definition",
 		Help:        "The counts of running bpmn definitions the region",
 		ConstLabels: constLabels,
 	})
@@ -121,14 +129,18 @@ func newRegionMetrics(id uint64) (*regionMetrics, error) {
 	})
 
 	metric := &regionMetrics{
-		definition: definitionMetrics,
-		process:    processMetrics,
-		event:      eventMetrics,
-		task:       taskMetrics,
+		definition:        definitionMetrics,
+		runningDefinition: runningDefinitionMetrics,
+		process:           processMetrics,
+		event:             eventMetrics,
+		task:              taskMetrics,
 	}
 
 	var err error
 	if err = prometheus.Register(definitionMetrics); err != nil {
+		return nil, err
+	}
+	if err = prometheus.Register(runningDefinitionMetrics); err != nil {
 		return nil, err
 	}
 	if err = prometheus.Register(processMetrics); err != nil {

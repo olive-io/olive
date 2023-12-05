@@ -125,17 +125,26 @@ func (r *Runner) registry() {
 		select {
 		case <-r.stopping:
 			return
+		case stat := <-r.rch:
+			r.Logger.Debug("update region stat", zap.Stringer("stat", &stat))
+
+			key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
+			data, _ = stat.Marshal()
+			_, err = r.oct.Put(ctx, key, string(data))
+			if err != nil {
+				lg.Error("olive-runner update region stat", zap.Error(err))
+			}
 		case <-ticker.C:
-		}
+			stat := r.processRunnerStat()
+			stat.Timestamp = time.Now().Unix()
 
-		stat := r.processRunnerStat()
-		stat.Timestamp = time.Now().Unix()
-
-		key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
-		data, _ = stat.Marshal()
-		_, err = r.oct.Put(ctx, key, string(data))
-		if err != nil {
-			lg.Error("olive-runner update runner stat", zap.Error(err))
+			r.Logger.Debug("update runner stat", zap.Stringer("stat", stat))
+			key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
+			data, _ = stat.Marshal()
+			_, err = r.oct.Put(ctx, key, string(data))
+			if err != nil {
+				lg.Error("olive-runner update runner stat", zap.Error(err))
+			}
 		}
 	}
 }
@@ -149,7 +158,7 @@ func (r *Runner) processRunnerStat() *pb.RunnerStat {
 		BpmnEvents:    uint64(raft.EventCounter.Get()),
 		BpmnTasks:     uint64(raft.TaskCounter.Get()),
 	}
-	interval := time.Millisecond * 100
+	interval := time.Millisecond * 300
 	percents, err := cpu.Percent(interval, false)
 	if err != nil {
 		lg.Error("current cpu percent", zap.Error(err))

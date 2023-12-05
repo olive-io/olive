@@ -29,6 +29,7 @@ import (
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
@@ -46,6 +47,12 @@ type Controller struct {
 	be      backend.IBackend
 	regionW wait.Wait
 
+	rsw *regionStatWatcher
+
+	reqId *idutil.Generator
+	reqW  wait.Wait
+	reqCh chan chunk
+
 	pr *pb.Runner
 
 	rmu     sync.RWMutex
@@ -55,7 +62,7 @@ type Controller struct {
 	done     chan struct{}
 }
 
-func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller, error) {
+func NewController(ctx context.Context, cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = zap.NewExample()
 	}
@@ -92,10 +99,9 @@ func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller,
 	}
 
 	// deep copy *pb.Runner
-	runner := new(pb.Runner)
-	*runner = *pr
+	runner := pr.Clone()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	controller := &Controller{
 		Config:   cfg,
 		ctx:      ctx,
@@ -104,6 +110,10 @@ func NewController(cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller,
 		leaderCh: leaderCh,
 		be:       be,
 		regionW:  wait.New(),
+		rsw:      newRegionStatWatcher(),
+		reqId:    idutil.NewGenerator(0, time.Now()),
+		reqW:     wait.New(),
+		reqCh:    make(chan chunk, 128),
 		pr:       runner,
 		regions:  make(map[uint64]*Region),
 	}
@@ -154,19 +164,47 @@ func (c *Controller) run() {
 		select {
 		case <-c.stopping:
 			return
+		case ch := <-c.reqCh:
+			switch tt := ch.(type) {
+			case *regionStatC:
+				_, value := tt.unwrap()
+				body := value.(*pb.RegionStat)
+				c.rsw.Trigger(body)
+				tt.write(struct{}{})
+			case *raftReadC:
+				ctx, value := tt.unwrap()
+				body := value.(*raftQuery)
+				result, err := c.nh.SyncRead(ctx, body.region, body.query)
+				if err != nil {
+					tt.failure(err)
+				} else {
+					tt.write(result)
+				}
+			case *raftProposeC:
+				ctx, value := tt.unwrap()
+				body := value.(*raftPropose)
+				session := c.nh.GetNoOPSession(body.region)
+				result, err := c.nh.SyncPropose(ctx, session, body.cmd)
+				if err != nil {
+					tt.failure(err)
+				} else {
+					tt.write(result)
+				}
+			}
 		}
 	}
 }
 
 func (c *Controller) Stop() {
 	c.nh.Close()
-	defer c.cancel()
+	_ = c.rsw.close()
 
 	select {
 	case <-c.done:
 	default:
 		close(c.done)
 	}
+	c.cancel()
 }
 
 func (c *Controller) RunnerStat() ([]uint64, []string) {
@@ -197,6 +235,10 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 	RegionCounter.Set(float64(len(regions)))
 	LeaderCounter.Set(float64(len(leaders)))
 	return regions, leaders
+}
+
+func (c *Controller) GetRegionWatcher() RegionStatWatcher {
+	return c.rsw
 }
 
 func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error {
@@ -362,6 +404,33 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	c.setRegion(region)
 
 	return region, nil
+}
+
+func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Definition) error {
+	if definition.Header == nil || definition.Header.Region == 0 {
+		c.Logger.Warn("definition missing region",
+			zap.String("id", definition.Id),
+			zap.Uint64("version", definition.Version))
+		return nil
+	}
+
+	regionId := definition.Header.Region
+	region, ok := c.getRegion(regionId)
+	if !ok {
+		c.Logger.Info("definition deploys others",
+			zap.String("id", definition.Id),
+			zap.Uint64("version", definition.Version))
+		return nil
+	}
+
+	c.Logger.Info("definition deploy",
+		zap.String("id", definition.Id),
+		zap.Uint64("version", definition.Version))
+	if err := region.deployDefinition(definition); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) getRegion(id uint64) (*Region, bool) {

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,7 +36,8 @@ import (
 )
 
 var (
-	appliedIndex = []byte("applied_index")
+	appliedIndex  = []byte("applied_index")
+	defaultEndKey = []byte("\xff")
 )
 
 type Region struct {
@@ -46,6 +48,8 @@ type Region struct {
 
 	w        wait.Wait
 	openWait wait.Wait
+
+	cc *Client
 
 	reqIDGen *idutil.Generator
 
@@ -79,6 +83,7 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		lg:          c.Logger,
 		w:           wait.New(),
 		openWait:    c.regionW,
+		cc:          c.NewClient(),
 		reqIDGen:    reqIDGen,
 		be:          c.be,
 		heartbeatMs: c.HeartbeatMs,
@@ -98,13 +103,25 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 		r.openWait.Trigger(r.id, err)
 		return 0, err
 	}
-	r.setApplied(applyIndex)
-	r.openWait.Trigger(r.id, r)
 
 	r.metric, err = newRegionMetrics(r.id)
 	if err != nil {
+		r.openWait.Trigger(r.id, err)
 		return 0, err
 	}
+
+	r.setApplied(applyIndex)
+	r.openWait.Trigger(r.id, r)
+
+	dm := make(map[string]struct{})
+	kvs, _ := r.getRange(definitionPrefix, defaultEndKey, 0)
+	for _, kv := range kvs {
+		definitionId := path.Dir(string(kv.Key))
+		if _, ok := dm[definitionId]; !ok {
+			dm[definitionId] = struct{}{}
+		}
+	}
+	r.metric.definition.Add(float64(len(dm)))
 
 	go r.heartbeat()
 	go r.run()
@@ -123,38 +140,6 @@ func (r *Region) waitUtilLeader() bool {
 		case <-r.changeNotify():
 		}
 	}
-}
-
-func (r *Region) readApplyIndex() (uint64, error) {
-	tx := r.be.ReadTx()
-	tx.RLock()
-	defer tx.RUnlock()
-
-	applyKey := bytesutil.PathJoin(r.putPrefix(), appliedIndex)
-	value, err := tx.UnsafeGet(buckets.Key, applyKey)
-	if err != nil {
-		if errors.Is(err, pebble.ErrNotFound) {
-			return 0, nil
-		}
-		return 0, err
-	}
-
-	applied := binary.LittleEndian.Uint64(value)
-	return applied, nil
-}
-
-func (r *Region) writeApplyIndex(index uint64) {
-	data := make([]byte, 8)
-	binary.LittleEndian.PutUint64(data, index)
-	applyKey := bytesutil.PathJoin(r.putPrefix(), appliedIndex)
-
-	tx := r.be.BatchTx()
-	tx.Lock()
-	tx.UnsafePut(buckets.Key, applyKey, data)
-	tx.Unlock()
-	tx.Commit()
-
-	r.setApplied(index)
 }
 
 func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
@@ -230,6 +215,82 @@ func (r *Region) run() {
 		case <-r.stopping:
 			return
 		}
+	}
+}
+
+func (r *Region) readApplyIndex() (uint64, error) {
+	value, err := r.get(appliedIndex)
+	if err != nil {
+		if errors.Is(err, pebble.ErrNotFound) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	value = value[:8]
+
+	applied := binary.LittleEndian.Uint64(value)
+	return applied, nil
+}
+
+func (r *Region) writeApplyIndex(index uint64) {
+	data := make([]byte, 8)
+	binary.LittleEndian.PutUint64(data, index)
+	r.put(appliedIndex, data, true)
+	r.setApplied(index)
+}
+
+func (r *Region) get(key []byte) ([]byte, error) {
+	tx := r.be.ReadTx()
+	tx.RLock()
+	defer tx.RUnlock()
+
+	key = bytesutil.PathJoin(r.putPrefix(), key)
+	value, err := tx.UnsafeGet(buckets.Key, key)
+	return value, err
+}
+
+func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.InternalKV, error) {
+	tx := r.be.ReadTx()
+	tx.RLock()
+	defer tx.RUnlock()
+
+	startKey = bytesutil.PathJoin(r.putPrefix(), startKey)
+	if len(endKey) > 0 {
+		endKey = bytesutil.PathJoin(r.putPrefix(), endKey)
+	}
+	keys, values, err := tx.UnsafeRange(buckets.Key, startKey, endKey, limit)
+	if err != nil {
+		return nil, err
+	}
+	kvs := make([]*pb.InternalKV, len(keys))
+	for i, key := range keys {
+		kvs[i] = &pb.InternalKV{
+			Key:   key,
+			Value: values[i],
+		}
+	}
+	return kvs, nil
+}
+
+func (r *Region) put(key, value []byte, isSync bool) {
+	key = bytesutil.PathJoin(r.putPrefix(), key)
+	tx := r.be.BatchTx()
+	tx.Lock()
+	tx.UnsafePut(buckets.Key, key, value)
+	tx.Unlock()
+	if isSync {
+		tx.Commit()
+	}
+}
+
+func (r *Region) del(key []byte, isSync bool) {
+	key = bytesutil.PathJoin(r.putPrefix(), key)
+	tx := r.be.BatchTx()
+	tx.Lock()
+	tx.UnsafeDelete(buckets.Key, key)
+	tx.Unlock()
+	if isSync {
+		tx.Commit()
 	}
 }
 
