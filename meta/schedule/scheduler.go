@@ -25,8 +25,8 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/meta/schedule/queue"
 	"github.com/olive-io/olive/pkg/idutil"
+	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/pkg/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"

@@ -21,28 +21,31 @@ import (
 
 // server-side error
 var (
-	ErrGRPCEmptyKey      = status.New(codes.InvalidArgument, "olive: key is not provided").Err()
-	ErrGRPCKeyNotFound   = status.New(codes.InvalidArgument, "olive: key not found").Err()
-	ErrGRPCInvalidRunner = status.New(codes.InvalidArgument, "olive: runner is invalid").Err()
+	ErrGRPCEmptyKey           = status.New(codes.InvalidArgument, "olive: key is not provided").Err()
+	ErrGRPCKeyNotFound        = status.New(codes.InvalidArgument, "olive: key not found").Err()
+	ErrGRPCInvalidRunner      = status.New(codes.InvalidArgument, "olive: runner is invalid").Err()
+	ErrGRPCDefinitionNotReady = status.New(codes.FailedPrecondition, "olive: definition not ready").Err()
 
 	ErrGRPCNoLeader  = status.New(codes.Unavailable, "olive: no leader").Err()
 	ErrGRPCNotLeader = status.New(codes.FailedPrecondition, "olive: not leader").Err()
 
 	errStringToError = map[string]error{
-		ErrorDesc(ErrGRPCEmptyKey):    ErrGRPCEmptyKey,
-		ErrorDesc(ErrGRPCKeyNotFound): ErrGRPCKeyNotFound,
+		ErrorDesc(ErrGRPCEmptyKey):           ErrGRPCEmptyKey,
+		ErrorDesc(ErrGRPCKeyNotFound):        ErrGRPCKeyNotFound,
+		ErrorDesc(ErrGRPCInvalidRunner):      ErrGRPCInvalidRunner,
+		ErrorDesc(ErrGRPCDefinitionNotReady): ErrGRPCDefinitionNotReady,
 
-		ErrorDesc(ErrGRPCNoLeader):      ErrGRPCNoLeader,
-		ErrorDesc(ErrGRPCNotLeader):     ErrGRPCNotLeader,
-		ErrorDesc(ErrGRPCInvalidRunner): ErrGRPCInvalidRunner,
+		ErrorDesc(ErrGRPCNoLeader):  ErrGRPCNoLeader,
+		ErrorDesc(ErrGRPCNotLeader): ErrGRPCNotLeader,
 	}
 )
 
 // client-side error
 var (
-	ErrEmptyKey      = Error(ErrGRPCEmptyKey)
-	ErrKeyNotFound   = Error(ErrGRPCKeyNotFound)
-	ErrInvalidRunner = Error(ErrGRPCInvalidRunner)
+	ErrEmptyKey           = Error(ErrGRPCEmptyKey)
+	ErrKeyNotFound        = Error(ErrGRPCKeyNotFound)
+	ErrInvalidRunner      = Error(ErrGRPCInvalidRunner)
+	ErrDefinitionNotReady = Error(ErrGRPCDefinitionNotReady)
 
 	ErrNoLeader  = Error(ErrGRPCNoLeader)
 	ErrNotLeader = Error(ErrGRPCNotLeader)

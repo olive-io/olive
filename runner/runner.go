@@ -174,36 +174,29 @@ func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher
 
 	regions := make([]*pb.Region, 0)
 	definitions := make([]*pb.Definition, 0)
+	processes := make([]*pb.ProcessInstance, 0)
 	for _, kv := range rsp.Kvs {
 		rev = kv.ModRevision
 		key := string(kv.Value)
 		switch {
 		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
-			region := new(pb.Region)
-			err = region.Unmarshal(kv.Value)
-			if err != nil {
+			region, match, err := parseRegionKv(kv, r.pr.Id)
+			if err != nil || !match {
 				continue
 			}
-			need := false
-			for _, runner := range region.Members {
-				if runner == r.pr.Id {
-					need = true
-					break
-				}
-			}
-			if need {
-				regions = append(regions, region)
-			}
+			regions = append(regions, region)
 		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-			definition := new(pb.Definition)
-			err = definition.Unmarshal(kv.Value)
-			if err != nil {
-				continue
-			}
-			if definition.Header == nil || definition.Header.Region == 0 {
+			definition, match, err := parseDefinitionKv(kv)
+			if err != nil || !match {
 				continue
 			}
 			definitions = append(definitions, definition)
+		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+			proc, match, err := parseProcessInstanceKv(kv)
+			if err != nil || !match {
+				continue
+			}
+			processes = append(processes, proc)
 		}
 	}
 	for _, region := range regions {
@@ -213,7 +206,14 @@ func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher
 	}
 	for _, definition := range definitions {
 		if err = controller.DeployDefinition(ctx, definition); err != nil {
-			return nil, nil, errors.Wrap(err, "deploy definition")
+			r.Logger.Error("deploy definition", zap.Error(err))
+		}
+	}
+	for _, process := range processes {
+		if err = controller.ExecuteDefinition(ctx, process); err != nil {
+			r.Logger.Error("execute definition", zap.Error(err))
+		} else {
+			commitProcessInstance(ctx, r.Logger, r.oct, process)
 		}
 	}
 
@@ -349,30 +349,12 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 		}
 	}
 	switch {
-	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-		r.processBpmnDefinition(ctx, event)
 	case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
 		r.processRegion(ctx, event)
-	}
-}
-
-func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
-	kv := event.Kv
-	if event.Type == clientv3.EventTypeDelete {
-		return
-	}
-
-	definition := new(pb.Definition)
-	if err := definition.Unmarshal(kv.Value); err != nil {
-		r.Logger.Error("unmarshal definition data", zap.Error(err))
-		return
-	}
-
-	if err := r.controller.DeployDefinition(ctx, definition); err != nil {
-		r.Logger.Error("definition deploy",
-			zap.String("id", definition.Id),
-			zap.Error(err))
-		return
+	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+		r.processBpmnDefinition(ctx, event)
+	case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+		r.processBpmnProcess(ctx, event)
 	}
 }
 
@@ -382,10 +364,12 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 		return
 	}
 
-	region := new(pb.Region)
-	err := region.Unmarshal(kv.Value)
+	region, match, err := parseRegionKv(kv, r.pr.Id)
 	if err != nil {
-		r.Logger.Error("unmarshal region data", zap.Error(err))
+		r.Logger.Error("parse region data", zap.Error(err))
+		return
+	}
+	if !match {
 		return
 	}
 
@@ -404,4 +388,54 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 		}
 		return
 	}
+}
+
+func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
+	kv := event.Kv
+	if event.Type == clientv3.EventTypeDelete {
+		return
+	}
+
+	definition, match, err := parseDefinitionKv(kv)
+	if err != nil {
+		r.Logger.Error("parse definition data", zap.Error(err))
+		return
+	}
+	if !match {
+		return
+	}
+
+	if err := r.controller.DeployDefinition(ctx, definition); err != nil {
+		r.Logger.Error("definition deploy",
+			zap.String("id", definition.Id),
+			zap.Uint64("version", definition.Version),
+			zap.Error(err))
+		return
+	}
+}
+
+func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) {
+	kv := event.Kv
+	if event.Type == clientv3.EventTypeDelete {
+		return
+	}
+
+	process, match, err := parseProcessInstanceKv(kv)
+	if err != nil {
+		r.Logger.Error("parse process data", zap.Error(err))
+		return
+	}
+	if !match {
+		return
+	}
+
+	if err := r.controller.ExecuteDefinition(ctx, process); err != nil {
+		r.Logger.Error("execute definition",
+			zap.String("id", process.DefinitionId),
+			zap.Uint64("version", process.DefinitionVersion),
+			zap.Error(err))
+		return
+	}
+
+	commitProcessInstance(ctx, r.Logger, r.oct, process)
 }

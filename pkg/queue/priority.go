@@ -58,6 +58,26 @@ func (q *PriorityQueue[T]) Pop() (any, bool) {
 	return it.value, true
 }
 
+func (q *PriorityQueue[T]) Get(id uint64) (any, bool) {
+	v, ok := q.m[id]
+	if !ok {
+		return nil, false
+	}
+	return v.value, true
+}
+
+func (q *PriorityQueue[T]) Remove(id uint64) (any, bool) {
+	v, ok := q.m[id]
+	if !ok {
+		return nil, false
+	}
+	idx := v.index
+	x := heap.Remove(&q.pq, idx)
+	v = x.(*item[T])
+	delete(q.m, id)
+	return v.value, true
+}
+
 func (q *PriorityQueue[T]) Set(val T) {
 	v, ok := q.m[val.ID()]
 	if !ok {
@@ -95,6 +115,20 @@ func (q *SyncPriorityQueue[T]) Pop() (any, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Pop()
+	return result, ok
+}
+
+func (q *SyncPriorityQueue[T]) Get(id uint64) (any, bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	result, ok := q.pq.Get(id)
+	return result, ok
+}
+
+func (q *SyncPriorityQueue[T]) Remove(id uint64) (any, bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	result, ok := q.pq.Remove(id)
 	return result, ok
 }
 

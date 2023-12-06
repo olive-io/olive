@@ -152,7 +152,28 @@ message DefinitionMeta {
 }
 
 message ProcessInstance {
-  OliveHeader header = 100;
+  enum Status {
+    Unknown = 0;
+    Waiting = 1;
+    Prepare = 2;
+    Running = 3;
+    Ok = 4;
+    Fail = 5;
+  }
 
-  string definition = 1;
+  OliveHeader header = 100;
+  uint64 id = 1;
+  string name = 2;
+  string definitionId = 3;
+  uint64 definitionVersion = 4;
+  string definitionContent = 5;
+  map<string, string> headers = 6;
+  map<string, bytes> properties = 7;
+
+  uint64 attempts = 18;
+  int64 startTime = 19;
+  int64 endTime = 20;
+
+  Status status = 21;
+  string message = 22;
 }

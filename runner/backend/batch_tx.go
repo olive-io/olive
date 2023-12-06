@@ -29,13 +29,12 @@ type IBatchTx interface {
 	IReadTx
 	UnsafeCreateBucket(bucket IBucket)
 	UnsafeDeleteBucket(bucket IBucket)
-	UnsafePut(bucket IBucket, key []byte, value []byte)
-	UnsafeSeqPut(bucket IBucket, key []byte, value []byte)
-	UnsafeDelete(bucket IBucket, key []byte)
+	UnsafePut(bucket IBucket, key []byte, value []byte) error
+	UnsafeDelete(bucket IBucket, key []byte) error
 	// Commit commits a previous tx and begins a new writable one.
-	Commit()
+	Commit() error
 	// CommitAndStop commits the previous tx and does not create a new one.
-	CommitAndStop()
+	CommitAndStop() error
 	LockInsideApply()
 	LockOutsideApply()
 }
@@ -122,31 +121,22 @@ func (t *batchTx) UnsafeDeleteBucket(bucket IBucket) {
 }
 
 // UnsafePut must be called holding the lock on the tx.
-func (t *batchTx) UnsafePut(bucket IBucket, key []byte, value []byte) {
-	t.unsafePut(bucket, key, value, false)
+func (t *batchTx) UnsafePut(bucket IBucket, key []byte, value []byte) error {
+	return t.unsafePut(bucket, key, value)
 }
 
-// UnsafeSeqPut must be called holding the lock on the tx.
-func (t *batchTx) UnsafeSeqPut(bucket IBucket, key []byte, value []byte) {
-	t.unsafePut(bucket, key, value, true)
-}
-
-func (t *batchTx) unsafePut(bucketType IBucket, key []byte, value []byte, seq bool) {
-	if seq {
-		// it is useful to increase fill percent when the workloads are mostly append-only.
-		// this can delay the page split and reduce space usage.
-		// bucket.FillPercent = 0.9
-	}
-
+func (t *batchTx) unsafePut(bucketType IBucket, key []byte, value []byte) error {
 	key = bytesutil.PathJoin(bucketType.Name(), key)
 	if err := t.tx.Set(key, value, t.pwo); err != nil {
-		t.backend.lg.Fatal(
+		t.backend.lg.Error(
 			"failed to write to a bucket",
 			zap.Stringer("bucket-name", bucketType),
 			zap.Error(err),
 		)
+		return err
 	}
 	t.pending++
+	return nil
 }
 
 // UnsafeGet must be called holding the lock on the tx.
@@ -175,18 +165,20 @@ func (t *batchTx) UnsafeRange(bucketType IBucket, key, endKey []byte, limit int6
 }
 
 // UnsafeDelete must be called holding the lock on the tx.
-func (t *batchTx) UnsafeDelete(bucketType IBucket, key []byte) {
+func (t *batchTx) UnsafeDelete(bucketType IBucket, key []byte) error {
 	key = bytesutil.PathJoin(bucketType.Name(), key)
 	wo := &pebble.WriteOptions{}
 	err := t.tx.Delete(key, wo)
 	if err != nil {
-		t.backend.lg.Fatal(
+		t.backend.lg.Error(
 			"failed to delete a key",
 			zap.Stringer("bucket-name", bucketType),
 			zap.Error(err),
 		)
+		return err
 	}
 	t.pending++
+	return nil
 }
 
 // UnsafeForEach must be called holding the lock on the tx.
@@ -195,17 +187,17 @@ func (t *batchTx) UnsafeForEach(bucket IBucket, visitor func(k, v []byte) error)
 }
 
 // Commit commits a previous tx and begins a new writable one.
-func (t *batchTx) Commit() {
+func (t *batchTx) Commit() error {
 	t.lock()
-	t.commit(false)
-	t.Unlock()
+	defer t.Unlock()
+	return t.commit(false)
 }
 
 // CommitAndStop commits the previous tx and does not create a new one.
-func (t *batchTx) CommitAndStop() {
+func (t *batchTx) CommitAndStop() error {
 	t.lock()
-	t.commit(true)
-	t.Unlock()
+	defer t.Unlock()
+	return t.commit(true)
 }
 
 func (t *batchTx) safePending() int {
@@ -214,11 +206,11 @@ func (t *batchTx) safePending() int {
 	return t.pending
 }
 
-func (t *batchTx) commit(stop bool) {
+func (t *batchTx) commit(stop bool) error {
 	// commit the last tx
 	if t.tx != nil {
 		if t.pending == 0 && !stop {
-			return
+			return nil
 		}
 
 		start := time.Now()
@@ -233,17 +225,20 @@ func (t *batchTx) commit(stop bool) {
 
 		t.pending = 0
 		if err != nil {
-			t.backend.lg.Fatal("failed to commit tx", zap.Error(err))
+			t.backend.lg.Error("failed to commit tx", zap.Error(err))
+			return err
 		}
 
 		if err = t.tx.Close(); err != nil {
-			t.backend.lg.Fatal("failed to stop tx", zap.Error(err))
+			t.backend.lg.Error("failed to stop tx", zap.Error(err))
+			return err
 		}
 	}
 
 	if !stop {
 		t.tx = t.backend.begin(true)
 	}
+	return nil
 }
 
 type batchTxBuffered struct {
@@ -275,26 +270,26 @@ func (t *batchTxBuffered) Unlock() {
 	t.batchTx.Unlock()
 }
 
-func (t *batchTxBuffered) Commit() {
+func (t *batchTxBuffered) Commit() error {
 	t.lock()
-	t.commit(false)
-	t.Unlock()
+	defer t.Unlock()
+	return t.commit(false)
 }
 
-func (t *batchTxBuffered) CommitAndStop() {
+func (t *batchTxBuffered) CommitAndStop() error {
 	t.lock()
-	t.commit(true)
-	t.Unlock()
+	defer t.Unlock()
+	return t.commit(true)
 }
 
-func (t *batchTxBuffered) commit(stop bool) {
+func (t *batchTxBuffered) commit(stop bool) error {
 	// all read txs must be closed to acquire pebble commit rwlock
 	t.backend.readTx.Lock()
-	t.unsafeCommit(stop)
-	t.backend.readTx.Unlock()
+	defer t.backend.readTx.Unlock()
+	return t.unsafeCommit(stop)
 }
 
-func (t *batchTxBuffered) unsafeCommit(stop bool) {
+func (t *batchTxBuffered) unsafeCommit(stop bool) error {
 	t.backend.hmu.RLock()
 	for i := range t.backend.hooks {
 		hook := t.backend.hooks[i]
@@ -310,19 +305,21 @@ func (t *batchTxBuffered) unsafeCommit(stop bool) {
 		t.backend.readTx.reset()
 	}
 
-	t.batchTx.commit(stop)
+	if err := t.batchTx.commit(stop); err != nil {
+		return err
+	}
 
 	if !stop {
 		t.backend.readTx.tx = t.backend.begin(false)
 	}
+
+	return nil
 }
 
-func (t *batchTxBuffered) UnsafePut(bucket IBucket, key []byte, value []byte) {
-	t.batchTx.UnsafePut(bucket, key, value)
+func (t *batchTxBuffered) UnsafePut(bucket IBucket, key []byte, value []byte) error {
+	if err := t.batchTx.UnsafePut(bucket, key, value); err != nil {
+		return err
+	}
 	t.buf.put(bucket, key, value)
-}
-
-func (t *batchTxBuffered) UnsafeSeqPut(bucket IBucket, key []byte, value []byte) {
-	t.batchTx.UnsafeSeqPut(bucket, key, value)
-	t.buf.putSeq(bucket, key, value)
+	return nil
 }

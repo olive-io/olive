@@ -216,10 +216,12 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 				continue
 			}
 
+			dkv := rsp.Kvs[0]
 			definition := &pb.Definition{}
-			if err = definition.Unmarshal(rsp.Kvs[0].Value); err != nil {
+			if err = definition.Unmarshal(dkv.Value); err != nil {
 				continue
 			}
+			definition.Header.Rev = dkv.ModRevision
 
 			v = append(v, definition)
 		}
@@ -266,7 +268,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 }
 
 func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
-	if !s.notifier.IsLeader() {
+	if err = s.requestPrepare(ctx); err != nil {
 		return
 	}
 	resp = &pb.GetDefinitionResponse{}
@@ -287,12 +289,14 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
 	definition := &pb.Definition{}
-	if err = definition.Unmarshal(rsp.Kvs[0].Value); err != nil {
+	kv := rsp.Kvs[0]
+	if err = definition.Unmarshal(kv.Value); err != nil {
 		return nil, err
 	}
 	if definition.Header == nil {
-		definition.Header = &pb.OliveHeader{Rev: dm.EndRev}
+		definition.Header = &pb.OliveHeader{}
 	}
+	definition.Header.Rev = kv.ModRevision
 	resp.Header = s.responseHeader()
 	resp.Definition = definition
 
@@ -339,16 +343,42 @@ func (s *Server) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionR
 }
 
 func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
-	if !s.notifier.IsLeader() {
-		return
-	}
 	resp = &pb.ExecuteDefinitionResponse{}
 
-	dm, err := s.definitionMeta(ctx, req.Id)
+	in := &pb.GetDefinitionRequest{
+		Id:      req.DefinitionId,
+		Version: req.DefinitionVersion,
+	}
+	out, err := s.GetDefinition(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	_ = dm
+	definition := out.Definition
+
+	if definition.Header.Region == 0 {
+		return nil, rpctypes.ErrGRPCDefinitionNotReady
+	}
+
+	instance := &pb.ProcessInstance{
+		Header:            &pb.OliveHeader{Region: definition.Header.Region},
+		Id:                s.idReq.Next(),
+		Name:              req.Name,
+		DefinitionId:      definition.Id,
+		DefinitionVersion: definition.Version,
+		Headers:           req.Header,
+		Properties:        req.Properties,
+		Status:            pb.ProcessInstance_Waiting,
+	}
+	key := path.Join(runtime.DefaultRunnerProcessInstance,
+		definition.Id, fmt.Sprintf("%d", definition.Version), fmt.Sprintf("%d", instance.Id))
+	data, _ := instance.Marshal()
+	rsp, err := s.v3cli.Put(ctx, key, string(data))
+	if err != nil {
+		return nil, err
+	}
+	instance.Header.Rev = rsp.Header.Revision
+	resp.Header = s.responseHeader()
+	resp.Instance = instance
 
 	return
 }

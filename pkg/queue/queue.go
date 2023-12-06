@@ -45,19 +45,19 @@ func (pq *priorityQueue[T]) Swap(i, j int) {
 
 func (pq *priorityQueue[T]) Push(x any) {
 	n := len(pq.list)
-	item := x.(*item[T])
-	item.index = n
-	pq.list = append(pq.list, item)
+	value := x.(*item[T])
+	value.index = n
+	pq.list = append(pq.list, value)
 }
 
 func (pq *priorityQueue[T]) Pop() any {
 	old := *pq
 	n := len(old.list)
-	item := old.list[n-1]
+	value := old.list[n-1]
 	old.list[n-1] = nil
-	item.index = -1
+	value.index = -1
 	pq.list = old.list[0 : n-1]
-	return item
+	return value
 }
 
 func (pq *priorityQueue[T]) update(item *item[T], value T, fn ScoreFn[T]) {

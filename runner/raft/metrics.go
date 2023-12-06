@@ -83,6 +83,8 @@ func init() {
 }
 
 type regionMetrics struct {
+	applySec          *prometheus.HistogramVec
+	slowApplies       prometheus.Counter
 	definition        metrics.Gauge
 	runningDefinition metrics.Gauge
 	process           metrics.Gauge
@@ -92,6 +94,28 @@ type regionMetrics struct {
 
 func newRegionMetrics(id uint64) (*regionMetrics, error) {
 	constLabels := prometheus.Labels{"region": fmt.Sprintf("%d", id)}
+
+	applySec := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace:   "olive",
+		Subsystem:   "runner",
+		Name:        "apply_duration_seconds",
+		Help:        "The latency distributions of v1 apply called by backend.",
+		ConstLabels: constLabels,
+
+		// lowest bucket start of upper bound 0.0001 sec (0.1 ms) with factor 2
+		// highest bucket start of 0.0001 sec * 2^19 == 52.4288 sec
+		Buckets: prometheus.ExponentialBuckets(0.0001, 2, 20),
+	},
+		[]string{"version", "op", "success"})
+
+	slowApplies := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace:   "olive",
+		Subsystem:   "runner",
+		Name:        "slow_apply_total",
+		Help:        "The total number of slow apply requests (likely overloaded from slow disk).",
+		ConstLabels: constLabels,
+	})
+
 	definitionMetrics := metrics.NewGauge(prometheus.GaugeOpts{
 		Namespace:   "olive",
 		Subsystem:   "runner_region",
@@ -129,6 +153,8 @@ func newRegionMetrics(id uint64) (*regionMetrics, error) {
 	})
 
 	metric := &regionMetrics{
+		applySec:          applySec,
+		slowApplies:       slowApplies,
 		definition:        definitionMetrics,
 		runningDefinition: runningDefinitionMetrics,
 		process:           processMetrics,
@@ -137,6 +163,12 @@ func newRegionMetrics(id uint64) (*regionMetrics, error) {
 	}
 
 	var err error
+	if err = prometheus.Register(applySec); err != nil {
+		return nil, err
+	}
+	if err = prometheus.Register(slowApplies); err != nil {
+		return nil, err
+	}
 	if err = prometheus.Register(definitionMetrics); err != nil {
 		return nil, err
 	}

@@ -149,7 +149,6 @@ func (c *Controller) listening() {
 			term := leaderInfo.Term
 			region.setLeader(lead)
 			region.setTerm(term)
-			region.notifyAboutChange()
 			if lead != 0 {
 				region.notifyAboutReady()
 			}
@@ -301,14 +300,19 @@ func (c *Controller) prepareRegions() error {
 	lg := c.Logger
 	for i := range regions {
 		region := regions[i]
-		_, err = c.startRaftRegion(ctx, region)
-		if err != nil {
-			return err
-		}
-		DefinitionsCounter.Add(float64(region.Definitions))
+		go func() {
+			_, err = c.startRaftRegion(ctx, region)
+			if err != nil {
+				lg.Error("start raft region",
+					zap.Uint64("id", region.Id),
+					zap.Error(err))
+				return
+			}
+			DefinitionsCounter.Add(float64(region.Definitions))
 
-		lg.Info("start raft region",
-			zap.Uint64("id", region.Id))
+			lg.Info("start raft region",
+				zap.Uint64("id", region.Id))
+		}()
 	}
 
 	return nil
@@ -417,16 +421,39 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 	regionId := definition.Header.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
-		c.Logger.Info("definition deploys others",
-			zap.String("id", definition.Id),
-			zap.Uint64("version", definition.Version))
+		c.Logger.Info("region running others",
+			zap.Uint64("id", regionId))
 		return nil
 	}
 
 	c.Logger.Info("definition deploy",
 		zap.String("id", definition.Id),
 		zap.Uint64("version", definition.Version))
-	if err := region.deployDefinition(definition); err != nil {
+	if err := region.deployDefinition(ctx, definition); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
+	if instance.DefinitionId == "" || instance.Header.Region == 0 {
+		c.Logger.Warn("invalid process instance")
+		return nil
+	}
+
+	regionId := instance.Header.Region
+	region, ok := c.getRegion(regionId)
+	if !ok {
+		c.Logger.Info("region running others",
+			zap.Uint64("id", regionId))
+		return nil
+	}
+
+	c.Logger.Info("definition executed",
+		zap.String("id", instance.DefinitionId),
+		zap.Uint64("version", instance.DefinitionVersion))
+	if err := region.executeDefinition(ctx, instance); err != nil {
 		return err
 	}
 

@@ -93,6 +93,7 @@ func TestBackendSnapshot(t *testing.T) {
 
 	newTx := nb.BatchTx()
 	newTx.Lock()
+	newTx.UnsafeCreateBucket(buckets.Test)
 	ks, _, err := newTx.UnsafeRange(buckets.Test, []byte("foo"), []byte("goo"), 0)
 	if err != nil {
 		t.Error(err)

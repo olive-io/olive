@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/olive/api/olivepb"
@@ -26,6 +27,7 @@ import (
 	"github.com/olive-io/olive/meta/schedule"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
@@ -44,6 +46,7 @@ type Server struct {
 
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
+	idReq *idutil.Generator
 
 	notifier leader.Notifier
 
@@ -100,6 +103,7 @@ func (s *Server) Start() error {
 
 	<-s.etcd.Server.ReadyNotify()
 	s.v3cli = v3client.New(s.etcd.Server)
+	s.idReq = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
 	s.notifier = leader.NewNotify(s.etcd.Server)
 
 	sLimit := schedule.Limit{

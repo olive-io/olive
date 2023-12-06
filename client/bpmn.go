@@ -152,15 +152,27 @@ func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
 
 type ExecDefinitionOption func(request *pb.ExecuteDefinitionRequest)
 
+func WithVersion(version uint64) ExecDefinitionOption {
+	return func(req *pb.ExecuteDefinitionRequest) {
+		req.DefinitionVersion = version
+	}
+}
+
 func WithName(name string) ExecDefinitionOption {
 	return func(req *pb.ExecuteDefinitionRequest) {
 		req.Name = name
 	}
 }
 
-func WithHeader(headers map[string]string) ExecDefinitionOption {
+func WithHeaders(headers map[string]string) ExecDefinitionOption {
 	return func(req *pb.ExecuteDefinitionRequest) {
 		req.Header = headers
+	}
+}
+
+func WithProperties(properties map[string][]byte) ExecDefinitionOption {
+	return func(req *pb.ExecuteDefinitionRequest) {
+		req.Properties = properties
 	}
 }
 
@@ -176,7 +188,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 			return nil, err
 		}
 	}
-	in := &pb.ExecuteDefinitionRequest{Id: id}
+	in := &pb.ExecuteDefinitionRequest{DefinitionId: id}
 	for _, option := range options {
 		option(in)
 	}

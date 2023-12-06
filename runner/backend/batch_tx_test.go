@@ -35,6 +35,7 @@ func TestBatchTxPut(t *testing.T) {
 
 	// put
 	v := []byte("bar")
+	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), v)
 
 	tx.Unlock()
@@ -79,6 +80,7 @@ func TestBatchTxRange(t *testing.T) {
 
 	tx := b.BatchTx()
 	tx.Lock()
+	tx.UnsafeCreateBucket(buckets.Test)
 	defer tx.Unlock()
 
 	// put keys
@@ -150,6 +152,7 @@ func TestBatchTxDelete(t *testing.T) {
 	tx := b.BatchTx()
 	tx.Lock()
 
+	tx.UnsafeCreateBucket(buckets.Test)
 	tx.UnsafePut(buckets.Test, []byte("foo"), []byte("bar"))
 
 	tx.UnsafeDelete(buckets.Test, []byte("foo"))

@@ -57,7 +57,7 @@ func TestBackendAutoCommitLimitHook(t *testing.T) {
 		write(tx, []byte("i"), []byte{byte(i)})
 	}
 
-	assert.Equal(t, ">cc", getCommitsKey(t, be))
+	assert.Equal(t, ">ccc", getCommitsKey(t, be))
 }
 
 func write(tx backend.IBatchTx, k, v []byte) {
@@ -106,6 +106,7 @@ func waitUntil(ctx context.Context, t testing.TB, f func() bool) {
 func prepareBuckenAndKey(tx backend.IBatchTx) {
 	tx.Lock()
 	defer tx.Unlock()
+	tx.UnsafeCreateBucket(bucket)
 	tx.UnsafePut(bucket, key, []byte(">"))
 }
 

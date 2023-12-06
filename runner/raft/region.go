@@ -15,8 +15,8 @@
 package raft
 
 import (
+	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -24,10 +24,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -39,6 +41,10 @@ var (
 	appliedIndex  = []byte("applied_index")
 	defaultEndKey = []byte("\xff")
 )
+
+func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
+	return 1
+}
 
 type Region struct {
 	id       uint64
@@ -59,12 +65,16 @@ type Region struct {
 	regionInfo *pb.Region
 	metric     *regionMetrics
 
+	processQ *queue.SyncPriorityQueue[*pb.ProcessInstance]
+
 	applied   uint64
 	committed uint64
 	term      uint64
 	leader    uint64
 
-	heartbeatMs int64
+	// config
+	heartbeatMs          int64
+	warningApplyDuration time.Duration
 
 	changeCMu sync.RWMutex
 	changeC   chan struct{}
@@ -77,6 +87,7 @@ type Region struct {
 
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
+	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
 	region := &Region{
 		id:          shardId,
 		memberId:    nodeId,
@@ -86,6 +97,7 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		cc:          c.NewClient(),
 		reqIDGen:    reqIDGen,
 		be:          c.be,
+		processQ:    processQ,
 		heartbeatMs: c.HeartbeatMs,
 		regionInfo:  &pb.Region{},
 		changeC:     make(chan struct{}),
@@ -123,6 +135,26 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	}
 	r.metric.definition.Add(float64(len(dm)))
 
+	kvs, _ = r.getRange(processPrefix, defaultEndKey, 0)
+	for _, kv := range kvs {
+		proc := new(pb.ProcessInstance)
+		err = proc.Unmarshal(kv.Value)
+		if err != nil {
+			continue
+		}
+		if proc.Status == pb.ProcessInstance_Unknown ||
+			proc.Status == pb.ProcessInstance_Ok ||
+			proc.Status == pb.ProcessInstance_Fail ||
+			proc.DefinitionId == "" ||
+			proc.DefinitionVersion == 0 {
+			continue
+		}
+		if proc.Status == pb.ProcessInstance_Waiting {
+			proc.Status = pb.ProcessInstance_Prepare
+		}
+		r.processQ.Push(proc)
+	}
+
 	go r.heartbeat()
 	go r.run()
 	return applyIndex, nil
@@ -137,6 +169,25 @@ func (r *Region) waitUtilLeader() bool {
 		select {
 		case <-r.stopping:
 			return false
+		case <-r.changeNotify():
+		}
+	}
+}
+
+func (r *Region) readyLeader(ctx context.Context) (bool, error) {
+	for {
+		if r.isLeader() {
+			return true, nil
+		}
+		if r.getLeader() != 0 {
+			return false, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return false, context.Canceled
+		case <-r.stopping:
+			return false, errors.Wrap(ErrStopped, "ready region leader")
 		case <-r.changeNotify():
 		}
 	}
@@ -219,14 +270,14 @@ func (r *Region) run() {
 }
 
 func (r *Region) readApplyIndex() (uint64, error) {
-	value, err := r.get(appliedIndex)
+	kv, err := r.get(appliedIndex)
 	if err != nil {
 		if errors.Is(err, pebble.ErrNotFound) {
 			return 0, nil
 		}
 		return 0, err
 	}
-	value = value[:8]
+	value := kv.Value[:8]
 
 	applied := binary.LittleEndian.Uint64(value)
 	return applied, nil
@@ -239,17 +290,25 @@ func (r *Region) writeApplyIndex(index uint64) {
 	r.setApplied(index)
 }
 
-func (r *Region) get(key []byte) ([]byte, error) {
+func (r *Region) get(key []byte) (*pb.KeyValue, error) {
 	tx := r.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
 
 	key = bytesutil.PathJoin(r.putPrefix(), key)
 	value, err := tx.UnsafeGet(buckets.Key, key)
-	return value, err
+	if err != nil {
+		return nil, err
+	}
+	kv := &pb.KeyValue{
+		Key:   key,
+		Value: value,
+	}
+
+	return kv, err
 }
 
-func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.InternalKV, error) {
+func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, error) {
 	tx := r.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
@@ -262,9 +321,9 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.InternalK
 	if err != nil {
 		return nil, err
 	}
-	kvs := make([]*pb.InternalKV, len(keys))
+	kvs := make([]*pb.KeyValue, len(keys))
 	for i, key := range keys {
-		kvs[i] = &pb.InternalKV{
+		kvs[i] = &pb.KeyValue{
 			Key:   key,
 			Value: values[i],
 		}
@@ -272,26 +331,34 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.InternalK
 	return kvs, nil
 }
 
-func (r *Region) put(key, value []byte, isSync bool) {
+func (r *Region) put(key, value []byte, isSync bool) error {
 	key = bytesutil.PathJoin(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
-	tx.UnsafePut(buckets.Key, key, value)
+	if err := tx.UnsafePut(buckets.Key, key, value); err != nil {
+		tx.Unlock()
+		return err
+	}
 	tx.Unlock()
 	if isSync {
-		tx.Commit()
+		return tx.Commit()
 	}
+	return nil
 }
 
-func (r *Region) del(key []byte, isSync bool) {
+func (r *Region) del(key []byte, isSync bool) error {
 	key = bytesutil.PathJoin(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
-	tx.UnsafeDelete(buckets.Key, key)
+	if err := tx.UnsafeDelete(buckets.Key, key); err != nil {
+		tx.Unlock()
+		return err
+	}
 	tx.Unlock()
 	if isSync {
-		tx.Commit()
+		return tx.Commit()
 	}
+	return nil
 }
 
 func (r *Region) notifyAboutChange() {

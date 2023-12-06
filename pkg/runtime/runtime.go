@@ -33,7 +33,8 @@ var (
 )
 
 var (
-	DefaultRunnerPrefix      = path.Join(DefaultOlivePrefix, "runner")
-	DefaultRunnerDefinitions = path.Join(DefaultRunnerPrefix, "definitions")
-	DefaultRunnerRegion      = path.Join(DefaultRunnerPrefix, "regions")
+	DefaultRunnerPrefix          = path.Join(DefaultOlivePrefix, "runner")
+	DefaultRunnerDefinitions     = path.Join(DefaultRunnerPrefix, "definitions")
+	DefaultRunnerProcessInstance = path.Join(DefaultRunnerPrefix, "processInstances")
+	DefaultRunnerRegion          = path.Join(DefaultRunnerPrefix, "regions")
 )

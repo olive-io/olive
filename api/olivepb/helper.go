@@ -18,3 +18,13 @@ func (m *DefinitionMeta) ID() uint64 {
 	data := h.Sum([]byte(m.Id))
 	return binary.LittleEndian.Uint64(data)
 }
+
+func (m *ProcessInstance) ID() uint64 {
+	return m.Id
+}
+
+func (m *Runner) Clone() *Runner {
+	out := new(Runner)
+	*out = *m
+	return out
+}

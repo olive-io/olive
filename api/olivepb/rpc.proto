@@ -115,9 +115,11 @@ message RemoveDefinitionResponse {
 }
 
 message ExecuteDefinitionRequest {
-  string id = 1;
-  string name = 2;
-  map<string, string> header = 3;
+  string definitionId = 1;
+  uint64 definitionVersion = 2;
+  string name = 3;
+  map<string, string> header = 4;
+  map<string, bytes> properties = 5;
 }
 
 message ExecuteDefinitionResponse {

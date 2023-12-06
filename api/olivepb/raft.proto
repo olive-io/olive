@@ -16,19 +16,85 @@ syntax = "proto3";
 
 package olivepb;
 
-import "gogoproto/gogo.proto";
-
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 
+import "gogoproto/gogo.proto";
+import "github.com/olive-io/olive/api/olivepb/internal.proto";
+
 message InternalKV {
   bytes key = 1;
   bytes value = 2;
 }
 
-message RaftInternal {
-
+message KeyValue {
+  bytes key = 1;
+  bytes value = 2;
 }
+
+message RaftInternalRequest {
+  uint64 ID = 1;
+
+  RegionRangeRequest range = 2;
+  RegionPutRequest put = 3;
+  RegionDeleteRequest delete = 4;
+
+  RegionDeployDefinitionRequest deploy_definition = 11;
+  RegionExecuteDefinitionRequest execute_definition = 12;
+}
+
+message RaftResponseHeader {
+  // region_id is the ID of the region which sent the response.
+  uint64 region_id = 1;
+  // replica_id is the ID of the replica which sent the response.
+  uint64 replica_id = 2;
+  // raft_term is the raft term when the request was applied.
+  uint64 raft_term = 3;
+}
+
+message RegionRangeRequest {
+  bytes key = 1;
+  bytes range_end = 2;
+  int64 limit = 3;
+}
+
+message RegionRangeResponse {
+  RaftResponseHeader header = 1;
+  repeated KeyValue kvs = 2;
+}
+
+message RegionPutRequest {
+  bytes key = 1;
+  bytes value = 2;
+  bool is_sync = 3;
+}
+
+message RegionPutResponse {
+  RaftResponseHeader header = 1;
+  KeyValue preKv = 2;
+}
+
+message RegionDeleteRequest {
+  bytes key = 1;
+  bool is_sync = 2;
+}
+
+message RegionDeleteResponse {
+  RaftResponseHeader header = 1;
+  KeyValue preKv = 2;
+}
+
+message RegionDeployDefinitionRequest {
+  olivepb.Definition definition = 1;
+}
+
+message RegionDeployDefinitionResponse {}
+
+message RegionExecuteDefinitionRequest {
+  olivepb.ProcessInstance process_instance = 1;
+}
+
+message RegionExecuteDefinitionResponse {}
