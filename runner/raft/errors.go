@@ -17,5 +17,11 @@ package raft
 import "errors"
 
 var (
-	ErrStopped = errors.New("target has stopped; skipping request")
+	ErrStopped                = errors.New("region has stopped; skipping request")
+	ErrCanceled               = errors.New("region: request cancelled")
+	ErrTimeout                = errors.New("region: request timed out")
+	ErrTimeoutDueToLeaderFail = errors.New("region: request timed out, possibly due to previous leader failure")
+	ErrRequestQuery           = errors.New("region: request is invalid query")
+	ErrTooManyRequests        = errors.New("region: too many requests")
+	ErrProcessExecuted        = errors.New("region: process already executed")
 )

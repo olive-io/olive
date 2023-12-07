@@ -114,7 +114,9 @@ func (r *Runner) start() error {
 	tx.UnsafeCreateBucket(buckets.Region)
 	tx.UnsafeCreateBucket(buckets.Key)
 	tx.Unlock()
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		r.Logger.Error("pebble commit", zap.Error(err))
+	}
 
 	r.pr, err = r.register()
 	if err != nil {
@@ -139,13 +141,12 @@ func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher
 	}
 	raftAddr := listenPeerURL.Host
 
-	cc := raft.Config{
-		DataDir:            r.RegionDir(),
-		RaftAddress:        raftAddr,
-		HeartbeatMs:        r.HeartbeatMs,
-		RaftRTTMillisecond: r.RaftRTTMillisecond,
-		Logger:             r.Logger,
-	}
+	cc := raft.NewConfig()
+	cc.DataDir = r.RegionDir()
+	cc.RaftAddress = raftAddr
+	cc.HeartbeatMs = r.HeartbeatMs
+	cc.RaftRTTMillisecond = r.RaftRTTMillisecond
+	cc.Logger = r.Logger
 
 	controller, err := raft.NewController(r.ctx, cc, r.be, r.pr)
 	if err != nil {
@@ -405,7 +406,7 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 		return
 	}
 
-	if err := r.controller.DeployDefinition(ctx, definition); err != nil {
+	if err = r.controller.DeployDefinition(ctx, definition); err != nil {
 		r.Logger.Error("definition deploy",
 			zap.String("id", definition.Id),
 			zap.Uint64("version", definition.Version),
@@ -429,7 +430,7 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 		return
 	}
 
-	if err := r.controller.ExecuteDefinition(ctx, process); err != nil {
+	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
 		r.Logger.Error("execute definition",
 			zap.String("id", process.DefinitionId),
 			zap.Uint64("version", process.DefinitionVersion),

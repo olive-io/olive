@@ -20,9 +20,12 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
+
+var noPrefixEnd = []byte{0}
 
 func warnOfExpensiveRequest(lg *zap.Logger, slowApplies prometheus.Counter, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, respMsg proto.Message, err error) {
 	if time.Since(now) <= warningApplyDuration {
@@ -50,6 +53,17 @@ func warnOfFailedRequest(lg *zap.Logger, now time.Time, reqStringer fmt.Stringer
 	)
 }
 
+func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, slowApplies prometheus.Counter, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, rangeResponse *pb.RegionRangeResponse, err error) {
+	if time.Since(now) <= warningApplyDuration {
+		return
+	}
+	var resp string
+	if !isNil(rangeResponse) {
+		resp = fmt.Sprintf("range_response_count:%d size:%d", len(rangeResponse.Kvs), rangeResponse.XSize())
+	}
+	warnOfExpensiveGenericRequest(lg, slowApplies, warningApplyDuration, now, reqStringer, "read-only range ", resp, err)
+}
+
 // callers need make sure time has passed warningApplyDuration
 func warnOfExpensiveGenericRequest(lg *zap.Logger, slowApplies prometheus.Counter, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, prefix string, resp string, err error) {
 	lg.Warn(
@@ -66,4 +80,27 @@ func warnOfExpensiveGenericRequest(lg *zap.Logger, slowApplies prometheus.Counte
 
 func isNil(msg proto.Message) bool {
 	return msg == nil || reflect.ValueOf(msg).IsNil()
+}
+
+func getPrefix(key []byte) []byte {
+	end := make([]byte, len(key))
+	copy(end, key)
+	for i := len(end) - 1; i >= 0; i-- {
+		if end[i] < 0xff {
+			end[i] = end[i] + 1
+			end = end[:i+1]
+			return end
+		}
+	}
+	// next prefix does not exist (e.g., 0xffff);
+	// default to WithFromKey policy
+	return noPrefixEnd
+}
+
+func rangePrefix(r *pb.RegionRangeRequest) {
+	if len(r.Key) == 0 {
+		r.Key, r.RangeEnd = []byte{0}, []byte{0}
+		return
+	}
+	r.RangeEnd = getPrefix(r.Key)
 }

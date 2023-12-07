@@ -22,14 +22,14 @@ import (
 )
 
 func (r *Region) heartbeat() {
-	duration := time.Duration(r.heartbeatMs) * time.Millisecond
+	duration := time.Duration(r.StatHeartBeatMs) * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 
 	for {
 		if !r.waitUtilLeader() {
 			select {
-			case <-r.stopping:
+			case <-r.stopc:
 				return
 			default:
 			}
@@ -41,7 +41,7 @@ func (r *Region) heartbeat() {
 	LOOP:
 		for {
 			select {
-			case <-r.stopping:
+			case <-r.stopc:
 				return
 			case <-r.changeC:
 				break LOOP

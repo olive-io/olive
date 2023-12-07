@@ -16,11 +16,8 @@ package raft
 
 import (
 	"context"
-	"fmt"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
-	"go.uber.org/zap"
 )
 
 var (
@@ -28,54 +25,22 @@ var (
 	processPrefix    = []byte("processes")
 )
 
-func (r *Region) deployDefinition(ctx context.Context, definition *pb.Definition) error {
-	isLeader, err := r.readyLeader(ctx)
+func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, error) {
+	resp := &pb.RegionDeployDefinitionResponse{}
+	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{DeployDefinition: req})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if !isLeader {
-		return nil
-	}
-
-	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Id))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", definition.Version)))
-
-	if kvs, _ := r.getRange(prefix, nil, 0); len(kvs) == 0 {
-		r.metric.definition.Add(1)
-	}
-
-	data, _ := definition.Marshal()
-	r.put(key, data, true)
-
-	return nil
+	resp = result.(*pb.RegionDeployDefinitionResponse)
+	return resp, nil
 }
 
-func (r *Region) executeDefinition(ctx context.Context, process *pb.ProcessInstance) error {
-	isLeader, err := r.readyLeader(ctx)
+func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, error) {
+	resp := &pb.RegionExecuteDefinitionResponse{}
+	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{ExecuteDefinition: req})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if !isLeader {
-		return nil
-	}
-
-	prefix := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId),
-		[]byte(fmt.Sprintf("%d", process.DefinitionVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", process.Id)))
-
-	v, _ := r.get(key)
-	if v != nil {
-		r.lg.Warn("process-instance be executed",
-			zap.String("definition", process.DefinitionId),
-			zap.Uint64("version", process.DefinitionVersion),
-			zap.Uint64("id", process.Id))
-		return nil
-	}
-
-	process.Status = pb.ProcessInstance_Prepare
-	data, _ := process.Marshal()
-	r.put(key, data, true)
-
-	return nil
+	resp = result.(*pb.RegionExecuteDefinitionResponse)
+	return resp, nil
 }

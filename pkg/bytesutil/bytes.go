@@ -29,12 +29,11 @@ func PathJoin(elem ...[]byte) []byte {
 	buf := make([]byte, 0, size+len(elem)-1)
 	for _, e := range elem {
 		if len(buf) > 0 || e != nil {
-			if len(buf) > 0 {
+			if len(buf) > 0 && buf[len(buf)-1] != '/' && e[0] != '/' {
 				buf = append(buf, '/')
 			}
 			buf = append(buf, e...)
 		}
 	}
-
 	return buf
 }

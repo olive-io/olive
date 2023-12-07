@@ -14,21 +14,28 @@
 
 package raft
 
-import "go.uber.org/zap"
+import (
+	"time"
+
+	"go.uber.org/zap"
+)
 
 const (
 	DefaultDataDir            = "raft"
 	DefaultRaftAddress        = "127.0.0.1:5380"
-	DefaultHeartbeatMs        = 2000
 	DefaultRaftRTTMillisecond = 500
+
+	DefaultRegionHeartbeatMs          = 2000
+	DefaultRegionWarningApplyDuration = 100 * time.Millisecond
+	DefaultRegionMaxRequestBytes      = 1.5 * 1024 * 1024
 )
 
 type Config struct {
 	DataDir string
 
 	RaftAddress        string
-	HeartbeatMs        int64
 	RaftRTTMillisecond uint64
+	HeartbeatMs        int64
 
 	Logger *zap.Logger
 }
@@ -37,10 +44,36 @@ func NewConfig() Config {
 	cfg := Config{
 		DataDir:            DefaultDataDir,
 		RaftAddress:        DefaultRaftAddress,
-		HeartbeatMs:        DefaultHeartbeatMs,
+		HeartbeatMs:        DefaultRegionHeartbeatMs,
 		RaftRTTMillisecond: DefaultRaftRTTMillisecond,
 		Logger:             zap.NewExample(),
 	}
 
 	return cfg
+}
+
+type RegionConfig struct {
+	RaftRTTMillisecond   uint64
+	ElectionRTT          uint64
+	HeartbeatRTT         uint64
+	StatHeartBeatMs      int64
+	WarningApplyDuration time.Duration
+	MaxRequestBytes      int64
+}
+
+func NewRegionConfig() RegionConfig {
+	return RegionConfig{
+		RaftRTTMillisecond:   DefaultRaftRTTMillisecond,
+		StatHeartBeatMs:      DefaultRegionHeartbeatMs,
+		WarningApplyDuration: DefaultRegionWarningApplyDuration,
+		MaxRequestBytes:      DefaultRegionMaxRequestBytes,
+	}
+}
+
+func (cfg RegionConfig) ElectionDuration() time.Duration {
+	return time.Duration(cfg.RaftRTTMillisecond*cfg.ElectionRTT) * time.Millisecond
+}
+
+func (cfg RegionConfig) ReqTimeout() time.Duration {
+	return 5*time.Second + 2*cfg.ElectionDuration()
 }

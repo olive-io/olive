@@ -147,11 +147,14 @@ func (c *Controller) listening() {
 			}
 			lead := leaderInfo.LeaderID
 			term := leaderInfo.Term
-			region.setLeader(lead)
 			region.setTerm(term)
+			oldLead := region.getLeader()
+			newLeader := oldLead != lead && lead != 0
+			region.setLeader(lead, newLeader)
 			if lead != 0 {
 				region.notifyAboutReady()
 			}
+			region.notifyAboutChange()
 			c.setRegion(region)
 		}
 	}
@@ -368,6 +371,12 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		WaitReady:           false,
 	}
 
+	rcfg := NewRegionConfig()
+	rcfg.RaftRTTMillisecond = c.RaftRTTMillisecond
+	rcfg.ElectionRTT = electRTT
+	rcfg.HeartbeatRTT = heartbeatRTT
+	rcfg.StatHeartBeatMs = c.HeartbeatMs
+
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -405,6 +414,8 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	}
 
 	region.updateInfo(ri)
+	region.updateConfig(rcfg)
+	region.Start()
 	c.setRegion(region)
 
 	return region, nil
@@ -429,7 +440,8 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 	c.Logger.Info("definition deploy",
 		zap.String("id", definition.Id),
 		zap.Uint64("version", definition.Version))
-	if err := region.deployDefinition(ctx, definition); err != nil {
+	req := &pb.RegionDeployDefinitionRequest{Definition: definition}
+	if _, err := region.DeployDefinition(ctx, req); err != nil {
 		return err
 	}
 
@@ -453,9 +465,13 @@ func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.Process
 	c.Logger.Info("definition executed",
 		zap.String("id", instance.DefinitionId),
 		zap.Uint64("version", instance.DefinitionVersion))
-	if err := region.executeDefinition(ctx, instance); err != nil {
+
+	req := &pb.RegionExecuteDefinitionRequest{ProcessInstance: instance}
+	resp, err := region.ExecuteDefinition(ctx, req)
+	if err != nil {
 		return err
 	}
+	*instance = *resp.ProcessInstance
 
 	return nil
 }

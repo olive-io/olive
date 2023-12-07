@@ -15,10 +15,10 @@
 package raft
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"path"
 	"sync"
 	"sync/atomic"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
+	"github.com/gogo/protobuf/proto"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -33,13 +34,22 @@ import (
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"go.etcd.io/etcd/pkg/v3/idutil"
+	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 )
 
 var (
-	appliedIndex  = []byte("applied_index")
-	defaultEndKey = []byte("\xff")
+	appliedIndex = []byte("applied_index")
+)
+
+const (
+	// In the health case, there might be a small gap (10s of entries) between
+	// the applied index and committed index.
+	// However, if the committed entries are very heavy to apply, the gap might grow.
+	// We should stop accepting new proposals if the gap growing to a certain point.
+	maxGapBetweenApplyAndCommitIndex = 5000
+	traceThreshold                   = 100 * time.Millisecond
 )
 
 func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
@@ -47,12 +57,15 @@ func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
 }
 
 type Region struct {
+	RegionConfig
+
 	id       uint64
 	memberId uint64
 
 	lg *zap.Logger
 
-	w        wait.Wait
+	applyW   wait.Wait
+	commitW  wait.Wait
 	openWait wait.Wait
 
 	cc *Client
@@ -67,49 +80,101 @@ type Region struct {
 
 	processQ *queue.SyncPriorityQueue[*pb.ProcessInstance]
 
+	applyBase Applier
+
 	applied   uint64
 	committed uint64
 	term      uint64
 	leader    uint64
 
-	// config
-	heartbeatMs          int64
-	warningApplyDuration time.Duration
-
 	changeCMu sync.RWMutex
 	changeC   chan struct{}
+
+	leadTimeMu      sync.RWMutex
+	leadElectedTime time.Time
 
 	readyCMu sync.RWMutex
 	readyC   chan struct{}
 
-	stopping <-chan struct{}
+	stopc <-chan struct{}
 }
 
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
+
 	region := &Region{
-		id:          shardId,
-		memberId:    nodeId,
-		lg:          c.Logger,
-		w:           wait.New(),
-		openWait:    c.regionW,
-		cc:          c.NewClient(),
-		reqIDGen:    reqIDGen,
-		be:          c.be,
-		processQ:    processQ,
-		heartbeatMs: c.HeartbeatMs,
-		regionInfo:  &pb.Region{},
-		changeC:     make(chan struct{}),
-		readyC:      make(chan struct{}),
-		stopping:    c.stopping,
+		id:         shardId,
+		memberId:   nodeId,
+		lg:         c.Logger,
+		openWait:   c.regionW,
+		applyW:     wait.New(),
+		commitW:    wait.New(),
+		cc:         c.NewClient(),
+		reqIDGen:   reqIDGen,
+		be:         c.be,
+		processQ:   processQ,
+		regionInfo: &pb.Region{},
+		changeC:    make(chan struct{}),
+		readyC:     make(chan struct{}),
+		stopc:      make(<-chan struct{}, 1),
 	}
+
+	applyBase := region.newApplier()
+	region.applyBase = applyBase
+
 	c.setRegion(region)
 
 	return region
 }
 
-func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
+func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error) {
+	trace := traceutil.New("range",
+		r.lg,
+		traceutil.Field{Key: "range_begin", Value: string(req.Key)},
+		traceutil.Field{Key: "range_end", Value: string(req.RangeEnd)},
+	)
+	ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
+
+	var resp *pb.RegionRangeResponse
+	var err error
+	defer func(start time.Time) {
+		warnOfExpensiveReadOnlyRangeRequest(r.lg, r.metric.slowApplies, r.WarningApplyDuration, start, req, resp, err)
+		if resp != nil {
+			trace.AddField(
+				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
+			)
+		}
+		trace.LogIfLong(traceThreshold)
+	}(time.Now())
+
+	result, err := r.raftQuery(ctx, pb.RaftInternalRequest{Range: req})
+	if err != nil {
+		return nil, err
+	}
+	resp = result.(*pb.RegionRangeResponse)
+	return resp, err
+}
+
+func (r *Region) Put(ctx context.Context, req *pb.RegionPutRequest) (*pb.RegionPutResponse, error) {
+	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
+	resp, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{Put: req})
+	if err != nil {
+		return nil, err
+	}
+	return resp.(*pb.RegionPutResponse), nil
+}
+
+func (r *Region) DeleteRange(ctx context.Context, req *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error) {
+	resp, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{Delete: req})
+	if err != nil {
+		return nil, err
+	}
+	return resp.(*pb.RegionDeleteResponse), nil
+}
+
+func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
+	r.stopc = stopc
 	applyIndex, err := r.readApplyIndex()
 	if err != nil {
 		r.openWait.Trigger(r.id, err)
@@ -126,7 +191,7 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	r.openWait.Trigger(r.id, r)
 
 	dm := make(map[string]struct{})
-	kvs, _ := r.getRange(definitionPrefix, defaultEndKey, 0)
+	kvs, _ := r.getRange(definitionPrefix, getPrefix(definitionPrefix), 0)
 	for _, kv := range kvs {
 		definitionId := path.Dir(string(kv.Key))
 		if _, ok := dm[definitionId]; !ok {
@@ -135,11 +200,13 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 	}
 	r.metric.definition.Add(float64(len(dm)))
 
-	kvs, _ = r.getRange(processPrefix, defaultEndKey, 0)
+	kvs, _ = r.getRange(processPrefix, getPrefix(processPrefix), 0)
 	for _, kv := range kvs {
 		proc := new(pb.ProcessInstance)
 		err = proc.Unmarshal(kv.Value)
 		if err != nil {
+			r.lg.Error("unmarshal process instance", zap.Error(err))
+			_ = r.del(kv.Key, true)
 			continue
 		}
 		if proc.Status == pb.ProcessInstance_Unknown ||
@@ -155,8 +222,6 @@ func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
 		r.processQ.Push(proc)
 	}
 
-	go r.heartbeat()
-	go r.run()
 	return applyIndex, nil
 }
 
@@ -167,7 +232,7 @@ func (r *Region) waitUtilLeader() bool {
 		}
 
 		select {
-		case <-r.stopping:
+		case <-r.stopc:
 			return false
 		case <-r.changeNotify():
 		}
@@ -186,84 +251,160 @@ func (r *Region) readyLeader(ctx context.Context) (bool, error) {
 		select {
 		case <-ctx.Done():
 			return false, context.Canceled
-		case <-r.stopping:
+		case <-r.stopc:
 			return false, errors.Wrap(ErrStopped, "ready region leader")
 		case <-r.changeNotify():
 		}
 	}
 }
 
-func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
-	var committed uint64
-	if length := len(entries); length > 0 {
-		committed = entries[length-1].Index
-		r.setCommitted(committed)
+func (r *Region) raftQuery(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
+	data, err := req.Marshal()
+	if err != nil {
+		return nil, err
 	}
 
-	for i := range entries {
-		ent := entries[i]
-		r.applyEntry(ent)
+	out, err := r.cc.Read(ctx, r.getID(), data)
+	if err != nil {
+		return nil, err
+	}
+	result := out.(*applyResult)
+	if result.err != nil {
+		return nil, result.err
+	}
+	if startTime, ok := ctx.Value(traceutil.StartTimeKey).(time.Time); ok && result.trace != nil {
+		applyStart := result.trace.GetStartTime()
+		// The trace object is created in apply. Here reset the start time to trace
+		// the raft request time by the difference between the request start time
+		// and apply start time
+		result.trace.SetStartTime(startTime)
+		result.trace.InsertStep(0, applyStart, "process raft query")
+		result.trace.LogIfLong(traceThreshold)
+	}
+	return result.resp, nil
+}
+
+func (r *Region) raftRequestOnce(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
+	result, err := r.processInternalRaftRequestOnce(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if result.err != nil {
+		return nil, result.err
+	}
+	if startTime, ok := ctx.Value(traceutil.StartTimeKey).(time.Time); ok && result.trace != nil {
+		applyStart := result.trace.GetStartTime()
+		// The trace object is created in apply. Here reset the start time to trace
+		// the raft request time by the difference between the request start time
+		// and apply start time
+		result.trace.SetStartTime(startTime)
+		result.trace.InsertStep(0, applyStart, "process raft request")
+		result.trace.LogIfLong(traceThreshold)
+	}
+	return result.resp, nil
+}
+
+func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req pb.RaftInternalRequest) (*applyResult, error) {
+	ai := r.getApplied()
+	ci := r.getCommitted()
+	if ci > ai+maxGapBetweenApplyAndCommitIndex {
+		return nil, ErrTooManyRequests
 	}
 
-	return entries, nil
+	req.Header = &pb.RaftHeader{
+		ID: r.reqIDGen.Next(),
+	}
+	data, err := req.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	id := req.Header.ID
+	ch := r.applyW.Register(id)
+
+	cctx, cancel := context.WithTimeout(ctx, r.ReqTimeout())
+	defer cancel()
+
+	start := time.Now()
+	_, err = r.cc.Propose(cctx, r.getID(), data)
+	if err != nil {
+		r.applyW.Trigger(id, nil)
+		return nil, err
+	}
+
+	select {
+	case x := <-ch:
+		return x.(*applyResult), nil
+	case <-cctx.Done():
+		r.applyW.Trigger(id, nil)
+		return nil, r.parseProposeCtxErr(err, start)
+	case <-r.stopc:
+		return nil, ErrStopped
+	}
+}
+
+func (r *Region) parseProposeCtxErr(err error, start time.Time) error {
+	switch err {
+	case context.Canceled:
+		return ErrCanceled
+
+	case context.DeadlineExceeded:
+		r.leadTimeMu.RLock()
+		curLeadElected := r.leadElectedTime
+		r.leadTimeMu.RUnlock()
+		prevLeadLost := curLeadElected.Add(-2 * r.ElectionDuration())
+		if start.After(prevLeadLost) && start.Before(curLeadElected) {
+			return ErrTimeoutDueToLeaderFail
+		}
+		return ErrTimeout
+
+	default:
+		return err
+	}
 }
 
 func (r *Region) applyEntry(entry sm.Entry) {
 	index := entry.Index
-
 	r.writeApplyIndex(index)
 	if index == r.getCommitted() {
-		r.w.Trigger(r.id, nil)
-	}
-}
-
-func (r *Region) Lookup(query interface{}) (interface{}, error) {
-	return query, nil
-}
-
-func (r *Region) Sync() error {
-	return nil
-}
-
-func (r *Region) PrepareSnapshot() (interface{}, error) {
-	snap := r.be.Snapshot()
-	return snap, nil
-}
-
-func (r *Region) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
-	snap := ctx.(backend.ISnapshot)
-	prefix := bytesutil.PathJoin(buckets.Key.Name(), r.putPrefix())
-	_, err := snap.WriteTo(writer, prefix)
-	if err != nil {
-		return err
+		r.commitW.Trigger(r.id, nil)
 	}
 
-	return nil
-}
-
-func (r *Region) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
-	err := r.be.Recover(reader)
-	if err != nil {
-		return err
+	if len(entry.Cmd) == 0 {
+		return
 	}
 
-	applyIndex, err := r.readApplyIndex()
-	if err != nil {
-		return err
+	var raftReq pb.RaftInternalRequest
+	if err := raftReq.Unmarshal(entry.Cmd); err != nil {
+		r.lg.Warn("unmarshal entry cmd", zap.Uint64("index", entry.Index), zap.Error(err))
+		return
 	}
-	r.setApplied(applyIndex)
 
-	return nil
+	var ar *applyResult
+
+	ctx := context.Background()
+	id := raftReq.Header.ID
+	need := r.applyW.IsRegistered(id)
+	if need {
+		ar = r.applyBase.Apply(ctx, &raftReq)
+	}
+
+	if ar == nil {
+		return
+	}
+
+	r.applyW.Trigger(id, ar)
 }
 
-func (r *Region) Close() error {
-	return nil
+func (r *Region) Start() {
+	go r.heartbeat()
+	go r.run()
 }
 
 func (r *Region) run() {
 	for {
 		select {
-		case <-r.stopping:
+		case <-r.stopc:
 			return
 		}
 	}
@@ -301,7 +442,7 @@ func (r *Region) get(key []byte) (*pb.KeyValue, error) {
 		return nil, err
 	}
 	kv := &pb.KeyValue{
-		Key:   key,
+		Key:   bytes.TrimPrefix(key, r.putPrefix()),
 		Value: value,
 	}
 
@@ -324,7 +465,7 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue,
 	kvs := make([]*pb.KeyValue, len(keys))
 	for i, key := range keys {
 		kvs[i] = &pb.KeyValue{
-			Key:   key,
+			Key:   bytes.TrimPrefix(key, r.putPrefix()),
 			Value: values[i],
 		}
 	}
@@ -400,6 +541,10 @@ func (r *Region) updateInfo(info *pb.Region) {
 	r.regionInfo = info
 }
 
+func (r *Region) updateConfig(config RegionConfig) {
+	r.RegionConfig = config
+}
+
 func (r *Region) getInfo() *pb.Region {
 	r.rimu.RLock()
 	defer r.rimu.RUnlock()
@@ -438,8 +583,14 @@ func (r *Region) getTerm() uint64 {
 	return atomic.LoadUint64(&r.term)
 }
 
-func (r *Region) setLeader(leader uint64) {
+func (r *Region) setLeader(leader uint64, newLead bool) {
 	atomic.StoreUint64(&r.leader, leader)
+	if newLead && r.isLeader() {
+		t := time.Now()
+		r.leadTimeMu.Lock()
+		r.leadElectedTime = t
+		r.leadTimeMu.Unlock()
+	}
 }
 
 func (r *Region) getLeader() uint64 {
