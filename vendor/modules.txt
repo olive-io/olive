@@ -13,6 +13,9 @@ github.com/armon/go-metrics
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
+# github.com/bits-and-blooms/bitset v1.8.0
+## explicit; go 1.16
+github.com/bits-and-blooms/bitset
 # github.com/cenkalti/backoff/v4 v4.1.1
 ## explicit; go 1.13
 github.com/cenkalti/backoff/v4
@@ -269,9 +272,44 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.2
 ## explicit; go 1.12
 github.com/modern-go/reflect2
+# github.com/muyo/sno v1.2.1
+## explicit; go 1.14
+github.com/muyo/sno
+github.com/muyo/sno/internal
 # github.com/olive-io/bpmn v0.6.0
 ## explicit; go 1.18
+github.com/olive-io/bpmn/data
+github.com/olive-io/bpmn/errors
+github.com/olive-io/bpmn/event
+github.com/olive-io/bpmn/expression
+github.com/olive-io/bpmn/flow
+github.com/olive-io/bpmn/flow/flow_interface
+github.com/olive-io/bpmn/flow_node
+github.com/olive-io/bpmn/flow_node/activity
+github.com/olive-io/bpmn/flow_node/activity/business_rule
+github.com/olive-io/bpmn/flow_node/activity/call
+github.com/olive-io/bpmn/flow_node/activity/receive
+github.com/olive-io/bpmn/flow_node/activity/script
+github.com/olive-io/bpmn/flow_node/activity/send
+github.com/olive-io/bpmn/flow_node/activity/service
+github.com/olive-io/bpmn/flow_node/activity/subprocess
+github.com/olive-io/bpmn/flow_node/activity/task
+github.com/olive-io/bpmn/flow_node/activity/user
+github.com/olive-io/bpmn/flow_node/event/catch
+github.com/olive-io/bpmn/flow_node/event/end
+github.com/olive-io/bpmn/flow_node/event/start
+github.com/olive-io/bpmn/flow_node/gateway
+github.com/olive-io/bpmn/flow_node/gateway/event_based
+github.com/olive-io/bpmn/flow_node/gateway/exclusive
+github.com/olive-io/bpmn/flow_node/gateway/inclusive
+github.com/olive-io/bpmn/flow_node/gateway/parallel
+github.com/olive-io/bpmn/process
+github.com/olive-io/bpmn/process/instance
 github.com/olive-io/bpmn/schema
+github.com/olive-io/bpmn/sequence_flow
+github.com/olive-io/bpmn/tools/id
+github.com/olive-io/bpmn/tools/logic
+github.com/olive-io/bpmn/tracing
 # github.com/pierrec/lz4/v4 v4.1.14
 ## explicit; go 1.14
 github.com/pierrec/lz4/v4

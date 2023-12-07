@@ -239,7 +239,7 @@ func (r *Region) waitUtilLeader() bool {
 	}
 }
 
-func (r *Region) readyLeader(ctx context.Context) (bool, error) {
+func (r *Region) waitLeader(ctx context.Context) (bool, error) {
 	for {
 		if r.isLeader() {
 			return true, nil
@@ -252,7 +252,7 @@ func (r *Region) readyLeader(ctx context.Context) (bool, error) {
 		case <-ctx.Done():
 			return false, context.Canceled
 		case <-r.stopc:
-			return false, errors.Wrap(ErrStopped, "ready region leader")
+			return false, ErrStopped
 		case <-r.changeNotify():
 		}
 	}
@@ -398,6 +398,7 @@ func (r *Region) applyEntry(entry sm.Entry) {
 
 func (r *Region) Start() {
 	go r.heartbeat()
+	go r.scheduleCycle()
 	go r.run()
 }
 

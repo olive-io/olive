@@ -212,6 +212,7 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 		return nil, trace, err
 	}
 	resp.ProcessInstance = process
+	a.r.processQ.Set(process)
 
 	return resp, trace, nil
 }

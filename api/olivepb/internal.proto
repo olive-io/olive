@@ -166,7 +166,7 @@ message ProcessInstance {
   string name = 2;
   string definitionId = 3;
   uint64 definitionVersion = 4;
-  string definitionContent = 5;
+  bytes definitionContent = 5;
   map<string, string> headers = 6;
   map<string, bytes> properties = 7;
 
