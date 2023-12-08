@@ -130,6 +130,7 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 
 	options := []instance.Option{
 		instance.WithVariables(variables),
+		instance.WithDataObjects(make(map[string]any)),
 	}
 	for _, processElement := range *definitions.Processes() {
 		proc := bp.New(&processElement, definitions)
@@ -147,6 +148,15 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 					trace := tracing.Unwrap(<-traces)
 					switch trace := trace.(type) {
 					case activity.ActiveTaskTrace:
+
+						//switch tt := trace.(type) {
+						//case *service.ActiveTrace:
+						//	//ctx := tt.Context
+						//	//headers := tt.Headers
+						//	//properties := tt.Properties
+						//	//dataObjects := tt.DataObjects
+						//}
+
 						logger.Infof("%v", trace)
 						trace.Execute()
 					case tracing.ErrorTrace:
