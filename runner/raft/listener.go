@@ -14,20 +14,21 @@
 
 package raft
 
-import "github.com/lni/dragonboat/v4/raftio"
+import (
+	"github.com/lni/dragonboat/v4/raftio"
+	"github.com/olive-io/bpmn/tracing"
+)
 
 type eventListener struct {
-	ch chan raftio.LeaderInfo
+	tracer tracing.ITracer
 }
 
-func newEventListener(ch chan raftio.LeaderInfo) *eventListener {
-	return &eventListener{ch: ch}
+func newEventListener(tracer tracing.ITracer) *eventListener {
+	return &eventListener{tracer: tracer}
 }
 
 func (l *eventListener) LeaderUpdated(info raftio.LeaderInfo) {
-	select {
-	case l.ch <- info:
-	}
+	l.tracer.Trace(leaderTrace(info))
 }
 
 type systemListener struct{}

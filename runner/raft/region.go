@@ -28,6 +28,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/gogo/protobuf/proto"
 	sm "github.com/lni/dragonboat/v4/statemachine"
+	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/pkg/queue"
@@ -68,7 +69,7 @@ type Region struct {
 	commitW  wait.Wait
 	openWait wait.Wait
 
-	cc *Client
+	tracer tracing.ITracer
 
 	reqIDGen *idutil.Generator
 
@@ -102,15 +103,15 @@ type Region struct {
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
-
+	tracer := c.tracer
 	region := &Region{
 		id:         shardId,
 		memberId:   nodeId,
 		lg:         c.Logger,
 		openWait:   c.regionW,
+		tracer:     tracer,
 		applyW:     wait.New(),
 		commitW:    wait.New(),
-		cc:         c.NewClient(),
 		reqIDGen:   reqIDGen,
 		be:         c.be,
 		processQ:   processQ,
@@ -259,29 +260,29 @@ func (r *Region) waitLeader(ctx context.Context) (bool, error) {
 }
 
 func (r *Region) raftQuery(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
-	data, err := req.Marshal()
-	if err != nil {
-		return nil, err
-	}
+	trace := newReadTrace(ctx, r.getID(), &req)
+	defer trace.Close()
+	r.tracer.Trace(trace)
 
-	out, err := r.cc.Read(ctx, r.getID(), data)
-	if err != nil {
+	arch, ech := trace.Trigger()
+	select {
+	case err := <-ech:
 		return nil, err
+	case result := <-arch:
+		if result.err != nil {
+			return nil, result.err
+		}
+		if startTime, ok := ctx.Value(traceutil.StartTimeKey).(time.Time); ok && result.trace != nil {
+			applyStart := result.trace.GetStartTime()
+			// The trace object is created in apply. Here reset the start time to trace
+			// the raft request time by the difference between the request start time
+			// and apply start time
+			result.trace.SetStartTime(startTime)
+			result.trace.InsertStep(0, applyStart, "process raft query")
+			result.trace.LogIfLong(traceThreshold)
+		}
+		return result.resp, nil
 	}
-	result := out.(*applyResult)
-	if result.err != nil {
-		return nil, result.err
-	}
-	if startTime, ok := ctx.Value(traceutil.StartTimeKey).(time.Time); ok && result.trace != nil {
-		applyStart := result.trace.GetStartTime()
-		// The trace object is created in apply. Here reset the start time to trace
-		// the raft request time by the difference between the request start time
-		// and apply start time
-		result.trace.SetStartTime(startTime)
-		result.trace.InsertStep(0, applyStart, "process raft query")
-		result.trace.LogIfLong(traceThreshold)
-	}
-	return result.resp, nil
 }
 
 func (r *Region) raftRequestOnce(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
@@ -326,8 +327,9 @@ func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req pb.Raft
 	defer cancel()
 
 	start := time.Now()
-	_, err = r.cc.Propose(cctx, r.getID(), data)
-	if err != nil {
+	ech := make(chan error, 1)
+	r.tracer.Trace(newProposeTrace(cctx, r.getID(), data, ech))
+	if err = <-ech; err != nil {
 		r.applyW.Trigger(id, nil)
 		return nil, err
 	}

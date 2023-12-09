@@ -24,7 +24,7 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
-	"github.com/lni/dragonboat/v4/raftio"
+	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
@@ -42,16 +42,13 @@ type Controller struct {
 
 	nh *dragonboat.NodeHost
 
-	leaderCh chan raftio.LeaderInfo
-
 	be      backend.IBackend
 	regionW wait.Wait
 
-	rsw *regionStatWatcher
+	tracer tracing.ITracer
 
 	reqId *idutil.Generator
 	reqW  wait.Wait
-	reqCh chan chunk
 
 	pr *pb.Runner
 
@@ -68,8 +65,8 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, pr *pb.
 	}
 	lg := cfg.Logger
 
-	leaderCh := make(chan raftio.LeaderInfo, 100)
-	el := newEventListener(leaderCh)
+	tracer := tracing.NewTracer(ctx)
+	el := newEventListener(tracer)
 
 	sl := newSystemListener()
 
@@ -101,24 +98,23 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, pr *pb.
 	// deep copy *pb.Runner
 	runner := pr.Clone()
 
+	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
 	ctx, cancel := context.WithCancel(ctx)
 	controller := &Controller{
-		Config:   cfg,
-		ctx:      ctx,
-		cancel:   cancel,
-		nh:       nh,
-		leaderCh: leaderCh,
-		be:       be,
-		regionW:  wait.New(),
-		rsw:      newRegionStatWatcher(),
-		reqId:    idutil.NewGenerator(0, time.Now()),
-		reqW:     wait.New(),
-		reqCh:    make(chan chunk, 128),
-		pr:       runner,
-		regions:  make(map[uint64]*Region),
+		Config:  cfg,
+		ctx:     ctx,
+		cancel:  cancel,
+		nh:      nh,
+		tracer:  tracer,
+		be:      be,
+		regionW: wait.New(),
+		reqId:   idutil.NewGenerator(0, time.Now()),
+		reqW:    wait.New(),
+		pr:      runner,
+		regions: make(map[uint64]*Region),
 	}
 
-	go controller.listening()
+	go controller.watchTrace(traces)
 	return controller, nil
 }
 
@@ -135,27 +131,41 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	return nil
 }
 
-func (c *Controller) listening() {
+func (c *Controller) watchTrace(traces <-chan tracing.ITrace) {
 	for {
 		select {
 		case <-c.stopping:
 			return
-		case leaderInfo := <-c.leaderCh:
-			region, ok := c.popRegion(leaderInfo.ShardID)
-			if !ok {
-				break
+		case trace := <-traces:
+			switch tt := trace.(type) {
+			case leaderTrace:
+				region, ok := c.popRegion(tt.ShardID)
+				if !ok {
+					break
+				}
+				lead := tt.LeaderID
+				term := tt.Term
+				region.setTerm(term)
+				oldLead := region.getLeader()
+				newLeader := oldLead != lead && lead != 0
+				region.setLeader(lead, newLeader)
+				if lead != 0 {
+					region.notifyAboutReady()
+				}
+				region.notifyAboutChange()
+				c.setRegion(region)
+
+			case *readTrace:
+				ctx, region, query := tt.ctx, tt.region, tt.query
+				result, err := c.nh.SyncRead(ctx, region, query)
+				tt.Write(result.(*applyResult), err)
+
+			case *proposeTrace:
+				ctx, region, cmd := tt.ctx, tt.region, tt.data
+				session := c.nh.GetNoOPSession(region)
+				_, err := c.nh.SyncPropose(ctx, session, cmd)
+				tt.Trigger(err)
 			}
-			lead := leaderInfo.LeaderID
-			term := leaderInfo.Term
-			region.setTerm(term)
-			oldLead := region.getLeader()
-			newLeader := oldLead != lead && lead != 0
-			region.setLeader(lead, newLeader)
-			if lead != 0 {
-				region.notifyAboutReady()
-			}
-			region.notifyAboutChange()
-			c.setRegion(region)
 		}
 	}
 }
@@ -166,47 +176,20 @@ func (c *Controller) run() {
 		select {
 		case <-c.stopping:
 			return
-		case ch := <-c.reqCh:
-			switch tt := ch.(type) {
-			case *regionStatC:
-				_, value := tt.unwrap()
-				body := value.(*pb.RegionStat)
-				c.rsw.Trigger(body)
-				tt.write(struct{}{})
-			case *raftReadC:
-				ctx, value := tt.unwrap()
-				body := value.(*raftQuery)
-				result, err := c.nh.SyncRead(ctx, body.region, body.query)
-				if err != nil {
-					tt.failure(err)
-				} else {
-					tt.write(result)
-				}
-			case *raftProposeC:
-				ctx, value := tt.unwrap()
-				body := value.(*raftPropose)
-				session := c.nh.GetNoOPSession(body.region)
-				result, err := c.nh.SyncPropose(ctx, session, body.cmd)
-				if err != nil {
-					tt.failure(err)
-				} else {
-					tt.write(result)
-				}
-			}
 		}
 	}
 }
 
 func (c *Controller) Stop() {
 	c.nh.Close()
-	_ = c.rsw.close()
+	c.cancel()
+	c.tracer.Done()
 
 	select {
 	case <-c.done:
 	default:
 		close(c.done)
 	}
-	c.cancel()
 }
 
 func (c *Controller) RunnerStat() ([]uint64, []string) {
@@ -239,8 +222,9 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 	return regions, leaders
 }
 
-func (c *Controller) GetRegionWatcher() RegionStatWatcher {
-	return c.rsw
+func (c *Controller) SubscribeTrace() <-chan tracing.ITrace {
+	traceChannel := make(chan tracing.ITrace, 10)
+	return c.tracer.SubscribeChannel(traceChannel)
 }
 
 func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error {

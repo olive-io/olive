@@ -50,6 +50,9 @@ func (r *Region) Lookup(query interface{}) (interface{}, error) {
 	}
 
 	ar := r.applyBase.Apply(context.TODO(), raftReq)
+	if ar.err != nil {
+		return nil, ar.err
+	}
 	return ar, nil
 }
 

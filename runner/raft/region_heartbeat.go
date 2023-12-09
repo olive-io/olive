@@ -15,7 +15,6 @@
 package raft
 
 import (
-	"context"
 	"time"
 
 	pb "github.com/olive-io/olive/api/olivepb"
@@ -47,17 +46,16 @@ func (r *Region) heartbeat() {
 				break LOOP
 			case <-timer.C:
 				timer.Reset(duration)
-				regionStat := r.stat()
-				_ = r.cc.regionStat(context.Background(), regionStat)
+				r.tracer.Trace(RegionStatTrace(r.stat()))
 			}
 		}
 	}
 }
 
-func (r *Region) stat() *pb.RegionStat {
+func (r *Region) stat() pb.RegionStat {
 	info := r.getInfo()
 	replicas := int32(len(info.Replicas))
-	rs := &pb.RegionStat{
+	rs := pb.RegionStat{
 		Id:                 r.getID(),
 		Leader:             r.getLeader(),
 		Term:               r.getTerm(),

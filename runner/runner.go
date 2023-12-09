@@ -23,6 +23,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
+	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/runtime"
@@ -46,7 +47,7 @@ type Runner struct {
 	be backend.IBackend
 
 	controller *raft.Controller
-	rch        raft.RegionStatWatchChan
+	traces     <-chan tracing.ITrace
 	pr         *pb.Runner
 
 	stopping chan struct{}
@@ -123,18 +124,16 @@ func (r *Runner) start() error {
 		return err
 	}
 
-	var rWatcher raft.RegionStatWatcher
-	r.controller, rWatcher, err = r.startRaftController()
+	r.controller, r.traces, err = r.startRaftController()
 	if err != nil {
 		return err
 	}
-	r.rch = rWatcher.Watch(r.ctx)
 
 	go r.run()
 	return nil
 }
 
-func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher, error) {
+func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
 	listenPeerURL, err := url.Parse(r.ListenPeerURL)
 	if err != nil {
 		return nil, nil, err
@@ -219,7 +218,7 @@ func (r *Runner) startRaftController() (*raft.Controller, raft.RegionStatWatcher
 	}
 
 	r.setRev(rev)
-	return controller, controller.GetRegionWatcher(), nil
+	return controller, controller.SubscribeTrace(), nil
 }
 
 func (r *Runner) watching() {

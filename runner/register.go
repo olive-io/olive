@@ -125,14 +125,18 @@ func (r *Runner) registry() {
 		select {
 		case <-r.stopping:
 			return
-		case stat := <-r.rch:
-			r.Logger.Debug("update region stat", zap.Stringer("stat", &stat))
+		case trace := <-r.traces:
+			switch tt := trace.(type) {
+			case raft.RegionStatTrace:
+				stat := pb.RegionStat(tt)
+				r.Logger.Debug("update region stat", zap.Stringer("stat", &stat))
 
-			key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
-			data, _ = stat.Marshal()
-			_, err = r.oct.Put(ctx, key, string(data))
-			if err != nil {
-				lg.Error("olive-runner update region stat", zap.Error(err))
+				key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
+				data, _ = stat.Marshal()
+				_, err = r.oct.Put(ctx, key, string(data))
+				if err != nil {
+					lg.Error("olive-runner update region stat", zap.Error(err))
+				}
 			}
 		case <-ticker.C:
 			stat := r.processRunnerStat()
