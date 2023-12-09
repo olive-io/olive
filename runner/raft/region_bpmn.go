@@ -25,7 +25,7 @@ import (
 	"github.com/olive-io/bpmn/flow"
 	"github.com/olive-io/bpmn/flow_node/activity"
 	bp "github.com/olive-io/bpmn/process"
-	"github.com/olive-io/bpmn/process/instance"
+	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
@@ -121,58 +121,65 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	r.metric.runningDefinition.Inc()
 	defer r.metric.runningDefinition.Dec()
 
-	logger := r.lg.Sugar()
-
 	variables := make(map[string]any)
 	for key, value := range process.Properties {
 		variables[key] = value
 	}
 
-	options := []instance.Option{
-		instance.WithVariables(variables),
-		instance.WithDataObjects(make(map[string]any)),
+	ctx := context.Background()
+	options := []bpi.Option{
+		bpi.WithVariables(variables),
+		bpi.WithDataObjects(make(map[string]any)),
 	}
 	for _, processElement := range *definitions.Processes() {
-		proc := bp.New(&processElement, definitions)
-		if instance, err := proc.Instantiate(options...); err == nil {
-			traces := instance.Tracer.Subscribe()
-			ctx, cancel := context.WithCancel(context.Background())
-			err = instance.StartAll(ctx)
-			if err != nil {
-				cancel()
-				logger.Errorf("failed to run the instance: %s", err)
+		r.scheduleProcess(ctx, definitions, &processElement, options)
+	}
+}
+
+func (r *Region) scheduleProcess(ctx context.Context, definitions *schema.Definitions, processElement *schema.Process, options []bpi.Option) {
+	logger := r.lg.Sugar()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	proc := bp.New(processElement, definitions)
+	inst, err := proc.Instantiate(options...)
+	if err != nil {
+		logger.Errorf("failed to instantiate the process: %s", err)
+		return
+	}
+	traces := inst.Tracer.Subscribe()
+	err = inst.StartAll(ctx)
+	if err != nil {
+		cancel()
+		logger.Errorf("failed to run the instance: %s", err)
+	}
+LOOP:
+	for {
+		select {
+		case <-r.changeNotify():
+		case trace := <-traces:
+			trace = tracing.Unwrap(trace)
+			switch trace := trace.(type) {
+			case activity.ActiveTaskTrace:
+
+				//switch tt := trace.(type) {
+				//case *service.ActiveTrace:
+				//	//ctx := tt.Context
+				//	//headers := tt.Headers
+				//	//properties := tt.Properties
+				//	//dataObjects := tt.DataObjects
+				//}
+
+				logger.Infof("%v", trace)
+				trace.Execute()
+			case tracing.ErrorTrace:
+				logger.Errorf("%v", trace)
+			case flow.CeaseFlowTrace:
+				break LOOP
+			default:
+				logger.Infof("%v", trace)
 			}
-			go func() {
-			LOOP:
-				for {
-					trace := tracing.Unwrap(<-traces)
-					switch trace := trace.(type) {
-					case activity.ActiveTaskTrace:
-
-						//switch tt := trace.(type) {
-						//case *service.ActiveTrace:
-						//	//ctx := tt.Context
-						//	//headers := tt.Headers
-						//	//properties := tt.Properties
-						//	//dataObjects := tt.DataObjects
-						//}
-
-						logger.Infof("%v", trace)
-						trace.Execute()
-					case tracing.ErrorTrace:
-						logger.Errorf("%v", trace)
-					case flow.CeaseFlowTrace:
-						break LOOP
-					default:
-						logger.Infof("%v", trace)
-					}
-				}
-			}()
-			instance.WaitUntilComplete(ctx)
-			instance.Tracer.Unsubscribe(traces)
-			cancel()
-		} else {
-			logger.Errorf("failed to instantiate the process: %s", err)
 		}
 	}
+	inst.WaitUntilComplete(ctx)
+	inst.Tracer.Unsubscribe(traces)
 }
