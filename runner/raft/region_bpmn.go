@@ -30,6 +30,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	"go.uber.org/zap"
 )
 
 var (
@@ -88,7 +89,7 @@ func (r *Region) scheduleCycle() {
 				if !ok {
 					break
 				}
-
+				
 				processInstance := x.(*pb.ProcessInstance)
 				go r.scheduleDefinition(processInstance)
 			}
@@ -126,60 +127,128 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		variables[key] = value
 	}
 
+	if len(*definitions.Processes()) == 0 {
+		return
+	}
+	processElement := (*definitions.Processes())[0]
+
 	ctx := context.Background()
 	options := []bpi.Option{
 		bpi.WithVariables(variables),
 		bpi.WithDataObjects(make(map[string]any)),
 	}
-	for _, processElement := range *definitions.Processes() {
-		r.scheduleProcess(ctx, definitions, &processElement, options)
-	}
+	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
 }
 
-func (r *Region) scheduleProcess(ctx context.Context, definitions *schema.Definitions, processElement *schema.Process, options []bpi.Option) {
-	logger := r.lg.Sugar()
+func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstance, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	r.metric.process.Inc()
+	defer r.metric.process.Dec()
+
+	var err error
+	if process.Status == pb.ProcessInstance_Waiting {
+		process.Status = pb.ProcessInstance_Running
+		process.StartTime = time.Now().Unix()
+		err = saveProcess(ctx, r, process)
+		if err != nil {
+			r.lg.Error("save process instance",
+				zap.Uint64("id", process.Id),
+				zap.Error(err))
+		}
+	}
+
+	finish := true
+	defer func() {
+		if !finish {
+			return
+		}
+
+		process.EndTime = time.Now().Unix()
+		process.Status = pb.ProcessInstance_Ok
+		if err != nil {
+			process.Status = pb.ProcessInstance_Fail
+			process.Message = err.Error()
+		}
+
+		err = saveProcess(ctx, r, process)
+		if err != nil {
+			r.lg.Error("save process instance",
+				zap.Uint64("id", process.Id),
+				zap.Error(err))
+		}
+	}()
+
 	proc := bp.New(processElement, definitions)
-	inst, err := proc.Instantiate(options...)
+	var inst *bpi.Instance
+	inst, err = proc.Instantiate(options...)
 	if err != nil {
-		logger.Errorf("failed to instantiate the process: %s", err)
+		r.lg.Error("failed to instantiate the process",
+			zap.Uint64("id", process.Id),
+			zap.Error(err))
 		return
 	}
 	traces := inst.Tracer.Subscribe()
 	err = inst.StartAll(ctx)
 	if err != nil {
 		cancel()
-		logger.Errorf("failed to run the instance: %s", err)
+		r.lg.Error("failed to run the instance",
+			zap.Uint64("id", process.Id),
+			zap.Error(err))
+		return
 	}
+
+	finish = false
+
 LOOP:
 	for {
 		select {
 		case <-r.changeNotify():
+			r.processQ.Push(process)
+			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)
 			switch trace := trace.(type) {
+			case flow.VisitTrace:
+
+				switch trace.Node.(type) {
+				case schema.EndEventInterface:
+				case schema.EventInterface:
+					r.metric.event.Inc()
+				}
+			case flow.LeaveTrace:
+
+				switch trace.Node.(type) {
+				case schema.EventInterface:
+					r.metric.event.Dec()
+				}
+
+			case activity.ActiveBoundaryTrace:
+				if trace.Start {
+					r.metric.task.Inc()
+				} else {
+					r.metric.task.Dec()
+				}
+
 			case activity.ActiveTaskTrace:
-
-				//switch tt := trace.(type) {
-				//case *service.ActiveTrace:
-				//	//ctx := tt.Context
-				//	//headers := tt.Headers
-				//	//properties := tt.Properties
-				//	//dataObjects := tt.DataObjects
-				//}
-
-				logger.Infof("%v", trace)
-				trace.Execute()
+				r.handleTask(ctx, trace)
 			case tracing.ErrorTrace:
-				logger.Errorf("%v", trace)
+				finish = true
+				err = trace.Error
+				r.lg.Error("process error occurred",
+					zap.Uint64("id", process.Id),
+					zap.Error(err))
 			case flow.CeaseFlowTrace:
+				finish = true
 				break LOOP
 			default:
-				logger.Infof("%v", trace)
 			}
 		}
 	}
-	inst.WaitUntilComplete(ctx)
 	inst.Tracer.Unsubscribe(traces)
+}
+
+func (r *Region) handleTask(ctx context.Context, trace activity.ActiveTaskTrace) {
+
 }

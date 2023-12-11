@@ -57,6 +57,12 @@ func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
 	return 1
 }
 
+type RegionRaftKV interface {
+	Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error)
+	Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPutResponse, error)
+	Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error)
+}
+
 type Region struct {
 	RegionConfig
 
@@ -166,7 +172,7 @@ func (r *Region) Put(ctx context.Context, req *pb.RegionPutRequest) (*pb.RegionP
 	return resp.(*pb.RegionPutResponse), nil
 }
 
-func (r *Region) DeleteRange(ctx context.Context, req *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error) {
+func (r *Region) Delete(ctx context.Context, req *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error) {
 	resp, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{Delete: req})
 	if err != nil {
 		return nil, err

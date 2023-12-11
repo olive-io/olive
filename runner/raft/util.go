@@ -15,12 +15,14 @@
 package raft
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
@@ -103,4 +105,17 @@ func rangePrefix(r *pb.RegionRangeRequest) {
 		return
 	}
 	r.RangeEnd = getPrefix(r.Key)
+}
+
+func saveProcess(ctx context.Context, kv RegionRaftKV, process *pb.ProcessInstance) error {
+	pkey := bytesutil.PathJoin(processPrefix,
+		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
+		[]byte(fmt.Sprintf("%d", process.Id)))
+
+	value, err := process.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
+	return err
 }
