@@ -37,6 +37,9 @@ func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	}
 
 	for i := range entries {
+		if entries[i].Index <= r.getApplied() {
+			continue
+		}
 		r.applyEntry(entries[i])
 	}
 

@@ -17,8 +17,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
 	github.com/mattbaird/jsonpatch v0.0.0-20230413205102-771768614e91
-	github.com/olive-io/bpmn v0.7.1
-	github.com/olive-io/bpmn/schema v0.7.1
+	github.com/olive-io/bpmn v0.7.3
+	github.com/olive-io/bpmn/schema v0.7.3
 	github.com/prometheus/client_golang v1.17.0
 	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/spf13/cobra v1.8.0
@@ -30,7 +30,7 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.11
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/net v0.18.0
+	golang.org/x/net v0.19.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231012201019-e917dd12ba7a
 	google.golang.org/grpc v1.59.0
 )
@@ -113,7 +113,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/crypto v0.15.0 // indirect
+	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

@@ -22,8 +22,10 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
 	"github.com/olive-io/bpmn/flow_node/activity"
+	"github.com/olive-io/bpmn/flow_node/activity/service"
 	bp "github.com/olive-io/bpmn/process"
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
@@ -89,7 +91,7 @@ func (r *Region) scheduleCycle() {
 				if !ok {
 					break
 				}
-				
+
 				processInstance := x.(*pb.ProcessInstance)
 				go r.scheduleDefinition(processInstance)
 			}
@@ -122,11 +124,7 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	r.metric.runningDefinition.Inc()
 	defer r.metric.runningDefinition.Dec()
 
-	variables := make(map[string]any)
-	for key, value := range process.Properties {
-		variables[key] = value
-	}
-
+	locator := data.NewFlowDataLocator()
 	if len(*definitions.Processes()) == 0 {
 		return
 	}
@@ -134,8 +132,9 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 
 	ctx := context.Background()
 	options := []bpi.Option{
-		bpi.WithVariables(variables),
-		bpi.WithDataObjects(make(map[string]any)),
+		bpi.WithLocator(locator),
+		bpi.WithVariables(toAnyMap[[]byte](process.Properties)),
+		bpi.WithDataObjects(toAnyMap[[]byte](process.DataObjects)),
 	}
 	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
 }
@@ -147,15 +146,21 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	r.metric.process.Inc()
 	defer r.metric.process.Dec()
 
+	fields := []zap.Field{
+		zap.String("definition", process.DefinitionId),
+		zap.Uint64("version", process.DefinitionVersion),
+		zap.Uint64("id", process.Id),
+	}
+
+	r.lg.Info("start process instance", fields...)
+
 	var err error
-	if process.Status == pb.ProcessInstance_Waiting {
+	if process.Status == pb.ProcessInstance_Prepare {
 		process.Status = pb.ProcessInstance_Running
 		process.StartTime = time.Now().Unix()
 		err = saveProcess(ctx, r, process)
 		if err != nil {
-			r.lg.Error("save process instance",
-				zap.Uint64("id", process.Id),
-				zap.Error(err))
+			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
 		}
 	}
 
@@ -174,9 +179,9 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 
 		err = saveProcess(ctx, r, process)
 		if err != nil {
-			r.lg.Error("save process instance",
-				zap.Uint64("id", process.Id),
-				zap.Error(err))
+			r.lg.Error("finish process instance", append(fields, zap.Error(err))...)
+		} else {
+			r.lg.Info("finish process instance", fields...)
 		}
 	}()
 
@@ -184,40 +189,66 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	var inst *bpi.Instance
 	inst, err = proc.Instantiate(options...)
 	if err != nil {
-		r.lg.Error("failed to instantiate the process",
-			zap.Uint64("id", process.Id),
-			zap.Error(err))
+		r.lg.Error("failed to instantiate the process", append(fields, zap.Error(err))...)
 		return
 	}
 	traces := inst.Tracer.Subscribe()
 	err = inst.StartAll(ctx)
 	if err != nil {
 		cancel()
-		r.lg.Error("failed to run the instance",
-			zap.Uint64("id", process.Id),
-			zap.Error(err))
+		r.lg.Error("failed to run the instance", append(fields, zap.Error(err))...)
 		return
 	}
 
 	finish = false
+	completed := map[string]struct{}{}
 
 LOOP:
 	for {
 		select {
 		case <-r.changeNotify():
+			inst.Locator.CloneVariables()
+			inst.Locator.CloneItems(data.LocatorObject)
+			inst.Locator.CloneItems(data.LocatorHeader)
+			inst.Locator.CloneItems(data.LocatorProperty)
 			r.processQ.Push(process)
 			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)
 			switch trace := trace.(type) {
 			case flow.VisitTrace:
+				id, _ := trace.Node.Id()
 
 				switch trace.Node.(type) {
 				case schema.EndEventInterface:
 				case schema.EventInterface:
 					r.metric.event.Inc()
 				}
+
+				if process.FlowNodes == nil {
+					process.FlowNodes = map[string]*pb.FlowNodeStat{}
+				}
+				flowNode, ok := process.FlowNodes[*id]
+				if ok {
+					completed[*id] = struct{}{}
+				} else {
+					flowNode = &pb.FlowNodeStat{
+						Id:        *id,
+						StartTime: time.Now().Unix(),
+					}
+					if name, has := trace.Node.Name(); has {
+						flowNode.Name = *name
+					}
+					process.FlowNodes[*id] = flowNode
+				}
+
 			case flow.LeaveTrace:
+				id, _ := trace.Node.Id()
+
+				flowNode, ok := process.FlowNodes[*id]
+				if ok {
+					flowNode.EndTime = time.Now().Unix()
+				}
 
 				switch trace.Node.(type) {
 				case schema.EventInterface:
@@ -229,26 +260,57 @@ LOOP:
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
+					process.RunningState.DataObjects = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorObject))
+					process.RunningState.Properties = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
+					process.RunningState.Variables = toTMap[[]byte](inst.Locator.CloneVariables())
+				}
+			case activity.ActiveTaskTrace:
+				act := trace.GetActivity()
+				id, _ := act.Element().Id()
+
+				flowNode, ok := process.FlowNodes[*id]
+				if ok {
+					flowNode.EndTime = time.Now().Unix()
+					headers, dataSets, dataObjects := activity.FetchTaskDataInput(inst.Locator, act.Element())
+					flowNode.Headers = toTMap[string](headers)
+					flowNode.Properties = toTMap[[]byte](dataSets)
+					flowNode.DataObjects = toTMap[[]byte](dataObjects)
 				}
 
-			case activity.ActiveTaskTrace:
-				r.handleTask(ctx, trace)
+				_, ok = completed[*id]
+				if ok {
+					trace.Execute()
+				} else {
+					r.handleTask(ctx, trace, inst, process)
+				}
 			case tracing.ErrorTrace:
 				finish = true
 				err = trace.Error
-				r.lg.Error("process error occurred",
-					zap.Uint64("id", process.Id),
-					zap.Error(err))
+				r.lg.Error("process error occurred", append(fields, zap.Error(err))...)
 			case flow.CeaseFlowTrace:
 				finish = true
 				break LOOP
 			default:
 			}
+
+			_ = saveProcess(ctx, r, process)
 		}
 	}
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleTask(ctx context.Context, trace activity.ActiveTaskTrace) {
+func (r *Region) handleTask(ctx context.Context, trace activity.ActiveTaskTrace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
+	switch tt := trace.(type) {
+	//case *task.ActiveTrace:
+	case *service.ActiveTrace:
+		tt.Do()
+	//case *script.ActiveTrace:
+	//case *user.ActiveTrace:
+	//case *call.ActiveTrace:
+	//case *send.ActiveTrace:
+	//case *receive.ActiveTrace:
+	default:
+		trace.Execute()
+	}
 }

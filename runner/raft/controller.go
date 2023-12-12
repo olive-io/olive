@@ -237,9 +237,10 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	data, _ := region.Marshal()
 	tx := c.be.BatchTx()
 	tx.Lock()
-	tx.UnsafePut(buckets.Region, []byte(key), data)
+	_ = tx.UnsafePut(buckets.Region, []byte(key), data)
 	tx.Unlock()
-	tx.Commit()
+	_ = tx.Commit()
+	c.be.ForceCommit()
 
 	return nil
 }

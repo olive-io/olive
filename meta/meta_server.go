@@ -367,6 +367,8 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 		DefinitionVersion: definition.Version,
 		Headers:           req.Header,
 		Properties:        req.Properties,
+		RunningState:      &pb.ProcessRunningState{},
+		FlowNodes:         make(map[string]*pb.FlowNodeStat),
 		Status:            pb.ProcessInstance_Waiting,
 	}
 	key := path.Join(runtime.DefaultRunnerProcessInstance,

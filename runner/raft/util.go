@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	json "github.com/json-iterator/go"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/prometheus/client_golang/prometheus"
@@ -118,4 +119,46 @@ func saveProcess(ctx context.Context, kv RegionRaftKV, process *pb.ProcessInstan
 	}
 	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
 	return err
+}
+
+type SV interface {
+	[]byte | string
+}
+
+func toTMap[V SV](in map[string]any) map[string]V {
+	out := make(map[string]V)
+	for key, value := range in {
+		var vv V
+		switch tv := value.(type) {
+		case string:
+			vv = V(tv)
+		case []byte:
+			vv = V(tv)
+		case *[]byte:
+			vv = V(*tv)
+		case int, int8, int16, int32, int64,
+			uint, uint8, uint16, uint32, uint64:
+			vv = V(fmt.Sprintf("%d", tv))
+		case float32, float64:
+			vv = V(fmt.Sprintf("%f", tv))
+		case bool:
+			vv = V("true")
+			if !tv {
+				vv = V("false")
+			}
+		default:
+			data, _ := json.Marshal(tv)
+			vv = V(data)
+		}
+		out[key] = vv
+	}
+	return out
+}
+
+func toAnyMap[V any](in map[string]V) map[string]any {
+	out := make(map[string]any)
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
 }

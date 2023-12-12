@@ -236,7 +236,7 @@ func (t *batchTx) commit(stop bool) error {
 	}
 
 	if !stop {
-		t.tx = t.backend.begin(true)
+		t.tx = t.backend.begin(false)
 	}
 	return nil
 }

@@ -389,7 +389,7 @@ func (b *backend) Hash(ignores func(bucketName []byte, keyName []byte) bool) (ui
 }
 
 func (b *backend) ForceCommit() {
-	b.batchTx.Commit()
+	_ = b.db.Flush()
 }
 
 func (b *backend) run() {
@@ -400,11 +400,11 @@ func (b *backend) run() {
 		select {
 		case <-t.C:
 		case <-b.stopc:
-			b.batchTx.CommitAndStop()
+			_ = b.batchTx.CommitAndStop()
 			return
 		}
 		if b.batchTx.safePending() != 0 {
-			b.batchTx.Commit()
+			_ = b.batchTx.Commit()
 		}
 		t.Reset(b.batchInterval)
 	}
@@ -435,15 +435,20 @@ func (b *backend) SetTxPostLockInsideApplyHook(hook func()) {
 	b.txPostLockInsideApplyHook = hook
 }
 
-func (b *backend) unsafeBegin(write bool) *pebble.Batch {
-	tx := b.db.NewIndexedBatch()
+func (b *backend) unsafeBegin(writeOnly bool) *pebble.Batch {
+	var tx *pebble.Batch
+	if writeOnly {
+		tx = b.db.NewBatch()
+	} else {
+		tx = b.db.NewIndexedBatch()
+	}
 
 	return tx
 }
 
-func (b *backend) begin(write bool) *pebble.Batch {
+func (b *backend) begin(writeOnly bool) *pebble.Batch {
 	b.mu.RLock()
-	tx := b.unsafeBegin(write)
+	tx := b.unsafeBegin(writeOnly)
 	b.mu.RUnlock()
 
 	return tx

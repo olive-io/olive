@@ -223,6 +223,13 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 			proc.DefinitionVersion == 0 {
 			continue
 		}
+
+		if proc.RunningState == nil {
+			proc.RunningState = &pb.ProcessRunningState{}
+		}
+		if proc.FlowNodes == nil {
+			proc.FlowNodes = map[string]*pb.FlowNodeStat{}
+		}
 		if proc.Status == pb.ProcessInstance_Waiting {
 			proc.Status = pb.ProcessInstance_Prepare
 		}
