@@ -108,7 +108,7 @@ func rangePrefix(r *pb.RegionRangeRequest) {
 	r.RangeEnd = getPrefix(r.Key)
 }
 
-func saveProcess(ctx context.Context, kv RegionRaftKV, process *pb.ProcessInstance) error {
+func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
 	pkey := bytesutil.PathJoin(processPrefix,
 		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
 		[]byte(fmt.Sprintf("%d", process.Id)))

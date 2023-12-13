@@ -57,7 +57,7 @@ func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
 	return 1
 }
 
-type RegionRaftKV interface {
+type IRegionRaftKV interface {
 	Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error)
 	Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPutResponse, error)
 	Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error)

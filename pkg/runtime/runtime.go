@@ -37,4 +37,5 @@ var (
 	DefaultRunnerDefinitions     = path.Join(DefaultRunnerPrefix, "definitions")
 	DefaultRunnerProcessInstance = path.Join(DefaultRunnerPrefix, "processInstances")
 	DefaultRunnerRegion          = path.Join(DefaultRunnerPrefix, "regions")
+	DefaultRunnerDiscovery       = path.Join(DefaultRunnerPrefix, "discovery")
 )

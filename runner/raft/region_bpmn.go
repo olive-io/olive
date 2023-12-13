@@ -25,7 +25,13 @@ import (
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
 	"github.com/olive-io/bpmn/flow_node/activity"
+	"github.com/olive-io/bpmn/flow_node/activity/call"
+	"github.com/olive-io/bpmn/flow_node/activity/receive"
+	"github.com/olive-io/bpmn/flow_node/activity/script"
+	"github.com/olive-io/bpmn/flow_node/activity/send"
 	"github.com/olive-io/bpmn/flow_node/activity/service"
+	"github.com/olive-io/bpmn/flow_node/activity/task"
+	"github.com/olive-io/bpmn/flow_node/activity/user"
 	bp "github.com/olive-io/bpmn/process"
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
@@ -129,12 +135,25 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		return
 	}
 	processElement := (*definitions.Processes())[0]
+	properties := process.Properties
+	dataObjects := process.DataObjects
+	var variables map[string][]byte
+	if state := process.RunningState; state != nil {
+		for key, value := range state.Properties {
+			properties[key] = value
+		}
+		for key, value := range state.DataObjects {
+			dataObjects[key] = value
+		}
+		variables = state.Variables
+	}
 
 	ctx := context.Background()
 	options := []bpi.Option{
 		bpi.WithLocator(locator),
-		bpi.WithVariables(toAnyMap[[]byte](process.Properties)),
-		bpi.WithDataObjects(toAnyMap[[]byte](process.DataObjects)),
+		bpi.WithVariables(toAnyMap[[]byte](properties)),
+		bpi.WithDataObjects(toAnyMap[[]byte](dataObjects)),
+		bpi.WithVariables(toAnyMap[[]byte](variables)),
 	}
 	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
 }
@@ -302,14 +321,15 @@ LOOP:
 func (r *Region) handleTask(ctx context.Context, trace activity.ActiveTaskTrace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	switch tt := trace.(type) {
-	//case *task.ActiveTrace:
+	case *task.ActiveTrace:
 	case *service.ActiveTrace:
 		tt.Do()
-	//case *script.ActiveTrace:
-	//case *user.ActiveTrace:
-	//case *call.ActiveTrace:
-	//case *send.ActiveTrace:
-	//case *receive.ActiveTrace:
+	case *script.ActiveTrace:
+		tt.Do()
+	case *user.ActiveTrace:
+	case *call.ActiveTrace:
+	case *send.ActiveTrace:
+	case *receive.ActiveTrace:
 	default:
 		trace.Execute()
 	}
