@@ -226,10 +226,6 @@ LOOP:
 	for {
 		select {
 		case <-r.changeNotify():
-			inst.Locator.CloneVariables()
-			inst.Locator.CloneItems(data.LocatorObject)
-			inst.Locator.CloneItems(data.LocatorHeader)
-			inst.Locator.CloneItems(data.LocatorProperty)
 			r.processQ.Push(process)
 			break LOOP
 		case trace := <-traces:
@@ -300,7 +296,7 @@ LOOP:
 				if ok {
 					trace.Execute()
 				} else {
-					r.handleTask(ctx, trace, inst, process)
+					r.handleActivity(ctx, trace, inst, process)
 				}
 			case tracing.ErrorTrace:
 				finish = true
@@ -318,7 +314,7 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleTask(ctx context.Context, trace activity.ActiveTaskTrace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Region) handleActivity(ctx context.Context, trace activity.ActiveTaskTrace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	switch tt := trace.(type) {
 	case *task.ActiveTrace:
