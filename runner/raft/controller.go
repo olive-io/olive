@@ -26,6 +26,7 @@ import (
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
+	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
@@ -45,7 +46,8 @@ type Controller struct {
 	be      backend.IBackend
 	regionW wait.Wait
 
-	tracer tracing.ITracer
+	tracer    tracing.ITracer
+	discovery dsy.IDiscovery
 
 	reqId *idutil.Generator
 	reqW  wait.Wait
@@ -59,7 +61,7 @@ type Controller struct {
 	done     chan struct{}
 }
 
-func NewController(ctx context.Context, cfg Config, be backend.IBackend, pr *pb.Runner) (*Controller, error) {
+func NewController(ctx context.Context, cfg Config, be backend.IBackend, discovery dsy.IDiscovery, pr *pb.Runner) (*Controller, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = zap.NewExample()
 	}

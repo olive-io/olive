@@ -42,6 +42,7 @@ message Node {
   string version = 4;
   string listenURL = 5;
   repeated Endpoint endpoints = 6;
+  // the duration of register (unit second)
   int32 ttl = 7;
   int64 lastRegister = 8;
 }

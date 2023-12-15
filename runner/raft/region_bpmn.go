@@ -25,19 +25,13 @@ import (
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
 	"github.com/olive-io/bpmn/flow_node/activity"
-	"github.com/olive-io/bpmn/flow_node/activity/call"
-	"github.com/olive-io/bpmn/flow_node/activity/receive"
-	"github.com/olive-io/bpmn/flow_node/activity/script"
-	"github.com/olive-io/bpmn/flow_node/activity/send"
-	"github.com/olive-io/bpmn/flow_node/activity/service"
-	"github.com/olive-io/bpmn/flow_node/activity/task"
-	"github.com/olive-io/bpmn/flow_node/activity/user"
 	bp "github.com/olive-io/bpmn/process"
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	"github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/zap"
 )
 
@@ -279,7 +273,7 @@ LOOP:
 					process.RunningState.Properties = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
 					process.RunningState.Variables = toTMap[[]byte](inst.Locator.CloneVariables())
 				}
-			case activity.ActiveTaskTrace:
+			case *activity.Trace:
 				act := trace.GetActivity()
 				id, _ := act.Element().Id()
 
@@ -294,7 +288,7 @@ LOOP:
 
 				_, ok = completed[*id]
 				if ok {
-					trace.Execute()
+					trace.Do()
 				} else {
 					r.handleActivity(ctx, trace, inst, process)
 				}
@@ -314,19 +308,59 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleActivity(ctx context.Context, trace activity.ActiveTaskTrace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+	act := trace.GetActivity()
+	id, _ := act.Element().Id()
 
-	switch tt := trace.(type) {
-	case *task.ActiveTrace:
-	case *service.ActiveTrace:
-		tt.Do()
-	case *script.ActiveTrace:
-		tt.Do()
-	case *user.ActiveTrace:
-	case *call.ActiveTrace:
-	case *send.ActiveTrace:
-	case *receive.ActiveTrace:
-	default:
-		trace.Execute()
+	options := discovery.DiscoverOptionsFromTrace(trace)
+	node, err := r.discovery.Discover(ctx, options...)
+	if err != nil {
+		r.lg.Error(
+			"discover activity node",
+			zap.String("activity", *id),
+			zap.Error(err),
+		)
+		trace.Do(activity.WithErr(err))
+		return
 	}
+
+	executor, err := node.GetExecutor(ctx, options...)
+	if err != nil {
+		r.lg.Error("discover activity executor",
+			zap.String("activity", *id),
+			zap.String("node", node.Get().Id),
+			zap.Error(err),
+		)
+		trace.Do(activity.WithErr(err))
+		return
+	}
+
+	execOpts := []discovery.ExecuteOption{}
+	req := &discovery.Request{
+		Context:     ctx,
+		Headers:     trace.GetHeaders(),
+		Properties:  trace.GetProperties(),
+		DataObjects: trace.GetDataObjects(),
+	}
+	resp, err := executor.Execute(ctx, req, execOpts...)
+	if err != nil {
+		r.lg.Error("discover activity executor",
+			zap.String("activity", *id),
+			zap.String("node", node.Get().Id),
+			zap.Error(err),
+		)
+		trace.Do(activity.WithErr(err))
+		return
+	}
+
+	r.lg.Debug("activity done", zap.String("activity", *id))
+	doOpts := make([]activity.DoOption, 0)
+	if properties := resp.Properties; properties != nil {
+		doOpts = append(doOpts, activity.WithProperties(properties))
+	}
+	if dataObjects := resp.DataObjects; dataObjects != nil {
+		doOpts = append(doOpts, activity.WithObjects(dataObjects))
+	}
+
+	trace.Do(doOpts...)
 }

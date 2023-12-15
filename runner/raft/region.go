@@ -31,6 +31,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
@@ -75,7 +76,8 @@ type Region struct {
 	commitW  wait.Wait
 	openWait wait.Wait
 
-	tracer tracing.ITracer
+	discovery dsy.IDiscovery
+	tracer    tracing.ITracer
 
 	reqIDGen *idutil.Generator
 
@@ -109,13 +111,16 @@ type Region struct {
 func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
+
 	tracer := c.tracer
+	discovery := c.discovery
 	region := &Region{
 		id:         shardId,
 		memberId:   nodeId,
 		lg:         c.Logger,
 		openWait:   c.regionW,
 		tracer:     tracer,
+		discovery:  discovery,
 		applyW:     wait.New(),
 		commitW:    wait.New(),
 		reqIDGen:   reqIDGen,

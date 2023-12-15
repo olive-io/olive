@@ -26,6 +26,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
+	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
@@ -147,7 +148,12 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	cc.RaftRTTMillisecond = r.RaftRTTMillisecond
 	cc.Logger = r.Logger
 
-	controller, err := raft.NewController(r.ctx, cc, r.be, r.pr)
+	discovery, err := dsy.NewDiscovery(r.Logger, r.oct.Client, r.StoppingNotify())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
 	if err != nil {
 		return nil, nil, err
 	}
