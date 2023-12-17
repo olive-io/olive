@@ -73,6 +73,22 @@ func (on *oliveNode) isReady() bool {
 }
 
 func (on *oliveNode) GetExecutor(ctx context.Context, options ...DiscoverOption) (IExecutor, error) {
+	var option DiscoverOptions
+	for _, opt := range options {
+		opt(&option)
+	}
+
+	act := option.activity
+	switch act {
+	case pb.Activity_Task:
+	case pb.Activity_Service:
+	case pb.Activity_Script:
+	case pb.Activity_User:
+	case pb.Activity_Call:
+	case pb.Activity_Send:
+	case pb.Activity_Receive:
+	}
+
 	return nil, nil
 }
 
