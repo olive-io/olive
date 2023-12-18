@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discovery
+package client
 
-import "context"
+import (
+	"context"
+	"math"
+	"time"
+)
 
-type httpExecutor struct {
+type BackoffFunc func(ctx context.Context, req Request, attempts int) (time.Duration, error)
+
+func exponentialBackoff(ctx context.Context, req Request, attempts int) (time.Duration, error) {
+	return Do(attempts), nil
 }
 
-func (e *httpExecutor) Execute(ctx context.Context, req *Request) (*Response, error) {
-	return nil, nil
-}
-
-type grpcExecutor struct {
-}
-
-func (e *grpcExecutor) Execute(ctx context.Context, req *Request) (*Response, error) {
-	return nil, nil
+// Do is a function x^e multiplied by a factor of 0.1 second.
+// Result is limited to 2 minute.
+func Do(attempts int) time.Duration {
+	if attempts > 13 {
+		return 2 * time.Minute
+	}
+	return time.Duration(math.Pow(float64(attempts), math.E)) * time.Millisecond * 100
 }

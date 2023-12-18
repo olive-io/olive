@@ -16,49 +16,95 @@ syntax = "proto3";
 
 package discoverypb;
 
-import "gogoproto/gogo.proto";
-
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 option (gogoproto.marshaler_all) = true;
 option (gogoproto.sizer_all) = true;
 option (gogoproto.unmarshaler_all) = true;
 option (gogoproto.goproto_getters_all) = false;
 
+import "gogoproto/gogo.proto";
+
 enum Activity {
   Unknown = 0;
   Task = 1;
-  Service = 2;
-  Script = 3;
-  User = 4;
+  ServiceTask = 2;
+  ScriptTask = 3;
+  UserTask = 4;
   Call = 5;
-  Send = 6;
-  Receive = 7;
+  SendTask = 6;
+  ReceiveTask = 7;
 }
 
+// Endpoint is a endpoint provided by a service
+message Endpoint {
+  string name = 1;
+
+  Value request = 2;
+
+  Value response = 3;
+
+  map<string, string> metadata = 4;
+}
+
+// Event is registry event
+message Event {
+  // Event Id
+  string id = 1;
+
+  // type of event
+  string type = 2;
+
+  // unix timestamp of event
+  int64 timestamp = 3;
+
+  // service entry
+  Service service = 4;
+}
+
+// Node represents the node the service is on
 message Node {
   string id = 1;
-  string name = 2;
-  map<string, string> metadata = 3;
-  string version = 4;
-  string listenURL = 5;
-  repeated Endpoint endpoints = 6;
-  repeated Activity activities = 7;
-  // the duration of register (unit second)
-  int32 ttl = 8;
-  int64 lastRegister = 9;
+
+  string address = 2;
+
+  int64 port = 3;
+
+  map<string, string> metadata = 4;
+
+  repeated Activity activities = 5;
 }
 
-message Endpoint {
-  string id = 1;
-  Activity activity = 2;
-  map<string, string> metadata = 3;
+// Result is returns by the watcher
+message Result {
+  string action = 1;
 
-  Value request = 4;
-  Value response = 5;
+  Service service = 2;
+
+  int64 timestamp = 3;
 }
 
+// Service represents a olive service
+message Service {
+  string name = 1;
+
+  string version = 2;
+
+  string namespace = 3;
+
+  map<string, string> metadata = 4;
+
+  repeated Endpoint endpoints = 5;
+
+  repeated Node nodes = 6;
+
+  int64 ttl = 7;
+}
+
+// Value is an opaque value for a request or response
 message Value {
   string name = 1;
+
   string type = 2;
+
   repeated Value values = 3;
 }

@@ -12,14 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discoverypb
+package proto
 
-// SupportActivity returns true if the given value in Activities
-func (m *Node) SupportActivity(act Activity) bool {
-	for _, item := range m.Activities {
-		if item == act {
-			return true
-		}
-	}
-	return false
+type Message struct {
+	Data []byte
+}
+
+func (m *Message) MarshalJSON() ([]byte, error) {
+	return m.Data, nil
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	m.Data = data
+	return nil
+}
+
+func (m *Message) ProtoMessage() {}
+
+func (m *Message) Reset() {
+	*m = Message{}
+}
+
+func (m *Message) String() string {
+	return string(m.Data)
+}
+
+func (m *Message) Marshal() ([]byte, error) {
+	return m.Data, nil
+}
+
+func (m *Message) Unmarshal(data []byte) error {
+	m.Data = data
+	return nil
+}
+
+func NewMessage(data []byte) *Message {
+	return &Message{data}
 }

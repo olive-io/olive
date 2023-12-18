@@ -17,8 +17,10 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20230922120309-657304aedc15
 	github.com/mattbaird/jsonpatch v0.0.0-20230413205102-771768614e91
+	github.com/mitchellh/hashstructure v1.1.0
 	github.com/olive-io/bpmn v0.7.4
 	github.com/olive-io/bpmn/schema v0.7.4
+	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/prometheus/client_golang v1.17.0
 	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/spf13/cobra v1.8.0

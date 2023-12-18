@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discoverypb
+package discovery
 
-// SupportActivity returns true if the given value in Activities
-func (m *Node) SupportActivity(act Activity) bool {
-	for _, item := range m.Activities {
-		if item == act {
-			return true
-		}
-	}
-	return false
+import pb "github.com/olive-io/olive/api/discoverypb"
+
+// Watcher is an interface that returns updates
+// about services within the registry.
+type Watcher interface {
+	// Next is a blocking call
+	Next() (*pb.Result, error)
+	Stop()
 }

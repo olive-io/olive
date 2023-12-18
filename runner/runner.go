@@ -148,10 +148,11 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	cc.RaftRTTMillisecond = r.RaftRTTMillisecond
 	cc.Logger = r.Logger
 
-	discovery, err := dsy.NewDiscovery(r.Logger, r.oct.Client, r.StoppingNotify())
-	if err != nil {
-		return nil, nil, err
-	}
+	var discovery dsy.IDiscovery
+	//discovery, err := etcd.New(r.Logger, r.oct.Client, r.StoppingNotify())
+	//if err != nil {
+	//	return nil, nil, err
+	//}
 
 	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
 	if err != nil {

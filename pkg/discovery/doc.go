@@ -14,8 +14,25 @@
 
 package discovery
 
+import "github.com/cockroachdb/errors"
+
 const (
 	HeaderKeyPrefix = "ov:"
 	NodeIdKey       = "ov:node_id"
 	ActivityIdKey   = "ov:activity_id"
+	ProtocolKey     = "ov:protocol"
+)
+
+// the keys of ServiceTask Header
+const (
+	ServiceMethodKey      = "ov:method"
+	ServiceContentTypeKey = "ov:content-type"
+	ServiceURLKey         = "ov:url"
+	ServiceProtocolKey    = "ov:protocol"
+)
+
+var (
+	ErrNotFoundNode = errors.New("node not found")
+	ErrNoNode       = errors.New("no node")
+	ErrNoExecutor   = errors.New("no executor")
 )

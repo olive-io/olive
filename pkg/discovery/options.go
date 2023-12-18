@@ -16,261 +16,169 @@ package discovery
 
 import (
 	"context"
-	"fmt"
+	"crypto/tls"
 	"time"
 
-	"github.com/olive-io/bpmn/flow_node/activity"
-	pb "github.com/olive-io/olive/api/discoverypb"
+	"go.uber.org/zap"
 )
 
-type DiscoverOptions struct {
-	ctx context.Context
-
-	// the kind of BPMN2 Activity
-	activity pb.Activity
-	// the id of Activity Executor which dependency with Activity Node
-	activityId string
-	// the id of Activity Node (like olive-gateway, olive-executor)
-	nodeId  string
-	timeout time.Duration
-
-	task    *TaskOptions
-	service *ServiceOptions
-	script  *ScriptOptions
-	user    *UserOptions
-	call    *CallOptions
-	send    *SendOptions
-	receive *ReceiveOptions
+type Options struct {
+	Addrs     []string
+	Namespace string
+	Timeout   time.Duration
+	Secure    bool
+	TLSConfig *tls.Config
+	Logger    *zap.Logger
+	// Other options for implementations of the interface
+	// can be stored in a context
+	Context context.Context
 }
 
-func (do *DiscoverOptions) Validate() error {
-	if do.ctx == nil {
-		do.ctx = context.TODO()
+func NewOptions(opts ...Option) Options {
+	var options Options
+	for _, o := range opts {
+		o(&options)
 	}
 
-	var err error
-	if do.activity == pb.Activity_Unknown {
-		return fmt.Errorf("missing field 'activity'")
+	if options.Context == nil {
+		options.Context = context.Background()
 	}
 
-	act := do.activity
-	switch act {
-	case pb.Activity_Task:
-		if err = do.task.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_Service:
-		if err = do.service.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_Script:
-		if err = do.script.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_User:
-		if err = do.user.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_Call:
-		if err = do.call.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_Send:
-		if err = do.task.Validate(); err != nil {
-			return err
-		}
-	case pb.Activity_Receive:
-		if err = do.task.Validate(); err != nil {
-			return err
-		}
+	if options.Timeout == 0 {
+		options.Timeout = DefaultRegistryTimeout
 	}
 
-	return err
-}
-
-func DiscoverOptionsFromTrace(trace *activity.Trace) []DiscoverOption {
-	options := make([]DiscoverOption, 0)
-
-	var actOp DiscoverOption
-	headers := trace.GetHeaders()
-	switch trace.GetActivity().Type() {
-	case activity.TaskType:
-		actOp = DiscoverWithTask(&TaskOptions{})
-	case activity.ServiceType:
-		actOp = DiscoverWithService(ServiceOptionsFromHeaders(headers))
-	case activity.ScriptType:
-		actOp = DiscoverWithScript(ScriptOptionsFromHeaders(headers))
-	case activity.UserType:
-		actOp = DiscoverWithUser(UserOptionsFromHeaders(headers))
-	case activity.CallType:
-		actOp = DiscoverWithCall(CallOptionsFromHeaders(headers))
-	case activity.SendType:
-		actOp = DiscoverWithSend(SendOptionsFromHeaders(headers))
-	case activity.ReceiveType:
-		actOp = DiscoverWithReceive(ReceiveOptionsFromHeaders(headers))
-	default:
-		return options
+	if options.Namespace == "" {
+		options.Namespace = DefaultNamespace
 	}
 
-	options = append(options, actOp)
-	if value, ok := headers[NodeIdKey]; ok {
-		vv, _ := value.(string)
-		options = append(options, DiscoverWithNodeId(vv))
-	}
-	if value, ok := headers[ActivityIdKey]; ok {
-		vv, _ := value.(string)
-		options = append(options, DiscoverWithActivityId(vv))
+	if options.Logger == nil {
+		options.Logger = zap.NewNop()
 	}
 
 	return options
 }
 
-type DiscoverOption func(options *DiscoverOptions)
+type RegisterOptions struct {
+	TTL       time.Duration
+	Namespace string
+}
 
-func DiscoverWithTask(taskOpt *TaskOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Task
-		options.task = taskOpt
+type WatchOptions struct {
+	// Specify a service to watch
+	// If blank, the watch is for all services
+	Service   string
+	Namespace string
+}
+
+type DeregisterOptions struct {
+	Namespace string
+}
+
+type GetOptions struct {
+	Namespace string
+}
+
+type ListOptions struct {
+	Namespace string
+}
+
+type OpenAPIOptions struct {
+}
+
+type Option func(*Options)
+
+type RegisterOption func(*RegisterOptions)
+
+type WatchOption func(*WatchOptions)
+
+type DeregisterOption func(*DeregisterOptions)
+
+type GetOption func(*GetOptions)
+
+type ListOption func(*ListOptions)
+
+type OpenAPIOption func(*OpenAPIOptions)
+
+// Addrs is the registry addresses to use
+func Addrs(addrs ...string) Option {
+	return func(o *Options) {
+		o.Addrs = addrs
 	}
 }
 
-type TaskOptions struct {
-}
-
-func (o *TaskOptions) Validate() (err error) { return }
-
-func DiscoverWithService(serviceOpt *ServiceOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Service
-		options.service = serviceOpt
+func Namespace(ns string) Option {
+	return func(o *Options) {
+		o.Namespace = ns
 	}
 }
 
-type ServiceOptions struct {
-	// service protocol (gRPC, http, etc.)
-	protocol string
-	// the Content-Type of request
-	contentType string
-}
-
-func ServiceOptionsFromHeaders(headers map[string]any) *ServiceOptions {
-	so := &ServiceOptions{}
-	return so
-}
-
-func (o *ServiceOptions) Validate() (err error) { return }
-
-func DiscoverWithScript(scriptOpt *ScriptOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Script
-		options.script = scriptOpt
+func Timeout(t time.Duration) Option {
+	return func(o *Options) {
+		o.Timeout = t
 	}
 }
 
-type ScriptOptions struct {
-}
-
-func ScriptOptionsFromHeaders(headers map[string]any) *ScriptOptions {
-	so := &ScriptOptions{}
-	return so
-}
-
-func (o *ScriptOptions) Validate() (err error) { return }
-
-func DiscoverWithUser(userOpt *UserOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_User
-		options.user = userOpt
+// Secure communication with the registry
+func Secure(b bool) Option {
+	return func(o *Options) {
+		o.Secure = b
 	}
 }
 
-type UserOptions struct {
-}
-
-func UserOptionsFromHeaders(headers map[string]any) *UserOptions {
-	uo := &UserOptions{}
-	return uo
-}
-
-func (o *UserOptions) Validate() (err error) { return }
-
-func DiscoverWithCall(callOpt *CallOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Call
-		options.call = callOpt
+// TLSConfig Specify TLS Config
+func TLSConfig(t *tls.Config) Option {
+	return func(o *Options) {
+		o.TLSConfig = t
 	}
 }
 
-type CallOptions struct {
-}
-
-func CallOptionsFromHeaders(headers map[string]any) *CallOptions {
-	co := &CallOptions{}
-	return co
-}
-
-func (o *CallOptions) Validate() (err error) { return }
-
-func DiscoverWithSend(sendOpt *SendOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Send
-		options.send = sendOpt
+// SetLogger Specify *zap.Logger
+func SetLogger(lg *zap.Logger) Option {
+	return func(o *Options) {
+		o.Logger = lg
 	}
 }
 
-type SendOptions struct {
-}
-
-func SendOptionsFromHeaders(headers map[string]any) *SendOptions {
-	so := &SendOptions{}
-	return so
-}
-
-func (o *SendOptions) Validate() (err error) { return }
-
-func DiscoverWithReceive(receiveOpt *ReceiveOptions) DiscoverOption {
-	return func(options *DiscoverOptions) {
-		options.activity = pb.Activity_Receive
-		options.receive = receiveOpt
+func RegisterTTL(t time.Duration) RegisterOption {
+	return func(o *RegisterOptions) {
+		o.TTL = t
 	}
 }
 
-type ReceiveOptions struct {
-}
-
-func ReceiveOptionsFromHeaders(headers map[string]any) *ReceiveOptions {
-	ro := &ReceiveOptions{}
-	return ro
-}
-
-func (o *ReceiveOptions) Validate() (err error) { return }
-
-func DiscoverWithActivityId(id string) DiscoverOption {
-	return func(do *DiscoverOptions) {
-		do.activityId = id
+func RegisterNamespace(ns string) RegisterOption {
+	return func(o *RegisterOptions) {
+		o.Namespace = ns
 	}
 }
 
-func DiscoverWithNodeId(id string) DiscoverOption {
-	return func(do *DiscoverOptions) {
-		do.nodeId = id
+func DeregisterNamespace(ns string) DeregisterOption {
+	return func(o *DeregisterOptions) {
+		o.Namespace = ns
 	}
 }
 
-func DiscoverWithTimeout(timeout time.Duration) DiscoverOption {
-	return func(do *DiscoverOptions) {
-		do.timeout = timeout
+// WatchService watches a service
+func WatchService(name string) WatchOption {
+	return func(o *WatchOptions) {
+		o.Service = name
 	}
 }
 
-type ExecuteOptions struct {
-	timeout time.Duration
+func WatchNamespace(ns string) WatchOption {
+	return func(o *WatchOptions) {
+		o.Namespace = ns
+	}
 }
 
-type ExecuteOption func(*ExecuteOptions)
+func GetNamespace(ns string) GetOption {
+	return func(o *GetOptions) {
+		o.Namespace = ns
+	}
+}
 
-func ExecuteWithTimeout(timeout time.Duration) ExecuteOption {
-	return func(options *ExecuteOptions) {
-		options.timeout = timeout
+func ListNamespace(ns string) ListOption {
+	return func(o *ListOptions) {
+		o.Namespace = ns
 	}
 }

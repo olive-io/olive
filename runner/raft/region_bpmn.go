@@ -31,7 +31,6 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	"github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/zap"
 )
 
@@ -309,58 +308,58 @@ LOOP:
 }
 
 func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
-	act := trace.GetActivity()
-	id, _ := act.Element().Id()
-
-	options := discovery.DiscoverOptionsFromTrace(trace)
-	node, err := r.discovery.Discover(ctx, options...)
-	if err != nil {
-		r.lg.Error(
-			"discover activity node",
-			zap.String("activity", *id),
-			zap.Error(err),
-		)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	executor, err := node.GetExecutor(ctx, options...)
-	if err != nil {
-		r.lg.Error("discover activity executor",
-			zap.String("activity", *id),
-			zap.String("node", node.Get().Id),
-			zap.Error(err),
-		)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	execOpts := []discovery.ExecuteOption{}
-	req := &discovery.Request{
-		Context:     ctx,
-		Headers:     trace.GetHeaders(),
-		Properties:  trace.GetProperties(),
-		DataObjects: trace.GetDataObjects(),
-	}
-	resp, err := executor.Execute(ctx, req, execOpts...)
-	if err != nil {
-		r.lg.Error("discover activity executor",
-			zap.String("activity", *id),
-			zap.String("node", node.Get().Id),
-			zap.Error(err),
-		)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	r.lg.Debug("activity done", zap.String("activity", *id))
+	//act := trace.GetActivity()
+	//id, _ := act.Element().Id()
+	//
+	//options := discovery.DiscoverOptionsFromTrace(trace)
+	//node, err := r.discovery.Discover(ctx, options...)
+	//if err != nil {
+	//	r.lg.Error(
+	//		"discover activity node",
+	//		zap.String("activity", *id),
+	//		zap.Error(err),
+	//	)
+	//	trace.Do(activity.WithErr(err))
+	//	return
+	//}
+	//
+	//executor, err := node.GetExecutor(ctx, options...)
+	//if err != nil {
+	//	r.lg.Error("discover activity executor",
+	//		zap.String("activity", *id),
+	//		zap.String("node", node.Get().Id),
+	//		zap.Error(err),
+	//	)
+	//	trace.Do(activity.WithErr(err))
+	//	return
+	//}
+	//
+	//execOpts := []discovery.ExecuteOption{}
+	//req := &discovery.Request{
+	//	Context:     ctx,
+	//	Headers:     trace.GetHeaders(),
+	//	Properties:  trace.GetProperties(),
+	//	DataObjects: trace.GetDataObjects(),
+	//}
+	//resp, err := executor.Execute(ctx, req, execOpts...)
+	//if err != nil {
+	//	r.lg.Error("discover activity executor",
+	//		zap.String("activity", *id),
+	//		zap.String("node", node.Get().Id),
+	//		zap.Error(err),
+	//	)
+	//	trace.Do(activity.WithErr(err))
+	//	return
+	//}
+	//
+	//r.lg.Debug("activity done", zap.String("activity", *id))
 	doOpts := make([]activity.DoOption, 0)
-	if properties := resp.Properties; properties != nil {
-		doOpts = append(doOpts, activity.WithProperties(properties))
-	}
-	if dataObjects := resp.DataObjects; dataObjects != nil {
-		doOpts = append(doOpts, activity.WithObjects(dataObjects))
-	}
+	//if properties := resp.Properties; properties != nil {
+	//	doOpts = append(doOpts, activity.WithProperties(properties))
+	//}
+	//if dataObjects := resp.DataObjects; dataObjects != nil {
+	//	doOpts = append(doOpts, activity.WithObjects(dataObjects))
+	//}
 
 	trace.Do(doOpts...)
 }

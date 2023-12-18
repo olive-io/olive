@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discovery
+package client
 
 import (
 	"context"
@@ -20,28 +20,14 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
-type IDiscovery interface {
-	ListNode(ctx context.Context) ([]INode, error)
-	Discover(ctx context.Context, options ...DiscoverOption) (INode, error)
-}
+// CallFunc represents the individual call func
+type CallFunc func(ctx context.Context, node *pb.Node, req Request, rsp interface{}, opts CallOptions) error
 
-type INode interface {
-	Get() *pb.Node
-	GetExecutor(ctx context.Context, options ...DiscoverOption) (IExecutor, error)
-}
+// CallWrapper is a low level wrapper for the CallFunc
+type CallWrapper func(CallFunc) CallFunc
 
-type Request struct {
-	Context     context.Context
-	Headers     map[string]any
-	Properties  map[string]any
-	DataObjects map[string]any
-}
+// Wrapper wraps a client and returns a client
+type Wrapper func(Client) Client
 
-type Response struct {
-	Properties  map[string]any
-	DataObjects map[string]any
-}
-
-type IExecutor interface {
-	Execute(ctx context.Context, req *Request, options ...ExecuteOption) (*Response, error)
-}
+// StreamWrapper wraps a Stream and returns the equivalent
+type StreamWrapper func(Stream) Stream
