@@ -58,7 +58,7 @@ func (c *Codec) String() string {
 	return "json"
 }
 
-func NewCodec(c io.ReadWriteCloser) codec.Codec {
+func NewCodec(c io.ReadWriteCloser) codec.ICodec {
 	return &Codec{
 		Conn:    c,
 		Decoder: json.NewDecoder(c),

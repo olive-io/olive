@@ -30,7 +30,7 @@ type Options struct {
 	// Plugged interfaces
 	Codecs    map[string]codec.NewCodec
 	Discovery discovery.IDiscovery
-	Selector  selector.Selector
+	Selector  selector.ISelector
 
 	// Connection Pool
 	PoolSize int
@@ -175,7 +175,7 @@ func Discovery(dsy discovery.IDiscovery) Option {
 }
 
 // Selector select is used to select a node to route a request to
-func Selector(s selector.Selector) Option {
+func Selector(s selector.ISelector) Option {
 	return func(o *Options) {
 		o.Selector = s
 	}

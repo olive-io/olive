@@ -26,10 +26,10 @@ var (
 	ErrNoneAvailable = errors.New("none available")
 )
 
-// Selector builds on the registry as a mechanism to pick nodes
+// ISelector builds on the registry as a mechanism to pick nodes
 // and mark their status. This allows host pools and other things
 // to be built using various algorithms.
-type Selector interface {
+type ISelector interface {
 	Init(opts ...Option) error
 	Options() Options
 	// Select returns a function which should return the next node

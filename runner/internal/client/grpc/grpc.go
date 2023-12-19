@@ -96,7 +96,7 @@ func (g *grpcClient) secure(addr string) grpc.DialOption {
 	return grpc.WithTransportCredentials(insecure.NewCredentials())
 }
 
-func (g *grpcClient) next(request client.Request, opts client.CallOptions) (selector.Next, error) {
+func (g *grpcClient) next(request client.IRequest, opts client.CallOptions) (selector.Next, error) {
 	service, address, _ := mnet.Proxy(request.Service(), opts.Address)
 
 	// return remote address
@@ -117,7 +117,7 @@ func (g *grpcClient) next(request client.Request, opts client.CallOptions) (sele
 	return next, nil
 }
 
-func (g *grpcClient) call(ctx context.Context, node *pb.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
+func (g *grpcClient) call(ctx context.Context, node *pb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
 	address := node.Address
 
 	header := make(map[string]string)
@@ -183,7 +183,7 @@ func (g *grpcClient) call(ctx context.Context, node *pb.Node, req client.Request
 	return grr
 }
 
-func (g *grpcClient) stream(ctx context.Context, node *pb.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
+func (g *grpcClient) stream(ctx context.Context, node *pb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
 	address := node.Address
 	header := make(map[string]string)
 
@@ -347,11 +347,11 @@ func (g *grpcClient) Options() client.Options {
 	return g.opts
 }
 
-func (g *grpcClient) NewRequest(service, method string, req interface{}, reqOpts ...client.RequestOption) client.Request {
+func (g *grpcClient) NewRequest(service, method string, req interface{}, reqOpts ...client.RequestOption) client.IRequest {
 	return newGRPCRequest(service, method, req, g.opts.ContentType, reqOpts...)
 }
 
-func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
+func (g *grpcClient) Call(ctx context.Context, req client.IRequest, rsp interface{}, opts ...client.CallOption) error {
 	if req == nil {
 		return errors.New("req is nil")
 	} else if rsp == nil {
@@ -460,7 +460,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.Request, rsp interface
 	return gerr
 }
 
-func (g *grpcClient) Stream(ctx context.Context, req client.Request, opts ...client.CallOption) (client.Stream, error) {
+func (g *grpcClient) Stream(ctx context.Context, req client.IRequest, opts ...client.CallOption) (client.IStream, error) {
 	// make a copy of call opts
 	callOpts := g.opts.CallOptions
 	for _, opt := range opts {
@@ -489,7 +489,7 @@ func (g *grpcClient) Stream(ctx context.Context, req client.Request, opts ...cli
 		gstream = callOpts.CallWrappers[i-1](gstream)
 	}
 
-	call := func(i int) (client.Stream, error) {
+	call := func(i int) (client.IStream, error) {
 		// call backoff first. Someone may want an initial start delay
 		t, err := callOpts.Backoff(ctx, req, i)
 		if err != nil {
@@ -519,7 +519,7 @@ func (g *grpcClient) Stream(ctx context.Context, req client.Request, opts ...cli
 	}
 
 	type response struct {
-		stream client.Stream
+		stream client.IStream
 		err    error
 	}
 
@@ -595,7 +595,7 @@ func (g *grpcClient) getGrpcCallOptions() []grpc.CallOption {
 	return opts
 }
 
-func newClient(opts ...client.Option) client.Client {
+func newClient(opts ...client.Option) client.IClient {
 	options := client.NewOptions()
 	// default content type for grpc
 	options.ContentType = "application/grpc+proto"
@@ -611,7 +611,7 @@ func newClient(opts ...client.Option) client.Client {
 
 	rc.pool = newPool(options.PoolSize, options.PoolTTL, rc.poolMaxIdle(), rc.poolMaxStreams())
 
-	c := client.Client(rc)
+	c := client.IClient(rc)
 
 	// wrap in reverse
 	for i := len(options.Wrappers); i > 0; i-- {
@@ -621,6 +621,6 @@ func newClient(opts ...client.Option) client.Client {
 	return c
 }
 
-func NewClient(opts ...client.Option) client.Client {
+func NewClient(opts ...client.Option) client.IClient {
 	return newClient(opts...)
 }

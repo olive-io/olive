@@ -26,14 +26,14 @@ type jsonCodec struct{}
 
 type protoCodec struct{}
 
-type Codec interface {
+type ICodec interface {
 	Marshal(v interface{}) ([]byte, error)
 	Unmarshal(b []byte, v interface{}) error
 	String() string
 }
 
 var (
-	defaultHTTPCodecs = map[string]Codec{
+	defaultHTTPCodecs = map[string]ICodec{
 		"application/json":         jsonCodec{},
 		"application/proto":        protoCodec{},
 		"application/protobuf":     protoCodec{},

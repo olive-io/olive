@@ -27,7 +27,7 @@ type httpRequest struct {
 	opts        client.RequestOptions
 }
 
-func newHTTPRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) client.Request {
+func newHTTPRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) client.IRequest {
 	var opts client.RequestOptions
 	for _, o := range reqOpts {
 		o(&opts)
@@ -62,7 +62,7 @@ func (h *httpRequest) Endpoint() string {
 	return h.method
 }
 
-func (h *httpRequest) Codec() codec.Writer {
+func (h *httpRequest) Codec() codec.IWriter {
 	return nil
 }
 

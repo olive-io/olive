@@ -76,7 +76,7 @@ func (j *jsonCodec) ReadBody(b interface{}) error {
 	return nil
 }
 
-func NewCodec(rwc io.ReadWriteCloser) codec.Codec {
+func NewCodec(rwc io.ReadWriteCloser) codec.ICodec {
 	return &jsonCodec{
 		buf: bytes.NewBuffer(nil),
 		rwc: rwc,

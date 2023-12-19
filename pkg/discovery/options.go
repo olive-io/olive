@@ -15,33 +15,21 @@
 package discovery
 
 import (
-	"context"
-	"crypto/tls"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 type Options struct {
-	Addrs     []string
 	Namespace string
 	Timeout   time.Duration
-	Secure    bool
-	TLSConfig *tls.Config
 	Logger    *zap.Logger
-	// Other options for implementations of the interface
-	// can be stored in a context
-	Context context.Context
 }
 
 func NewOptions(opts ...Option) Options {
 	var options Options
 	for _, o := range opts {
 		o(&options)
-	}
-
-	if options.Context == nil {
-		options.Context = context.Background()
 	}
 
 	if options.Timeout == 0 {
@@ -100,13 +88,6 @@ type ListOption func(*ListOptions)
 
 type OpenAPIOption func(*OpenAPIOptions)
 
-// Addrs is the registry addresses to use
-func Addrs(addrs ...string) Option {
-	return func(o *Options) {
-		o.Addrs = addrs
-	}
-}
-
 func Namespace(ns string) Option {
 	return func(o *Options) {
 		o.Namespace = ns
@@ -116,20 +97,6 @@ func Namespace(ns string) Option {
 func Timeout(t time.Duration) Option {
 	return func(o *Options) {
 		o.Timeout = t
-	}
-}
-
-// Secure communication with the registry
-func Secure(b bool) Option {
-	return func(o *Options) {
-		o.Secure = b
-	}
-}
-
-// TLSConfig Specify TLS Config
-func TLSConfig(t *tls.Config) Option {
-	return func(o *Options) {
-		o.TLSConfig = t
 	}
 }
 

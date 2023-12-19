@@ -57,7 +57,7 @@ func (s *staticSelector) Close() error {
 	return nil
 }
 
-func NewSelector(opts ...selector.Option) selector.Selector {
+func NewSelector(opts ...selector.Option) selector.ISelector {
 	var options selector.Options
 	for _, o := range opts {
 		o(&options)

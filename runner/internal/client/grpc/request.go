@@ -28,7 +28,7 @@ type grpcRequest struct {
 	contentType string
 	request     interface{}
 	opts        client.RequestOptions
-	codec       codec.Codec
+	codec       codec.ICodec
 }
 
 // service Struct.Method /service.Struct/Method
@@ -52,7 +52,7 @@ func methodToGRPC(service, method string) string {
 	return fmt.Sprintf("/%s.%s/%s", service, mParts[0], mParts[1])
 }
 
-func newGRPCRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) client.Request {
+func newGRPCRequest(service, method string, request interface{}, contentType string, reqOpts ...client.RequestOption) client.IRequest {
 	var opts client.RequestOptions
 	for _, o := range reqOpts {
 		o(&opts)
@@ -88,7 +88,7 @@ func (g *grpcRequest) Endpoint() string {
 	return g.method
 }
 
-func (g *grpcRequest) Codec() codec.Writer {
+func (g *grpcRequest) Codec() codec.IWriter {
 	return g.codec
 }
 

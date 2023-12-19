@@ -98,7 +98,7 @@ func (c *registrySelector) Close() error {
 	return nil
 }
 
-func NewSelector(opts ...Option) (Selector, error) {
+func NewSelector(opts ...Option) (ISelector, error) {
 	sopts := Options{
 		Strategy: Random,
 	}

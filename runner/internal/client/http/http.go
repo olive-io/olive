@@ -41,7 +41,7 @@ type httpClient struct {
 	opts client.Options
 }
 
-func (h *httpClient) next(request client.Request, opts client.CallOptions) (selector.Next, error) {
+func (h *httpClient) next(request client.IRequest, opts client.CallOptions) (selector.Next, error) {
 	service := request.Service()
 
 	// get proxy
@@ -80,7 +80,7 @@ func (h *httpClient) next(request client.Request, opts client.CallOptions) (sele
 	return next, nil
 }
 
-func (h *httpClient) call(ctx context.Context, node *pb.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
+func (h *httpClient) call(ctx context.Context, node *pb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
 	// set the address
 	address := node.Address
 	header := make(http.Header)
@@ -153,7 +153,7 @@ func (h *httpClient) call(ctx context.Context, node *pb.Node, req client.Request
 	return nil
 }
 
-func (h *httpClient) stream(ctx context.Context, node *pb.Node, req client.Request, opts client.CallOptions) (client.Stream, error) {
+func (h *httpClient) stream(ctx context.Context, node *pb.Node, req client.IRequest, opts client.CallOptions) (client.IStream, error) {
 	// set the address
 	address := node.Address
 	header := make(http.Header)
@@ -191,7 +191,7 @@ func (h *httpClient) stream(ctx context.Context, node *pb.Node, req client.Reque
 	}, nil
 }
 
-func (h *httpClient) newHTTPCodec(contentType string) (Codec, error) {
+func (h *httpClient) newHTTPCodec(contentType string) (ICodec, error) {
 	if c, ok := defaultHTTPCodecs[contentType]; ok {
 		return c, nil
 	}
@@ -219,11 +219,11 @@ func (h *httpClient) Options() client.Options {
 	return h.opts
 }
 
-func (h *httpClient) NewRequest(service, method string, req interface{}, reqOpts ...client.RequestOption) client.Request {
+func (h *httpClient) NewRequest(service, method string, req interface{}, reqOpts ...client.RequestOption) client.IRequest {
 	return newHTTPRequest(service, method, req, h.opts.ContentType, reqOpts...)
 }
 
-func (h *httpClient) Call(ctx context.Context, req client.Request, rsp interface{}, opts ...client.CallOption) error {
+func (h *httpClient) Call(ctx context.Context, req client.IRequest, rsp interface{}, opts ...client.CallOption) error {
 	// make a copy of call opts
 	callOpts := h.opts.CallOptions
 	for _, opt := range opts {
@@ -323,7 +323,7 @@ func (h *httpClient) Call(ctx context.Context, req client.Request, rsp interface
 	return gerr
 }
 
-func (h *httpClient) Stream(ctx context.Context, req client.Request, opts ...client.CallOption) (client.Stream, error) {
+func (h *httpClient) Stream(ctx context.Context, req client.IRequest, opts ...client.CallOption) (client.IStream, error) {
 	// make a copy of call opts
 	callOpts := h.opts.CallOptions
 	for _, opt := range opts {
@@ -357,7 +357,7 @@ func (h *httpClient) Stream(ctx context.Context, req client.Request, opts ...cli
 	default:
 	}
 
-	call := func(i int) (client.Stream, error) {
+	call := func(i int) (client.IStream, error) {
 		// call backoff first. Someone may want an initial start delay
 		t, err := callOpts.Backoff(ctx, req, i)
 		if err != nil {
@@ -380,7 +380,7 @@ func (h *httpClient) Stream(ctx context.Context, req client.Request, opts ...cli
 	}
 
 	type response struct {
-		stream client.Stream
+		stream client.IStream
 		err    error
 	}
 
@@ -426,7 +426,7 @@ func (h *httpClient) String() string {
 	return "http"
 }
 
-func newClient(opts ...client.Option) (client.Client, error) {
+func newClient(opts ...client.Option) (client.IClient, error) {
 	options := client.Options{
 		CallOptions: client.CallOptions{
 			Backoff:        client.DefaultBackoff,
@@ -464,7 +464,7 @@ func newClient(opts ...client.Option) (client.Client, error) {
 		opts: options,
 	}
 
-	c := client.Client(rc)
+	c := client.IClient(rc)
 
 	// wrap in reverse
 	for i := len(options.Wrappers); i > 0; i-- {
@@ -474,6 +474,6 @@ func newClient(opts ...client.Option) (client.Client, error) {
 	return c, nil
 }
 
-func NewClient(opts ...client.Option) (client.Client, error) {
+func NewClient(opts ...client.Option) (client.IClient, error) {
 	return newClient(opts...)
 }

@@ -66,7 +66,7 @@ func (c *Codec) String() string {
 	return "proto"
 }
 
-func NewCodec(c io.ReadWriteCloser) codec.Codec {
+func NewCodec(c io.ReadWriteCloser) codec.ICodec {
 	return &Codec{
 		Conn: c,
 	}

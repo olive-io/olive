@@ -152,7 +152,7 @@ func (c *Codec) String() string {
 	return "grpc"
 }
 
-func NewCodec(c io.ReadWriteCloser) codec.Codec {
+func NewCodec(c io.ReadWriteCloser) codec.ICodec {
 	return &Codec{
 		Conn:        c,
 		ContentType: "application/grpc",

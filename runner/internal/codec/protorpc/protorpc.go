@@ -183,7 +183,7 @@ func (c *protoCodec) ReadBody(b interface{}) error {
 	return nil
 }
 
-func NewCodec(rwc io.ReadWriteCloser) codec.Codec {
+func NewCodec(rwc io.ReadWriteCloser) codec.ICodec {
 	return &protoCodec{
 		buf: bytes.NewBuffer(nil),
 		rwc: rwc,

@@ -31,8 +31,8 @@ type grpcStream struct {
 	err      error
 	conn     *grpc.ClientConn
 	stream   grpc.ClientStream
-	request  client.Request
-	response client.Response
+	request  client.IRequest
+	response client.IResponse
 	ctx      context.Context
 	cancel   func()
 }
@@ -41,11 +41,11 @@ func (g *grpcStream) Context() context.Context {
 	return g.ctx
 }
 
-func (g *grpcStream) Request() client.Request {
+func (g *grpcStream) Request() client.IRequest {
 	return g.request
 }
 
-func (g *grpcStream) Response() client.Response {
+func (g *grpcStream) Response() client.IResponse {
 	return g.response
 }
 

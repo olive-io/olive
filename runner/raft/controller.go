@@ -46,8 +46,7 @@ type Controller struct {
 	be      backend.IBackend
 	regionW wait.Wait
 
-	tracer    tracing.ITracer
-	discovery dsy.IDiscovery
+	tracer tracing.ITracer
 
 	reqId *idutil.Generator
 	reqW  wait.Wait

@@ -28,11 +28,11 @@ type response struct {
 	conn   *grpc.ClientConn
 	stream grpc.ClientStream
 	codec  encoding.Codec
-	gcodec codec.Codec
+	gcodec codec.ICodec
 }
 
 // Codec reads the response
-func (r *response) Codec() codec.Reader {
+func (r *response) Codec() codec.IReader {
 	return r.gcodec
 }
 

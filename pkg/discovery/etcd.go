@@ -51,7 +51,7 @@ func encode(s *pb.Service) string {
 
 func decode(ds []byte) *pb.Service {
 	s := &pb.Service{}
-	s.Unmarshal(ds)
+	_ = s.Unmarshal(ds)
 	return s
 }
 
@@ -140,7 +140,7 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 			zap.Uint64("lease_id", uint64(leaseID)))
 
 		if _, err := e.client.KeepAliveOnce(context.TODO(), leaseID); err != nil {
-			if err != rpctypes.ErrLeaseNotFound {
+			if !errors.Is(err, rpctypes.ErrLeaseNotFound) {
 				return err
 			}
 

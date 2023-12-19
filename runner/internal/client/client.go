@@ -40,19 +40,19 @@ var (
 	DefaultPoolTTL = time.Minute
 )
 
-// Client is the interface used to make requests to services.
+// IClient is the interface used to make requests to services.
 // It supports Request/Response via Transport and Publishing via the Broker.
 // It also supports bidirectional streaming of requests.
-type Client interface {
+type IClient interface {
 	Options() Options
-	NewRequest(service, endpoint string, req interface{}, reqOpts ...RequestOption) Request
-	Call(ctx context.Context, req Request, rsp interface{}, opts ...CallOption) error
-	Stream(ctx context.Context, req Request, opts ...CallOption) (Stream, error)
+	NewRequest(service, endpoint string, req interface{}, reqOpts ...RequestOption) IRequest
+	Call(ctx context.Context, req IRequest, rsp interface{}, opts ...CallOption) error
+	Stream(ctx context.Context, req IRequest, opts ...CallOption) (IStream, error)
 	String() string
 }
 
-// Request is the interface for a synchronous request used by Call or Stream
-type Request interface {
+// IRequest is the interface for a synchronous request used by Call or Stream
+type IRequest interface {
 	// Service the service to call
 	Service() string
 	// Method the action to take
@@ -64,29 +64,29 @@ type Request interface {
 	// Body the unencoded request body
 	Body() interface{}
 	// Codec writes to the encoded request writer. This is nil before a call is made
-	Codec() codec.Writer
+	Codec() codec.IWriter
 	// Stream indicates whether the request will be a streaming one rather than unary
 	Stream() bool
 }
 
-// Response is the response received from a service
-type Response interface {
+// IResponse is the response received from a service
+type IResponse interface {
 	// Codec reads the response
-	Codec() codec.Reader
+	Codec() codec.IReader
 	// Header reads the header
 	Header() map[string]string
 	// Read the undecoded response
 	Read() ([]byte, error)
 }
 
-// Stream is the interface for a bidirectional synchronous stream
-type Stream interface {
+// IStream is the interface for a bidirectional synchronous stream
+type IStream interface {
 	// Context for the stream
 	Context() context.Context
 	// Request the request made
-	Request() Request
+	Request() IRequest
 	// Response the response read
-	Response() Response
+	Response() IResponse
 	// Send will encode and send a request
 	Send(interface{}) error
 	// Recv will decode and read a response

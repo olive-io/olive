@@ -33,32 +33,32 @@ var (
 type MessageType int
 
 // NewCodec takes in a connection/buffer and returns a new Codec
-type NewCodec func(closer io.ReadWriteCloser) Codec
+type NewCodec func(closer io.ReadWriteCloser) ICodec
 
-// Codec encodes/decodes various types of messages used within vine
+// ICodec encodes/decodes various types of messages used within vine
 // ReadHeader and ReadBody are called in pair to read requests/responses
 // from the connection. Close is called when finished with the
 // connection. ReadBody may be called with a nil argument to force the
 // body to be read and discarded.
-type Codec interface {
-	Reader
-	Writer
+type ICodec interface {
+	IReader
+	IWriter
 	Close() error
 	String() string
 }
 
-type Reader interface {
+type IReader interface {
 	ReadHeader(*Message, MessageType) error
 	ReadBody(interface{}) error
 }
 
-type Writer interface {
+type IWriter interface {
 	Write(*Message, interface{}) error
 }
 
-// Marshaler is a simple encoding interface ued for the broker/transport
+// IMarshaler is a simple encoding interface ued for the broker/transport
 // where headers are not supported by the underlying implementation.
-type Marshaler interface {
+type IMarshaler interface {
 	Marshal(interface{}) ([]byte, error)
 	Unmarshal([]byte, interface{}) error
 	String() string

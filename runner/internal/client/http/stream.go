@@ -32,7 +32,7 @@ import (
 type httpStream struct {
 	sync.RWMutex
 	address string
-	codec   Codec
+	codec   ICodec
 	context context.Context
 	header  http.Header
 	seq     uint64
@@ -40,7 +40,7 @@ type httpStream struct {
 	err     error
 	conn    net.Conn
 	reader  *bufio.Reader
-	request client.Request
+	request client.IRequest
 }
 
 var (
@@ -60,11 +60,11 @@ func (h *httpStream) Context() context.Context {
 	return h.context
 }
 
-func (h *httpStream) Request() client.Request {
+func (h *httpStream) Request() client.IRequest {
 	return h.request
 }
 
-func (h *httpStream) Response() client.Response {
+func (h *httpStream) Response() client.IResponse {
 	return nil
 }
 
