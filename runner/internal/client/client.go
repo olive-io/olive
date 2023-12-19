@@ -22,8 +22,6 @@ import (
 )
 
 var (
-	// DefaultClient is a default client to use out of the box
-	DefaultClient Client
 	// DefaultContentType is the default content type for client
 	DefaultContentType = "application/protobuf"
 	// DefaultBackoff is the default backoff function for retries

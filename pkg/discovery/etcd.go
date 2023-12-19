@@ -1,26 +1,18 @@
-// MIT License
+// Copyright 2023 The olive Authors
 //
-// Copyright (c) 2020 Lack
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-package etcd
+package discovery
 
 import (
 	"context"
@@ -31,22 +23,21 @@ import (
 	"sync"
 	"time"
 
-	json "github.com/json-iterator/go"
 	hash "github.com/mitchellh/hashstructure"
 	pb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/pkg/discovery"
+	"github.com/olive-io/olive/pkg/runtime"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 )
 
 var (
-	prefix = "/vine/registry/"
+	prefix = runtime.DefaultRunnerDiscoveryNode
 )
 
 type etcdRegistry struct {
 	client  *clientv3.Client
-	options discovery.Options
+	options Options
 
 	sync.RWMutex
 	register map[string]uint64
@@ -54,13 +45,13 @@ type etcdRegistry struct {
 }
 
 func encode(s *pb.Service) string {
-	b, _ := json.Marshal(s)
+	b, _ := s.Marshal()
 	return string(b)
 }
 
 func decode(ds []byte) *pb.Service {
-	var s *pb.Service
-	json.Unmarshal(ds, &s)
+	s := &pb.Service{}
+	s.Unmarshal(ds)
 	return s
 }
 
@@ -74,11 +65,11 @@ func servicePath(ns, s string) string {
 	return path.Join(prefix, ns, strings.Replace(s, "/", "-", -1))
 }
 
-func (e *etcdRegistry) Options() discovery.Options {
+func (e *etcdRegistry) Options() Options {
 	return e.options
 }
 
-func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb.Node, opts ...discovery.RegisterOption) error {
+func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb.Node, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -88,7 +79,7 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 	leaseID, ok := e.leases[s.Name+node.Id]
 	e.RUnlock()
 
-	var options discovery.RegisterOptions
+	var options RegisterOptions
 	for _, o := range opts {
 		o(&options)
 	}
@@ -202,8 +193,8 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 		return err
 	}
 
-	lg.Sugar().Infof("Registering %s namespace %s id %s with lease %v and leaseID %v and ttl %v",
-		service.Name, service.Namespace, node.Id, lgr, lgr.ID, options.TTL)
+	lg.Sugar().Infof("Registering %s namespace %s id %s with lease %v and ttl %v",
+		service.Name, service.Namespace, node.Id, lgr.ID, options.TTL)
 	// create an entry for the node
 	if lgr != nil {
 		_, err = e.client.Put(ctx, nodePath(service.Namespace, service.Name, node.Id), encode(service), clientv3.WithLease(lgr.ID))
@@ -226,12 +217,12 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 	return nil
 }
 
-func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...discovery.DeregisterOption) error {
+func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...DeregisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("required at lease one node")
 	}
 
-	var options discovery.DeregisterOptions
+	var options DeregisterOptions
 	for _, o := range opts {
 		o(&options)
 	}
@@ -268,7 +259,7 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...di
 	return nil
 }
 
-func (e *etcdRegistry) Register(ctx context.Context, s *pb.Service, opts ...discovery.RegisterOption) error {
+func (e *etcdRegistry) Register(ctx context.Context, s *pb.Service, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -286,11 +277,11 @@ func (e *etcdRegistry) Register(ctx context.Context, s *pb.Service, opts ...disc
 	return grr
 }
 
-func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...discovery.GetOption) ([]*pb.Service, error) {
+func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetOption) ([]*pb.Service, error) {
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 	defer cancel()
 
-	var options discovery.GetOptions
+	var options GetOptions
 	for _, o := range opts {
 		o(&options)
 	}
@@ -300,13 +291,17 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...disc
 		namespace = options.Namespace
 	}
 
-	rsp, err := e.client.Get(ctx, servicePath(namespace, name), clientv3.WithPrefix(), clientv3.WithSerializable())
+	getOpts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := e.client.Get(ctx, servicePath(namespace, name), getOpts...)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(rsp.Kvs) == 0 {
-		return nil, discovery.ErrNotFound
+		return nil, ErrNotFound
 	}
 
 	serviceMap := map[string]*pb.Service{}
@@ -337,13 +332,13 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...disc
 	return services, nil
 }
 
-func (e *etcdRegistry) ListServices(ctx context.Context, opts ...discovery.ListOption) ([]*pb.Service, error) {
+func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]*pb.Service, error) {
 	versions := make(map[string]*pb.Service)
 
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 	defer cancel()
 
-	var options discovery.ListOptions
+	var options ListOptions
 	for _, o := range opts {
 		o(&options)
 	}
@@ -354,7 +349,11 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...discovery.ListO
 	}
 
 	key := path.Join(prefix, namespace) + "/"
-	rsp, err := e.client.Get(ctx, key, clientv3.WithPrefix(), clientv3.WithSerializable())
+	listOpts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := e.client.Get(ctx, key, listOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -395,16 +394,12 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...discovery.ListO
 	return services, nil
 }
 
-func (e *etcdRegistry) Watch(ctx context.Context, opts ...discovery.WatchOption) (discovery.Watcher, error) {
-	return newEtcdWatcher(e, e.options.Timeout, opts...)
+func (e *etcdRegistry) Watch(ctx context.Context, opts ...WatchOption) (Watcher, error) {
+	return newEtcdWatcher(ctx, e, opts...)
 }
 
-func (e *etcdRegistry) String() string {
-	return "etcd"
-}
-
-func New(client *clientv3.Client, opts ...discovery.Option) (discovery.IDiscovery, error) {
-	options := discovery.NewOptions(opts...)
+func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
+	options := NewOptions(opts...)
 	e := &etcdRegistry{
 		client:   client,
 		options:  options,

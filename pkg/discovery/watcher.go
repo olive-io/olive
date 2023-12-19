@@ -14,7 +14,15 @@
 
 package discovery
 
-import pb "github.com/olive-io/olive/api/discoverypb"
+import (
+	"context"
+	"errors"
+	"path"
+	"time"
+
+	pb "github.com/olive-io/olive/api/discoverypb"
+	clientv3 "go.etcd.io/etcd/client/v3"
+)
 
 // Watcher is an interface that returns updates
 // about services within the registry.
@@ -22,4 +30,108 @@ type Watcher interface {
 	// Next is a blocking call
 	Next() (*pb.Result, error)
 	Stop()
+}
+
+type etcdWatcher struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	stop   chan bool
+	w      clientv3.WatchChan
+	client *clientv3.Client
+}
+
+func newEtcdWatcher(ctx context.Context, r *etcdRegistry, opts ...WatchOption) (Watcher, error) {
+	var wo WatchOptions
+	for _, o := range opts {
+		o(&wo)
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	stop := make(chan bool, 1)
+
+	namespace := r.options.Namespace
+	if wo.Namespace != "" {
+		namespace = wo.Namespace
+	}
+
+	watchPath := prefix
+	if len(wo.Service) > 0 {
+		watchPath = servicePath(namespace, wo.Service) + "/"
+	} else {
+		watchPath = path.Join(prefix, namespace) + "/"
+	}
+
+	wopts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithPrevKV(),
+	}
+
+	watcher := &etcdWatcher{
+		ctx:    ctx,
+		cancel: cancel,
+		stop:   stop,
+		w:      r.client.Watch(ctx, watchPath, wopts...),
+		client: r.client,
+	}
+	go watcher.run()
+	return watcher, nil
+}
+
+func (ew *etcdWatcher) run() {
+	defer ew.cancel()
+	for {
+		select {
+		case <-ew.stop:
+			return
+		}
+	}
+}
+
+func (ew *etcdWatcher) Next() (*pb.Result, error) {
+	for wresp := range ew.w {
+		if wresp.Err() != nil {
+			return nil, wresp.Err()
+		}
+		if wresp.Canceled {
+			return nil, errors.New("could not get next, watch is canceled")
+		}
+		for _, ev := range wresp.Events {
+			service := decode(ev.Kv.Value)
+			var action string
+
+			switch ev.Type {
+			case clientv3.EventTypePut:
+				if ev.IsCreate() {
+					action = "create"
+				} else if ev.IsModify() {
+					action = "update"
+				}
+			case clientv3.EventTypeDelete:
+				action = "delete"
+
+				// get service from prevKv
+				service = decode(ev.PrevKv.Value)
+			}
+
+			if service == nil {
+				continue
+			}
+			return &pb.Result{
+				Action:    action,
+				Service:   service,
+				Timestamp: time.Now().Unix(),
+			}, nil
+		}
+	}
+
+	return nil, errors.New("could not get next")
+}
+
+func (ew *etcdWatcher) Stop() {
+	select {
+	case <-ew.stop:
+		return
+	default:
+		close(ew.stop)
+	}
 }

@@ -27,7 +27,7 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/runner/internal/client"
 	"github.com/olive-io/olive/runner/internal/client/selector"
-	mnet "github.com/olive-io/olive/runner/internal/util/net"
+	mnet "github.com/olive-io/olive/runner/internal/net"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

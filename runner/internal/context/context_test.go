@@ -18,7 +18,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/olive-io/olive/runner/internal/util/context/metadata"
+	"github.com/olive-io/olive/runner/internal/context/metadata"
 )
 
 func TestRequestToContext(t *testing.T) {

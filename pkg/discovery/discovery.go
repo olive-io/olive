@@ -43,5 +43,4 @@ type IDiscovery interface {
 	GetService(context.Context, string, ...GetOption) ([]*pb.Service, error)
 	ListServices(context.Context, ...ListOption) ([]*pb.Service, error)
 	Watch(context.Context, ...WatchOption) (Watcher, error)
-	String() string
 }
