@@ -16,7 +16,6 @@ package grpc
 
 import (
 	"context"
-	"crypto/tls"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding"
@@ -25,7 +24,6 @@ import (
 )
 
 type codecsKey struct{}
-type tlsAuth struct{}
 type grpcDialOptions struct{}
 type grpcCallOptions struct{}
 
@@ -41,16 +39,6 @@ func Codec(contentType string, c encoding.Codec) client.Option {
 		}
 		codecs[contentType] = c
 		o.Context = context.WithValue(o.Context, codecsKey{}, codecs)
-	}
-}
-
-// AuthTLS should be used to setup a secure authentication using TLS
-func AuthTLS(t *tls.Config) client.Option {
-	return func(o *client.Options) {
-		if o.Context == nil {
-			o.Context = context.Background()
-		}
-		o.Context = context.WithValue(o.Context, tlsAuth{}, t)
 	}
 }
 

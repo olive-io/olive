@@ -155,7 +155,14 @@ func (p *pool) getConn(addr string, opts ...grpc.DialOption) (*poolConn, error) 
 	if err != nil {
 		return nil, err
 	}
-	conn = &poolConn{cc, nil, addr, p, sp, 1, time.Now().Unix(), nil, nil, false}
+	conn = &poolConn{
+		ClientConn: cc,
+		addr:       addr,
+		pool:       p,
+		sp:         sp,
+		streams:    1,
+		created:    time.Now().Unix(),
+	}
 
 	// add conn to streams pool
 	p.Lock()

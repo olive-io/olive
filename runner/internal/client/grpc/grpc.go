@@ -25,9 +25,9 @@ import (
 
 	"github.com/cockroachdb/errors"
 	pb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/runner/internal/client"
 	"github.com/olive-io/olive/runner/internal/client/selector"
-	mnet "github.com/olive-io/olive/runner/internal/net"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -63,15 +63,12 @@ type grpcClient struct {
 }
 
 // secure returns the dial option for whether it's a secure or insecure connection
-func (g *grpcClient) secure(addr string) grpc.DialOption {
+func (g *grpcClient) secure(addr string, opts *client.CallOptions) grpc.DialOption {
 	// first we check if there's tls config
-	if g.opts.Context != nil {
-		if v := g.opts.Context.Value(tlsAuth{}); v != nil {
-			tlsCfg := v.(*tls.Config)
-			creds := credentials.NewTLS(tlsCfg)
-			// return tls config if it exists
-			return grpc.WithTransportCredentials(creds)
-		}
+	if tc := opts.TLSConfig; tc != nil {
+		creds := credentials.NewTLS(tc)
+		// return tls config if it exists
+		return grpc.WithTransportCredentials(creds)
 	}
 
 	// default config
@@ -97,7 +94,7 @@ func (g *grpcClient) secure(addr string) grpc.DialOption {
 }
 
 func (g *grpcClient) next(request client.IRequest, opts client.CallOptions) (selector.Next, error) {
-	service, address, _ := mnet.Proxy(request.Service(), opts.Address)
+	service, address := request.Service(), opts.Address
 
 	// return remote address
 	if len(address) > 0 {
@@ -108,7 +105,7 @@ func (g *grpcClient) next(request client.IRequest, opts client.CallOptions) (sel
 	// get next nodes from the selector
 	next, err := g.opts.Selector.Select(service, opts.SelectOptions...)
 	if err != nil {
-		if err == selector.ErrNotFound {
+		if errors.Is(err, selector.ErrNotFound) {
 			return nil, errors.Wrapf(err, "service %s", service)
 		}
 		return nil, errors.Wrapf(err, "selecting %s node", service)
@@ -138,20 +135,19 @@ func (g *grpcClient) call(ctx context.Context, node *pb.Node, req client.IReques
 	maxSendMsgSize := g.maxSendMsgSizeValue()
 
 	var grr error
-
-	grpcDialOptions := []grpc.DialOption{
-		g.secure(address),
+	gOpts := []grpc.DialOption{
+		g.secure(address, &opts),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(maxRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxSendMsgSize),
 		),
 	}
 
-	if opts := g.getGrpcDialOptions(); opts != nil {
-		grpcDialOptions = append(grpcDialOptions, opts...)
+	if lopts := g.getGrpcDialOptions(); lopts != nil {
+		gOpts = append(gOpts, lopts...)
 	}
 
-	cc, err := g.pool.getConn(address, grpcDialOptions...)
+	cc, err := g.pool.getConn(address, gOpts...)
 	if err != nil {
 		return errors.Wrap(err, "sending request")
 	}
@@ -161,15 +157,15 @@ func (g *grpcClient) call(ctx context.Context, node *pb.Node, req client.IReques
 	ch := make(chan error, 1)
 
 	go func() {
-		grpcCallOptions := []grpc.CallOption{
+		callOpts := []grpc.CallOption{
 			grpc.ForceCodec(cf),
 			grpc.CallContentSubtype(cf.Name()),
 		}
-		if opts := g.getGrpcCallOptions(); opts != nil {
-			grpcCallOptions = append(grpcCallOptions, opts...)
+		if lopts := g.getGrpcCallOptions(); lopts != nil {
+			callOpts = append(callOpts, lopts...)
 		}
 
-		invokeErr := cc.Invoke(ctx, methodToGRPC(req.Service(), req.Endpoint()), req.Body(), rsp, grpcCallOptions...)
+		invokeErr := cc.Invoke(ctx, methodToGRPC(req.Service(), req.Endpoint()), req.Body(), rsp, callOpts...)
 		ch <- parseErr(invokeErr)
 	}()
 
@@ -216,19 +212,19 @@ func (g *grpcClient) stream(ctx context.Context, node *pb.Node, req client.IRequ
 	maxRecvMsgSize := g.maxRecvMsgSizeValue()
 	maxSendMsgSize := g.maxSendMsgSizeValue()
 
-	grpcDialOptions := []grpc.DialOption{
-		g.secure(address),
+	gOpts := []grpc.DialOption{
+		g.secure(address, &opts),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(maxRecvMsgSize),
 			grpc.MaxCallSendMsgSize(maxSendMsgSize),
 		),
 	}
 
-	if opts := g.getGrpcDialOptions(); opts != nil {
-		grpcDialOptions = append(grpcDialOptions, opts...)
+	if lopts := g.getGrpcDialOptions(); lopts != nil {
+		gOpts = append(gOpts, lopts...)
 	}
 
-	cc, err := grpc.DialContext(dialCtx, address, grpcDialOptions...)
+	cc, err := grpc.DialContext(dialCtx, address, gOpts...)
 	if err != nil {
 		return errors.Wrapf(err, " sending request")
 	}
@@ -239,18 +235,18 @@ func (g *grpcClient) stream(ctx context.Context, node *pb.Node, req client.IRequ
 		ServerStreams: true,
 	}
 
-	grpcCallOptions := []grpc.CallOption{
+	callOpts := []grpc.CallOption{
 		grpc.ForceCodec(wc),
 		grpc.CallContentSubtype(cf.Name()),
 	}
-	if opts := g.getGrpcCallOptions(); opts != nil {
-		grpcCallOptions = append(grpcCallOptions, opts...)
+	if lopts := g.getGrpcCallOptions(); lopts != nil {
+		callOpts = append(callOpts, lopts...)
 	}
 
 	// create a new cancelling context
 	newCtx, cancel := context.WithCancel(ctx)
 
-	st, err := cc.NewStream(newCtx, desc, methodToGRPC(req.Service(), req.Endpoint()), grpcCallOptions...)
+	st, err := cc.NewStream(newCtx, desc, methodToGRPC(req.Service(), req.Endpoint()), callOpts...)
 	if err != nil {
 		// we need to clean up as we dialled and created a context
 		// cancel the context
@@ -415,7 +411,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.IRequest, rsp interfac
 		node, err := next()
 		service := req.Service()
 		if err != nil {
-			if err == selector.ErrNotFound {
+			if errors.Is(err, selector.ErrNotFound) {
 				return errors.Wrapf(err, "service %s", service)
 			}
 			return errors.Wrapf(err, "selecting %s node", service)
@@ -595,13 +591,27 @@ func (g *grpcClient) getGrpcCallOptions() []grpc.CallOption {
 	return opts
 }
 
-func newClient(opts ...client.Option) client.IClient {
+func newClient(opts ...client.Option) (client.IClient, error) {
 	options := client.NewOptions()
 	// default content type for grpc
 	options.ContentType = "application/grpc+proto"
 
 	for _, o := range opts {
 		o(&options)
+	}
+
+	if options.Discovery == nil {
+		return nil, discovery.ErrNoDiscovery
+	}
+
+	if options.Selector == nil {
+		var err error
+		options.Selector, err = selector.NewSelector(
+			selector.Discovery(options.Discovery),
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	rc := &grpcClient{
@@ -618,9 +628,9 @@ func newClient(opts ...client.Option) client.IClient {
 		c = options.Wrappers[i-1](c)
 	}
 
-	return c
+	return c, nil
 }
 
-func NewClient(opts ...client.Option) client.IClient {
+func NewClient(opts ...client.Option) (client.IClient, error) {
 	return newClient(opts...)
 }

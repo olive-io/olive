@@ -25,14 +25,9 @@ import (
 
 	hash "github.com/mitchellh/hashstructure"
 	pb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/pkg/runtime"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-)
-
-var (
-	prefix = runtime.DefaultRunnerDiscoveryNode
 )
 
 type etcdRegistry struct {
@@ -55,13 +50,13 @@ func decode(ds []byte) *pb.Service {
 	return s
 }
 
-func nodePath(ns, s, id string) string {
+func nodePath(prefix, ns, s, id string) string {
 	service := strings.ReplaceAll(s, "/", "-")
 	node := strings.ReplaceAll(id, "/", "-")
 	return path.Join(prefix, ns, service, node)
 }
 
-func servicePath(ns, s string) string {
+func servicePath(prefix, ns, s string) string {
 	return path.Join(prefix, ns, strings.Replace(s, "/", "-", -1))
 }
 
@@ -92,13 +87,14 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 		namespace = options.Namespace
 	}
 
+	prefix := e.options.Prefix
 	lg := e.options.Logger
 
 	if !ok {
 		// missing lease, check if the key exists
 
 		// look for the existing key
-		rsp, err := e.client.Get(ctx, nodePath(namespace, s.Name, node.Id), clientv3.WithSerializable())
+		rsp, err := e.client.Get(ctx, nodePath(prefix, namespace, s.Name, node.Id), clientv3.WithSerializable())
 		if err != nil {
 			return err
 		}
@@ -197,9 +193,9 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 		service.Name, service.Namespace, node.Id, lgr.ID, options.TTL)
 	// create an entry for the node
 	if lgr != nil {
-		_, err = e.client.Put(ctx, nodePath(service.Namespace, service.Name, node.Id), encode(service), clientv3.WithLease(lgr.ID))
+		_, err = e.client.Put(ctx, nodePath(prefix, service.Namespace, service.Name, node.Id), encode(service), clientv3.WithLease(lgr.ID))
 	} else {
-		_, err = e.client.Put(ctx, nodePath(service.Namespace, service.Name, node.Id), encode(service))
+		_, err = e.client.Put(ctx, nodePath(prefix, service.Namespace, service.Name, node.Id), encode(service))
 	}
 	if err != nil {
 		return err
@@ -236,6 +232,7 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...De
 		s.Namespace = namespace
 	}
 
+	prefix := e.options.Prefix
 	log := e.options.Logger.Sugar()
 	for _, node := range s.Nodes {
 		e.Lock()
@@ -248,7 +245,7 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...De
 		ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 
 		log.Infof("Deregistering %s id %s", s.Name, node.Id)
-		_, err := e.client.Delete(ctx, nodePath(namespace, s.Name, node.Id))
+		_, err := e.client.Delete(ctx, nodePath(prefix, namespace, s.Name, node.Id))
 		if err != nil {
 			cancel()
 			return err
@@ -291,11 +288,12 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetO
 		namespace = options.Namespace
 	}
 
+	prefix := e.options.Prefix
 	getOpts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
-	rsp, err := e.client.Get(ctx, servicePath(namespace, name), getOpts...)
+	rsp, err := e.client.Get(ctx, servicePath(prefix, namespace, name), getOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -348,6 +346,7 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]
 		namespace = options.Namespace
 	}
 
+	prefix := e.options.Prefix
 	key := path.Join(prefix, namespace) + "/"
 	listOpts := []clientv3.OpOption{
 		clientv3.WithPrefix(),

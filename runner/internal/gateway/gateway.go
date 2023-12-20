@@ -15,133 +15,242 @@
 package gateway
 
 import (
-	"regexp"
+	"net/http"
 	"strings"
 
 	"github.com/cockroachdb/errors"
 	pb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/runner/internal/client"
+	"github.com/olive-io/olive/runner/internal/client/grpc"
+	ch "github.com/olive-io/olive/runner/internal/client/http"
+	"github.com/olive-io/olive/runner/internal/client/selector"
+	ctx "github.com/olive-io/olive/runner/internal/context"
+	"github.com/olive-io/olive/runner/internal/gateway/router"
 )
 
-// Endpoint is a mapping between an RPC method and HTTP endpoint
-type Endpoint struct {
-	// RPC Method e.g. Greeter.Hello
-	Name string `json:"name,omitempty"`
-	// Endpoint Activity
-	Activity pb.Activity `json:"activity,omitempty"`
-	// API Handler e.g rpc, proxy
-	Handler string `json:"handler,omitempty"`
-	// HTTP Host e.g example.com
-	Host []string `json:"host,omitempty"`
-	// HTTP Methods e.g GET, POST
-	Method []string `json:"method,omitempty"`
-	// HTTP Path e.g /greeter. Expect POSIX regex
-	Path []string `json:"path,omitempty"`
-	// Body destination
-	// "*" or "" - top level message value
-	// "string" - inner message value
-	Body string `json:"body,omitempty"`
-	// Stream flag
-	Stream string `json:"stream,omitempty"`
+var (
+	ErrNoClient     = errors.New("no client")
+	ErrLargeRequest = errors.New("request too large")
+)
+
+const (
+	gRPCProtocol = "grpc"
+	httpProtocol = "http"
+)
+
+type IGateway interface {
+	Handle(req *http.Request) ([]byte, error)
 }
 
-// Service represents an API service
-type Service struct {
-	// Name of service
-	Name string `json:"name,omitempty"`
-	// The endpoint for this service
-	Endpoint *Endpoint `json:"endpoint,omitempty"`
-	// Versions of this service
-	Services []*pb.Service `json:"services,omitempty"`
-}
-
-// Encode encodes an endpoint to endpoint metadata
-func Encode(e *Endpoint) map[string]string {
-	if e == nil {
-		return nil
-	}
-
-	// endpoint map
-	ep := make(map[string]string)
-
-	// set values only if they exist
-	set := func(k, v string) {
-		if len(v) == 0 {
-			return
-		}
-		ep[k] = v
-	}
-
-	set("endpoint", e.Name)
-	set("handler", e.Handler)
-	set("method", strings.Join(e.Method, ","))
-	set("path", strings.Join(e.Path, ","))
-	set("host", strings.Join(e.Host, ","))
-	set("stream", string(e.Stream))
-
-	return ep
-}
-
-// Decode decodes endpoint metadata into an endpoint
-func Decode(e map[string]string) *Endpoint {
-	if e == nil {
-		return nil
-	}
-
-	return &Endpoint{
-		Name:    e["endpoint"],
-		Handler: e["handler"],
-		Method:  slice(e["method"]),
-		Path:    slice(e["path"]),
-		Host:    slice(e["host"]),
-		Stream:  e["stream"],
+// strategy is a hack for selection
+func strategy(services []*pb.Service) selector.Strategy {
+	return func(_ []*pb.Service) selector.Next {
+		// ignore input to this function, use services above
+		return selector.RoundRobin(services)
 	}
 }
 
-// Validate validates an endpoint to guarantee it won't blow up when being served
-func Validate(e *Endpoint) error {
-	if e == nil {
-		return errors.New("endpoint is nil")
+type gateway struct {
+	Config
+
+	gr      router.Router
+	gsr     selector.ISelector
+	clients map[string]client.IClient
+}
+
+func NewGateway(cfg Config) (IGateway, error) {
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
 
-	if len(e.Name) == 0 {
-		return errors.New("name required")
+	discovery := cfg.Discovery
+	sr, err := selector.NewSelector(selector.Discovery(discovery))
+	if err != nil {
+		return nil, err
 	}
 
-	for _, p := range e.Path {
-		ps := p[0]
-		pe := p[len(p)-1]
-
-		if ps == '^' && pe == '$' {
-			_, err := regexp.CompilePOSIX(p)
-			if err != nil {
-				return err
-			}
-		} else if ps == '^' && pe != '$' {
-			return errors.New("invalid path")
-		} else if ps != '^' && pe == '$' {
-			return errors.New("invalid path")
-		}
+	gcc, err := grpc.NewClient(client.Discovery(discovery), client.Selector(sr))
+	if err != nil {
+		return nil, err
 	}
 
-	if len(e.Handler) == 0 {
-		return errors.New("invalid handler")
+	hcc, err := ch.NewClient(client.Discovery(discovery), client.Selector(sr))
+	if err != nil {
+		return nil, err
 	}
 
+	r := router.NewRouter(cfg.Logger, cfg.Discovery)
+	gw := &gateway{
+		Config: cfg,
+		gr:     r,
+		gsr:    sr,
+		clients: map[string]client.IClient{
+			gRPCProtocol: gcc,
+			httpProtocol: hcc,
+		},
+	}
+
+	return gw, nil
+}
+
+func (gw *gateway) Stop() error {
+	if err := gw.gr.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func strip(s string) string {
-	return strings.TrimSpace(s)
-}
+func (gw *gateway) Handle(hreq *http.Request) ([]byte, error) {
+	bsize := DefaultMaxRecvSize
+	if gw.MaxRecvSize > 0 {
+		bsize = gw.MaxRecvSize
+	}
 
-func slice(s string) []string {
-	var sl []string
+	ct := hreq.Header.Get("Content-Type")
+	if ct == "" {
+		hreq.Header.Set("Content-Type", "application/json")
+		ct = "application/json"
+	}
 
-	for _, p := range strings.Split(s, ",") {
-		if str := strip(p); len(str) > 0 {
-			sl = append(sl, str)
+	// create context
+	cx := ctx.FromRequest(hreq)
+	//for k, v := range h.opts.Metadata {
+	//	cx = metadata.Set(cx, k, v)
+	//}
+
+	// set merged context to request
+	r := hreq.Clone(cx)
+	service, err := gw.gr.Route(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(service.Services) == 0 {
+		return nil, router.ErrNotFound
+	}
+
+	var protocol string
+	for _, s := range service.Services {
+		if md := s.Metadata; md != nil {
+			protocol = md["protocol"]
+			if protocol != "" {
+				break
+			}
+		}
+	}
+	if protocol == "" {
+		return nil, errors.Wrapf(err, "no protocol")
+	}
+
+	var cc client.IClient
+	var ok bool
+	switch protocol {
+	case gRPCProtocol:
+		cc, ok = gw.clients[protocol]
+	case httpProtocol:
+		cc, ok = gw.clients[protocol]
+	default:
+		return nil, errors.Wrapf(err, "protocol is %s", protocol)
+	}
+
+	if !ok {
+		return nil, errors.Wrapf(ErrNoClient, "protocol is %s", protocol)
+	}
+
+	so := selector.WithStrategy(strategy(service.Services))
+	callOpts := []client.CallOption{
+		client.WithSelectOption(so),
+	}
+
+	// Strip charset from Content-Type (like `application/json; charset=UTF-8`)
+	if idx := strings.IndexRune(ct, ';'); idx >= 0 {
+		ct = ct[:idx]
+	}
+
+	// walk the standard call path
+	// get payload
+	br, err := requestPayload(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if lsize := int64(len(br)); lsize > bsize {
+		return nil, errors.Wrapf(ErrLargeRequest, "request(%d) > limit(%d)", lsize, bsize)
+	}
+
+	var rsp []byte
+	switch {
+	// proto codecs
+	case hasCodec(ct, protoCodecs):
+		request := &Message{}
+		// if the extracted payload isn't empty lets use it
+		if len(br) > 0 {
+			request = NewMessage(br)
+		}
+
+		// create request/response
+		response := Message{}
+
+		req := cc.NewRequest(
+			service.Name,
+			service.Endpoint.Name,
+			request,
+			client.WithContentType(ct),
+		)
+
+		// make the call
+		if err = cc.Call(cx, req, &response, callOpts...); err != nil {
+			return nil, err
+		}
+
+		// marshall response
+		rsp, err = response.Marshal()
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		// if json codec is not present set to json
+		if !hasCodec(ct, jsonCodecs) {
+			ct = "application/json"
+		}
+
+		// default to trying json
+		var request RawMessage
+		// if the extracted payload isn't empty lets use it
+		if len(br) > 0 {
+			request = br
+		}
+
+		// create request/response
+		var response RawMessage
+
+		req := cc.NewRequest(
+			service.Name,
+			service.Endpoint.Name,
+			&request,
+			client.WithContentType(ct),
+		)
+		// make the call
+		if err = cc.Call(cx, req, &response, callOpts...); err != nil {
+			return nil, err
+		}
+
+		// marshall response
+		rsp, err = response.MarshalJSON()
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return sl
+	return rsp, nil
+}
+
+func hasCodec(ct string, codecs []string) bool {
+	for _, c := range codecs {
+		if ct == c {
+			return true
+		}
+	}
+	return false
 }

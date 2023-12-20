@@ -30,6 +30,7 @@ import (
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	"github.com/olive-io/olive/runner/internal/gateway"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
@@ -47,6 +48,7 @@ type Controller struct {
 	regionW wait.Wait
 
 	tracer tracing.ITracer
+	gw     gateway.IGateway
 
 	reqId *idutil.Generator
 	reqW  wait.Wait
@@ -68,7 +70,6 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 
 	tracer := tracing.NewTracer(ctx)
 	el := newEventListener(tracer)
-
 	sl := newSystemListener()
 
 	dir := cfg.DataDir
@@ -96,17 +97,27 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 		return nil, err
 	}
 
+	gwCfg := gateway.Config{
+		Logger:    lg,
+		Discovery: discovery,
+	}
+	gw, err := gateway.NewGateway(gwCfg)
+	if err != nil {
+		return nil, err
+	}
+
 	// deep copy *pb.Runner
 	runner := pr.Clone()
+	ctx, cancel := context.WithCancel(ctx)
 
 	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
-	ctx, cancel := context.WithCancel(ctx)
 	controller := &Controller{
 		Config:  cfg,
 		ctx:     ctx,
 		cancel:  cancel,
 		nh:      nh,
 		tracer:  tracer,
+		gw:      gw,
 		be:      be,
 		regionW: wait.New(),
 		reqId:   idutil.NewGenerator(0, time.Now()),

@@ -148,7 +148,11 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	cc.RaftRTTMillisecond = r.RaftRTTMillisecond
 	cc.Logger = r.Logger
 
-	discovery, err := dsy.NewDiscovery(r.oct.Client, dsy.SetLogger(r.Logger))
+	dopts := []dsy.Option{
+		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
+		dsy.SetLogger(r.Logger),
+	}
+	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -22,6 +22,10 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
+const (
+	ServiceURL = "/discoverypb.Executor/ServiceCall"
+)
+
 var (
 	DefaultRegistryTimeout = time.Second * 10
 	// DefaultNamespace the default value of namespace

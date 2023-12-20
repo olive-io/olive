@@ -16,6 +16,7 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
 	"time"
 
 	"github.com/olive-io/olive/pkg/discovery"
@@ -64,6 +65,8 @@ type CallOptions struct {
 	RequestTimeout time.Duration
 	// Stream timeout for the stream
 	StreamTimeout time.Duration
+	// TLSConfig set *tls.Config for client
+	TLSConfig *tls.Config
 	// Use the services own auth token
 	ServiceToken bool
 	// Duration to cache the response for
@@ -259,6 +262,12 @@ func WithAddress(a ...string) CallOption {
 func WithSelectOption(so ...selector.SelectOption) CallOption {
 	return func(o *CallOptions) {
 		o.SelectOptions = append(o.SelectOptions, so...)
+	}
+}
+
+func WithCallTLS(tc *tls.Config) CallOption {
+	return func(o *CallOptions) {
+		o.TLSConfig = tc
 	}
 }
 

@@ -28,7 +28,7 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/discovery/cache"
 	"github.com/olive-io/olive/runner/internal/context/metadata"
-	"github.com/olive-io/olive/runner/internal/gateway"
+	"github.com/olive-io/olive/runner/internal/gateway/api"
 	"github.com/olive-io/olive/runner/internal/gateway/httprule"
 	"github.com/olive-io/olive/runner/internal/gateway/resolver"
 	"go.uber.org/zap"
@@ -44,13 +44,13 @@ var (
 // Router is used to determine an endpoint for a request
 type Router interface {
 	// Endpoint returns an api.Service endpoint or an error if it does not exist
-	Endpoint(r *http.Request) (*gateway.Service, error)
+	Endpoint(r *http.Request) (*api.Service, error)
 	// Register endpoint in router
-	Register(ep *gateway.Endpoint) error
+	Register(ep *api.Endpoint) error
 	// Deregister endpoint from router
-	Deregister(ep *gateway.Endpoint) error
+	Deregister(ep *api.Endpoint) error
 	// Route returns an api.Service route
-	Route(r *http.Request) (*gateway.Service, error)
+	Route(r *http.Request) (*api.Service, error)
 	// Close stop the router
 	Close() error
 }
@@ -76,7 +76,7 @@ type registryRouter struct {
 	rc cache.Cache
 
 	sync.RWMutex
-	eps map[string]*gateway.Service
+	eps map[string]*api.Service
 	// compiled regexp for host and path
 	ceps map[string]*endpoint
 
@@ -152,7 +152,7 @@ func (r *registryRouter) process(res *pb.Result) {
 // store local endpoint cache
 func (r *registryRouter) store(services []*pb.Service) {
 	// endpoints
-	eps := map[string]*gateway.Service{}
+	eps := map[string]*api.Service{}
 
 	// services
 	names := map[string]bool{}
@@ -167,10 +167,10 @@ func (r *registryRouter) store(services []*pb.Service) {
 			// create a key service:endpoint_name
 			key := fmt.Sprintf("%s.%s", service.Name, sep.Name)
 			// decode endpoint
-			end := gateway.Decode(sep.Metadata)
+			end := api.Decode(sep.Metadata)
 
 			// if we got nothing skip
-			if err := gateway.Validate(end); err != nil {
+			if err := api.Validate(end); err != nil {
 				r.lg.Debug("endpoint validation failed", zap.Error(err))
 				continue
 			}
@@ -178,7 +178,7 @@ func (r *registryRouter) store(services []*pb.Service) {
 			// try to get endpoint
 			ep, ok := eps[key]
 			if !ok {
-				ep = &gateway.Service{Name: service.Name}
+				ep = &api.Service{Name: service.Name}
 			}
 
 			// overwrite the endpoint
@@ -299,15 +299,15 @@ func (r *registryRouter) watch() {
 	}
 }
 
-func (r *registryRouter) Register(ep *gateway.Endpoint) error {
+func (r *registryRouter) Register(ep *api.Endpoint) error {
 	return nil
 }
 
-func (r *registryRouter) Deregister(ep *gateway.Endpoint) error {
+func (r *registryRouter) Deregister(ep *api.Endpoint) error {
 	return nil
 }
 
-func (r *registryRouter) Endpoint(req *http.Request) (*gateway.Service, error) {
+func (r *registryRouter) Endpoint(req *http.Request) (*api.Service, error) {
 	if r.isClosed() {
 		return nil, ErrClosed
 	}
@@ -414,7 +414,7 @@ func (r *registryRouter) Endpoint(req *http.Request) (*gateway.Service, error) {
 	return nil, ErrNotFound
 }
 
-func (r *registryRouter) Route(req *http.Request) (*gateway.Service, error) {
+func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 	if r.isClosed() {
 		return nil, ErrClosed
 	}
@@ -462,9 +462,9 @@ func (r *registryRouter) Route(req *http.Request) (*gateway.Service, error) {
 	}
 
 	// construct api service
-	gs := &gateway.Service{
+	gs := &api.Service{
 		Name: name,
-		Endpoint: &gateway.Endpoint{
+		Endpoint: &api.Endpoint{
 			Name:   req.URL.String(),
 			Host:   []string{req.Host},
 			Method: []string{req.Method},
@@ -499,14 +499,15 @@ func NewRouter(lg *zap.Logger, discovery dsy.IDiscovery) Router {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r := &registryRouter{
-		ctx:     ctx,
-		cancel:  cancel,
-		lg:      lg,
-		rc:      rc,
-		factory: factory,
-		eps:     make(map[string]*gateway.Service),
-		ceps:    make(map[string]*endpoint),
-		stopc:   make(chan struct{}),
+		ctx:       ctx,
+		cancel:    cancel,
+		lg:        lg,
+		rc:        rc,
+		discovery: discovery,
+		factory:   factory,
+		eps:       make(map[string]*api.Service),
+		ceps:      make(map[string]*endpoint),
+		stopc:     make(chan struct{}),
 	}
 	go r.watch()
 	go r.refresh()

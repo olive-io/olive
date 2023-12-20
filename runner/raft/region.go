@@ -34,6 +34,7 @@ import (
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	"github.com/olive-io/olive/runner/internal/gateway"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
@@ -76,6 +77,7 @@ type Region struct {
 	openWait wait.Wait
 
 	tracer tracing.ITracer
+	gw     gateway.IGateway
 
 	reqIDGen *idutil.Generator
 
@@ -117,6 +119,7 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		lg:         c.Logger,
 		openWait:   c.regionW,
 		tracer:     tracer,
+		gw:         c.gw,
 		applyW:     wait.New(),
 		commitW:    wait.New(),
 		reqIDGen:   reqIDGen,

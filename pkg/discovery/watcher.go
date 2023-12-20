@@ -54,9 +54,10 @@ func newEtcdWatcher(ctx context.Context, r *etcdRegistry, opts ...WatchOption) (
 		namespace = wo.Namespace
 	}
 
+	prefix := r.options.Prefix
 	watchPath := prefix
 	if len(wo.Service) > 0 {
-		watchPath = servicePath(namespace, wo.Service) + "/"
+		watchPath = servicePath(prefix, namespace, wo.Service) + "/"
 	} else {
 		watchPath = path.Join(prefix, namespace) + "/"
 	}

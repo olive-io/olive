@@ -12,20 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discovery
+package gateway
 
-const (
-	HeaderKeyPrefix = "ov:"
-	NodeIdKey       = "ov:node_id"
-	ActivityIdKey   = "ov:activity_id"
-	ProtocolKey     = "ov:protocol"
-	MethodKey       = "ov:method"
-	ContentTypeKey  = "ov:content-type"
-	URLKey          = "ov:url"
+import (
+	"fmt"
+
+	dsy "github.com/olive-io/olive/pkg/discovery"
+	"go.uber.org/zap"
 )
 
-// the keys of ServiceTask Header
+var (
+	DefaultMaxRecvSize int64 = 1024 * 1024 * 100 // 100Mb
+)
 
-// the keys of ScriptTask Header
+type Config struct {
+	Logger      *zap.Logger
+	Discovery   dsy.IDiscovery
+	MaxRecvSize int64
+}
 
-// the keys of SendTask and ReceiveTask header
+func (cfg *Config) validate() error {
+	if cfg.Logger == nil {
+		cfg.Logger = zap.NewNop()
+	}
+	if cfg.Discovery == nil {
+		return fmt.Errorf("missing discovery")
+	}
+	if cfg.MaxRecvSize == 0 {
+		cfg.MaxRecvSize = DefaultMaxRecvSize
+	}
+
+	return nil
+}

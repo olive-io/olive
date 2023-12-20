@@ -108,3 +108,23 @@ message Value {
 
   repeated Value values = 3;
 }
+
+// Response save the data from gateway Handle function
+message Response {
+  map<string, Box> properties = 1;
+  map<string, Box> dataObjects = 2;
+}
+
+message Box {
+  enum BoxType {
+    Unknown = 0;
+    Boolean = 1;
+    Integer = 2;
+    Float = 5;
+    String = 6;
+    Array = 7;
+    Object = 8;
+  }
+  BoxType type = 1;
+  bytes data = 2;
+}

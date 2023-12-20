@@ -21,6 +21,7 @@ import (
 )
 
 type Options struct {
+	Prefix    string
 	Namespace string
 	Timeout   time.Duration
 	Logger    *zap.Logger
@@ -87,6 +88,12 @@ type GetOption func(*GetOptions)
 type ListOption func(*ListOptions)
 
 type OpenAPIOption func(*OpenAPIOptions)
+
+func Prefix(prefix string) Option {
+	return func(o *Options) {
+		o.Prefix = prefix
+	}
+}
 
 func Namespace(ns string) Option {
 	return func(o *Options) {

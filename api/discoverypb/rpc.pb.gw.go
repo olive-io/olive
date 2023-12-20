@@ -33,7 +33,7 @@ var _ = utilities.NewDoubleArray
 var _ = descriptor.ForMessage
 var _ = metadata.Join
 
-func request_NodeRPC_Ping_0(ctx context.Context, marshaler runtime.Marshaler, client NodeRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_Executor_Ping_0(ctx context.Context, marshaler runtime.Marshaler, client ExecutorClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq PingRequest
 	var metadata runtime.ServerMetadata
 
@@ -50,7 +50,7 @@ func request_NodeRPC_Ping_0(ctx context.Context, marshaler runtime.Marshaler, cl
 
 }
 
-func local_request_NodeRPC_Ping_0(ctx context.Context, marshaler runtime.Marshaler, server NodeRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_Executor_Ping_0(ctx context.Context, marshaler runtime.Marshaler, server ExecutorServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq PingRequest
 	var metadata runtime.ServerMetadata
 
@@ -67,8 +67,8 @@ func local_request_NodeRPC_Ping_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func request_NodeRPC_Call_0(ctx context.Context, marshaler runtime.Marshaler, client NodeRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CallRequest
+func request_Executor_ServiceCall_0(ctx context.Context, marshaler runtime.Marshaler, client ExecutorClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceCallRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -79,13 +79,13 @@ func request_NodeRPC_Call_0(ctx context.Context, marshaler runtime.Marshaler, cl
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.Call(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ServiceCall(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_NodeRPC_Call_0(ctx context.Context, marshaler runtime.Marshaler, server NodeRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq CallRequest
+func local_request_Executor_ServiceCall_0(ctx context.Context, marshaler runtime.Marshaler, server ExecutorServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ServiceCallRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -96,18 +96,18 @@ func local_request_NodeRPC_Call_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.Call(ctx, &protoReq)
+	msg, err := server.ServiceCall(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-// RegisterNodeRPCHandlerServer registers the http handlers for service NodeRPC to "mux".
-// UnaryRPC     :call NodeRPCServer directly.
+// RegisterExecutorHandlerServer registers the http handlers for service Executor to "mux".
+// UnaryRPC     :call ExecutorServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterNodeRPCHandlerFromEndpoint instead.
-func RegisterNodeRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, server NodeRPCServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterExecutorHandlerFromEndpoint instead.
+func RegisterExecutorHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ExecutorServer) error {
 
-	mux.Handle("POST", pattern_NodeRPC_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Executor_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -118,7 +118,7 @@ func RegisterNodeRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_NodeRPC_Ping_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Executor_Ping_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -126,11 +126,11 @@ func RegisterNodeRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_NodeRPC_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Executor_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_NodeRPC_Call_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Executor_ServiceCall_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -141,7 +141,7 @@ func RegisterNodeRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_NodeRPC_Call_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Executor_ServiceCall_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -149,16 +149,16 @@ func RegisterNodeRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_NodeRPC_Call_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Executor_ServiceCall_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterNodeRPCHandlerFromEndpoint is same as RegisterNodeRPCHandler but
+// RegisterExecutorHandlerFromEndpoint is same as RegisterExecutorHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterNodeRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterExecutorHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -178,23 +178,23 @@ func RegisterNodeRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeM
 		}()
 	}()
 
-	return RegisterNodeRPCHandler(ctx, mux, conn)
+	return RegisterExecutorHandler(ctx, mux, conn)
 }
 
-// RegisterNodeRPCHandler registers the http handlers for service NodeRPC to "mux".
+// RegisterExecutorHandler registers the http handlers for service Executor to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterNodeRPCHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterNodeRPCHandlerClient(ctx, mux, NewNodeRPCClient(conn))
+func RegisterExecutorHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterExecutorHandlerClient(ctx, mux, NewExecutorClient(conn))
 }
 
-// RegisterNodeRPCHandlerClient registers the http handlers for service NodeRPC
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "NodeRPCClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "NodeRPCClient"
+// RegisterExecutorHandlerClient registers the http handlers for service Executor
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ExecutorClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ExecutorClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "NodeRPCClient" to call the correct interceptors.
-func RegisterNodeRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, client NodeRPCClient) error {
+// "ExecutorClient" to call the correct interceptors.
+func RegisterExecutorHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ExecutorClient) error {
 
-	mux.Handle("POST", pattern_NodeRPC_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Executor_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -203,18 +203,18 @@ func RegisterNodeRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_NodeRPC_Ping_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Executor_Ping_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_NodeRPC_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Executor_Ping_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_NodeRPC_Call_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_Executor_ServiceCall_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -223,14 +223,14 @@ func RegisterNodeRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_NodeRPC_Call_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Executor_ServiceCall_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_NodeRPC_Call_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Executor_ServiceCall_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -238,13 +238,13 @@ func RegisterNodeRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_NodeRPC_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "olive", "node", "ping"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Executor_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "olive", "executor", "ping"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_NodeRPC_Call_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "olive", "node", "call"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Executor_ServiceCall_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"v1", "olive", "executor", "service", "call"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_NodeRPC_Ping_0 = runtime.ForwardResponseMessage
+	forward_Executor_Ping_0 = runtime.ForwardResponseMessage
 
-	forward_NodeRPC_Call_0 = runtime.ForwardResponseMessage
+	forward_Executor_ServiceCall_0 = runtime.ForwardResponseMessage
 )

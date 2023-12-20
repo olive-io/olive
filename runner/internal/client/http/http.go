@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -43,16 +42,6 @@ type httpClient struct {
 
 func (h *httpClient) next(request client.IRequest, opts client.CallOptions) (selector.Next, error) {
 	service := request.Service()
-
-	// get proxy
-	if prx := os.Getenv("OLIVE_PROXY"); len(prx) > 0 {
-		service = prx
-	}
-
-	// get proxy address
-	if prx := os.Getenv("OLIVE_PROXY_ADDRESS"); len(prx) > 0 {
-		opts.Address = []string{prx}
-	}
 
 	// return remote address
 	if len(opts.Address) > 0 {
@@ -131,9 +120,18 @@ func (h *httpClient) call(ctx context.Context, node *pb.Node, req client.IReques
 		ContentLength: int64(len(b)),
 		Host:          address,
 	}
+	hreq = hreq.WithContext(ctx)
+
+	tp := &http.Transport{}
+	if tc := opts.TLSConfig; tc != nil {
+		tp.TLSClientConfig = tc
+	}
 
 	// make the request
-	hrsp, err := http.DefaultClient.Do(hreq.WithContext(ctx))
+	cc := http.Client{
+		Transport: tp,
+	}
+	hrsp, err := cc.Do(hreq)
 	if err != nil {
 		return err
 	}

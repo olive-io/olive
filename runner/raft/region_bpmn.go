@@ -15,13 +15,20 @@
 package raft
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/pebble"
+	json "github.com/json-iterator/go"
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
 	"github.com/olive-io/bpmn/flow_node/activity"
@@ -29,8 +36,10 @@ import (
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
+	"github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	dsy "github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/zap"
 )
 
@@ -161,7 +170,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionId),
 		zap.Uint64("version", process.DefinitionVersion),
-		zap.Uint64("id", process.Id),
+		zap.Uint64("process", process.Id),
 	}
 
 	r.lg.Info("start process instance", fields...)
@@ -308,58 +317,102 @@ LOOP:
 }
 
 func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
-	//act := trace.GetActivity()
-	//id, _ := act.Element().Id()
-	//
-	//options := discovery.DiscoverOptionsFromTrace(trace)
-	//node, err := r.discovery.Discover(ctx, options...)
-	//if err != nil {
-	//	r.lg.Error(
-	//		"discover activity node",
-	//		zap.String("activity", *id),
-	//		zap.Error(err),
-	//	)
-	//	trace.Do(activity.WithErr(err))
-	//	return
-	//}
-	//
-	//executor, err := node.GetExecutor(ctx, options...)
-	//if err != nil {
-	//	r.lg.Error("discover activity executor",
-	//		zap.String("activity", *id),
-	//		zap.String("node", node.Get().Id),
-	//		zap.Error(err),
-	//	)
-	//	trace.Do(activity.WithErr(err))
-	//	return
-	//}
-	//
-	//execOpts := []discovery.ExecuteOption{}
-	//req := &discovery.Request{
-	//	Context:     ctx,
-	//	Headers:     trace.GetHeaders(),
-	//	Properties:  trace.GetProperties(),
-	//	DataObjects: trace.GetDataObjects(),
-	//}
-	//resp, err := executor.Execute(ctx, req, execOpts...)
-	//if err != nil {
-	//	r.lg.Error("discover activity executor",
-	//		zap.String("activity", *id),
-	//		zap.String("node", node.Get().Id),
-	//		zap.Error(err),
-	//	)
-	//	trace.Do(activity.WithErr(err))
-	//	return
-	//}
-	//
-	//r.lg.Debug("activity done", zap.String("activity", *id))
-	doOpts := make([]activity.DoOption, 0)
-	//if properties := resp.Properties; properties != nil {
-	//	doOpts = append(doOpts, activity.WithProperties(properties))
-	//}
-	//if dataObjects := resp.DataObjects; dataObjects != nil {
-	//	doOpts = append(doOpts, activity.WithObjects(dataObjects))
-	//}
 
+	taskAct := trace.GetActivity()
+	id, _ := taskAct.Element().Id()
+	fields := []zap.Field{
+		zap.String("definition", process.DefinitionId),
+		zap.Uint64("version", process.DefinitionVersion),
+		zap.Uint64("process", process.Id),
+		zap.String("task", *id),
+	}
+
+	actType := taskAct.Type()
+	headers := toTMap[string](trace.GetHeaders())
+	properties := trace.GetProperties()
+	dataObjects := trace.GetDataObjects()
+
+	urlText := headers[dsy.URLKey]
+	if urlText == "" {
+		urlText = dsy.ServiceURL
+	}
+	method := headers[dsy.MethodKey]
+	protocol := headers[dsy.ProtocolKey]
+
+	hurl, err := url.Parse(urlText)
+	if err != nil {
+		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
+		trace.Do(activity.WithErr(err))
+		return
+	}
+
+	in := map[string]any{}
+	for key, value := range properties {
+		in[key] = value
+	}
+	for key, value := range dataObjects {
+		in[key] = value
+	}
+
+	buf, _ := json.Marshal(in)
+	body := bufio.NewReader(bytes.NewBuffer(buf))
+
+	header := http.Header{}
+	for key, value := range headers {
+		if strings.HasPrefix(key, dsy.HeaderKeyPrefix) {
+			continue
+		}
+		header.Set(key, value)
+	}
+	header.Set("Content-Type", "application/json")
+
+	var act discoverypb.Activity
+	switch actType {
+	case activity.TaskType:
+		act = discoverypb.Activity_Task
+	case activity.ServiceType:
+		act = discoverypb.Activity_ServiceTask
+	case activity.ScriptType:
+		act = discoverypb.Activity_ScriptTask
+	case activity.UserType:
+		act = discoverypb.Activity_UserTask
+	case activity.SendType:
+		act = discoverypb.Activity_SendTask
+	case activity.ReceiveType:
+		act = discoverypb.Activity_ReceiveTask
+	case activity.CallType:
+		act = discoverypb.Activity_Call
+	}
+	header.Set("activity", act.String())
+
+	hreq := &http.Request{
+		Method: method,
+		URL:    hurl,
+		Proto:  protocol,
+		Header: header,
+		Body:   io.NopCloser(body),
+	}
+	hreq = hreq.WithContext(ctx)
+
+	doOpts := make([]activity.DoOption, 0)
+	result, err := r.gw.Handle(hreq)
+	if err != nil {
+		r.lg.Error("handle task", append(fields, zap.Error(err))...)
+		doOpts = append(doOpts, activity.WithErr(err))
+	} else {
+		resp := new(discoverypb.Response)
+		if err = json.Unmarshal(result, resp); err != nil {
+			r.lg.Error("unmarshal gateway response", append(fields, zap.Error(err))...)
+		}
+		dp := map[string]any{}
+		ddo := map[string]any{}
+		for key, value := range resp.Properties {
+			dp[key] = value.Value()
+		}
+		for key, value := range resp.DataObjects {
+			ddo[key] = value.Value()
+		}
+		doOpts = append(doOpts, activity.WithProperties(dp), activity.WithObjects(ddo))
+	}
 	trace.Do(doOpts...)
 }
