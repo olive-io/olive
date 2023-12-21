@@ -17,10 +17,10 @@ package resolver
 import pb "github.com/olive-io/olive/api/discoverypb"
 
 // the Resolver implementation for CallActivity
-type callResolver struct {
+type callActivityResolver struct {
 	serviceResolver
 }
 
-func (r *callResolver) Activity() pb.Activity {
-	return pb.Activity_Call
+func (r *callActivityResolver) Activity() pb.Activity {
+	return pb.Activity_CallActivity
 }
