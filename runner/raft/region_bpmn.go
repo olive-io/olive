@@ -39,7 +39,7 @@ import (
 	"github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	dsy "github.com/olive-io/olive/pkg/discovery"
+	"github.com/olive-io/olive/pkg/discovery/execute"
 	"go.uber.org/zap"
 )
 
@@ -332,40 +332,6 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	urlText := headers[dsy.URLKey]
-	if urlText == "" {
-		urlText = dsy.ServiceURL
-	}
-	method := headers[dsy.MethodKey]
-	protocol := headers[dsy.ProtocolKey]
-
-	hurl, err := url.Parse(urlText)
-	if err != nil {
-		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	in := map[string]any{}
-	for key, value := range properties {
-		in[key] = value
-	}
-	for key, value := range dataObjects {
-		in[key] = value
-	}
-
-	buf, _ := json.Marshal(in)
-	body := bufio.NewReader(bytes.NewBuffer(buf))
-
-	header := http.Header{}
-	for key, value := range headers {
-		if strings.HasPrefix(key, dsy.HeaderKeyPrefix) {
-			continue
-		}
-		header.Set(key, value)
-	}
-	header.Set("Content-Type", "application/json")
-
 	var act discoverypb.Activity
 	switch actType {
 	case activity.TaskType:
@@ -381,9 +347,50 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	case activity.ReceiveType:
 		act = discoverypb.Activity_ReceiveTask
 	case activity.CallType:
-		act = discoverypb.Activity_Call
+		act = discoverypb.Activity_CallActivity
 	}
-	header.Set("activity", act.String())
+
+	urlText := headers[execute.URLKey]
+	if urlText == "" {
+		urlText = execute.DefaultTaskURL
+	}
+	method := headers[execute.MethodKey]
+	protocol := headers[execute.ProtocolKey]
+
+	hurl, err := url.Parse(urlText)
+	if err != nil {
+		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
+		trace.Do(activity.WithErr(err))
+		return
+	}
+
+	in := &discoverypb.ExecuteRequest{
+		Activity:    act,
+		Headers:     headers,
+		Properties:  map[string]*discoverypb.Box{},
+		DataObjects: map[string]*discoverypb.Box{},
+	}
+	for key, value := range properties {
+		in.Properties[key] = discoverypb.BoxFromT(value)
+	}
+	for key, value := range dataObjects {
+		in.DataObjects[key] = discoverypb.BoxFromT(value)
+	}
+
+	buf, _ := json.Marshal(in)
+	body := bufio.NewReader(bytes.NewBuffer(buf))
+
+	header := http.Header{}
+	for key, value := range headers {
+		if strings.HasPrefix(key, execute.HeaderKeyPrefix) {
+			continue
+		}
+		header.Set(key, value)
+	}
+	if header.Get("Content-Type") == "" {
+		header.Set("Content-Type", "application/json")
+	}
+	header.Set(execute.RequestActivityKey, act.String())
 
 	hreq := &http.Request{
 		Method: method,

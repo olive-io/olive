@@ -35,6 +35,7 @@ import (
 )
 
 func (r *Runner) register() (*pb.Runner, error) {
+	cfg := r.cfg
 	key := []byte("runner")
 	bucket := buckets.Meta
 	runner := new(pb.Runner)
@@ -62,18 +63,18 @@ func (r *Runner) register() (*pb.Runner, error) {
 		return nil, errors.Wrap(err, "read system memory")
 	}
 
-	listenPeerURL := r.AdvertisePeerURL
+	listenPeerURL := cfg.AdvertisePeerURL
 	if len(listenPeerURL) == 0 {
-		listenPeerURL = r.ListenPeerURL
+		listenPeerURL = cfg.ListenPeerURL
 	}
-	listenClientURL := r.AdvertiseClientURL
+	listenClientURL := cfg.AdvertiseClientURL
 	if len(listenClientURL) == 0 {
-		listenClientURL = r.ListenClientURL
+		listenClientURL = cfg.ListenClientURL
 	}
 
 	runner.ListenPeerURL = listenPeerURL
 	runner.ListenClientURL = listenClientURL
-	runner.HeartbeatMs = r.HeartbeatMs
+	runner.HeartbeatMs = cfg.HeartbeatMs
 	runner.Hostname, _ = os.Hostname()
 	runner.Cpu = cpuTotal
 	runner.Memory = vm.Total
@@ -100,9 +101,11 @@ func (r *Runner) register() (*pb.Runner, error) {
 }
 
 func (r *Runner) registry() {
+
 	ctx := r.ctx
 	runner := r.pr
-	lg := r.Logger
+	lg := r.Logger()
+	cfg := r.cfg
 
 	rKey := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", runner.Id))
 	data, _ := runner.Marshal()
@@ -111,7 +114,7 @@ func (r *Runner) registry() {
 		lg.Panic("olive-runner register", zap.Error(err))
 	}
 
-	r.Logger.Info("olive-runner registered",
+	lg.Info("olive-runner registered",
 		zap.Uint64("id", runner.Id),
 		zap.String("listen-client-url", runner.ListenClientURL),
 		zap.String("listen-peer-url", runner.ListenPeerURL),
@@ -119,17 +122,17 @@ func (r *Runner) registry() {
 		zap.String("memory", humanize.IBytes(runner.Memory)),
 		zap.String("version", runner.Version))
 
-	ticker := time.NewTicker(time.Duration(r.HeartbeatMs) * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(cfg.HeartbeatMs) * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-r.stopping:
+		case <-r.StoppingNotify():
 			return
 		case trace := <-r.traces:
 			switch tt := trace.(type) {
 			case raft.RegionStatTrace:
 				stat := pb.RegionStat(tt)
-				r.Logger.Debug("update region stat", zap.Stringer("stat", &stat))
+				lg.Debug("update region stat", zap.Stringer("stat", &stat))
 
 				key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
 				data, _ = stat.Marshal()
@@ -142,7 +145,7 @@ func (r *Runner) registry() {
 			stat := r.processRunnerStat()
 			stat.Timestamp = time.Now().Unix()
 
-			r.Logger.Debug("update runner stat", zap.Stringer("stat", stat))
+			lg.Debug("update runner stat", zap.Stringer("stat", stat))
 			key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
 			data, _ = stat.Marshal()
 			_, err = r.oct.Put(ctx, key, string(data))
@@ -154,7 +157,7 @@ func (r *Runner) registry() {
 }
 
 func (r *Runner) processRunnerStat() *pb.RunnerStat {
-	lg := r.Logger
+	lg := r.Logger()
 	stat := &pb.RunnerStat{
 		Id:            r.pr.Id,
 		Definitions:   uint64(raft.DefinitionsCounter.Get()),

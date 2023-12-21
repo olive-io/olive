@@ -30,9 +30,9 @@ enum Activity {
   ServiceTask = 2;
   ScriptTask = 3;
   UserTask = 4;
-  Call = 5;
-  SendTask = 6;
-  ReceiveTask = 7;
+  SendTask = 5;
+  ReceiveTask = 6;
+  CallActivity = 7;
 }
 
 // Endpoint is a endpoint provided by a service

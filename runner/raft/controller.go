@@ -37,12 +37,11 @@ import (
 )
 
 type Controller struct {
-	Config
-
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	nh *dragonboat.NodeHost
+	cfg Config
+	nh  *dragonboat.NodeHost
 
 	be      backend.IBackend
 	regionW wait.Wait
@@ -112,9 +111,9 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 
 	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
 	controller := &Controller{
-		Config:  cfg,
 		ctx:     ctx,
 		cancel:  cancel,
+		cfg:     cfg,
 		nh:      nh,
 		tracer:  tracer,
 		gw:      gw,
@@ -297,7 +296,7 @@ func (c *Controller) prepareRegions() error {
 	}
 
 	ctx := c.ctx
-	lg := c.Logger
+	lg := c.cfg.Logger
 	for i := range regions {
 		region := regions[i]
 		go func() {
@@ -369,10 +368,10 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	}
 
 	rcfg := NewRegionConfig()
-	rcfg.RaftRTTMillisecond = c.RaftRTTMillisecond
+	rcfg.RaftRTTMillisecond = c.cfg.RaftRTTMillisecond
 	rcfg.ElectionRTT = electRTT
 	rcfg.HeartbeatRTT = heartbeatRTT
-	rcfg.StatHeartBeatMs = c.HeartbeatMs
+	rcfg.StatHeartBeatMs = c.cfg.HeartbeatMs
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -419,8 +418,9 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 }
 
 func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Definition) error {
+	lg := c.cfg.Logger
 	if definition.Header == nil || definition.Header.Region == 0 {
-		c.Logger.Warn("definition missing region",
+		lg.Warn("definition missing region",
 			zap.String("id", definition.Id),
 			zap.Uint64("version", definition.Version))
 		return nil
@@ -429,12 +429,12 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 	regionId := definition.Header.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
-		c.Logger.Info("region running others",
+		lg.Info("region running others",
 			zap.Uint64("id", regionId))
 		return nil
 	}
 
-	c.Logger.Info("definition deploy",
+	lg.Info("definition deploy",
 		zap.String("id", definition.Id),
 		zap.Uint64("version", definition.Version))
 	req := &pb.RegionDeployDefinitionRequest{Definition: definition}
@@ -446,20 +446,21 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 }
 
 func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
+	lg := c.cfg.Logger
 	if instance.DefinitionId == "" || instance.Header.Region == 0 {
-		c.Logger.Warn("invalid process instance")
+		lg.Warn("invalid process instance")
 		return nil
 	}
 
 	regionId := instance.Header.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
-		c.Logger.Info("region running others",
+		lg.Info("region running others",
 			zap.Uint64("id", regionId))
 		return nil
 	}
 
-	c.Logger.Info("definition executed",
+	lg.Info("definition executed",
 		zap.String("id", instance.DefinitionId),
 		zap.Uint64("version", instance.DefinitionVersion))
 

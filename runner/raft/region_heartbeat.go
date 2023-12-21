@@ -21,7 +21,7 @@ import (
 )
 
 func (r *Region) heartbeat() {
-	duration := time.Duration(r.StatHeartBeatMs) * time.Millisecond
+	duration := time.Duration(r.cfg.StatHeartBeatMs) * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 

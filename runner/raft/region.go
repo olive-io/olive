@@ -65,12 +65,11 @@ type IRegionRaftKV interface {
 }
 
 type Region struct {
-	RegionConfig
+	lg  *zap.Logger
+	cfg RegionConfig
 
 	id       uint64
 	memberId uint64
-
-	lg *zap.Logger
 
 	applyW   wait.Wait
 	commitW  wait.Wait
@@ -116,7 +115,7 @@ func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 	region := &Region{
 		id:         shardId,
 		memberId:   nodeId,
-		lg:         c.Logger,
+		lg:         c.cfg.Logger,
 		openWait:   c.regionW,
 		tracer:     tracer,
 		gw:         c.gw,
@@ -150,7 +149,7 @@ func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.Reg
 	var resp *pb.RegionRangeResponse
 	var err error
 	defer func(start time.Time) {
-		warnOfExpensiveReadOnlyRangeRequest(r.lg, r.metric.slowApplies, r.WarningApplyDuration, start, req, resp, err)
+		warnOfExpensiveReadOnlyRangeRequest(r.lg, r.metric.slowApplies, r.cfg.WarningApplyDuration, start, req, resp, err)
 		if resp != nil {
 			trace.AddField(
 				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
@@ -340,7 +339,7 @@ func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req pb.Raft
 	id := req.Header.ID
 	ch := r.applyW.Register(id)
 
-	cctx, cancel := context.WithTimeout(ctx, r.ReqTimeout())
+	cctx, cancel := context.WithTimeout(ctx, r.cfg.ReqTimeout())
 	defer cancel()
 
 	start := time.Now()
@@ -371,7 +370,7 @@ func (r *Region) parseProposeCtxErr(err error, start time.Time) error {
 		r.leadTimeMu.RLock()
 		curLeadElected := r.leadElectedTime
 		r.leadTimeMu.RUnlock()
-		prevLeadLost := curLeadElected.Add(-2 * r.ElectionDuration())
+		prevLeadLost := curLeadElected.Add(-2 * r.cfg.ElectionDuration())
 		if start.After(prevLeadLost) && start.Before(curLeadElected) {
 			return ErrTimeoutDueToLeaderFail
 		}
@@ -562,7 +561,7 @@ func (r *Region) updateInfo(info *pb.Region) {
 }
 
 func (r *Region) updateConfig(config RegionConfig) {
-	r.RegionConfig = config
+	r.cfg = config
 }
 
 func (r *Region) getInfo() *pb.Region {

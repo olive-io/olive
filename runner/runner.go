@@ -19,7 +19,6 @@ import (
 	"encoding/binary"
 	"net/url"
 	"strings"
-	"sync"
 
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
@@ -28,6 +27,7 @@ import (
 	"github.com/olive-io/olive/client"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/runtime"
+	"github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
@@ -36,10 +36,12 @@ import (
 )
 
 type Runner struct {
-	Config
+	server.Inner
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	cfg Config
 
 	gLock *flock.Flock
 
@@ -50,13 +52,6 @@ type Runner struct {
 	controller *raft.Controller
 	traces     <-chan tracing.ITrace
 	pr         *pb.Runner
-
-	stopping chan struct{}
-	done     chan struct{}
-	stop     chan struct{}
-
-	wgMu sync.RWMutex
-	wg   sync.WaitGroup
 }
 
 func NewRunner(cfg Config) (*Runner, error) {
@@ -76,23 +71,23 @@ func NewRunner(cfg Config) (*Runner, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	be := newBackend(&cfg)
 
+	inner := server.NewInnerServer(lg)
 	runner := &Runner{
-		Config: cfg,
-
+		Inner:  inner,
 		ctx:    ctx,
 		cancel: cancel,
-
-		gLock: gLock,
+		cfg:    cfg,
+		gLock:  gLock,
 
 		oct: oct,
 		be:  be,
-
-		stopping: make(chan struct{}, 1),
-		done:     make(chan struct{}, 1),
-		stop:     make(chan struct{}, 1),
 	}
 
 	return runner, nil
+}
+
+func (r *Runner) Logger() *zap.Logger {
+	return r.cfg.Logger
 }
 
 func (r *Runner) Start() error {
@@ -100,6 +95,7 @@ func (r *Runner) Start() error {
 		return err
 	}
 
+	r.Destroy(r.destroy)
 	r.GoAttach(r.registry)
 	r.GoAttach(r.watching)
 
@@ -117,7 +113,7 @@ func (r *Runner) start() error {
 	tx.UnsafeCreateBucket(buckets.Key)
 	tx.Unlock()
 	if err = tx.Commit(); err != nil {
-		r.Logger.Error("pebble commit", zap.Error(err))
+		r.Logger().Error("pebble commit", zap.Error(err))
 	}
 
 	r.pr, err = r.register()
@@ -130,39 +126,41 @@ func (r *Runner) start() error {
 		return err
 	}
 
-	go r.run()
 	return nil
 }
 
 func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
-	listenPeerURL, err := url.Parse(r.ListenPeerURL)
-	if err != nil {
-		return nil, nil, err
-	}
-	raftAddr := listenPeerURL.Host
-
-	cc := raft.NewConfig()
-	cc.DataDir = r.RegionDir()
-	cc.RaftAddress = raftAddr
-	cc.HeartbeatMs = r.HeartbeatMs
-	cc.RaftRTTMillisecond = r.RaftRTTMillisecond
-	cc.Logger = r.Logger
+	cfg := r.cfg
+	lg := r.Logger()
 
 	dopts := []dsy.Option{
 		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
-		dsy.SetLogger(r.Logger),
+		dsy.SetLogger(lg),
 	}
 	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	listenPeerURL, err := url.Parse(cfg.ListenPeerURL)
+	if err != nil {
+		return nil, nil, err
+	}
+	raftAddr := listenPeerURL.Host
+
+	cc := raft.NewConfig()
+	cc.DataDir = cfg.RegionDir()
+	cc.RaftAddress = raftAddr
+	cc.HeartbeatMs = cfg.HeartbeatMs
+	cc.RaftRTTMillisecond = cfg.RaftRTTMillisecond
+	cc.Logger = lg
+
 	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	r.Logger.Info("start raft container")
+	lg.Info("start raft container")
 	if err = controller.Start(r.StoppingNotify()); err != nil {
 		return nil, nil, err
 	}
@@ -216,14 +214,14 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	}
 	for _, definition := range definitions {
 		if err = controller.DeployDefinition(ctx, definition); err != nil {
-			r.Logger.Error("deploy definition", zap.Error(err))
+			lg.Error("deploy definition", zap.Error(err))
 		}
 	}
 	for _, process := range processes {
 		if err = controller.ExecuteDefinition(ctx, process); err != nil {
-			r.Logger.Error("execute definition", zap.Error(err))
+			lg.Error("execute definition", zap.Error(err))
 		} else {
-			commitProcessInstance(ctx, r.Logger, r.oct, process)
+			commitProcessInstance(ctx, lg, r.oct, process)
 		}
 	}
 
@@ -243,7 +241,7 @@ func (r *Runner) watching() {
 	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
 	for {
 		select {
-		case <-r.stopping:
+		case <-r.StoppingNotify():
 			return
 		case resp := <-wch:
 			for _, event := range resp.Events {
@@ -281,66 +279,10 @@ func (r *Runner) setRev(rev int64) {
 	tx.Commit()
 }
 
-// StopNotify returns a channel that receives an empty struct
-// when the server is stopped.
-func (r *Runner) StopNotify() <-chan struct{} { return r.done }
-
-// StoppingNotify returns a channel that receives an empty struct
-// when the server is being stopped.
-func (r *Runner) StoppingNotify() <-chan struct{} { return r.stopping }
-
-// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
-// The passed function should interrupt on s.StoppingNotify().
-func (r *Runner) GoAttach(f func()) {
-	r.wgMu.RLock() // this blocks with ongoing close(s.stopping)
-	defer r.wgMu.RUnlock()
-	select {
-	case <-r.stopping:
-		r.Logger.Warn("server has stopped; skipping GoAttach")
-		return
-	default:
-	}
-
-	// now safe to add since waitgroup wait has not started yet
-	r.wg.Add(1)
-	go func() {
-		defer r.wg.Done()
-		f()
-	}()
-}
-
-func (r *Runner) Stop() {
-	select {
-	case r.stop <- struct{}{}:
-	case <-r.done:
-		return
-	}
-	<-r.done
-}
-
-func (r *Runner) run() {
-	lg := r.Logger
-
-	defer func() {
-		r.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
-		close(r.stopping)
-		r.wgMu.Unlock()
-		r.cancel()
-
-		// wait for goroutines before closing raft so wal stays open
-		r.wg.Wait()
-		if err := r.gLock.Unlock(); err != nil {
-			lg.Error("released "+r.DataDir, zap.Error(err))
-		}
-
-		close(r.done)
-	}()
-
-	for {
-		select {
-		case <-r.stop:
-			return
-		}
+func (r *Runner) destroy() {
+	r.cancel()
+	if err := r.gLock.Unlock(); err != nil {
+		r.Logger().Error("released "+r.cfg.DataDir, zap.Error(err))
 	}
 }
 
@@ -352,7 +294,7 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 		options := []clientv3.OpOption{clientv3.WithRev(rev)}
 		rsp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
 		if err != nil {
-			r.Logger.Error("get key-value")
+			r.Logger().Error("get key-value")
 		}
 		if len(rsp.Kvs) > 0 {
 			event.Kv = rsp.Kvs[0]
@@ -369,6 +311,7 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 }
 
 func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
+	lg := r.Logger()
 	kv := event.Kv
 	if event.Type == clientv3.EventTypeDelete {
 		return
@@ -376,7 +319,7 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 
 	region, match, err := parseRegionKv(kv, r.pr.Id)
 	if err != nil {
-		r.Logger.Error("parse region data", zap.Error(err))
+		lg.Error("parse region data", zap.Error(err))
 		return
 	}
 	if !match {
@@ -384,23 +327,24 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 	}
 
 	if event.IsCreate() {
-		r.Logger.Info("create region", zap.Stringer("body", region))
+		lg.Info("create region", zap.Stringer("body", region))
 		if err = r.controller.CreateRegion(ctx, region); err != nil {
-			r.Logger.Error("create region", zap.Error(err))
+			lg.Error("create region", zap.Error(err))
 		}
 		return
 	}
 
 	if event.IsModify() {
-		r.Logger.Info("sync region", zap.Stringer("body", region))
+		lg.Info("sync region", zap.Stringer("body", region))
 		if err = r.controller.SyncRegion(ctx, region); err != nil {
-			r.Logger.Error("sync region", zap.Error(err))
+			lg.Error("sync region", zap.Error(err))
 		}
 		return
 	}
 }
 
 func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
+	lg := r.Logger()
 	kv := event.Kv
 	if event.Type == clientv3.EventTypeDelete {
 		return
@@ -408,7 +352,7 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 
 	definition, match, err := parseDefinitionKv(kv)
 	if err != nil {
-		r.Logger.Error("parse definition data", zap.Error(err))
+		lg.Error("parse definition data", zap.Error(err))
 		return
 	}
 	if !match {
@@ -416,7 +360,7 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 	}
 
 	if err = r.controller.DeployDefinition(ctx, definition); err != nil {
-		r.Logger.Error("definition deploy",
+		lg.Error("definition deploy",
 			zap.String("id", definition.Id),
 			zap.Uint64("version", definition.Version),
 			zap.Error(err))
@@ -425,6 +369,7 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 }
 
 func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) {
+	lg := r.Logger()
 	kv := event.Kv
 	if event.Type == clientv3.EventTypeDelete {
 		return
@@ -432,7 +377,7 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 
 	process, match, err := parseProcessInstanceKv(kv)
 	if err != nil {
-		r.Logger.Error("parse process data", zap.Error(err))
+		lg.Error("parse process data", zap.Error(err))
 		return
 	}
 	if !match {
@@ -440,12 +385,12 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 	}
 
 	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
-		r.Logger.Error("execute definition",
+		lg.Error("execute definition",
 			zap.String("id", process.DefinitionId),
 			zap.Uint64("version", process.DefinitionVersion),
 			zap.Error(err))
 		return
 	}
 
-	commitProcessInstance(ctx, r.Logger, r.oct, process)
+	commitProcessInstance(ctx, lg, r.oct, process)
 }

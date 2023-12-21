@@ -12,29 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package execute
+package main
 
-const (
-	HeaderKeyPrefix = "ov:"
-	NodeIdKey       = "ov:node_id"
-	ActivityIdKey   = "ov:activity_id"
-	ProtocolKey     = "ov:protocol"
-	MethodKey       = "ov:method"
-	ContentTypeKey  = "ov:content-type"
-	URLKey          = "ov:url"
+import (
+	"os"
+
+	"github.com/olive-io/olive/cmd/executor/app"
+	"github.com/olive-io/olive/pkg/component-base/cli"
 )
 
-// the keys of ServiceTask Header
-
-// the keys of ScriptTask Header
-
-// the keys of SendTask and ReceiveTask header
-
-// http Request Header Key
-const (
-	RequestActivityKey = "x-olive-activity"
-)
-
-const (
-	DefaultTaskURL = "/discoverypb.Executor/TaskExecute"
-)
+func main() {
+	command := app.NewExecutorCommand()
+	code := cli.Run(command)
+	os.Exit(code)
+}

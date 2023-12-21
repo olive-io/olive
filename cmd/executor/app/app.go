@@ -18,49 +18,42 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/olive-io/olive/meta"
+	"github.com/olive-io/olive/executor"
 	"github.com/olive-io/olive/pkg/signalutil"
 	"github.com/olive-io/olive/pkg/version"
+	"github.com/olive-io/olive/runner"
 	"github.com/spf13/cobra"
 )
 
-func NewMetaCommand() *cobra.Command {
+func NewExecutorCommand() *cobra.Command {
 	app := &cobra.Command{
-		Use:           "olive-meta",
-		Short:         "a component of olive",
+		Use:           "olive-executor",
+		Short:         "bpmn executor of olive cloud",
 		Version:       version.Version,
-		RunE:          runMeta,
+		RunE:          setupExecutor,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	meta.AddFlagSet(flags)
+	runner.AddFlagSet(flags)
 
 	return app
 }
 
-func runMeta(cmd *cobra.Command, args []string) error {
+func setupExecutor(cmd *cobra.Command, args []string) error {
 	flags := cmd.PersistentFlags()
-
-	cfg, err := meta.ConfigFromFlagSet(flags)
+	cfg, err := executor.NewConfigFromFlagSet(flags)
 	if err != nil {
 		return err
 	}
+
 	if err = cfg.Validate(); err != nil {
 		return err
 	}
 
-	if err = setupMetaServer(cfg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func setupMetaServer(cfg meta.Config) error {
-	ms, err := meta.NewServer(cfg)
+	oliveExecutor, err := executor.NewExecutor(cfg)
 	if err != nil {
 		return err
 	}
@@ -68,7 +61,7 @@ func setupMetaServer(cfg meta.Config) error {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, signalutil.Shutdown()...)
 
-	if err = ms.Start(); err != nil {
+	if err = oliveExecutor.Start(); err != nil {
 		return err
 	}
 
@@ -77,7 +70,7 @@ func setupMetaServer(cfg meta.Config) error {
 	case <-ch:
 	}
 
-	ms.Stop()
+	oliveExecutor.Stop()
 
 	return nil
 }

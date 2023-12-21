@@ -27,6 +27,7 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/discovery/cache"
+	"github.com/olive-io/olive/pkg/discovery/execute"
 	"github.com/olive-io/olive/runner/internal/context/metadata"
 	"github.com/olive-io/olive/runner/internal/gateway/api"
 	"github.com/olive-io/olive/runner/internal/gateway/httprule"
@@ -35,10 +36,9 @@ import (
 )
 
 var (
-	ErrClosed      = errors.New("router closed")
-	ErrNotFound    = errors.New("not found")
-	ErrNotMetadata = errors.New("not found metadata")
-	ErrNoResolver  = errors.New("no resolver")
+	ErrClosed     = errors.New("router closed")
+	ErrNotFound   = errors.New("not found")
+	ErrNoResolver = errors.New("no resolver")
 )
 
 // Router is used to determine an endpoint for a request
@@ -429,17 +429,12 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 		return nil, err
 	}
 
-	md, ok := metadata.FromContext(req.Context())
-	if !ok {
-		return nil, ErrNotMetadata
+	actVal := req.Header.Get(execute.RequestActivityKey)
+	if actVal == "" {
+		actVal = pb.Activity_Task.String()
 	}
 
-	val, ok := md.Get("activity")
-	if !ok {
-		return nil, errors.Wrap(ErrNotMetadata, "no activity")
-	}
-
-	act := pb.Activity(pb.Activity_value[val])
+	act := pb.Activity(pb.Activity_value[actVal])
 	rsv, ok := r.factory.GetResolver(act)
 	if !ok {
 		return nil, ErrNoResolver

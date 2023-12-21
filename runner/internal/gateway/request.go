@@ -211,11 +211,10 @@ func requestPayload(r *http.Request) ([]byte, error) {
 	*r = *r.Clone(metadata.NewContext(rctx, md))
 
 	// map of all fields
-	req := nestField(matches)
-
+	fields := nestField(matches)
 	pathbuf := []byte("{}")
-	if len(req) > 0 {
-		pathbuf, err = json.Marshal(req)
+	if len(fields) > 0 {
+		pathbuf, err = json.Marshal(fields)
 		if err != nil {
 			return nil, err
 		}

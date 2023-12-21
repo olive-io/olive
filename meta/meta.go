@@ -18,13 +18,13 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
+	"github.com/olive-io/olive/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -37,6 +37,8 @@ import (
 )
 
 type Server struct {
+	server.Inner
+
 	cfg Config
 
 	ctx    context.Context
@@ -51,32 +53,22 @@ type Server struct {
 	notifier leader.Notifier
 
 	scheduler *schedule.Scheduler
-
-	wgMu sync.RWMutex
-	wg   sync.WaitGroup
-
-	stopping chan struct{}
-	done     chan struct{}
-	stop     chan struct{}
 }
 
 func NewServer(cfg Config) (*Server, error) {
 
 	lg := cfg.Config.GetLogger()
+	inner := server.NewInnerServer(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	s := &Server{
-		cfg: cfg,
+		Inner: inner,
+		cfg:   cfg,
 
 		ctx:    ctx,
 		cancel: cancel,
 
 		lg: lg,
-
-		stopping: make(chan struct{}, 1),
-		stop:     make(chan struct{}, 1),
-		done:     make(chan struct{}, 1),
 	}
 
 	return s, nil
@@ -115,33 +107,19 @@ func (s *Server) Start() error {
 		return err
 	}
 
+	s.Inner.Destroy(s.destroy)
 	return nil
 }
 
-func (s *Server) Stop() error {
+func (s *Server) Stop() {
+	s.Inner.Stop()
+}
+
+func (s *Server) destroy() {
 	s.etcd.Server.HardStop()
-	return nil
-}
-
-func (s *Server) HardStop() error {
-	if err := s.Stop(); err != nil {
-		return err
-	}
-
 	<-s.etcd.Server.StopNotify()
-
 	s.cancel()
-
-	s.wg.Wait()
-	return nil
 }
-
-//func newHttpMux() http.Handler {
-//	mux := http.NewServeMux()
-//	mux.Handle("/metrics", promhttp.Handler())
-//
-//	return mux
-//}
 
 // grpcHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Given in gRPC docs.
@@ -154,32 +132,4 @@ func grpcHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
 			hh.ServeHTTP(w, r)
 		}
 	}), h2s)
-}
-
-// StopNotify returns a channel that receives an empty struct
-// when the server is stopped.
-func (s *Server) StopNotify() <-chan struct{} { return s.done }
-
-// StoppingNotify returns a channel that receives an empty struct
-// when the server is being stopped.
-func (s *Server) StoppingNotify() <-chan struct{} { return s.stopping }
-
-// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
-// The passed function should interrupt on s.StoppingNotify().
-func (s *Server) GoAttach(f func()) {
-	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
-	defer s.wgMu.RUnlock()
-	select {
-	case <-s.stopping:
-		s.lg.Warn("server has stopped; skipping GoAttach")
-		return
-	default:
-	}
-
-	// now safe to add since waitgroup wait has not started yet
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		f()
-	}()
 }

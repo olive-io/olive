@@ -54,9 +54,9 @@ func NewFactory() *Factory {
 	resolvers[pb.Activity_ServiceTask] = &serviceResolver{}
 	resolvers[pb.Activity_ScriptTask] = &scriptResolver{}
 	resolvers[pb.Activity_UserTask] = &userResolver{}
-	resolvers[pb.Activity_Call] = &callResolver{}
 	resolvers[pb.Activity_SendTask] = &sendResolver{}
 	resolvers[pb.Activity_ReceiveTask] = &receiveResolver{}
+	resolvers[pb.Activity_CallActivity] = &callActivityResolver{}
 
 	return &Factory{
 		resolver: resolvers,

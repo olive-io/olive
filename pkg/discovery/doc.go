@@ -13,19 +13,3 @@
 // limitations under the License.
 
 package discovery
-
-const (
-	HeaderKeyPrefix = "ov:"
-	NodeIdKey       = "ov:node_id"
-	ActivityIdKey   = "ov:activity_id"
-	ProtocolKey     = "ov:protocol"
-	MethodKey       = "ov:method"
-	ContentTypeKey  = "ov:content-type"
-	URLKey          = "ov:url"
-)
-
-// the keys of ServiceTask Header
-
-// the keys of ScriptTask Header
-
-// the keys of SendTask and ReceiveTask header

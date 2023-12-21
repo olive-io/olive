@@ -63,7 +63,7 @@ func (a *applier) Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyRe
 		//success := ar.err == nil || ar.err == mvcc.ErrCompacted
 		success := ar.err == nil
 		a.r.metric.applySec.WithLabelValues(v1Version, op, strconv.FormatBool(success)).Observe(time.Since(start).Seconds())
-		warnOfExpensiveRequest(a.r.lg, a.r.metric.slowApplies, a.r.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
+		warnOfExpensiveRequest(a.r.lg, a.r.metric.slowApplies, a.r.cfg.WarningApplyDuration, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		if !success {
 			warnOfFailedRequest(a.r.lg, start, &pb.InternalRaftStringer{Request: r}, ar.resp, ar.err)
 		}

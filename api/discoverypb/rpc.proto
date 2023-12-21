@@ -36,9 +36,9 @@ service Executor {
     };
   };
 
-  rpc ServiceCall(ServiceCallRequest) returns (ServiceCallResponse) {
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/executor/service/call",
+      post: "/v1/olive/executor/execute",
       body: "*"
     };
   }
@@ -50,12 +50,13 @@ message PingResponse {
   string reply = 1;
 }
 
-message ServiceCallRequest {
+message ExecuteRequest {
+  discoverypb.Activity activity = 1;
   map<string, string> headers = 2;
   map<string, discoverypb.Box> properties = 3;
   map<string, discoverypb.Box> dataObjects = 4;
 }
 
-message ServiceCallResponse {
+message ExecuteResponse {
   discoverypb.Response response = 1;
 }

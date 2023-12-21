@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package execute
+package server
 
-const (
-	HeaderKeyPrefix = "ov:"
-	NodeIdKey       = "ov:node_id"
-	ActivityIdKey   = "ov:activity_id"
-	ProtocolKey     = "ov:protocol"
-	MethodKey       = "ov:method"
-	ContentTypeKey  = "ov:content-type"
-	URLKey          = "ov:url"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
-// the keys of ServiceTask Header
+func TestGenericServer(t *testing.T) {
+	queue := make([]int, 0)
 
-// the keys of ScriptTask Header
+	logger := zap.NewExample()
+	s1 := NewInnerServer(logger)
+	s1.Destroy(func() {
+		queue = append(queue, 2)
+	})
+	s1.GoAttach(func() {
+		queue = append(queue, 1)
+	})
+	s1.Stop()
 
-// the keys of SendTask and ReceiveTask header
-
-// http Request Header Key
-const (
-	RequestActivityKey = "x-olive-activity"
-)
-
-const (
-	DefaultTaskURL = "/discoverypb.Executor/TaskExecute"
-)
+	if !assert.Equal(t, queue, []int{1, 2}) {
+		return
+	}
+}

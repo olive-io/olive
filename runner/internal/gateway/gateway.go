@@ -142,17 +142,7 @@ func (gw *gateway) Handle(hreq *http.Request) ([]byte, error) {
 		return nil, errors.Wrapf(err, "no protocol")
 	}
 
-	var cc client.IClient
-	var ok bool
-	switch protocol {
-	case gRPCProtocol:
-		cc, ok = gw.clients[protocol]
-	case httpProtocol:
-		cc, ok = gw.clients[protocol]
-	default:
-		return nil, errors.Wrapf(err, "protocol is %s", protocol)
-	}
-
+	cc, ok := gw.clients[protocol]
 	if !ok {
 		return nil, errors.Wrapf(ErrNoClient, "protocol is %s", protocol)
 	}
