@@ -30,7 +30,7 @@ import (
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/internal/gateway"
+	"github.com/olive-io/olive/runner/gateway"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"

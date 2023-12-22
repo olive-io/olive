@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/discovery"
 )
 
@@ -46,7 +46,7 @@ type cache struct {
 
 	// registry cache
 	sync.RWMutex
-	cache   map[string][]*pb.Service
+	cache   map[string][]*dsypb.Service
 	ttls    map[string]time.Time
 	watched map[string]bool
 
@@ -85,7 +85,7 @@ func (c *cache) setStatus(err error) {
 }
 
 // isValid checks if the service is valid
-func (c *cache) isValid(services []*pb.Service, ttl time.Time) bool {
+func (c *cache) isValid(services []*dsypb.Service, ttl time.Time) bool {
 	// no services exist
 	if len(services) == 0 {
 		return false
@@ -124,7 +124,7 @@ func (c *cache) del(service string) {
 	delete(c.ttls, service)
 }
 
-func (c *cache) get(ctx context.Context, service string, opts ...discovery.GetOption) ([]*pb.Service, error) {
+func (c *cache) get(ctx context.Context, service string, opts ...discovery.GetOption) ([]*dsypb.Service, error) {
 	// read lock
 	c.RLock()
 
@@ -143,7 +143,7 @@ func (c *cache) get(ctx context.Context, service string, opts ...discovery.GetOp
 	}
 
 	// get does the actual request for a service and cache it
-	get := func(service string, cached []*pb.Service, opts ...discovery.GetOption) ([]*pb.Service, error) {
+	get := func(service string, cached []*dsypb.Service, opts ...discovery.GetOption) ([]*dsypb.Service, error) {
 		// ask the registry
 		svcs, err := c.IDiscovery.GetService(ctx, service, opts...)
 		if err != nil {
@@ -197,12 +197,12 @@ func (c *cache) get(ctx context.Context, service string, opts ...discovery.GetOp
 	return get(service, cp, opts...)
 }
 
-func (c *cache) set(service string, services []*pb.Service) {
+func (c *cache) set(service string, services []*dsypb.Service) {
 	c.cache[service] = services
 	c.ttls[service] = time.Now().Add(c.opts.TTL)
 }
 
-func (c *cache) update(res *pb.Result) {
+func (c *cache) update(res *dsypb.Result) {
 	if res == nil || res.Service == nil {
 		return
 	}
@@ -231,7 +231,7 @@ func (c *cache) update(res *pb.Result) {
 	}
 
 	// existing service found
-	var service *pb.Service
+	var service *dsypb.Service
 	var index int
 	for i, s := range services {
 		if s.Version == res.Service.Version {
@@ -269,7 +269,7 @@ func (c *cache) update(res *pb.Result) {
 			return
 		}
 
-		var nodes []*pb.Node
+		var nodes []*dsypb.Node
 
 		// filter cur nodes to remove the dead one
 		for _, cur := range service.Nodes {
@@ -304,7 +304,7 @@ func (c *cache) update(res *pb.Result) {
 
 		// still have more than 1 service
 		// check the version and keep what we know
-		var svcs []*pb.Service
+		var svcs []*dsypb.Service
 		for _, s := range services {
 			if s.Version != service.Version {
 				svcs = append(svcs, s)
@@ -431,7 +431,7 @@ func (c *cache) watch(w discovery.Watcher) error {
 	}
 }
 
-func (c *cache) GetService(ctx context.Context, service string, opts ...discovery.GetOption) ([]*pb.Service, error) {
+func (c *cache) GetService(ctx context.Context, service string, opts ...discovery.GetOption) ([]*dsypb.Service, error) {
 	// get the service
 	services, err := c.get(ctx, service, opts...)
 	if err != nil {
@@ -474,7 +474,7 @@ func New(dsy discovery.IDiscovery, opts ...Option) Cache {
 		IDiscovery: dsy,
 		opts:       options,
 		watched:    make(map[string]bool),
-		cache:      make(map[string][]*pb.Service),
+		cache:      make(map[string][]*dsypb.Service),
 		ttls:       make(map[string]time.Time),
 		exit:       make(chan bool),
 	}

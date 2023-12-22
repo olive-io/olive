@@ -20,7 +20,7 @@ import (
 	"path"
 	"time"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -28,7 +28,7 @@ import (
 // about services within the registry.
 type Watcher interface {
 	// Next is a blocking call
-	Next() (*pb.Result, error)
+	Next() (*dsypb.Result, error)
 	Stop()
 }
 
@@ -88,7 +88,7 @@ func (ew *etcdWatcher) run() {
 	}
 }
 
-func (ew *etcdWatcher) Next() (*pb.Result, error) {
+func (ew *etcdWatcher) Next() (*dsypb.Result, error) {
 	for wresp := range ew.w {
 		if wresp.Err() != nil {
 			return nil, wresp.Err()
@@ -117,7 +117,7 @@ func (ew *etcdWatcher) Next() (*pb.Result, error) {
 			if service == nil {
 				continue
 			}
-			return &pb.Result{
+			return &dsypb.Result{
 				Action:    action,
 				Service:   service,
 				Timestamp: time.Now().Unix(),

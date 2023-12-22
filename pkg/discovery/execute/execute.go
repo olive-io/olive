@@ -14,6 +14,8 @@
 
 package execute
 
+import dsypb "github.com/olive-io/olive/api/discoverypb"
+
 const (
 	HeaderKeyPrefix = "ov:"
 	NodeIdKey       = "ov:node_id"
@@ -36,5 +38,24 @@ const (
 )
 
 const (
-	DefaultTaskURL = "/discoverypb.Executor/TaskExecute"
+	DefaultTaskURL     = "/io.olive.executor.discoverypb.Executor/Execute"
+	DefaultExecuteName = "io.olive.executor"
 )
+
+// IHandler interface represents a request handler. It's generated
+// by passing any type of public concrete object with endpoints into server.NewHandler.
+// Most will pass in a struct.
+//
+// Example:
+//
+//	type Greeter struct{}
+//
+//	func (g *Greeter) Hello(context, request, response) error {
+//		return nil
+//	}
+type IHandler interface {
+	Name() string
+	Handler() interface{}
+	Endpoints() []*dsypb.Endpoint
+	Options() HandlerOptions
+}

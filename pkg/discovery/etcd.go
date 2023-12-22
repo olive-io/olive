@@ -24,7 +24,7 @@ import (
 	"time"
 
 	hash "github.com/mitchellh/hashstructure"
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
@@ -39,13 +39,13 @@ type etcdRegistry struct {
 	leases   map[string]clientv3.LeaseID
 }
 
-func encode(s *pb.Service) string {
+func encode(s *dsypb.Service) string {
 	b, _ := s.Marshal()
 	return string(b)
 }
 
-func decode(ds []byte) *pb.Service {
-	s := &pb.Service{}
+func decode(ds []byte) *dsypb.Service {
+	s := &dsypb.Service{}
 	_ = s.Unmarshal(ds)
 	return s
 }
@@ -64,7 +64,7 @@ func (e *etcdRegistry) Options() Options {
 	return e.options
 }
 
-func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb.Node, opts ...RegisterOption) error {
+func (e *etcdRegistry) registerNode(ctx context.Context, s *dsypb.Service, node *dsypb.Node, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -169,13 +169,13 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 		s.Namespace = namespace
 	}
 
-	service := &pb.Service{
+	service := &dsypb.Service{
 		Name:      s.Name,
 		Version:   s.Version,
 		Namespace: s.Namespace,
 		Metadata:  s.Metadata,
 		Endpoints: s.Endpoints,
-		Nodes:     []*pb.Node{node},
+		Nodes:     []*dsypb.Node{node},
 	}
 
 	var lgr *clientv3.LeaseGrantResponse
@@ -213,7 +213,7 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *pb.Service, node *pb
 	return nil
 }
 
-func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...DeregisterOption) error {
+func (e *etcdRegistry) Deregister(ctx context.Context, s *dsypb.Service, opts ...DeregisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("required at lease one node")
 	}
@@ -256,7 +256,7 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *pb.Service, opts ...De
 	return nil
 }
 
-func (e *etcdRegistry) Register(ctx context.Context, s *pb.Service, opts ...RegisterOption) error {
+func (e *etcdRegistry) Register(ctx context.Context, s *dsypb.Service, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -274,7 +274,7 @@ func (e *etcdRegistry) Register(ctx context.Context, s *pb.Service, opts ...Regi
 	return grr
 }
 
-func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetOption) ([]*pb.Service, error) {
+func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetOption) ([]*dsypb.Service, error) {
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 	defer cancel()
 
@@ -302,13 +302,13 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetO
 		return nil, ErrNotFound
 	}
 
-	serviceMap := map[string]*pb.Service{}
+	serviceMap := map[string]*dsypb.Service{}
 
 	for _, n := range rsp.Kvs {
 		if sn := decode(n.Value); sn != nil {
 			s, ok := serviceMap[sn.Version]
 			if !ok {
-				s = &pb.Service{
+				s = &dsypb.Service{
 					Name:      sn.Name,
 					Version:   sn.Version,
 					Namespace: sn.Namespace,
@@ -322,7 +322,7 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetO
 		}
 	}
 
-	services := make([]*pb.Service, 0, len(serviceMap))
+	services := make([]*dsypb.Service, 0, len(serviceMap))
 	for _, service := range serviceMap {
 		services = append(services, service)
 	}
@@ -330,8 +330,8 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetO
 	return services, nil
 }
 
-func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]*pb.Service, error) {
-	versions := make(map[string]*pb.Service)
+func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]*dsypb.Service, error) {
+	versions := make(map[string]*dsypb.Service)
 
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 	defer cancel()
@@ -358,7 +358,7 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]
 	}
 
 	if len(rsp.Kvs) == 0 {
-		return []*pb.Service{}, nil
+		return []*dsypb.Service{}, nil
 	}
 
 	for _, n := range rsp.Kvs {
@@ -375,9 +375,9 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]
 		v.Nodes = append(v.Nodes, sn.Nodes...)
 	}
 
-	services := make([]*pb.Service, 0, len(versions))
+	services := make([]*dsypb.Service, 0, len(versions))
 	for _, service := range versions {
-		services = append(services, &pb.Service{
+		services = append(services, &dsypb.Service{
 			Name:      service.Name,
 			Version:   service.Version,
 			Namespace: service.Namespace,

@@ -18,10 +18,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/olive-io/olive/executor"
+	"github.com/olive-io/olive/executor/server"
 	"github.com/olive-io/olive/pkg/signalutil"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/olive-io/olive/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -37,14 +36,14 @@ func NewExecutorCommand() *cobra.Command {
 
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	runner.AddFlagSet(flags)
+	server.AddFlagSet(flags)
 
 	return app
 }
 
 func setupExecutor(cmd *cobra.Command, args []string) error {
 	flags := cmd.PersistentFlags()
-	cfg, err := executor.NewConfigFromFlagSet(flags)
+	cfg, err := server.NewConfigFromFlagSet(flags)
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func setupExecutor(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	oliveExecutor, err := executor.NewExecutor(cfg)
+	oliveExecutor, err := server.NewExecutor(cfg)
 	if err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
 var (
@@ -38,9 +38,9 @@ var (
 // and an abstraction over varying implementations
 type IDiscovery interface {
 	Options() Options
-	Register(context.Context, *pb.Service, ...RegisterOption) error
-	Deregister(context.Context, *pb.Service, ...DeregisterOption) error
-	GetService(context.Context, string, ...GetOption) ([]*pb.Service, error)
-	ListServices(context.Context, ...ListOption) ([]*pb.Service, error)
+	Register(context.Context, *dsypb.Service, ...RegisterOption) error
+	Deregister(context.Context, *dsypb.Service, ...DeregisterOption) error
+	GetService(context.Context, string, ...GetOption) ([]*dsypb.Service, error)
+	ListServices(context.Context, ...ListOption) ([]*dsypb.Service, error)
 	Watch(context.Context, ...WatchOption) (Watcher, error)
 }

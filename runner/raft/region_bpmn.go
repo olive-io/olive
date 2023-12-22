@@ -15,7 +15,6 @@
 package raft
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/xml"
@@ -355,6 +354,9 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		urlText = execute.DefaultTaskURL
 	}
 	method := headers[execute.MethodKey]
+	if method == "" {
+		method = "POST"
+	}
 	protocol := headers[execute.ProtocolKey]
 
 	hurl, err := url.Parse(urlText)
@@ -378,7 +380,6 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 
 	buf, _ := json.Marshal(in)
-	body := bufio.NewReader(bytes.NewBuffer(buf))
 
 	header := http.Header{}
 	for key, value := range headers {
@@ -397,7 +398,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		URL:    hurl,
 		Proto:  protocol,
 		Header: header,
-		Body:   io.NopCloser(body),
+		Body:   io.NopCloser(bytes.NewBuffer(buf)),
 	}
 	hreq = hreq.WithContext(ctx)
 
