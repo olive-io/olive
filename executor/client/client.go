@@ -17,8 +17,6 @@ package client
 import (
 	"context"
 	"time"
-
-	"github.com/olive-io/olive/runner/codec"
 )
 
 var (
@@ -47,7 +45,6 @@ type IClient interface {
 	Options() Options
 	NewRequest(service, endpoint string, req interface{}, reqOpts ...RequestOption) IRequest
 	Call(ctx context.Context, req IRequest, rsp interface{}, opts ...CallOption) error
-	Stream(ctx context.Context, req IRequest, opts ...CallOption) (IStream, error)
 	String() string
 }
 
@@ -63,16 +60,12 @@ type IRequest interface {
 	ContentType() string
 	// Body the unencoded request body
 	Body() interface{}
-	// Codec writes to the encoded request writer. This is nil before a call is made
-	Codec() codec.IWriter
 	// Stream indicates whether the request will be a streaming one rather than unary
 	Stream() bool
 }
 
 // IResponse is the response received from a service
 type IResponse interface {
-	// Codec reads the response
-	Codec() codec.IReader
 	// Header reads the header
 	Header() map[string]string
 	// Read the undecoded response

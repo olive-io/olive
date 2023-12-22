@@ -18,14 +18,12 @@ import (
 	"context"
 	"testing"
 
-	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/executor/client"
 	"github.com/olive-io/olive/executor/client/grpc"
 	"github.com/olive-io/olive/executor/client/selector"
 	"github.com/olive-io/olive/pkg/discovery/execute"
 	"github.com/olive-io/olive/pkg/discovery/memory"
-	"github.com/olive-io/olive/runner/gateway"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,9 +40,7 @@ func TestCall(t *testing.T) {
 	}
 
 	body := &dsypb.ExecuteRequest{Headers: map[string]string{"a": "b"}}
-	data, _ := json.Marshal(body)
-	br := gateway.RawMessage(data)
-	req := cc.NewRequest(execute.DefaultExecuteName, "/discoverypb.Executor/Execute", &br, client.WithContentType("application/json"))
+	req := cc.NewRequest(execute.DefaultExecuteName, "/discoverypb.Executor/Execute", body)
 	rsp := &dsypb.ExecuteResponse{}
 	err = cc.Call(context.TODO(), req, rsp, client.WithAddress("127.0.0.1:15290"))
 	if !assert.NoError(t, err) {

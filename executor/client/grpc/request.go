@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/olive-io/olive/executor/client"
-	"github.com/olive-io/olive/runner/codec"
 )
 
 type grpcRequest struct {
@@ -28,7 +27,6 @@ type grpcRequest struct {
 	contentType string
 	request     interface{}
 	opts        client.RequestOptions
-	codec       codec.ICodec
 }
 
 // service Struct.Method /service.Struct/Method
@@ -86,10 +84,6 @@ func (g *grpcRequest) Method() string {
 
 func (g *grpcRequest) Endpoint() string {
 	return g.method
-}
-
-func (g *grpcRequest) Codec() codec.IWriter {
-	return g.codec
 }
 
 func (g *grpcRequest) Body() interface{} {

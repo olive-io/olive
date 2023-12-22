@@ -403,15 +403,11 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	hreq = hreq.WithContext(ctx)
 
 	doOpts := make([]activity.DoOption, 0)
-	result, err := r.gw.Handle(hreq)
+	resp, err := r.gw.Handle(hreq)
 	if err != nil {
 		r.lg.Error("handle task", append(fields, zap.Error(err))...)
 		doOpts = append(doOpts, activity.WithErr(err))
 	} else {
-		resp := new(discoverypb.Response)
-		if err = json.Unmarshal(result, resp); err != nil {
-			r.lg.Error("unmarshal gateway response", append(fields, zap.Error(err))...)
-		}
 		dp := map[string]any{}
 		ddo := map[string]any{}
 		for key, value := range resp.Properties {

@@ -15,15 +15,10 @@
 package gateway
 
 import (
-	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
-	"github.com/olive-io/olive/runner/codec"
-	"github.com/olive-io/olive/runner/codec/jsonrpc"
-	"github.com/olive-io/olive/runner/codec/protorpc"
 	"github.com/olive-io/olive/runner/qson"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -32,84 +27,8 @@ import (
 )
 
 var (
-	// supported json codecs
-	jsonCodecs = []string{
-		"application/grpc+json",
-		"application/json",
-		"application/json-rpc",
-	}
-
-	// supported proto codecs
-	protoCodecs = []string{
-		"application/grpc",
-		"application/grpc+proto",
-		"application/proto",
-		"application/protobuf",
-		"application/proto-rpc",
-		"application/octet-stream",
-	}
-
-	// supported multipart/form-data codecs
-	dataCodecs = []string{
-		"multipart/form-data",
-	}
-
 	bufferPool = bpool.NewSizedBufferPool(1024, 8)
 )
-
-type RawMessage json.RawMessage
-
-// MarshalJSON returns m as the JSON encoding of m.
-func (m RawMessage) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte("null"), nil
-	}
-	return m, nil
-}
-
-// UnmarshalJSON sets *m to a copy of data.
-func (m *RawMessage) UnmarshalJSON(data []byte) error {
-	if m == nil {
-		return fmt.Errorf("RawMessage: UnmarshalJSON on nil pointer")
-	}
-	*m = append((*m)[0:0], data...)
-	return nil
-}
-
-type buffer struct {
-	io.ReadCloser
-}
-
-func (b *buffer) Write(_ []byte) (int, error) {
-	return 0, nil
-}
-
-type Message struct {
-	data []byte
-}
-
-func (m *Message) ProtoMessage() {}
-
-func (m *Message) Reset() {
-	*m = Message{}
-}
-
-func (m *Message) String() string {
-	return string(m.data)
-}
-
-func (m *Message) Marshal() ([]byte, error) {
-	return m.data, nil
-}
-
-func (m *Message) Unmarshal(data []byte) error {
-	m.data = data
-	return nil
-}
-
-func NewMessage(data []byte) *Message {
-	return &Message{data}
-}
 
 // requestPayload takes a *http.Request.
 // If the request is a GET the query string parameters are extracted and marshaled to JSON and the raw bytes are returned.
@@ -120,55 +39,6 @@ func requestPayload(r *http.Request) ([]byte, error) {
 	// we have to decode json-rpc and proto-rpc because we suck
 	// well actually because there's no proxy codec right now
 	ct := r.Header.Get("Content-Type")
-	switch {
-	case strings.Contains(ct, "application/json-rpc"):
-		msg := codec.Message{
-			Type:   codec.Request,
-			Header: make(map[string]string),
-		}
-
-		c := jsonrpc.NewCodec(&buffer{r.Body})
-		if err = c.ReadHeader(&msg, codec.Request); err != nil {
-			return nil, err
-		}
-		var raw RawMessage
-		if err = c.ReadBody(&raw); err != nil {
-			return nil, err
-		}
-		return raw, nil
-	case strings.Contains(ct, "application/proto-rpc"), strings.Contains(ct, "application/octet-stream"):
-		msg := codec.Message{
-			Type:   codec.Request,
-			Header: make(map[string]string),
-		}
-		c := protorpc.NewCodec(&buffer{r.Body})
-		if err = c.ReadHeader(&msg, codec.Request); err != nil {
-			return nil, err
-		}
-		var raw Message
-		if err = c.ReadBody(&raw); err != nil {
-			return nil, err
-		}
-		return raw.Marshal()
-	case strings.Contains(ct, "application/x-www-form-urlencoded"):
-		// generate a new set of values from the form
-		vals := make(map[string]string)
-		for key, values := range r.PostForm {
-			vals[key] = strings.Join(values, ",")
-		}
-		for key, values := range r.URL.Query() {
-			vv, ok := vals[key]
-			if !ok {
-				vals[key] = strings.Join(values, ",")
-			} else {
-				vals[key] = vv + "," + strings.Join(values, ",")
-			}
-		}
-
-		// marshal
-		return json.Marshal(vals)
-		// TODO: application/grpc
-	}
 
 	// otherwise as per usual
 	rctx := r.Context()

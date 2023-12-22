@@ -21,15 +21,12 @@ import (
 
 	"github.com/olive-io/olive/executor/client/selector"
 	"github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/runner/codec"
 )
 
 type Options struct {
 	// Used to select codec
 	ContentType string
 
-	// Plugged interfaces
-	Codecs    map[string]codec.NewCodec
 	Discovery discovery.IDiscovery
 	Selector  selector.ISelector
 
@@ -102,7 +99,6 @@ func NewOptions(options ...Option) Options {
 	opts := Options{
 		Context:     context.Background(),
 		ContentType: DefaultContentType,
-		Codecs:      make(map[string]codec.NewCodec),
 		CallOptions: CallOptions{
 			Backoff:        DefaultBackoff,
 			Retry:          DefaultRetry,
@@ -137,13 +133,6 @@ type MessageOption func(*MessageOptions)
 
 // RequestOption used by NewRequest
 type RequestOption func(*RequestOptions)
-
-// Codec to be used to encode/decode requests for a given content type
-func Codec(contentType string, c codec.NewCodec) Option {
-	return func(o *Options) {
-		o.Codecs[contentType] = c
-	}
-}
 
 // ContentType default content type of the client
 func ContentType(ct string) Option {

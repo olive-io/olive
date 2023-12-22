@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
+	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/executor/client"
 	"github.com/olive-io/olive/executor/client/grpc"
@@ -28,16 +29,11 @@ import (
 )
 
 var (
-	ErrNoClient     = errors.New("no client")
 	ErrLargeRequest = errors.New("request too large")
 )
 
-const (
-	gRPCProtocol = "grpc"
-)
-
 type IGateway interface {
-	Handle(req *http.Request) ([]byte, error)
+	Handle(req *http.Request) (*dsypb.Response, error)
 }
 
 // strategy is a hack for selection
@@ -51,9 +47,9 @@ func strategy(services []*dsypb.Service) selector.Strategy {
 type gateway struct {
 	Config
 
-	gr      router.Router
-	gsr     selector.ISelector
-	clients map[string]client.IClient
+	gr  router.Router
+	gsr selector.ISelector
+	cc  client.IClient
 }
 
 func NewGateway(cfg Config) (IGateway, error) {
@@ -67,7 +63,7 @@ func NewGateway(cfg Config) (IGateway, error) {
 		return nil, err
 	}
 
-	gcc, err := grpc.NewClient(client.Discovery(discovery), client.Selector(sr))
+	cc, err := grpc.NewClient(client.Discovery(discovery), client.Selector(sr))
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +73,7 @@ func NewGateway(cfg Config) (IGateway, error) {
 		Config: cfg,
 		gr:     r,
 		gsr:    sr,
-		clients: map[string]client.IClient{
-			gRPCProtocol: gcc,
-		},
+		cc:     cc,
 	}
 
 	return gw, nil
@@ -92,7 +86,7 @@ func (gw *gateway) Stop() error {
 	return nil
 }
 
-func (gw *gateway) Handle(hreq *http.Request) ([]byte, error) {
+func (gw *gateway) Handle(hreq *http.Request) (*dsypb.Response, error) {
 	bsize := DefaultMaxRecvSize
 	if gw.MaxRecvSize > 0 {
 		bsize = gw.MaxRecvSize
@@ -121,24 +115,6 @@ func (gw *gateway) Handle(hreq *http.Request) ([]byte, error) {
 		return nil, router.ErrNotFound
 	}
 
-	var protocol string
-	for _, s := range service.Services {
-		if md := s.Metadata; md != nil {
-			protocol = md["protocol"]
-			if protocol != "" {
-				break
-			}
-		}
-	}
-	if protocol == "" {
-		protocol = gRPCProtocol
-	}
-
-	cc, ok := gw.clients[protocol]
-	if !ok {
-		return nil, errors.Wrapf(ErrNoClient, "protocol is %s", protocol)
-	}
-
 	so := selector.WithStrategy(strategy(service.Services))
 	callOpts := []client.CallOption{
 		client.WithSelectOption(so),
@@ -160,79 +136,25 @@ func (gw *gateway) Handle(hreq *http.Request) ([]byte, error) {
 		return nil, errors.Wrapf(ErrLargeRequest, "request(%d) > limit(%d)", lsize, bsize)
 	}
 
-	var rsp []byte
-	switch {
-	// proto codecs
-	case hasCodec(ct, protoCodecs):
-		request := &Message{}
-		// if the extracted payload isn't empty lets use it
-		if len(br) > 0 {
-			request = NewMessage(br)
-		}
-
-		// create request/response
-		response := Message{}
-
-		req := cc.NewRequest(
-			service.Name,
-			"/discoverypb.Executor/Execute",
-			request,
-			client.WithContentType(ct),
-		)
-
-		// make the call
-		if err = cc.Call(ctx, req, &response, callOpts...); err != nil {
-			return nil, err
-		}
-
-		// marshall response
-		rsp, err = response.Marshal()
-		if err != nil {
-			return nil, err
-		}
-
-	default:
-		// if json codec is not present set to json
-		if !hasCodec(ct, jsonCodecs) {
-			ct = "application/json"
-		}
-
-		// default to trying json
-		var request RawMessage
-		// if the extracted payload isn't empty lets use it
-		if len(br) > 0 {
-			request = br
-		}
-
-		// create request/response
-		var response RawMessage
-
-		req := cc.NewRequest(
-			service.Name,
-			"/discoverypb.Executor/Execute",
-			&request,
-			client.WithContentType(ct),
-		)
-		// make the call
-		if err = cc.Call(ctx, req, &response, callOpts...); err != nil {
-			return nil, err
-		}
-
-		// marshall response
-		rsp, err = response.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
+	request := &dsypb.ExecuteRequest{}
+	if err = json.Unmarshal(br, request); err != nil {
+		return nil, err
 	}
 
-	return rsp, nil
-}
+	// create request/response
+	rsp := &dsypb.ExecuteResponse{}
 
-func hasCodec(ct string, codecs []string) bool {
-	for _, c := range codecs {
-		if ct == c {
-			return true
-		}
+	req := gw.cc.NewRequest(
+		service.Name,
+		"/discoverypb.Executor/Execute",
+		request,
+		//client.WithContentType(ct),
+	)
+
+	// make the call
+	if err = gw.cc.Call(ctx, req, rsp, callOpts...); err != nil {
+		return nil, err
 	}
-	return false
+
+	return rsp.Response, nil
 }
