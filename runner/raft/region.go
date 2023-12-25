@@ -34,7 +34,7 @@ import (
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/gateway"
+	"github.com/olive-io/olive/runner/internal/gateway"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.etcd.io/etcd/pkg/v3/wait"

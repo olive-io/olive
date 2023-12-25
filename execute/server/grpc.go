@@ -12,15 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resolver
+package server
 
-import dsypb "github.com/olive-io/olive/api/discoverypb"
+import (
+	"context"
 
-// the Resolver implementation for ScriptTask
-type scriptResolver struct {
-	serviceResolver
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+)
+
+func (e *Executor) Ping(ctx context.Context, req *dsypb.PingRequest) (*dsypb.PingResponse, error) {
+	return &dsypb.PingResponse{Reply: "pong"}, nil
 }
 
-func (r *scriptResolver) Activity() dsypb.Activity {
-	return dsypb.Activity_ScriptTask
+func (e *Executor) Execute(ctx context.Context, req *dsypb.ExecuteRequest) (*dsypb.ExecuteResponse, error) {
+	resp := &dsypb.ExecuteResponse{}
+	resp.Response = &dsypb.Response{
+		Properties: map[string]*dsypb.Box{
+			"a": dsypb.BoxFromT("a"),
+		},
+		DataObjects: nil,
+	}
+	return resp, nil
 }

@@ -18,11 +18,10 @@ import (
 	"net/http"
 	"strings"
 
-	cxmd "github.com/olive-io/olive/pkg/context/metadata"
-	"github.com/olive-io/olive/runner/qson"
-
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
+	cxmd "github.com/olive-io/olive/pkg/context/metadata"
+	"github.com/olive-io/olive/runner/internal/qson"
 	"github.com/oxtoacart/bpool"
 )
 

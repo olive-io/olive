@@ -24,8 +24,8 @@ import (
 
 	"github.com/cockroachdb/errors"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/executor/client"
-	"github.com/olive-io/olive/executor/client/selector"
+	"github.com/olive-io/olive/execute/client"
+	"github.com/olive-io/olive/execute/client/selector"
 	"github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"

@@ -19,10 +19,10 @@ import (
 	"testing"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/executor/client"
-	"github.com/olive-io/olive/executor/client/grpc"
-	"github.com/olive-io/olive/executor/client/selector"
-	"github.com/olive-io/olive/pkg/discovery/execute"
+	"github.com/olive-io/olive/execute"
+	"github.com/olive-io/olive/execute/client"
+	"github.com/olive-io/olive/execute/client/grpc"
+	"github.com/olive-io/olive/execute/client/selector"
 	"github.com/olive-io/olive/pkg/discovery/memory"
 	"github.com/stretchr/testify/assert"
 )

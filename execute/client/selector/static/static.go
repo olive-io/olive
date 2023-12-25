@@ -17,7 +17,7 @@ package static
 
 import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/executor/client/selector"
+	"github.com/olive-io/olive/execute/client/selector"
 )
 
 // staticSelector is a static selector

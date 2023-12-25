@@ -19,7 +19,7 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/olive-io/olive/executor/client/selector"
+	"github.com/olive-io/olive/execute/client/selector"
 	"github.com/olive-io/olive/pkg/discovery"
 )
 

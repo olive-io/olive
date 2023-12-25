@@ -28,10 +28,9 @@ import (
 	"github.com/olive-io/olive/pkg/context/metadata"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/discovery/cache"
-	"github.com/olive-io/olive/pkg/discovery/execute"
-	"github.com/olive-io/olive/runner/gateway/api"
-	"github.com/olive-io/olive/runner/gateway/httprule"
-	"github.com/olive-io/olive/runner/gateway/resolver"
+	"github.com/olive-io/olive/runner/internal/gateway/api"
+	"github.com/olive-io/olive/runner/internal/gateway/httprule"
+	"github.com/olive-io/olive/runner/internal/gateway/resolver"
 	"go.uber.org/zap"
 )
 
@@ -70,7 +69,7 @@ type registryRouter struct {
 	lg *zap.Logger
 
 	discovery dsy.IDiscovery
-	factory   *resolver.Factory
+	resolver  resolver.IResolver
 
 	// registry cache
 	rc cache.Cache
@@ -429,19 +428,8 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 		return nil, err
 	}
 
-	actVal := req.Header.Get(execute.RequestActivityKey)
-	if actVal == "" {
-		actVal = dsypb.Activity_Task.String()
-	}
-
-	act := dsypb.Activity(dsypb.Activity_value[actVal])
-	rsv, ok := r.factory.GetResolver(act)
-	if !ok {
-		return nil, ErrNoResolver
-	}
-
 	// get the service name
-	rp, err := rsv.Resolve(req)
+	rp, err := r.resolver.Resolve(req)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +448,7 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 	gs := &api.Service{
 		Name: name,
 		Endpoint: &api.Endpoint{
-			Name:   req.URL.String(),
+			Name:   rp.Path,
 			Host:   []string{req.Host},
 			Method: []string{req.Method},
 			Path:   []string{req.URL.Path},
@@ -490,7 +478,6 @@ func NewRouter(lg *zap.Logger, discovery dsy.IDiscovery) Router {
 	}
 
 	rc := cache.New(discovery)
-	factory := resolver.NewFactory()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	r := &registryRouter{
@@ -499,7 +486,7 @@ func NewRouter(lg *zap.Logger, discovery dsy.IDiscovery) Router {
 		lg:        lg,
 		rc:        rc,
 		discovery: discovery,
-		factory:   factory,
+		resolver:  resolver.NewResolver(),
 		eps:       make(map[string]*api.Service),
 		ceps:      make(map[string]*endpoint),
 		stopc:     make(chan struct{}),

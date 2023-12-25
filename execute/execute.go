@@ -38,7 +38,7 @@ const (
 )
 
 const (
-	DefaultTaskURL     = "/io.olive.executor.discoverypb.Executor/Execute"
+	DefaultTaskURL     = "/discoverypb.Executor/Execute"
 	DefaultExecuteName = "io.olive.executor"
 )
 

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/olive-io/olive/executor/client"
+	"github.com/olive-io/olive/execute/client"
 )
 
 type grpcRequest struct {

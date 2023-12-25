@@ -28,17 +28,19 @@ import (
 	gw "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/execute"
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
 	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/discovery/execute"
 	"github.com/olive-io/olive/pkg/mnet"
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
 
@@ -129,13 +131,15 @@ func (e *Executor) Start() error {
 		lg.Error("Server register", zap.Error(err))
 	}
 
-	handler := grpcHandlerFunc(gs, http.NewServeMux())
 	var gwmux *gw.ServeMux
-	httpmux := e.createMux(gwmux, handler)
-
-	e.serve = &http.Server{Handler: httpmux}
+	mux := e.createMux(gwmux, http.NewServeMux())
+	handler := grpcHandlerFunc(gs, mux)
+	e.serve = &http.Server{
+		Handler:        handler,
+		MaxHeaderBytes: 1024 * 1024 * 20,
+	}
 	e.GoAttach(func() {
-		_ = gs.Serve(ts)
+		_ = e.serve.Serve(ts)
 	})
 	e.GoAttach(e.process)
 
@@ -474,17 +478,13 @@ func (e *Executor) StartNotify() <-chan struct{} {
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Given in gRPC docs.
-func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
-	if otherHandler == nil {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			grpcServer.ServeHTTP(w, r)
-		})
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func grpcHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
+	h2s := &http2.Server{}
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			grpcServer.ServeHTTP(w, r)
+			gh.ServeHTTP(w, r)
 		} else {
-			otherHandler.ServeHTTP(w, r)
+			hh.ServeHTTP(w, r)
 		}
-	})
+	}), h2s)
 }

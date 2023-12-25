@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/olive-io/olive/executor/client"
+	"github.com/olive-io/olive/execute/client"
 )
 
 // Implements the streamer interface

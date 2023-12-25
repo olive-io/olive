@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding"
 
-	"github.com/olive-io/olive/executor/client"
+	"github.com/olive-io/olive/execute/client"
 )
 
 type codecsKey struct{}

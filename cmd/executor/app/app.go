@@ -18,7 +18,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/olive-io/olive/executor/server"
+	"github.com/olive-io/olive/execute/server"
 	"github.com/olive-io/olive/pkg/signalutil"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/spf13/cobra"

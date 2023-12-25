@@ -19,6 +19,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/execute"
 )
 
 var (
@@ -26,8 +27,8 @@ var (
 	ErrInvalidPath = errors.New("invalid path")
 )
 
-// Resolver resolves requests to endpoints
-type Resolver interface {
+// IResolver resolves requests to endpoints
+type IResolver interface {
 	Activity() dsypb.Activity
 	Resolve(r *http.Request) (*Endpoint, error)
 }
@@ -44,26 +45,25 @@ type Endpoint struct {
 	Path string
 }
 
-type Factory struct {
-	resolver map[dsypb.Activity]Resolver
+// resolver the Resolver implementation for IResolver
+type resolver struct{}
+
+func NewResolver() IResolver {
+	return new(resolver)
 }
 
-// NewFactory returns a factory about Resolver
-func NewFactory() *Factory {
-	resolvers := map[dsypb.Activity]Resolver{}
-	resolvers[dsypb.Activity_ServiceTask] = &serviceResolver{}
-	resolvers[dsypb.Activity_ScriptTask] = &scriptResolver{}
-	resolvers[dsypb.Activity_UserTask] = &userResolver{}
-	resolvers[dsypb.Activity_SendTask] = &sendResolver{}
-	resolvers[dsypb.Activity_ReceiveTask] = &receiveResolver{}
-	resolvers[dsypb.Activity_CallActivity] = &callActivityResolver{}
+func (r *resolver) Activity() dsypb.Activity {
+	return dsypb.Activity_ServiceTask
+}
 
-	return &Factory{
-		resolver: resolvers,
+func (r *resolver) Resolve(req *http.Request) (*Endpoint, error) {
+	// foo
+	endpoint := &Endpoint{
+		Name:   execute.DefaultExecuteName,
+		Host:   req.Host,
+		Method: req.Method,
+		Path:   execute.DefaultTaskURL,
 	}
-}
 
-func (f *Factory) GetResolver(act dsypb.Activity) (Resolver, bool) {
-	r, ok := f.resolver[act]
-	return r, ok
+	return endpoint, nil
 }

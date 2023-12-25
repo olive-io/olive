@@ -37,8 +37,8 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	"github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/execute"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	"github.com/olive-io/olive/pkg/discovery/execute"
 	"go.uber.org/zap"
 )
 

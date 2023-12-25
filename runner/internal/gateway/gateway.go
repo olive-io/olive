@@ -21,11 +21,11 @@ import (
 	"github.com/cockroachdb/errors"
 	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/executor/client"
-	"github.com/olive-io/olive/executor/client/grpc"
-	"github.com/olive-io/olive/executor/client/selector"
+	"github.com/olive-io/olive/execute/client"
+	"github.com/olive-io/olive/execute/client/grpc"
+	"github.com/olive-io/olive/execute/client/selector"
 	cx "github.com/olive-io/olive/pkg/context"
-	"github.com/olive-io/olive/runner/gateway/router"
+	"github.com/olive-io/olive/runner/internal/gateway/router"
 )
 
 var (
@@ -146,9 +146,8 @@ func (gw *gateway) Handle(hreq *http.Request) (*dsypb.Response, error) {
 
 	req := gw.cc.NewRequest(
 		service.Name,
-		"/discoverypb.Executor/Execute",
+		service.Endpoint.Name,
 		request,
-		//client.WithContentType(ct),
 	)
 
 	// make the call
