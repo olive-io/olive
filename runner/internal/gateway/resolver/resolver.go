@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/cockroachdb/errors"
-	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/execute"
 )
 
@@ -29,7 +28,6 @@ var (
 
 // IResolver resolves requests to endpoints
 type IResolver interface {
-	Activity() dsypb.Activity
 	Resolve(r *http.Request) (*Endpoint, error)
 }
 
@@ -52,12 +50,7 @@ func NewResolver() IResolver {
 	return new(resolver)
 }
 
-func (r *resolver) Activity() dsypb.Activity {
-	return dsypb.Activity_ServiceTask
-}
-
 func (r *resolver) Resolve(req *http.Request) (*Endpoint, error) {
-	// foo
 	endpoint := &Endpoint{
 		Name:   execute.DefaultExecuteName,
 		Host:   req.Host,
