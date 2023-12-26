@@ -17,7 +17,7 @@ package raft
 import (
 	"context"
 	"fmt"
-	"net/url"
+	urlpkg "net/url"
 	"sync"
 	"time"
 
@@ -322,16 +322,8 @@ func (c *Controller) patchRegion(ctx context.Context, patch *jsonpatch.Patch) er
 }
 
 func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
-	members := map[uint64]string{}
-	join := false
-
 	replicaId := uint64(0)
 	for id, replica := range ri.Replicas {
-		peerURL, err := url.Parse(replica.RaftAddress)
-		if err != nil {
-			return nil, err
-		}
-		members[id] = peerURL.Host
 		if replica.Runner == c.pr.Id {
 			replicaId = id
 		}
@@ -341,9 +333,14 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		return nil, fmt.Errorf("missing local replica")
 	}
 
-	if ri.Replicas[replicaId].IsJoin {
-		join = true
-		members = map[uint64]string{}
+	members := map[uint64]string{}
+	join := ri.Replicas[replicaId].IsJoin
+	for id, urlText := range ri.Replicas[replicaId].Initial {
+		url, err := urlpkg.Parse(urlText)
+		if err != nil {
+			return nil, err
+		}
+		members[id] = url.Host
 	}
 
 	regionId := ri.Id

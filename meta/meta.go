@@ -17,7 +17,6 @@ package meta
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -31,8 +30,6 @@ import (
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
 
@@ -119,17 +116,4 @@ func (s *Server) destroy() {
 	s.etcd.Server.HardStop()
 	<-s.etcd.Server.StopNotify()
 	s.cancel()
-}
-
-// grpcHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC
-// connections or otherHandler otherwise. Given in gRPC docs.
-func grpcHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
-	h2s := &http2.Server{}
-	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			gh.ServeHTTP(w, r)
-		} else {
-			hh.ServeHTTP(w, r)
-		}
-	}), h2s)
 }

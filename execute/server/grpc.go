@@ -27,10 +27,8 @@ func (e *Executor) Ping(ctx context.Context, req *dsypb.PingRequest) (*dsypb.Pin
 func (e *Executor) Execute(ctx context.Context, req *dsypb.ExecuteRequest) (*dsypb.ExecuteResponse, error) {
 	resp := &dsypb.ExecuteResponse{}
 	resp.Response = &dsypb.Response{
-		Properties: map[string]*dsypb.Box{
-			"a": dsypb.BoxFromT("a"),
-		},
-		DataObjects: nil,
+		Properties:  map[string]*dsypb.Box{},
+		DataObjects: map[string]*dsypb.Box{},
 	}
 	return resp, nil
 }

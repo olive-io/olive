@@ -115,6 +115,7 @@ message RegionReplica {
   bool isNonVoting = 5;
   bool isWitness = 6;
   bool isJoin = 7;
+  map<uint64, string> initial = 8;
 }
 
 message RegionStat {

@@ -17,6 +17,7 @@ package schedule
 import "errors"
 
 var (
+	ErrNoRegion       = errors.New("region not found")
 	ErrRegionNoSpace  = errors.New("region no space")
 	ErrRunnerNotReady = errors.New("runner not ready")
 	ErrRunnerBusy     = errors.New("all of runners are busy")

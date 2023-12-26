@@ -37,6 +37,7 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
@@ -124,20 +125,25 @@ func (e *Executor) Start() error {
 	e.cfg.ListenClientURL = "http://" + ts.Addr().String()
 	e.rmu.Unlock()
 
-	gs := e.buildGrpcServer()
+	gs := e.buildGRPCServer()
+
+	gwmux, err := e.buildGRPCGateway()
+	if err != nil {
+		return err
+	}
+	handler := e.buildUserHandler()
+
+	mux := e.createMux(gwmux, handler)
+	e.serve = &http.Server{
+		Handler:        grpcHandlerFunc(gs, mux),
+		MaxHeaderBytes: 1024 * 1024 * 20,
+	}
 
 	// announce self to the world
 	if err = e.register(); err != nil {
 		lg.Error("Server register", zap.Error(err))
 	}
 
-	var gwmux *gw.ServeMux
-	mux := e.createMux(gwmux, http.NewServeMux())
-	handler := grpcHandlerFunc(gs, mux)
-	e.serve = &http.Server{
-		Handler:        handler,
-		MaxHeaderBytes: 1024 * 1024 * 20,
-	}
 	e.GoAttach(func() {
 		_ = e.serve.Serve(ts)
 	})
@@ -205,7 +211,7 @@ func (e *Executor) createListener() (net.Listener, error) {
 	return listener, nil
 }
 
-func (e *Executor) buildGrpcServer() *grpc.Server {
+func (e *Executor) buildGRPCServer() *grpc.Server {
 	sopts := []grpc.ServerOption{
 		grpc.UnknownServiceHandler(e.handler),
 	}
@@ -213,6 +219,21 @@ func (e *Executor) buildGrpcServer() *grpc.Server {
 	dsypb.RegisterExecutorServer(gs, e)
 
 	return gs
+}
+
+func (e *Executor) buildGRPCGateway() (*gw.ServeMux, error) {
+	gwmux := gw.NewServeMux()
+	if err := dsypb.RegisterExecutorHandlerServer(e.ctx, gwmux, e); err != nil {
+		return nil, err
+	}
+	return gwmux, nil
+}
+
+func (e *Executor) buildUserHandler() http.Handler {
+	handler := http.NewServeMux()
+	handler.Handle("/metrics", promhttp.Handler())
+
+	return handler
 }
 
 func (e *Executor) handler(svc interface{}, stream grpc.ServerStream) error {

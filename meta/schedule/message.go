@@ -24,7 +24,9 @@ type regionAllocMessage struct{}
 func (m *regionAllocMessage) payload() {}
 
 // regionExpendMessage expends the capacity of region (maximum is 3)
-type regionExpendMessage struct{}
+type regionExpendMessage struct {
+	region uint64
+}
 
 func (m *regionExpendMessage) payload() {}
 

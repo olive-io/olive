@@ -240,17 +240,20 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		State:        pb.State_NotReady,
 		Timestamp:    time.Now().Unix(),
 	}
+	initial := map[uint64]string{}
 	for i, runner := range runners {
 		mid := uint64(i + 1)
 		if i == 0 {
 			region.Leader = mid
 		}
+		initial[mid] = runner.ListenPeerURL
 		region.Members[mid] = runner.Id
 		region.Replicas[mid] = &pb.RegionReplica{
 			Id:          mid,
 			Runner:      runner.Id,
 			Region:      rid,
 			RaftAddress: runner.ListenPeerURL,
+			Initial:     initial,
 		}
 	}
 
@@ -277,6 +280,55 @@ func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
 	return idGen.Next(), nil
 }
 
+func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, error) {
+	sc.rgmu.RLock()
+	region, ok := sc.regions[id]
+	sc.rgmu.RUnlock()
+	if !ok {
+		return nil, ErrNoRegion
+	}
+
+	opts := make([]runnerOption, 0)
+	for _, replica := range region.Replicas {
+		opts = append(opts, runnerWithMatch(runnerMatchWithout(replica.Runner)))
+	}
+
+	count := replicaNum - len(region.Replicas)
+	opts = append(opts, runnerWithCount(count))
+	runners, err := sc.schedulingRunnerCycle(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	next := uint64(len(region.Replicas) + 1)
+	for _, runner := range runners {
+		rid := runner.Id
+		region.Replicas[id] = &pb.RegionReplica{
+			Id:          next,
+			Runner:      rid,
+			Region:      region.Id,
+			RaftAddress: runner.ListenPeerURL,
+			IsJoin:      true,
+			Initial:     map[uint64]string{},
+		}
+		next += 1
+	}
+
+	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
+	data, _ := region.Marshal()
+	resp, err := sc.v3cli.Put(ctx, key, string(data))
+	if err != nil {
+		return nil, err
+	}
+	region.Rev = resp.Header.Revision
+
+	sc.rgmu.Lock()
+	sc.regions[region.Id] = region
+	sc.rgmu.Unlock()
+
+	return nil, err
+}
+
 func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb.Region, bool, error) {
 	region, has, err := sc.schedulingRegionCycle(ctx)
 	if err != nil {
@@ -301,7 +353,9 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 
 	// Expends the replica of region to 3
 	if len(region.Members) < replicaNum && sc.runnerQ.Len() >= replicaNum {
-		sc.dispatchMessage(new(regionExpendMessage))
+		m := new(regionExpendMessage)
+		m.region = region.Id
+		sc.dispatchMessage(m)
 	}
 
 	dm.Region = region.Id
@@ -315,7 +369,12 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 	return region, true, nil
 }
 
-func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, error) {
+func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context, options ...runnerOption) ([]*pb.Runner, error) {
+	var option runnerOptions
+	for _, opt := range options {
+		opt(&option)
+	}
+
 	lg := sc.lg
 
 	length := sc.runnerQ.Len()
@@ -327,6 +386,11 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, e
 	if length < replicaNum {
 		rc = length
 	}
+
+	if rc > option.count {
+		rc = option.count
+	}
+
 	runners := make([]*pb.Runner, rc)
 	rts := make([]*pb.RunnerStat, rc)
 	for i := 0; i < rc; i++ {
@@ -356,7 +420,16 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context) ([]*pb.Runner, e
 			lg.Warn("RunnerStat is invalid", zap.Uint64("id", rs.Id))
 			continue
 		}
-		runners[i] = runner
+		pass := true
+		for _, match := range option.matches {
+			if !match(runner) {
+				pass = false
+				break
+			}
+		}
+		if pass {
+			runners[i] = runner
+		}
 	}
 	sc.rmu.RUnlock()
 
@@ -540,10 +613,11 @@ func (sc *Scheduler) handleRunner(runner *pb.Runner) {
 }
 
 func (sc *Scheduler) processMessage(m imessage) {
-	switch m.(type) {
+	switch vv := m.(type) {
 	case *regionAllocMessage:
 		sc.processAllocRegion(sc.ctx)
 	case *regionExpendMessage:
+		sc.processExpendRegion(sc.ctx, vv.region)
 	case *regionMigrateMessage:
 	}
 }
@@ -557,4 +631,15 @@ func (sc *Scheduler) processAllocRegion(ctx context.Context) {
 	}
 
 	lg.Info("allocate new region", zap.Stringer("region", region))
+}
+
+func (sc *Scheduler) processExpendRegion(ctx context.Context, id uint64) {
+	lg := sc.lg
+	region, err := sc.ExpendRegion(ctx, id)
+	if err != nil {
+		lg.Error("expend region", zap.Error(err))
+		return
+	}
+
+	lg.Info("expend region", zap.Stringer("region", region))
 }
