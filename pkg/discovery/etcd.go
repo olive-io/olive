@@ -213,6 +213,24 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *dsypb.Service, node 
 	return nil
 }
 
+func (e *etcdRegistry) Register(ctx context.Context, s *dsypb.Service, opts ...RegisterOption) error {
+	if len(s.Nodes) == 0 {
+		return errors.New("require at lease one node")
+	}
+
+	var grr error
+
+	// registry each node individually
+	for _, node := range s.Nodes {
+		err := e.registerNode(ctx, s, node, opts...)
+		if err != nil {
+			grr = err
+		}
+	}
+
+	return grr
+}
+
 func (e *etcdRegistry) Deregister(ctx context.Context, s *dsypb.Service, opts ...DeregisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("required at lease one node")
@@ -254,24 +272,6 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *dsypb.Service, opts ..
 	}
 
 	return nil
-}
-
-func (e *etcdRegistry) Register(ctx context.Context, s *dsypb.Service, opts ...RegisterOption) error {
-	if len(s.Nodes) == 0 {
-		return errors.New("require at lease one node")
-	}
-
-	var grr error
-
-	// registry each node individually
-	for _, node := range s.Nodes {
-		err := e.registerNode(ctx, s, node, opts...)
-		if err != nil {
-			grr = err
-		}
-	}
-
-	return grr
 }
 
 func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetOption) ([]*dsypb.Service, error) {

@@ -233,7 +233,6 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	region := &pb.Region{
 		Id:           rid,
 		Name:         rname,
-		Members:      map[uint64]uint64{},
 		Replicas:     map[uint64]*pb.RegionReplica{},
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
@@ -247,12 +246,12 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 			region.Leader = mid
 		}
 		initial[mid] = runner.ListenPeerURL
-		region.Members[mid] = runner.Id
 		region.Replicas[mid] = &pb.RegionReplica{
 			Id:          mid,
 			Runner:      runner.Id,
 			Region:      rid,
 			RaftAddress: runner.ListenPeerURL,
+			IsJoin:      false,
 			Initial:     initial,
 		}
 	}
@@ -303,7 +302,7 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 	next := uint64(len(region.Replicas) + 1)
 	for _, runner := range runners {
 		rid := runner.Id
-		region.Replicas[id] = &pb.RegionReplica{
+		replica := &pb.RegionReplica{
 			Id:          next,
 			Runner:      rid,
 			Region:      region.Id,
@@ -311,6 +310,7 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 			IsJoin:      true,
 			Initial:     map[uint64]string{},
 		}
+		region.Replicas[region.Id] = replica
 		next += 1
 	}
 
@@ -326,7 +326,7 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 	sc.regions[region.Id] = region
 	sc.rgmu.Unlock()
 
-	return nil, err
+	return region, nil
 }
 
 func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb.Region, bool, error) {
@@ -352,7 +352,7 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 	}
 
 	// Expends the replica of region to 3
-	if len(region.Members) < replicaNum && sc.runnerQ.Len() >= replicaNum {
+	if len(region.Replicas) < replicaNum && sc.runnerQ.Len() >= replicaNum {
 		m := new(regionExpendMessage)
 		m.region = region.Id
 		sc.dispatchMessage(m)

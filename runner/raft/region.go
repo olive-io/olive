@@ -107,7 +107,7 @@ type Region struct {
 	stopc <-chan struct{}
 }
 
-func (c *Controller) InitDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
+func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
 	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
 
@@ -191,7 +191,7 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 		return 0, err
 	}
 
-	r.metric, err = newRegionMetrics(r.id)
+	r.metric, err = newRegionMetrics(r.id, r.memberId)
 	if err != nil {
 		r.openWait.Trigger(r.id, err)
 		return 0, err

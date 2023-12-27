@@ -100,7 +100,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	return runner, nil
 }
 
-func (r *Runner) registry() {
+func (r *Runner) process() {
 
 	ctx := r.ctx
 	runner := r.pr

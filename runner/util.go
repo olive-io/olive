@@ -26,15 +26,15 @@ import (
 	"go.uber.org/zap"
 )
 
-func parseRegionKv(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
+func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
 	region := new(pb.Region)
 	err := region.Unmarshal(kv.Value)
 	if err != nil {
 		return nil, false, err
 	}
 	match := false
-	for _, runner := range region.Members {
-		if runner == runnerId {
+	for _, replica := range region.Replicas {
+		if replica.Runner == runnerId {
 			match = true
 			break
 		}
@@ -42,7 +42,7 @@ func parseRegionKv(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, erro
 	return region, match, nil
 }
 
-func parseDefinitionKv(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
+func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
 	definition := new(pb.Definition)
 	err := definition.Unmarshal(kv.Value)
 	if err != nil {
@@ -57,7 +57,7 @@ func parseDefinitionKv(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
 	return definition, true, nil
 }
 
-func parseProcessInstanceKv(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
+func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
 	process := new(pb.ProcessInstance)
 	err := process.Unmarshal(kv.Value)
 	if err != nil {

@@ -17,6 +17,9 @@ package raft
 import "errors"
 
 var (
+	ErrNoRegion               = errors.New("region: not found")
+	ErrRegionReplicaAdded     = errors.New("region: replica already added")
+	ErrRaftAddress            = errors.New("invalid raft address")
 	ErrStopped                = errors.New("region has stopped; skipping request")
 	ErrCanceled               = errors.New("region: request cancelled")
 	ErrTimeout                = errors.New("region: request timed out")

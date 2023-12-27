@@ -18,10 +18,13 @@ import (
 	"context"
 	"fmt"
 	urlpkg "net/url"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/coreos/go-semver/semver"
+	json "github.com/json-iterator/go"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/olive-io/bpmn/tracing"
@@ -33,6 +36,7 @@ import (
 	"github.com/olive-io/olive/runner/internal/gateway"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -262,8 +266,8 @@ func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
 		return c.CreateRegion(ctx, region)
 	}
 
-	regionInfo := local.getInfo()
-	patch, err := jsonpatch.CreateJSONPatch(region, regionInfo)
+	oldRegion := local.getInfo()
+	patch, err := jsonpatch.CreateJSONPatch(oldRegion, region)
 	if err != nil {
 		return err
 	}
@@ -271,7 +275,36 @@ func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
 		return nil
 	}
 
-	return c.patchRegion(ctx, patch)
+	var patchErr error
+	patch.Each(func(op string, path string, value any) {
+		data, _ := json.Marshal(value)
+		if op == "add" && strings.HasPrefix(path, "/replicas") {
+			replica := new(pb.RegionReplica)
+			if err = json.Unmarshal(data, replica); err != nil {
+				patchErr = multierr.Append(patchErr, err)
+				return
+			}
+			if err = c.requestAddRegionReplica(ctx, oldRegion.Id, replica); err != nil {
+				patchErr = multierr.Append(patchErr, err)
+				return
+			}
+		}
+		if op == "replace" && strings.HasPrefix(path, "/leader") {
+			var leader uint64
+			_ = json.Unmarshal(data, &leader)
+			if err = c.requestLeaderTransferRegion(ctx, oldRegion.Id, leader); err != nil {
+				patchErr = multierr.Append(patchErr, err)
+				return
+			}
+		}
+	})
+
+	if patchErr != nil {
+		return patchErr
+	}
+
+	local.updateInfo(region)
+	return nil
 }
 
 // prepareRegions loads regions from backend.IBackend and start raft regions
@@ -317,10 +350,6 @@ func (c *Controller) prepareRegions() error {
 	return nil
 }
 
-func (c *Controller) patchRegion(ctx context.Context, patch *jsonpatch.Patch) error {
-	return nil
-}
-
 func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
 	replicaId := uint64(0)
 	for id, replica := range ri.Replicas {
@@ -338,7 +367,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	for id, urlText := range ri.Replicas[replicaId].Initial {
 		url, err := urlpkg.Parse(urlText)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(ErrRaftAddress, err.Error())
 		}
 		members[id] = url.Host
 	}
@@ -374,7 +403,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		return nil, err
 	}
 
-	err := c.nh.StartOnDiskReplica(members, join, c.InitDiskStateMachine, cfg)
+	err := c.nh.StartOnDiskReplica(members, join, c.initDiskStateMachine, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -412,6 +441,60 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	c.setRegion(region)
 
 	return region, nil
+}
+
+func (c *Controller) requestAddRegionReplica(ctx context.Context, id uint64, replica *pb.RegionReplica) error {
+	region, ok := c.getRegion(id)
+	if !ok {
+		return errors.Wrapf(ErrNoRegion, "id is %d", id)
+	}
+
+	if _, ok = ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, region.cfg.ReqTimeout())
+		defer cancel()
+	}
+
+	ms, err := c.nh.SyncGetShardMembership(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if _, ok = ms.Nodes[replica.Id]; ok {
+		return errors.Wrapf(ErrRegionReplicaAdded, "add replica (%d) to region (%d)", replica.Id, id)
+	}
+
+	cc := ms.ConfigChangeID
+	url, err := urlpkg.Parse(replica.RaftAddress)
+	if err != nil {
+		return errors.Wrap(ErrRaftAddress, err.Error())
+	}
+	target := url.Host
+
+	err = c.nh.SyncRequestAddReplica(ctx, id, replica.Id, target, cc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Controller) requestLeaderTransferRegion(ctx context.Context, id, leader uint64) error {
+	region, ok := c.getRegion(id)
+	if !ok {
+		return errors.Wrapf(ErrNoRegion, "id is %d", id)
+	}
+
+	if region.getLeader() == leader || leader == 0 {
+		return nil
+	}
+
+	err := c.nh.RequestLeaderTransfer(id, leader)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Definition) error {

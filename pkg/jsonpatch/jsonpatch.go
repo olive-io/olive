@@ -29,6 +29,12 @@ func (p *Patch) MarshalJSON() ([]byte, error) {
 	return data, err
 }
 
+func (p *Patch) Each(fn func(string, string, any)) {
+	for _, op := range p.operations {
+		fn(op.Operation, op.Path, op.Value)
+	}
+}
+
 func (p *Patch) Len() int {
 	return len(p.operations)
 }

@@ -96,7 +96,7 @@ func (r *Runner) Start() error {
 	}
 
 	r.Destroy(r.destroy)
-	r.GoAttach(r.registry)
+	r.GoAttach(r.process)
 	r.GoAttach(r.watching)
 
 	return nil
@@ -188,19 +188,19 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		key := string(kv.Value)
 		switch {
 		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
-			region, match, err := parseRegionKv(kv, r.pr.Id)
+			region, match, err := parseRegionKV(kv, r.pr.Id)
 			if err != nil || !match {
 				continue
 			}
 			regions = append(regions, region)
 		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-			definition, match, err := parseDefinitionKv(kv)
+			definition, match, err := parseDefinitionKV(kv)
 			if err != nil || !match {
 				continue
 			}
 			definitions = append(definitions, definition)
 		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
-			proc, match, err := parseProcessInstanceKv(kv)
+			proc, match, err := parseProcessInstanceKV(kv)
 			if err != nil || !match {
 				continue
 			}
@@ -236,6 +236,7 @@ func (r *Runner) watching() {
 	rev := r.getRev()
 	wopts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
+		clientv3.WithPrevKV(),
 		clientv3.WithRev(rev + 1),
 	}
 	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
@@ -289,17 +290,17 @@ func (r *Runner) destroy() {
 func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 	kv := event.Kv
 	key := string(kv.Key)
-	if event.Type == clientv3.EventTypeDelete {
-		rev := event.Kv.CreateRevision
-		options := []clientv3.OpOption{clientv3.WithRev(rev)}
-		rsp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
-		if err != nil {
-			r.Logger().Error("get key-value")
-		}
-		if len(rsp.Kvs) > 0 {
-			event.Kv = rsp.Kvs[0]
-		}
-	}
+	//if event.Type == clientv3.EventTypeDelete {
+	//	rev := event.Kv.CreateRevision
+	//	options := []clientv3.OpOption{clientv3.WithRev(rev)}
+	//	rsp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
+	//	if err != nil {
+	//		r.Logger().Error("get key-value")
+	//	}
+	//	if len(rsp.Kvs) > 0 {
+	//		event.Kv = rsp.Kvs[0]
+	//	}
+	//}
 	switch {
 	case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
 		r.processRegion(ctx, event)
@@ -317,7 +318,7 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 		return
 	}
 
-	region, match, err := parseRegionKv(kv, r.pr.Id)
+	region, match, err := parseRegionKV(kv, r.pr.Id)
 	if err != nil {
 		lg.Error("parse region data", zap.Error(err))
 		return
@@ -350,7 +351,7 @@ func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Even
 		return
 	}
 
-	definition, match, err := parseDefinitionKv(kv)
+	definition, match, err := parseDefinitionKV(kv)
 	if err != nil {
 		lg.Error("parse definition data", zap.Error(err))
 		return
@@ -375,7 +376,7 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 		return
 	}
 
-	process, match, err := parseProcessInstanceKv(kv)
+	process, match, err := parseProcessInstanceKV(kv)
 	if err != nil {
 		lg.Error("parse process data", zap.Error(err))
 		return
