@@ -15,10 +15,7 @@
 package app
 
 import (
-	"os"
-	"os/signal"
-
-	"github.com/olive-io/olive/pkg/signalutil"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
 	"github.com/spf13/cobra"
@@ -42,6 +39,7 @@ func NewRunnerCommand() *cobra.Command {
 }
 
 func setupRunner(cmd *cobra.Command, args []string) error {
+	stopc := genericserver.SetupSignalHandler()
 	flags := cmd.PersistentFlags()
 	cfg, err := runner.NewConfigFromFlagSet(flags)
 	if err != nil {
@@ -52,24 +50,10 @@ func setupRunner(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	oliveRunner, err := runner.NewRunner(cfg)
+	server, err := runner.NewRunner(cfg)
 	if err != nil {
 		return err
 	}
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, signalutil.Shutdown()...)
-
-	if err = oliveRunner.Start(); err != nil {
-		return err
-	}
-
-	select {
-	// wait on kill signal
-	case <-ch:
-	}
-
-	oliveRunner.Stop()
-
-	return nil
+	return server.Start(stopc)
 }

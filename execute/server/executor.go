@@ -35,7 +35,7 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/mnet"
 	"github.com/olive-io/olive/pkg/runtime"
-	"github.com/olive-io/olive/pkg/server"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
@@ -46,7 +46,7 @@ import (
 )
 
 type Executor struct {
-	server.Inner
+	genericserver.Inner
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -70,7 +70,7 @@ type Executor struct {
 
 func NewExecutor(cfg Config) (*Executor, error) {
 	lg := cfg.Logger
-	inner := server.NewInnerServer(lg)
+	inner := genericserver.NewInnerServer(lg)
 
 	lg.Debug("connect to olive-meta",
 		zap.String("endpoints", strings.Join(cfg.Endpoints, ",")))
@@ -106,7 +106,7 @@ func (e *Executor) Logger() *zap.Logger {
 	return e.cfg.Logger
 }
 
-func (e *Executor) Start() error {
+func (e *Executor) Start(stopc <-chan struct{}) error {
 	if e.isStarted() {
 		return nil
 	}
@@ -148,18 +148,21 @@ func (e *Executor) Start() error {
 		_ = e.serve.Serve(ts)
 	})
 	e.GoAttach(e.process)
-
 	e.Destroy(e.destroy)
-	return nil
+
+	<-stopc
+
+	return e.stop()
 }
 
 func (e *Executor) destroy() {}
 
-func (e *Executor) Stop() {
+func (e *Executor) stop() error {
 	if err := e.serve.Shutdown(e.ctx); err != nil {
-		e.Logger().Error("stop serve", zap.Error(err))
+		return err
 	}
-	e.Inner.Stop()
+	e.Inner.Shutdown()
+	return nil
 }
 
 func (e *Executor) process() {

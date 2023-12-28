@@ -27,7 +27,7 @@ import (
 	"github.com/olive-io/olive/client"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/runtime"
-	"github.com/olive-io/olive/pkg/server"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
@@ -36,7 +36,7 @@ import (
 )
 
 type Runner struct {
-	server.Inner
+	genericserver.Inner
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -71,7 +71,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	be := newBackend(&cfg)
 
-	inner := server.NewInnerServer(lg)
+	inner := genericserver.NewInnerServer(lg)
 	runner := &Runner{
 		Inner:  inner,
 		ctx:    ctx,
@@ -90,7 +90,7 @@ func (r *Runner) Logger() *zap.Logger {
 	return r.cfg.Logger
 }
 
-func (r *Runner) Start() error {
+func (r *Runner) Start(stopc <-chan struct{}) error {
 	if err := r.start(); err != nil {
 		return err
 	}
@@ -99,7 +99,9 @@ func (r *Runner) Start() error {
 	r.GoAttach(r.process)
 	r.GoAttach(r.watching)
 
-	return nil
+	<-stopc
+
+	return r.stop()
 }
 
 func (r *Runner) start() error {
@@ -126,6 +128,11 @@ func (r *Runner) start() error {
 		return err
 	}
 
+	return nil
+}
+
+func (r *Runner) stop() error {
+	r.Inner.Shutdown()
 	return nil
 }
 

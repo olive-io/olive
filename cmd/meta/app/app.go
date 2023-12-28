@@ -15,11 +15,8 @@
 package app
 
 import (
-	"os"
-	"os/signal"
-
 	"github.com/olive-io/olive/meta"
-	"github.com/olive-io/olive/pkg/signalutil"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/spf13/cobra"
 )
@@ -42,6 +39,7 @@ func NewMetaCommand() *cobra.Command {
 }
 
 func runMeta(cmd *cobra.Command, args []string) error {
+	stopc := genericserver.SetupSignalHandler()
 	flags := cmd.PersistentFlags()
 
 	cfg, err := meta.ConfigFromFlagSet(flags)
@@ -52,32 +50,10 @@ func runMeta(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err = setupMetaServer(cfg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func setupMetaServer(cfg meta.Config) error {
 	ms, err := meta.NewServer(cfg)
 	if err != nil {
 		return err
 	}
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, signalutil.Shutdown()...)
-
-	if err = ms.Start(); err != nil {
-		return err
-	}
-
-	select {
-	// wait on kill signal
-	case <-ch:
-	}
-
-	ms.Stop()
-
-	return nil
+	return ms.Start(stopc)
 }

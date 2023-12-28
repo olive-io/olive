@@ -32,8 +32,8 @@ type Inner interface {
 	GoAttach(fn func())
 	// Destroy run destroy function when the server stop
 	Destroy(fn func())
-	// Stop sends signal to stop channel and all goroutines stop
-	Stop()
+	// Shutdown sends signal to stop channel and all goroutines stop
+	Shutdown()
 }
 
 type innerServer struct {
@@ -104,7 +104,7 @@ func (s *innerServer) destroy(fn func()) {
 	<-s.stop
 }
 
-func (s *innerServer) Stop() {
+func (s *innerServer) Shutdown() {
 	select {
 	case s.stop <- struct{}{}:
 	case <-s.done:

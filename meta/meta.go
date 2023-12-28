@@ -23,7 +23,7 @@ import (
 	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
-	"github.com/olive-io/olive/pkg/server"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -34,7 +34,7 @@ import (
 )
 
 type Server struct {
-	server.Inner
+	genericserver.Inner
 
 	cfg Config
 
@@ -55,7 +55,7 @@ type Server struct {
 func NewServer(cfg Config) (*Server, error) {
 
 	lg := cfg.Config.GetLogger()
-	inner := server.NewInnerServer(lg)
+	inner := genericserver.NewInnerServer(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{
@@ -71,7 +71,7 @@ func NewServer(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(stopc <-chan struct{}) error {
 	ec := s.cfg.Config
 	ec.EnableGRPCGateway = true
 
@@ -105,11 +105,15 @@ func (s *Server) Start() error {
 	}
 
 	s.Inner.Destroy(s.destroy)
-	return nil
+
+	<-stopc
+
+	return s.stop()
 }
 
-func (s *Server) Stop() {
-	s.Inner.Stop()
+func (s *Server) stop() error {
+	s.Inner.Shutdown()
+	return nil
 }
 
 func (s *Server) destroy() {
