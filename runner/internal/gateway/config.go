@@ -17,8 +17,9 @@ package gateway
 import (
 	"fmt"
 
-	dsy "github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/zap"
+
+	dsy "github.com/olive-io/olive/pkg/discovery"
 )
 
 var (

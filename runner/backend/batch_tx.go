@@ -21,8 +21,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/olive-io/olive/pkg/bytesutil"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
 type IBatchTx interface {

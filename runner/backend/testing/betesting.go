@@ -20,9 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/olive-io/olive/runner/backend"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/olive-io/olive/runner/backend"
 )
 
 func NewTmpBackendFromCfg(t testing.TB, bcfg backend.BackendConfig) (backend.IBackend, string) {

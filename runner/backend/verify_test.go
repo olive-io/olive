@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/olive-io/olive/runner/backend"
-	"github.com/olive-io/olive/runner/backend/testing"
 	betesting "github.com/olive-io/olive/runner/backend/testing"
 )
 

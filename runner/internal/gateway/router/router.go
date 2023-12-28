@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"go.uber.org/zap"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/context/metadata"
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -31,7 +33,6 @@ import (
 	"github.com/olive-io/olive/runner/internal/gateway/api"
 	"github.com/olive-io/olive/runner/internal/gateway/httprule"
 	"github.com/olive-io/olive/runner/internal/gateway/resolver"
-	"go.uber.org/zap"
 )
 
 var (

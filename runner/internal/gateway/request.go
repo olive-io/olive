@@ -20,9 +20,10 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
+	"github.com/oxtoacart/bpool"
+
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/runner/internal/qson"
-	"github.com/oxtoacart/bpool"
 )
 
 var (

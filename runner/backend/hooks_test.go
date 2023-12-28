@@ -19,10 +19,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/olive-io/olive/runner/backend"
 	betesting "github.com/olive-io/olive/runner/backend/testing"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/stretchr/testify/assert"
 )
 
 var (

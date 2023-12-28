@@ -25,8 +25,9 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	humanize "github.com/dustin/go-humanize"
-	pb "github.com/olive-io/olive/api/olivepb"
 	"go.uber.org/zap"
+
+	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 const (

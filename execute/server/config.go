@@ -18,9 +18,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/olive-io/olive/client"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/client"
 )
 
 var (
