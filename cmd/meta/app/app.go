@@ -15,38 +15,52 @@
 package app
 
 import (
+	"fmt"
+	"io"
+
+	"github.com/spf13/cobra"
+
 	"github.com/olive-io/olive/meta"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/spf13/cobra"
 )
 
-func NewMetaCommand() *cobra.Command {
+func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
+	cfg := meta.NewConfig()
+
 	app := &cobra.Command{
-		Use:           "olive-meta",
-		Short:         "a component of olive",
-		Version:       version.Version,
-		RunE:          runMeta,
+		Use:     "olive-meta",
+		Short:   "a component of olive",
+		Version: version.Version,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cfg.Parse(); err != nil {
+				return err
+			}
+
+			return setup(cfg)
+		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
+	app.SetUsageFunc(func(cmd *cobra.Command) error {
+		if err := printUsage(stderr); err != nil {
+			return err
+		}
+
+		return printFlags(stderr)
+	})
+
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	meta.AddFlagSet(flags)
+	flags.AddFlagSet(cfg.FlagSet())
 
 	return app
 }
 
-func runMeta(cmd *cobra.Command, args []string) error {
+func setup(cfg meta.Config) error {
 	stopc := genericserver.SetupSignalHandler()
-	flags := cmd.PersistentFlags()
-
-	cfg, err := meta.ConfigFromFlagSet(flags)
-	if err != nil {
-		return err
-	}
-	if err = cfg.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
@@ -56,4 +70,14 @@ func runMeta(cmd *cobra.Command, args []string) error {
 	}
 
 	return ms.Start(stopc)
+}
+
+func printUsage(out io.Writer) error {
+	_, err := fmt.Fprintln(out, usageline)
+	return err
+}
+
+func printFlags(out io.Writer) error {
+	_, err := fmt.Fprintln(out, flagsline)
+	return err
 }

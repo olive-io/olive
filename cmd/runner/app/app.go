@@ -15,10 +15,11 @@
 package app
 
 import (
+	"github.com/spf13/cobra"
+
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
-	"github.com/spf13/cobra"
 )
 
 func NewRunnerCommand() *cobra.Command {

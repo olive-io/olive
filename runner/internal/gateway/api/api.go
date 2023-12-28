@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
