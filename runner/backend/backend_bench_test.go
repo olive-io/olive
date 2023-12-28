@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/olive-io/olive/runner/backend/testing"
+	betesting "github.com/olive-io/olive/runner/backend/testing"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/stretchr/testify/assert"
 )

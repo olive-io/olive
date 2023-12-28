@@ -20,8 +20,9 @@ import (
 	"path"
 	"time"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
 	clientv3 "go.etcd.io/etcd/client/v3"
+
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
 // Watcher is an interface that returns updates

@@ -23,15 +23,16 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/execute/client"
-	"github.com/olive-io/olive/execute/client/selector"
-	"github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	gmetadata "google.golang.org/grpc/metadata"
+
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/execute/client"
+	"github.com/olive-io/olive/execute/client/selector"
+	"github.com/olive-io/olive/pkg/discovery"
 )
 
 var (

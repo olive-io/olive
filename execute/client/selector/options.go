@@ -17,8 +17,9 @@ package selector
 import (
 	"context"
 
-	"github.com/olive-io/olive/pkg/discovery"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/pkg/discovery"
 )
 
 type Options struct {

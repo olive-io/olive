@@ -15,8 +15,9 @@
 package runner
 
 import (
-	"github.com/olive-io/olive/runner/backend"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/runner/backend"
 )
 
 func newBackend(cfg *Config) backend.IBackend {

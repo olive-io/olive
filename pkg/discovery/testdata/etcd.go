@@ -18,10 +18,11 @@ import (
 	"os"
 	"testing"
 
-	dsy "github.com/olive-io/olive/pkg/discovery"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
+
+	dsy "github.com/olive-io/olive/pkg/discovery"
 )
 
 func TestDiscovery(t *testing.T) (dsy.IDiscovery, func()) {

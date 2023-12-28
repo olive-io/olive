@@ -23,6 +23,9 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
 	"github.com/olive-io/bpmn/tracing"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -31,8 +34,6 @@ import (
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.uber.org/zap"
 )
 
 type Runner struct {

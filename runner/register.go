@@ -23,15 +23,16 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/dustin/go-humanize"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
-	"go.uber.org/zap"
 )
 
 func (r *Runner) register() (*pb.Runner, error) {

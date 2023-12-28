@@ -24,10 +24,11 @@ import (
 	"time"
 
 	hash "github.com/mitchellh/hashstructure"
-	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
-	"go.etcd.io/etcd/client/v3"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
 type etcdRegistry struct {

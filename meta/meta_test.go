@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 func TestNewOliveMetaServer(t *testing.T) {
@@ -32,12 +34,7 @@ func TestNewOliveMetaServer(t *testing.T) {
 		return
 	}
 
-	err = s.Start()
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = s.HardStop()
+	err = s.Start(genericserver.SetupSignalHandler())
 	if !assert.NoError(t, err) {
 		return
 	}

@@ -14,6 +14,32 @@
 
 package logs
 
+import "go.uber.org/zap/zapcore"
+
+var (
+	DefaultLogLevel = "info"
+
+	DefaultLogOutput = "default"
+
+	// DefaultLogRotationConfig is the default configuration used for log rotation.
+	// Log rotation is disabled by default.
+	// MaxSize    = 100 // MB
+	// MaxAge     = 0 // days (no limit)
+	// MaxBackups = 0 // no limit
+	// LocalTime  = false // use computers local time, UTC by default
+	// Compress   = false // compress the rotated log in gzip format
+	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
+)
+
+// ConvertToZapLevel converts log level string to zapcore.Level.
+func ConvertToZapLevel(lvl string) zapcore.Level {
+	var level zapcore.Level
+	if err := level.Set(lvl); err != nil {
+		panic(err)
+	}
+	return level
+}
+
 // InitLogs initializes logs the way we want for Olive.
 // It should be called after parsing flags. If called before that,
 // it will use the default log settings.

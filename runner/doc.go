@@ -13,8 +13,3 @@
 // limitations under the License.
 
 package runner
-
-var (
-	// defaultRegisterKey for runner registry
-	defaultRegisterKey = []byte("register")
-)

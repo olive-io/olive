@@ -22,10 +22,11 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	json "github.com/json-iterator/go"
-	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+
+	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
 var noPrefixEnd = []byte{0}

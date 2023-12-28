@@ -18,13 +18,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/execute"
 	"github.com/olive-io/olive/execute/client"
 	"github.com/olive-io/olive/execute/client/grpc"
 	"github.com/olive-io/olive/execute/client/selector"
 	"github.com/olive-io/olive/pkg/discovery/memory"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCall(t *testing.T) {

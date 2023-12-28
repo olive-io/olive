@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"path"
 
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/runtime"
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	"go.uber.org/zap"
 )
 
 func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {

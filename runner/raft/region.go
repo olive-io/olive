@@ -29,16 +29,17 @@ import (
 	"github.com/gogo/protobuf/proto"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	"github.com/olive-io/bpmn/tracing"
+	"go.etcd.io/etcd/pkg/v3/idutil"
+	"go.etcd.io/etcd/pkg/v3/traceutil"
+	"go.etcd.io/etcd/pkg/v3/wait"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/internal/gateway"
-	"go.etcd.io/etcd/pkg/v3/idutil"
-	"go.etcd.io/etcd/pkg/v3/traceutil"
-	"go.etcd.io/etcd/pkg/v3/wait"
-	"go.uber.org/zap"
 )
 
 var (

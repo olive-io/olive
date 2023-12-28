@@ -17,8 +17,9 @@ package client
 import (
 	"context"
 
-	pb "github.com/olive-io/olive/api/olivepb"
 	"google.golang.org/grpc"
+
+	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 type MetaRPC interface {

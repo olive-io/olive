@@ -20,8 +20,9 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/bpmn/schema"
-	pb "github.com/olive-io/olive/api/olivepb"
 	"google.golang.org/grpc"
+
+	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 type BpmnRPC interface {

@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
-	"go.uber.org/zap"
 )
 
 var (

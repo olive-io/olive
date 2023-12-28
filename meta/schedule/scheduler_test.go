@@ -23,14 +23,15 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/stretchr/testify/assert"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
+
+	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/pkg/runtime"
 )
 
 var (
@@ -157,7 +158,7 @@ func regionHeartbeat(t *testing.T, client *clientv3.Client, region *pb.Region) {
 	stat := &pb.RegionStat{
 		Id:          region.Id,
 		Leader:      region.Leader,
-		Replicas:    int32(len(region.Members)),
+		Replicas:    int32(len(region.Replicas)),
 		Definitions: uint64(randInt(100)),
 		Timestamp:   time.Now().Unix(),
 	}

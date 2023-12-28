@@ -26,6 +26,13 @@ import (
 	"time"
 
 	gw "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"google.golang.org/grpc"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/execute"
@@ -37,12 +44,6 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tmc/grpc-websocket-proxy/wsproxy"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
-	"google.golang.org/grpc"
 )
 
 type Executor struct {

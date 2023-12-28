@@ -19,9 +19,10 @@ import (
 	"log/slog"
 	"os"
 
-	cliflag "github.com/olive-io/olive/pkg/component-base/cli/flag"
-	"github.com/olive-io/olive/pkg/component-base/logs"
 	"github.com/spf13/cobra"
+
+	cliflag "github.com/olive-io/olive/pkg/component-base/cli/flags"
+	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 // Run provides the common boilerplate code around executing a cobra command.

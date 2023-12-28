@@ -35,11 +35,12 @@ import (
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
+	"go.uber.org/zap"
+
 	"github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/execute"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	"go.uber.org/zap"
 )
 
 var (

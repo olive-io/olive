@@ -28,16 +28,17 @@ import (
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/olive-io/bpmn/tracing"
+	"go.etcd.io/etcd/pkg/v3/idutil"
+	"go.etcd.io/etcd/pkg/v3/wait"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/internal/gateway"
-	"go.etcd.io/etcd/pkg/v3/idutil"
-	"go.etcd.io/etcd/pkg/v3/wait"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
 )
 
 type Controller struct {

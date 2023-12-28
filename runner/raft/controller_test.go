@@ -21,12 +21,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/discovery/testdata"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/raft"
-	"github.com/stretchr/testify/assert"
 )
 
 const (

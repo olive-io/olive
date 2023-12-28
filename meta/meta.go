@@ -20,10 +20,6 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/meta/schedule"
-	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -31,6 +27,11 @@ import (
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+
+	"github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/meta/schedule"
+	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 type Server struct {

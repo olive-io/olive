@@ -32,7 +32,7 @@ func TestGenericServer(t *testing.T) {
 	s1.GoAttach(func() {
 		queue = append(queue, 1)
 	})
-	s1.Stop()
+	s1.Shutdown()
 
 	if !assert.Equal(t, queue, []int{1, 2}) {
 		return

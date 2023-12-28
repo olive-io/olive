@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"path"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/meta/pagation"
 	"github.com/olive-io/olive/pkg/runtime"
-	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.uber.org/zap"
 )
 
 const (

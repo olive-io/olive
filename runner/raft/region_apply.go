@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"go.etcd.io/etcd/pkg/v3/traceutil"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
-	"go.etcd.io/etcd/pkg/v3/traceutil"
 )
 
 const v1Version = "v1"
