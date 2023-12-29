@@ -27,7 +27,6 @@ import (
 
 func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
 	cfg := meta.NewConfig()
-
 	app := &cobra.Command{
 		Use:     "olive-meta",
 		Short:   "a component of olive",
@@ -37,18 +36,18 @@ func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
 				return err
 			}
 
-			return setup(cfg)
+			return setup(*cfg)
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
 	app.SetUsageFunc(func(cmd *cobra.Command) error {
-		if err := printUsage(stderr); err != nil {
+		if err := PrintUsage(stderr); err != nil {
 			return err
 		}
 
-		return printFlags(stderr)
+		return PrintFlags(stderr)
 	})
 
 	app.ResetFlags()
@@ -72,12 +71,12 @@ func setup(cfg meta.Config) error {
 	return ms.Start(stopc)
 }
 
-func printUsage(out io.Writer) error {
+func PrintUsage(out io.Writer) error {
 	_, err := fmt.Fprintln(out, usageline)
 	return err
 }
 
-func printFlags(out io.Writer) error {
+func PrintFlags(out io.Writer) error {
 	_, err := fmt.Fprintln(out, flagsline)
 	return err
 }

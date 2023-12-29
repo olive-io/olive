@@ -15,6 +15,9 @@
 package app
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/spf13/cobra"
 
 	genericserver "github.com/olive-io/olive/pkg/server"
@@ -22,31 +25,42 @@ import (
 	"github.com/olive-io/olive/runner"
 )
 
-func NewRunnerCommand() *cobra.Command {
+func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
+	cfg := runner.NewConfig()
+
 	app := &cobra.Command{
-		Use:           "olive-runner",
-		Short:         "bpmn runner of olive cloud",
-		Version:       version.Version,
-		RunE:          setupRunner,
+		Use:     "olive-runner",
+		Short:   "bpmn runner of olive cloud",
+		Version: version.Version,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cfg.Parse(); err != nil {
+				return err
+			}
+
+			return setup(*cfg)
+		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
+	app.SetUsageFunc(func(cmd *cobra.Command) error {
+		if err := PrintUsage(stderr); err != nil {
+			return err
+		}
+
+		return PrintFlags(stderr)
+	})
+
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	runner.AddFlagSet(flags)
+	flags.AddFlagSet(cfg.FlagSet())
 
 	return app
 }
 
-func setupRunner(cmd *cobra.Command, args []string) error {
+func setup(cfg runner.Config) error {
+	var err error
 	stopc := genericserver.SetupSignalHandler()
-	flags := cmd.PersistentFlags()
-	cfg, err := runner.NewConfigFromFlagSet(flags)
-	if err != nil {
-		return err
-	}
-
 	if err = cfg.Validate(); err != nil {
 		return err
 	}
@@ -57,4 +71,14 @@ func setupRunner(cmd *cobra.Command, args []string) error {
 	}
 
 	return server.Start(stopc)
+}
+
+func PrintUsage(out io.Writer) error {
+	_, err := fmt.Fprintln(out, usageline)
+	return err
+}
+
+func PrintFlags(out io.Writer) error {
+	_, err := fmt.Fprintln(out, flagsline)
+	return err
 }

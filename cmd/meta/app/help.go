@@ -15,9 +15,12 @@
 package app
 
 import (
+	"fmt"
 	"strconv"
 
 	"go.etcd.io/etcd/server/v3/embed"
+
+	"github.com/olive-io/olive/meta"
 )
 
 var (
@@ -44,7 +47,7 @@ Member:
     Path to the data directory.
   --wal-dir ''
     Path to the dedicated wal directory.
---snapshot-count '100000'
+  --snapshot-count '100000'
     Number of committed transactions to trigger a snapshot to disk.
   --heartbeat-interval '100'
     Time (in milliseconds) of a heartbeat interval.
@@ -105,9 +108,13 @@ Clustering:
   --auto-compaction-mode 'periodic'
     Interpret 'auto-compaction-retention' one of: periodic|revision. 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. '5m'). 'revision' for revision number based retention.
 
+Regions:
+  --region-limit '` + fmt.Sprintf("%d", meta.DefaultRegionLimit) + `'
+    Sets the maximum number of regions in a runner
+  --region-definitions-limit '` + fmt.Sprintf("%d", meta.DefaultRegionDefinitionsLimit) + `'
+    Sets the maximum number of bpmn definitions in a region
+
 Logging:
-  --logger 'zap'
-    Currently only supports 'zap' for structured logging.
   --log-outputs 'default'
     Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.
   --log-level 'info'
@@ -115,5 +122,5 @@ Logging:
   --enable-log-rotation 'false'
     Enable log rotation of a single log-outputs file target.
   --log-rotation-config-json '{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}'
-    Configures log rotation if enabled with a JSON logger config. MaxSize(MB), MaxAge(days,0=no limit), MaxBackups(0=no limit), LocalTime(use computers local time), Compress(gzip)". `
+    Configures log rotation if enabled with a JSON logger config. MaxSize(MB), MaxAge(days,0=no limit), MaxBackups(0=no limit), LocalTime(use computers local time), Compress(gzip)".`
 )

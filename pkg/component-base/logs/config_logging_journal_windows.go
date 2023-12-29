@@ -1,4 +1,4 @@
-// Copyright 2023 The olive Authors
+// Copyright 2018 The etcd Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build windows
+// +build windows
+
+package logs
 
 import (
 	"os"
 
-	"github.com/olive-io/olive/cmd/runner/app"
-	"github.com/olive-io/olive/pkg/component-base/cli"
+	"go.uber.org/zap/zapcore"
 )
 
-func main() {
-	command := app.NewRunnerCommand(os.Stdout, os.Stderr)
-	os.Exit(cli.Run(command))
+func getJournalWriteSyncer() (zapcore.WriteSyncer, error) {
+	return zapcore.AddSync(os.Stderr), nil
 }

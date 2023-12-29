@@ -98,7 +98,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 
 	sLimit := schedule.Limit{
 		RegionLimit:     s.cfg.RegionLimit,
-		DefinitionLimit: s.cfg.RegionDefinitionLimit,
+		DefinitionLimit: s.cfg.RegionDefinitionsLimit,
 	}
 	s.scheduler = schedule.New(s.ctx, s.lg, s.v3cli, s.notifier, sLimit, s.StoppingNotify())
 	if err = s.scheduler.Start(); err != nil {

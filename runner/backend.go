@@ -25,19 +25,19 @@ func newBackend(cfg *Config) backend.IBackend {
 		Dir:       cfg.DBDir(),
 		WAL:       cfg.WALDir(),
 		CacheSize: cfg.CacheSize,
-		Logger:    cfg.Logger,
+		Logger:    cfg.GetLogger(),
 	}
 
 	if cfg.BackendBatchInterval != 0 {
 		bcfg.BatchInterval = cfg.BackendBatchInterval
-		if cfg.Logger != nil {
-			cfg.Logger.Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
+		if cfg.GetLogger() != nil {
+			cfg.GetLogger().Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
 		}
 	}
 	if cfg.BackendBatchLimit != 0 {
 		bcfg.BatchLimit = cfg.BackendBatchLimit
-		if cfg.Logger != nil {
-			cfg.Logger.Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
+		if cfg.GetLogger() != nil {
+			cfg.GetLogger().Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
 		}
 	}
 

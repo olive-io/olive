@@ -23,15 +23,17 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
+	"github.com/lni/dragonboat/v4/logger"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/pkg/component-base/cli/flags"
+	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 var (
-	flagSet = pflag.NewFlagSet("runner", pflag.ExitOnError)
-
 	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
 )
 
@@ -50,21 +52,12 @@ const (
 	DefaultRaftRTTMillisecond = 500
 )
 
-func init() {
-	flagSet.String("data-dir", DefaultDataDir, "Path to the data directory.")
-	flagSet.StringArray("endpoints", DefaultEndpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
-	flagSet.String("listen-peer-url", DefaultListenPeerURL, "Set the URL to listen on for peer traffic.")
-	flagSet.String("advertise-peer-url", DefaultListenPeerURL, "Set advertise URL to listen on for peer traffic.")
-	flagSet.String("listen-client-url", DefaultListenClientURL, "Set the URL to listen on for client traffic.")
-	flagSet.String("advertise-client-url", DefaultListenClientURL, "Set advertise URL to listen on for client traffic.")
-}
-
-func AddFlagSet(flags *pflag.FlagSet) {
-	flags.AddFlagSet(flagSet)
-}
-
 type Config struct {
-	client.Config
+	logs.LogConfig
+
+	fs *pflag.FlagSet
+
+	Client client.Config
 
 	DataDir   string
 	CacheSize uint64
@@ -83,14 +76,18 @@ type Config struct {
 	RaftRTTMillisecond uint64
 }
 
-func NewConfig() Config {
+func NewConfig() *Config {
+
+	logging := logs.NewLogConfig()
 
 	clientCfg := client.Config{}
 	clientCfg.Endpoints = DefaultEndpoints
-	clientCfg.Logger = zap.NewExample()
+	clientCfg.Logger = logging.GetLogger()
 
 	cfg := Config{
-		Config: clientCfg,
+		LogConfig: logging,
+
+		Client: clientCfg,
 
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
@@ -103,38 +100,47 @@ func NewConfig() Config {
 		HeartbeatMs:        DefaultHeartbeatMs,
 		RaftRTTMillisecond: DefaultRaftRTTMillisecond,
 	}
+	cfg.fs = cfg.newFlagSet()
 
-	return cfg
+	return &cfg
 }
 
-func NewConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
-	cfg = NewConfig()
-	if cfg.Logger == nil {
-		cfg.Logger, err = zap.NewProduction()
-		if err != nil {
-			return
-		}
-	}
-	if cfg.DataDir, err = flags.GetString("data-dir"); err != nil {
-		return
-	}
-	if cfg.Endpoints, err = flags.GetStringArray("endpoints"); err != nil {
-		return
-	}
-	if cfg.ListenPeerURL, err = flags.GetString("listen-peer-url"); err != nil {
-		return
-	}
-	if cfg.AdvertisePeerURL, err = flags.GetString("advertise-peer-url"); err != nil {
-		return
-	}
-	if cfg.ListenClientURL, err = flags.GetString("listen-client-url"); err != nil {
-		return
-	}
-	if cfg.AdvertiseClientURL, err = flags.GetString("advertise-client-url"); err != nil {
-		return
+func (cfg *Config) FlagSet() *pflag.FlagSet {
+	return cfg.fs
+}
+
+func (cfg *Config) newFlagSet() *pflag.FlagSet {
+	fs := pflag.NewFlagSet("runner", pflag.ExitOnError)
+
+	// Node
+	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
+	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
+	fs.StringVar(&cfg.ListenClientURL, "listen-client-url", cfg.ListenClientURL, "Set the URL to listen on for client traffic.")
+	fs.StringVar(&cfg.AdvertiseClientURL, "advertise-client-url", cfg.AdvertiseClientURL, "Set advertise URL to listen on for client traffic.")
+
+	// Region
+	fs.StringVar(&cfg.ListenPeerURL, "listen-peer-url", cfg.ListenPeerURL, "Set the URL to listen on for peer traffic.")
+	fs.StringVar(&cfg.AdvertisePeerURL, "advertise-peer-url", cfg.AdvertisePeerURL, "Set advertise URL to listen on for peer traffic.")
+
+	// logging
+	fs.Var(flags.NewUniqueStringsValue(logs.DefaultLogOutput), "log-outputs",
+		"Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.")
+	fs.StringVar(&cfg.LogLevel, "log-level", logs.DefaultLogLevel,
+		"Configures log level. Only supports debug, info, warn, error, panic, or fatal. Default 'info'.")
+	fs.BoolVar(&cfg.EnableLogRotation, "enable-log-rotation", false,
+		"Enable log rotation of a single log-outputs file target.")
+	fs.StringVar(&cfg.LogRotationConfigJSON, "log-rotation-config-json", logs.DefaultLogRotationConfig,
+		"Configures log rotation if enabled with a JSON logger config. Default: MaxSize=100(MB), MaxAge=0(days,no limit), MaxBackups=0(no limit), LocalTime=false(UTC), Compress=false(gzip)")
+
+	return fs
+}
+
+func (cfg *Config) Parse() error {
+	if err := cfg.setupLogging(); err != nil {
+		return err
 	}
 
-	return cfg, nil
+	return cfg.configFromCmdLine()
 }
 
 func (cfg *Config) Validate() error {
@@ -151,6 +157,33 @@ func (cfg *Config) Validate() error {
 	if !stat.IsDir() {
 		return fmt.Errorf("data-dir is not a directory")
 	}
+
+	return nil
+}
+
+func (cfg *Config) setupLogging() error {
+	if err := cfg.SetupLogging(); err != nil {
+		return err
+	}
+
+	lg := cfg.GetLogger()
+	cfg.Client.Logger = lg
+
+	logger.SetLoggerFactory(func(pkgName string) logger.ILogger {
+		options := []zap.Option{
+			zap.WithCaller(true),
+			zap.AddCallerSkip(2),
+			zap.Fields(zap.String("pkg", pkgName)),
+		}
+		sugarLog := cfg.GetLogger().Sugar().
+			WithOptions(options...)
+		return &raftLogger{level: logger.INFO, log: sugarLog}
+	})
+	level := lg.Level()
+	logger.GetLogger("raft").SetLevel(raftLevel(level))
+	logger.GetLogger("rsm").SetLevel(raftLevel(level))
+	logger.GetLogger("transport").SetLevel(raftLevel(level))
+	logger.GetLogger("grpc").SetLevel(raftLevel(level))
 
 	return nil
 }
@@ -182,4 +215,66 @@ func (cfg *Config) RegionDir() string {
 
 func (cfg *Config) HeartbeatInterval() time.Duration {
 	return time.Duration(cfg.HeartbeatMs) * time.Millisecond
+}
+
+func (cfg *Config) configFromCmdLine() error {
+	return nil
+}
+
+type raftLogger struct {
+	level logger.LogLevel
+	log   *zap.SugaredLogger
+}
+
+func (lg *raftLogger) SetLevel(level logger.LogLevel) {
+	lg.level = level
+}
+
+func (lg *raftLogger) Debugf(format string, args ...interface{}) {
+	if lg.level < logger.DEBUG {
+		return
+	}
+	lg.log.Debugf(format, args...)
+}
+
+func (lg *raftLogger) Infof(format string, args ...interface{}) {
+	if lg.level < logger.INFO {
+		return
+	}
+	lg.log.Infof(format, args...)
+}
+
+func (lg *raftLogger) Warningf(format string, args ...interface{}) {
+	if lg.level < logger.WARNING {
+		return
+	}
+	lg.log.Warnf(format, args...)
+}
+
+func (lg *raftLogger) Errorf(format string, args ...interface{}) {
+	if lg.level < logger.ERROR {
+		return
+	}
+	lg.log.Errorf(format, args...)
+}
+
+func (lg *raftLogger) Panicf(format string, args ...interface{}) {
+	lg.log.Panicf(format, args...)
+}
+
+func raftLevel(level zapcore.Level) logger.LogLevel {
+	switch level {
+	case zapcore.DebugLevel:
+		return logger.DEBUG
+	case zapcore.InfoLevel:
+		return logger.INFO
+	case zapcore.WarnLevel:
+		return logger.WARNING
+	case zapcore.ErrorLevel:
+		return logger.WARNING
+	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+		return logger.CRITICAL
+	default:
+		return logger.WARNING
+	}
 }

@@ -56,7 +56,7 @@ type Runner struct {
 }
 
 func NewRunner(cfg Config) (*Runner, error) {
-	lg := cfg.Logger
+	lg := cfg.GetLogger()
 
 	gLock, err := cfg.LockDataDir()
 	if err != nil {
@@ -64,7 +64,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 	}
 	lg.Debug("protected directory: " + cfg.DataDir)
 
-	oct, err := client.New(cfg.Config)
+	oct, err := client.New(cfg.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 }
 
 func (r *Runner) Logger() *zap.Logger {
-	return r.cfg.Logger
+	return r.cfg.GetLogger()
 }
 
 func (r *Runner) Start(stopc <-chan struct{}) error {

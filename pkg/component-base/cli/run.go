@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	cliflag "github.com/olive-io/olive/pkg/component-base/cli/flags"
-	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 // Run provides the common boilerplate code around executing a cobra command.
@@ -91,20 +90,17 @@ func run(cmd *cobra.Command) (logsInitialized bool, err error) {
 	case cmd.PersistentPreRun != nil:
 		pre := cmd.PersistentPreRun
 		cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-			logs.InitLogs()
 			logsInitialized = true
 			pre(cmd, args)
 		}
 	case cmd.PersistentPreRunE != nil:
 		pre := cmd.PersistentPreRunE
 		cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-			logs.InitLogs()
 			logsInitialized = true
 			return pre(cmd, args)
 		}
 	default:
 		cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-			logs.InitLogs()
 			logsInitialized = true
 		}
 	}
