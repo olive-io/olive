@@ -169,6 +169,7 @@ func (cfg *Config) setupLogging() error {
 	lg := cfg.GetLogger()
 	cfg.Client.Logger = lg
 
+	level := lg.Level()
 	logger.SetLoggerFactory(func(pkgName string) logger.ILogger {
 		options := []zap.Option{
 			zap.WithCaller(true),
@@ -177,9 +178,8 @@ func (cfg *Config) setupLogging() error {
 		}
 		sugarLog := cfg.GetLogger().Sugar().
 			WithOptions(options...)
-		return &raftLogger{level: logger.INFO, log: sugarLog}
+		return &raftLogger{level: raftLevel(level), log: sugarLog}
 	})
-	level := lg.Level()
 	logger.GetLogger("raft").SetLevel(raftLevel(level))
 	logger.GetLogger("rsm").SetLevel(raftLevel(level))
 	logger.GetLogger("transport").SetLevel(raftLevel(level))
@@ -271,7 +271,7 @@ func raftLevel(level zapcore.Level) logger.LogLevel {
 	case zapcore.WarnLevel:
 		return logger.WARNING
 	case zapcore.ErrorLevel:
-		return logger.WARNING
+		return logger.ERROR
 	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
 		return logger.CRITICAL
 	default:

@@ -19,103 +19,101 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-	"go.uber.org/zap"
 
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 var (
-	flagSet = pflag.NewFlagSet("executor", pflag.ExitOnError)
-
 	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
 )
 
 const (
-	DefaultListenClientURL  = "http://127.0.0.1:5390"
+	DefaultListenURL        = "http://127.0.0.1:5390"
 	DefaultRegisterInterval = time.Second * 20
 	DefaultRegisterTTL      = time.Second * 30
 )
 
-func init() {
-	flagSet.StringArray("endpoints", DefaultEndpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
-	flagSet.String("id", "", "Set Executor Id.")
-	flagSet.String("listen-client-url", DefaultListenClientURL, "Set the URL to listen on for gRPC traffic.")
-	flagSet.String("advertise-client-url", DefaultListenClientURL, "Set advertise URL to listen on for gRPC traffic.")
-	flagSet.Duration("register-interval", DefaultRegisterInterval, "Set Register interval.")
-	flagSet.Duration("register-ttl", DefaultRegisterTTL, "Set Register ttl.")
-}
-
-func AddFlagSet(flags *pflag.FlagSet) {
-	flags.AddFlagSet(flagSet)
-}
-
 type Config struct {
-	client.Config
+	logs.LogConfig
+
+	fs *pflag.FlagSet
+
+	Client client.Config
 
 	Id       string
 	Metadata map[string]string
 
-	ListenClientURL    string
-	AdvertiseClientURL string
+	ListenURL    string
+	AdvertiseURL string
 	// The interval on which to register
 	RegisterInterval time.Duration
 	// The register expiry time
 	RegisterTTL time.Duration
 }
 
-func NewConfig() Config {
+func NewConfig() *Config {
+
+	logging := logs.NewLogConfig()
 
 	clientCfg := client.Config{}
 	clientCfg.Endpoints = DefaultEndpoints
-	clientCfg.Logger = zap.NewExample()
+	clientCfg.Logger = logging.GetLogger()
 
 	cfg := Config{
-		Config:           clientCfg,
-		ListenClientURL:  DefaultListenClientURL,
+		LogConfig:        logging,
+		Client:           clientCfg,
+		ListenURL:        DefaultListenURL,
 		RegisterInterval: DefaultRegisterInterval,
 		RegisterTTL:      DefaultRegisterTTL,
 	}
+	cfg.fs = cfg.newFlagSet()
 
-	return cfg
+	return &cfg
 }
 
-func NewConfigFromFlagSet(flags *pflag.FlagSet) (cfg Config, err error) {
-	cfg = NewConfig()
-	if cfg.Logger == nil {
-		cfg.Logger, err = zap.NewProduction()
-		if err != nil {
-			return
-		}
-	}
-	if cfg.Endpoints, err = flags.GetStringArray("endpoints"); err != nil {
-		return
-	}
-	if cfg.Id, err = flags.GetString("id"); err != nil {
-		return
-	}
-	if cfg.ListenClientURL, err = flags.GetString("listen-client-url"); err != nil {
-		return
-	}
-	if cfg.AdvertiseClientURL, err = flags.GetString("advertise-client-url"); err != nil {
-		return
-	}
-	if cfg.RegisterInterval, err = flags.GetDuration("register-interval"); err != nil {
-		return
-	}
-	if cfg.RegisterTTL, err = flags.GetDuration("register-ttl"); err != nil {
-		return
+func (cfg *Config) FlagSet() *pflag.FlagSet {
+	return cfg.fs
+}
+
+func (cfg *Config) newFlagSet() *pflag.FlagSet {
+	fs := pflag.NewFlagSet("executor", pflag.ExitOnError)
+	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
+		"Set gRPC endpoints to connect the cluster of olive-meta")
+	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Executor Id.")
+	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for gRPC traffic.")
+	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for gRPC traffic.")
+	fs.DurationVar(&cfg.RegisterInterval, "register-interval", cfg.RegisterInterval, "Set Register interval.")
+	fs.DurationVar(&cfg.RegisterTTL, "register-ttl", cfg.RegisterTTL, "Set Register ttl.")
+
+	return fs
+}
+
+func (cfg *Config) Parse() error {
+	if err := cfg.setupLogging(); err != nil {
+		return err
 	}
 
-	return cfg, nil
+	return nil
 }
 
 func (cfg *Config) Validate() error {
-	if len(cfg.Endpoints) == 0 {
+	if len(cfg.Client.Endpoints) == 0 {
 		return fmt.Errorf("no endpoints")
 	}
 	if len(cfg.Id) == 0 {
 		return fmt.Errorf("missing id")
 	}
 
+	return nil
+}
+
+func (cfg *Config) setupLogging() error {
+	if err := cfg.SetupLogging(); err != nil {
+		return err
+	}
+
+	lg := cfg.GetLogger()
+	cfg.Client.Logger = lg
 	return nil
 }

@@ -70,12 +70,12 @@ type Executor struct {
 }
 
 func NewExecutor(cfg Config) (*Executor, error) {
-	lg := cfg.Logger
+	lg := cfg.GetLogger()
 	inner := genericserver.NewInnerServer(lg)
 
 	lg.Debug("connect to olive-meta",
-		zap.String("endpoints", strings.Join(cfg.Endpoints, ",")))
-	oct, err := client.New(cfg.Config)
+		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
+	oct, err := client.New(cfg.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func NewExecutor(cfg Config) (*Executor, error) {
 }
 
 func (e *Executor) Logger() *zap.Logger {
-	return e.cfg.Logger
+	return e.cfg.GetLogger()
 }
 
 func (e *Executor) Start(stopc <-chan struct{}) error {
@@ -123,7 +123,7 @@ func (e *Executor) Start(stopc <-chan struct{}) error {
 	lg.Info("Server [grpc] Listening", zap.String("addr", ts.Addr().String()))
 
 	e.rmu.Lock()
-	e.cfg.ListenClientURL = "http://" + ts.Addr().String()
+	e.cfg.ListenURL = "http://" + ts.Addr().String()
 	e.rmu.Unlock()
 
 	gs := e.buildGRPCServer()
@@ -200,7 +200,7 @@ Loop:
 func (e *Executor) createListener() (net.Listener, error) {
 	cfg := e.cfg
 	lg := e.Logger()
-	url, err := urlpkg.Parse(cfg.ListenClientURL)
+	url, err := urlpkg.Parse(cfg.ListenURL)
 	if err != nil {
 		return nil, err
 	}
@@ -320,10 +320,10 @@ func (e *Executor) register() error {
 	// check the advertisement address first
 	// if it exists then use it, otherwise
 	// use the address
-	if len(cfg.AdvertiseClientURL) > 0 {
-		advt = cfg.AdvertiseClientURL
+	if len(cfg.AdvertiseURL) > 0 {
+		advt = cfg.AdvertiseURL
 	} else {
-		advt = cfg.ListenClientURL
+		advt = cfg.ListenURL
 	}
 	url, err := urlpkg.Parse(advt)
 	if err != nil {
@@ -429,10 +429,10 @@ func (e *Executor) deregister() error {
 	// check the advertisement address first
 	// if it exists then use it, otherwise
 	// use the address
-	if len(cfg.AdvertiseClientURL) > 0 {
-		advt = cfg.AdvertiseClientURL
+	if len(cfg.AdvertiseURL) > 0 {
+		advt = cfg.AdvertiseURL
 	} else {
-		advt = cfg.AdvertiseClientURL
+		advt = cfg.AdvertiseURL
 	}
 
 	if cnt := strings.Count(advt, ":"); cnt >= 1 {

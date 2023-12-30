@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	command := app.NewExecutorCommand()
+	command := app.NewExecutorCommand(os.Stdout, os.Stderr)
 	code := cli.Run(command)
 	os.Exit(code)
 }

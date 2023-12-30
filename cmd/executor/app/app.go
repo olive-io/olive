@@ -15,6 +15,9 @@
 package app
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/execute/server"
@@ -22,32 +25,41 @@ import (
 	"github.com/olive-io/olive/pkg/version"
 )
 
-func NewExecutorCommand() *cobra.Command {
+func NewExecutorCommand(stdout, stderr io.Writer) *cobra.Command {
+	cfg := server.NewConfig()
 	app := &cobra.Command{
-		Use:           "olive-executor",
-		Short:         "bpmn executor of olive cloud",
-		Version:       version.Version,
-		RunE:          setupExecutor,
+		Use:     "olive-executor",
+		Short:   "bpmn executor of olive cloud",
+		Version: version.Version,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cfg.Parse(); err != nil {
+				return err
+			}
+
+			return setup(*cfg)
+		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
+	app.SetUsageFunc(func(cmd *cobra.Command) error {
+		if err := PrintUsage(stderr); err != nil {
+			return err
+		}
+
+		return PrintFlags(stderr)
+	})
+
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	server.AddFlagSet(flags)
+	flags.AddFlagSet(cfg.FlagSet())
 
 	return app
 }
 
-func setupExecutor(cmd *cobra.Command, args []string) error {
+func setup(cfg server.Config) error {
 	stopc := genericserver.SetupSignalHandler()
-	flags := cmd.PersistentFlags()
-	cfg, err := server.NewConfigFromFlagSet(flags)
-	if err != nil {
-		return err
-	}
-
-	if err = cfg.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
@@ -57,4 +69,14 @@ func setupExecutor(cmd *cobra.Command, args []string) error {
 	}
 
 	return executor.Start(stopc)
+}
+
+func PrintUsage(out io.Writer) error {
+	_, err := fmt.Fprintln(out, usageline)
+	return err
+}
+
+func PrintFlags(out io.Writer) error {
+	_, err := fmt.Fprintln(out, flagsline)
+	return err
 }
