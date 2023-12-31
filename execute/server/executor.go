@@ -115,7 +115,7 @@ func (e *Executor) Start(stopc <-chan struct{}) error {
 
 	lg := e.Logger()
 
-	ts, err := e.createListener()
+	scheme, ts, err := e.createListener()
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (e *Executor) Start(stopc <-chan struct{}) error {
 	lg.Info("Server [grpc] Listening", zap.String("addr", ts.Addr().String()))
 
 	e.rmu.Lock()
-	e.cfg.ListenURL = "http://" + ts.Addr().String()
+	e.cfg.ListenURL = scheme + ts.Addr().String()
 	e.rmu.Unlock()
 
 	gs := e.buildGRPCServer()
@@ -197,22 +197,22 @@ Loop:
 	}
 }
 
-func (e *Executor) createListener() (net.Listener, error) {
+func (e *Executor) createListener() (string, net.Listener, error) {
 	cfg := e.cfg
 	lg := e.Logger()
 	url, err := urlpkg.Parse(cfg.ListenURL)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	host := url.Host
 
 	lg.Debug("listen on " + host)
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return listener, nil
+	return "http://", listener, nil
 }
 
 func (e *Executor) buildGRPCServer() *grpc.Server {
@@ -432,7 +432,7 @@ func (e *Executor) deregister() error {
 	if len(cfg.AdvertiseURL) > 0 {
 		advt = cfg.AdvertiseURL
 	} else {
-		advt = cfg.AdvertiseURL
+		advt = cfg.ListenURL
 	}
 
 	if cnt := strings.Count(advt, ":"); cnt >= 1 {
