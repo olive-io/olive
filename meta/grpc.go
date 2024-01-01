@@ -386,6 +386,36 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	return
 }
 
+func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetMetaProcessInstanceRequest) (resp *pb.GetMetaProcessInstanceResponse, err error) {
+	resp = &pb.GetMetaProcessInstanceResponse{}
+
+	key := path.Join(runtime.DefaultRunnerProcessInstance,
+		req.DefinitionId, fmt.Sprintf("%d", req.DefinitionVersion), fmt.Sprintf("%d", req.Id))
+	options := []clientv3.OpOption{clientv3.WithSerializable()}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	if len(rsp.Kvs) == 0 {
+		return nil, rpctypes.ErrGRPCKeyNotFound
+	}
+	instance := new(pb.ProcessInstance)
+	err = instance.Unmarshal(rsp.Kvs[0].Value)
+	if err != nil {
+		return nil, err
+	}
+	if instance.Header == nil {
+		return
+	}
+
+	header := instance.Header
+	if header.Region != 0 && header.Runner != 0 {
+
+	}
+
+	return
+}
+
 func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta, error) {
 	dm := &definitionMeta{
 		client: s.v3cli,

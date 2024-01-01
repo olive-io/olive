@@ -31,6 +31,7 @@ type BpmnRPC interface {
 	GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error)
 	RemoveDefinition(ctx context.Context, id string) error
 	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error)
+	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error)
 }
 
 type bpmnRPC struct {
@@ -195,6 +196,31 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	}
 
 	rsp, err := bc.remoteClient(conn).ExecuteDefinition(ctx, in, bc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return rsp.Instance, nil
+}
+
+func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
+	conn := bc.client.conn
+	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = bc.client.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+	in := &pb.GetMetaProcessInstanceRequest{
+		DefinitionId:      definitionId,
+		DefinitionVersion: definitionVersion,
+		Id:                id,
+	}
+
+	rsp, err := bc.remoteClient(conn).GetProcessInstance(ctx, in, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
