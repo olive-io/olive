@@ -85,3 +85,7 @@ func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveD
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
 	return rbc.bc.ExecuteDefinition(ctx, in, withRetryPolicy(repeatable))
 }
+
+func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (*pb.GetProcessInstanceResponse, error) {
+	return rbc.bc.GetProcessInstance(ctx, in, withRetryPolicy(repeatable))
+}

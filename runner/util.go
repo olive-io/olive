@@ -66,12 +66,12 @@ func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, err
 	}
 	if process.Status != pb.ProcessInstance_Waiting ||
 		process.DefinitionId == "" ||
-		process.Header == nil ||
-		process.Header.Region == 0 {
+		process.OliveHeader == nil ||
+		process.OliveHeader.Region == 0 {
 		return process, false, nil
 	}
-	if process.Header.Rev == 0 {
-		process.Header.Rev = kv.ModRevision
+	if process.OliveHeader.Rev == 0 {
+		process.OliveHeader.Rev = kv.ModRevision
 	}
 	return process, true, nil
 }

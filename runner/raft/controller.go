@@ -174,7 +174,12 @@ func (c *Controller) watchTrace(traces <-chan tracing.ITrace) {
 			case *readTrace:
 				ctx, region, query := tt.ctx, tt.region, tt.query
 				result, err := c.nh.SyncRead(ctx, region, query)
-				tt.Write(result.(*applyResult), err)
+
+				var ar *applyResult
+				if result != nil {
+					ar, _ = result.(*applyResult)
+				}
+				tt.Write(ar, err)
 
 			case *proposeTrace:
 				ctx, region, cmd := tt.ctx, tt.region, tt.data
@@ -528,12 +533,12 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 
 func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
 	lg := c.cfg.Logger
-	if instance.DefinitionId == "" || instance.Header.Region == 0 {
+	if instance.DefinitionId == "" || instance.OliveHeader.Region == 0 {
 		lg.Warn("invalid process instance")
 		return nil
 	}
 
-	regionId := instance.Header.Region
+	regionId := instance.OliveHeader.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
 		lg.Info("region running others",
@@ -553,6 +558,22 @@ func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.Process
 	*instance = *resp.ProcessInstance
 
 	return nil
+}
+
+func (c *Controller) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (*pb.GetProcessInstanceResponse, error) {
+	resp := &pb.GetProcessInstanceResponse{}
+	region, ok := c.getRegion(req.Region)
+	if !ok {
+		return nil, ErrNoRegion
+	}
+
+	instance, err := region.GetProcessInstance(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	resp.Instance = instance
+
+	return resp, nil
 }
 
 func (c *Controller) getRegion(id uint64) (*Region, bool) {

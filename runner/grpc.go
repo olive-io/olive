@@ -1,4 +1,4 @@
-// Copyright 2023 The olive Authors
+// Copyright 2024 The olive Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package schedule
+package runner
 
-import "errors"
+import (
+	"context"
 
-var (
-	ErrNoRegion       = errors.New("region not found")
-	ErrRegionNoSpace  = errors.New("region no space")
-	ErrNoRunner       = errors.New("runner not found")
-	ErrRunnerNotReady = errors.New("runner not ready")
-	ErrRunnerBusy     = errors.New("all of runners are busy")
+	pb "github.com/olive-io/olive/api/olivepb"
 )
+
+func (r *Runner) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+	return r.controller.GetProcessInstance(ctx, req)
+}

@@ -160,7 +160,7 @@ message ProcessInstance {
     Fail = 5;
   }
 
-  OliveHeader header = 100;
+  OliveHeader oliveHeader = 100;
   uint64 id = 1;
   string name = 2;
   string definitionId = 3;

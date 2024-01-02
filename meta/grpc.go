@@ -18,10 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	urlpkg "net/url"
 	"path"
+	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
@@ -34,6 +38,8 @@ const (
 	// This limit is used only for increasing page size by olive. If request
 	// specifies larger limit initially, it won't be changed.
 	maxLimit = 10000
+
+	defaultTimeout = time.Second * 15
 )
 
 type definitionMeta struct {
@@ -361,7 +367,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	}
 
 	instance := &pb.ProcessInstance{
-		Header:            &pb.OliveHeader{Region: definition.Header.Region},
+		OliveHeader:       &pb.OliveHeader{Region: definition.Header.Region},
 		Id:                s.idReq.Next(),
 		Name:              req.Name,
 		DefinitionId:      definition.Id,
@@ -379,15 +385,17 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	if err != nil {
 		return nil, err
 	}
-	instance.Header.Rev = rsp.Header.Revision
+	instance.OliveHeader.Rev = rsp.Header.Revision
 	resp.Header = s.responseHeader()
 	resp.Instance = instance
 
 	return
 }
 
-func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetMetaProcessInstanceRequest) (resp *pb.GetMetaProcessInstanceResponse, err error) {
-	resp = &pb.GetMetaProcessInstanceResponse{}
+func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+	resp = &pb.GetProcessInstanceResponse{}
+
+	lg := s.lg
 
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
 		req.DefinitionId, fmt.Sprintf("%d", req.DefinitionVersion), fmt.Sprintf("%d", req.Id))
@@ -404,13 +412,49 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetMetaProcessI
 	if err != nil {
 		return nil, err
 	}
-	if instance.Header == nil {
+	if instance.OliveHeader == nil {
 		return
 	}
 
-	header := instance.Header
-	if header.Region != 0 && header.Runner != 0 {
+	header := instance.OliveHeader
+	if header.Region != 0 {
+		region, _ := s.scheduler.GetRegion(ctx, header.Region)
+		if region == nil {
+			return
+		}
 
+		replica, ok := region.Replicas[region.Leader]
+		if !ok {
+			if len(region.Replicas) == 0 {
+				return
+			}
+
+			for id := range region.Replicas {
+				replica = region.Replicas[id]
+				break
+			}
+		}
+
+		runner, _ := s.scheduler.GetRunner(ctx, replica.Runner)
+		if runner == nil {
+			return
+		}
+
+		var conn *grpc.ClientConn
+		conn, err = s.buildGRPCConn(ctx, runner.ListenClientURL)
+		if err != nil {
+			lg.Error("build grpc connection",
+				zap.String("target", runner.ListenClientURL),
+				zap.Error(err))
+			return
+		}
+
+		req.Region = region.Id
+		runnerRsp, err := pb.NewRunnerRPCClient(conn).GetProcessInstance(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		resp.Instance = runnerRsp.Instance
 	}
 
 	return
@@ -471,4 +515,23 @@ func (s *Server) responseHeader() *pb.ResponseHeader {
 		RaftTerm:  es.Term(),
 	}
 	return header
+}
+
+func (s *Server) buildGRPCConn(ctx context.Context, targetURL string) (*grpc.ClientConn, error) {
+	url, err := urlpkg.Parse(targetURL)
+	if err != nil {
+		return nil, err
+	}
+	host := url.Host
+
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
+		defer cancel()
+	}
+
+	options := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+	return grpc.DialContext(ctx, host, options...)
 }

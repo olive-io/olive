@@ -214,7 +214,7 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 			return nil, err
 		}
 	}
-	in := &pb.GetMetaProcessInstanceRequest{
+	in := &pb.GetProcessInstanceRequest{
 		DefinitionId:      definitionId,
 		DefinitionVersion: definitionVersion,
 		Id:                id,
@@ -228,5 +228,5 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 }
 
 func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {
-	return pb.NewBpmnRPCClient(conn)
+	return RetryBpmnClient(conn)
 }

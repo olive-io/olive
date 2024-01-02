@@ -68,6 +68,37 @@ func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDef
 	return resp, nil
 }
 
+func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
+	prefix := bytesutil.PathJoin(processPrefix,
+		[]byte(definitionId),
+		[]byte(fmt.Sprintf("%d", definitionVersion)))
+	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", id)))
+
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.cfg.ReqTimeout())
+		defer cancel()
+	}
+
+	req := &pb.RegionRangeRequest{
+		Key:          key,
+		Limit:        1,
+		Serializable: true,
+	}
+	rangePrefix(req)
+	rsp, err := r.Range(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if len(rsp.Kvs) == 0 {
+		return nil, ErrNotFound
+	}
+	instance := new(pb.ProcessInstance)
+	_ = instance.Unmarshal(rsp.Kvs[0].Value)
+
+	return instance, nil
+}
+
 func (r *Region) scheduleCycle() {
 	duration := 100 * time.Millisecond
 	timer := time.NewTimer(duration)

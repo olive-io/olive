@@ -29,8 +29,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
@@ -136,7 +134,7 @@ func (e *Executor) Start(stopc <-chan struct{}) error {
 
 	mux := e.createMux(gwmux, handler)
 	e.serve = &http.Server{
-		Handler:        grpcHandlerFunc(gs, mux),
+		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
 		MaxHeaderBytes: 1024 * 1024 * 20,
 	}
 
@@ -499,17 +497,4 @@ func (e *Executor) isStarted() bool {
 
 func (e *Executor) StartNotify() <-chan struct{} {
 	return e.started
-}
-
-// grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
-// connections or otherHandler otherwise. Given in gRPC docs.
-func grpcHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
-	h2s := &http2.Server{}
-	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			gh.ServeHTTP(w, r)
-		} else {
-			hh.ServeHTTP(w, r)
-		}
-	}), h2s)
 }

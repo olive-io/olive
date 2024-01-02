@@ -71,7 +71,7 @@ service BpmnRPC {
       body: "*"
     };
   };
-  rpc GetProcessInstance(GetMetaProcessInstanceRequest) returns (GetMetaProcessInstanceResponse) {
+  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
       post: "/v1/processInstance/get"
       body: "*"
@@ -133,16 +133,6 @@ message ExecuteDefinitionResponse {
   olivepb.ProcessInstance instance = 2;
 }
 
-message GetMetaProcessInstanceRequest {
-  string definitionId = 1;
-  uint64 definitionVersion = 2;
-  uint64 id = 3;
-}
-
-message GetMetaProcessInstanceResponse {
-  olivepb.ProcessInstance instance = 1;
-}
-
 service RunnerRPC {
   rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
@@ -153,7 +143,10 @@ service RunnerRPC {
 }
 
 message GetProcessInstanceRequest {
-  string id = 1;
+  uint64 region = 1;
+  string definitionId = 2;
+  uint64 definitionVersion = 3;
+  uint64 id = 4;
 }
 
 message GetProcessInstanceResponse {

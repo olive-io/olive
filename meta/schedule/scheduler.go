@@ -218,6 +218,26 @@ func (sc *Scheduler) dispatchMessage(m imessage) {
 	}
 }
 
+func (sc *Scheduler) GetRunner(ctx context.Context, id uint64) (*pb.Runner, error) {
+	sc.rmu.RLock()
+	runner, ok := sc.runners[id]
+	sc.rmu.RUnlock()
+	if !ok {
+		return nil, ErrNoRunner
+	}
+	return runner, nil
+}
+
+func (sc *Scheduler) GetRegion(ctx context.Context, id uint64) (*pb.Region, error) {
+	sc.rgmu.RLock()
+	region, ok := sc.regions[id]
+	sc.rgmu.RUnlock()
+	if !ok {
+		return nil, ErrNoRegion
+	}
+	return region, nil
+}
+
 func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	runners, err := sc.schedulingRunnerCycle(ctx)
 	if err != nil {

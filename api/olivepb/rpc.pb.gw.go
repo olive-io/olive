@@ -262,7 +262,7 @@ func local_request_BpmnRPC_ExecuteDefinition_0(ctx context.Context, marshaler ru
 }
 
 func request_BpmnRPC_GetProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, client BpmnRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetMetaProcessInstanceRequest
+	var protoReq GetProcessInstanceRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -279,7 +279,7 @@ func request_BpmnRPC_GetProcessInstance_0(ctx context.Context, marshaler runtime
 }
 
 func local_request_BpmnRPC_GetProcessInstance_0(ctx context.Context, marshaler runtime.Marshaler, server BpmnRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetMetaProcessInstanceRequest
+	var protoReq GetProcessInstanceRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)

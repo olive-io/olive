@@ -17,14 +17,20 @@ package runner
 import (
 	"context"
 	"encoding/binary"
-	"net/url"
+	"net"
+	"net/http"
+	urlpkg "net/url"
 	"strings"
 
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
+	gw "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/olive-io/bpmn/tracing"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
@@ -49,6 +55,8 @@ type Runner struct {
 	oct *client.Client
 
 	be backend.IBackend
+
+	serve *http.Server
 
 	controller *raft.Controller
 	traces     <-chan tracing.ITrace
@@ -95,6 +103,9 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 	if err := r.start(); err != nil {
 		return err
 	}
+	if err := r.startGRPCServer(); err != nil {
+		return err
+	}
 
 	r.Destroy(r.destroy)
 	r.GoAttach(r.process)
@@ -137,6 +148,105 @@ func (r *Runner) stop() error {
 	return nil
 }
 
+func (r *Runner) startGRPCServer() error {
+	lg := r.Logger()
+
+	scheme, ts, err := r.createListener()
+	if err != nil {
+		return err
+	}
+
+	lg.Info("Server [grpc] Listening", zap.String("addr", ts.Addr().String()))
+
+	r.cfg.ListenClientURL = scheme + ts.Addr().String()
+
+	gs := r.buildGRPCServer()
+
+	gwmux, err := r.buildGRPCGateway()
+	if err != nil {
+		return err
+	}
+	handler := r.buildUserHandler()
+
+	mux := r.createMux(gwmux, handler)
+	r.serve = &http.Server{
+		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
+		MaxHeaderBytes: 1024 * 1024 * 20,
+	}
+
+	r.GoAttach(func() {
+		_ = r.serve.Serve(ts)
+	})
+
+	return nil
+}
+
+func (r *Runner) createListener() (string, net.Listener, error) {
+	cfg := r.cfg
+	lg := r.Logger()
+	url, err := urlpkg.Parse(cfg.ListenClientURL)
+	if err != nil {
+		return "", nil, err
+	}
+	host := url.Host
+
+	lg.Debug("listen on " + host)
+	listener, err := net.Listen("tcp", host)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return "http://", listener, nil
+}
+
+func (r *Runner) buildGRPCServer() *grpc.Server {
+	sopts := []grpc.ServerOption{}
+	gs := grpc.NewServer(sopts...)
+	pb.RegisterRunnerRPCServer(gs, r)
+
+	return gs
+}
+
+func (r *Runner) buildGRPCGateway() (*gw.ServeMux, error) {
+	gwmux := gw.NewServeMux()
+	if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, r); err != nil {
+		return nil, err
+	}
+	return gwmux, nil
+}
+
+func (r *Runner) buildUserHandler() http.Handler {
+	handler := http.NewServeMux()
+	handler.Handle("/metrics", promhttp.Handler())
+
+	return handler
+}
+
+func (r *Runner) createMux(gwmux *gw.ServeMux, handler http.Handler) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	if gwmux != nil {
+		mux.Handle(
+			"/v1/",
+			wsproxy.WebsocketProxy(
+				gwmux,
+				wsproxy.WithRequestMutator(
+					// Default to the POST method for streams
+					func(_ *http.Request, outgoing *http.Request) *http.Request {
+						outgoing.Method = "POST"
+						return outgoing
+					},
+				),
+				wsproxy.WithMaxRespBodyBufferSize(0x7fffffff),
+			),
+		)
+	}
+	if handler != nil {
+		mux.Handle("/", handler)
+	}
+	return mux
+}
+
 func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
 	cfg := r.cfg
 	lg := r.Logger()
@@ -150,7 +260,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		return nil, nil, err
 	}
 
-	listenPeerURL, err := url.Parse(cfg.ListenPeerURL)
+	listenPeerURL, err := urlpkg.Parse(cfg.ListenPeerURL)
 	if err != nil {
 		return nil, nil, err
 	}

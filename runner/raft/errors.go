@@ -27,4 +27,6 @@ var (
 	ErrRequestQuery           = errors.New("region: request is invalid query")
 	ErrTooManyRequests        = errors.New("region: too many requests")
 	ErrProcessExecuted        = errors.New("region: process already executed")
+
+	ErrNotFound = errors.New("key: not found")
 )
