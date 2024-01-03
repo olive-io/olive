@@ -118,7 +118,7 @@ func (s *innerServer) Shutdown() {
 	<-s.done
 }
 
-// GRPCHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
+// GRPCHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Given in gRPC docs.
 func GRPCHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
 	h2s := &http2.Server{}

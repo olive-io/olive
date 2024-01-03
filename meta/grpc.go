@@ -35,7 +35,7 @@ import (
 
 const (
 	// maxLimit is a maximum page limit increase used when fetching objects from etcd.
-	// This limit is used only for increasing page size by olive. If request
+	// This limit is used only for increasing page size by olive. If req
 	// specifies larger limit initially, it won't be changed.
 	maxLimit = 10000
 
@@ -97,8 +97,100 @@ func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.
 	return resp, nil
 }
 
+func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
+	resp = &pb.ListRunnerResponse{}
+	key := runtime.DefaultMetaRunnerRegistry
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	runners := make([]*pb.Runner, 0, rsp.Count)
+	for _, kv := range rsp.Kvs {
+		runner := new(pb.Runner)
+		if e1 := runner.Unmarshal(kv.Value); e1 == nil {
+			runners = append(runners, runner)
+		}
+	}
+	resp.Runners = runners
+	return resp, nil
+}
+
+func (s *Server) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
+	resp = &pb.GetRunnerResponse{}
+	resp.Runner, err = s.getRunner(ctx, req.Id)
+	return
+}
+
+func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
+	key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", id))
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	if len(rsp.Kvs) == 0 {
+		return nil, rpctypes.ErrKeyNotFound
+	}
+	runner = new(pb.Runner)
+	_ = runner.Unmarshal(rsp.Kvs[0].Value)
+	return
+}
+
+func (s *Server) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
+	resp = &pb.ListRegionResponse{}
+	key := runtime.DefaultRunnerRegion
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	regions := make([]*pb.Region, 0, rsp.Count)
+	for _, kv := range rsp.Kvs {
+		region := new(pb.Region)
+		if e1 := region.Unmarshal(kv.Value); e1 == nil {
+			regions = append(regions, region)
+		}
+	}
+	resp.Regions = regions
+	return resp, nil
+}
+
+func (s *Server) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
+	resp = &pb.GetRegionResponse{}
+	resp.Region, err = s.getRegion(ctx, req.Id)
+	return
+}
+
+func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
+	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", id))
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	if len(rsp.Kvs) == 0 {
+		return nil, rpctypes.ErrKeyNotFound
+	}
+	region = new(pb.Region)
+	_ = region.Unmarshal(rsp.Kvs[0].Value)
+	return
+}
+
 func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
-	if err = s.requestPrepare(ctx); err != nil {
+	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
 
@@ -144,7 +236,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 }
 
 func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
-	if err = s.requestPrepare(ctx); err != nil {
+	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
 
@@ -177,9 +269,9 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 		options = append(options, clientv3.WithRange(rangeEnd))
 		preparedKey = continueKey
 
-		// If continueRV > 0, the LIST request needs a specific resource version.
+		// If continueRV > 0, the LIST req needs a specific resource version.
 		// continueRV==0 is invalid.
-		// If continueRV < 0, the request is for the latest resource version.
+		// If continueRV < 0, the req is for the latest resource version.
 		if continueRV > 0 {
 			withRev = continueRV
 			returnedRV = continueRV
@@ -275,7 +367,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 }
 
 func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
-	if err = s.requestPrepare(ctx); err != nil {
+	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
 	resp = &pb.GetDefinitionResponse{}
@@ -418,7 +510,7 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 
 	header := instance.OliveHeader
 	if header.Region != 0 {
-		region, _ := s.scheduler.GetRegion(ctx, header.Region)
+		region, _ := s.getRegion(ctx, header.Region)
 		if region == nil {
 			return
 		}
@@ -435,7 +527,7 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 			}
 		}
 
-		runner, _ := s.scheduler.GetRunner(ctx, replica.Runner)
+		runner, _ := s.getRunner(ctx, replica.Runner)
 		if runner == nil {
 			return
 		}
@@ -496,7 +588,7 @@ func (s *Server) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (boo
 	return ok, err
 }
 
-func (s *Server) requestPrepare(ctx context.Context) error {
+func (s *Server) reqPrepare(ctx context.Context) error {
 	if !s.notifier.IsLeader() {
 		return rpctypes.ErrGRPCNotLeader
 	}

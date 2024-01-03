@@ -52,7 +52,23 @@ func RetryMetaClient(conn *grpc.ClientConn) pb.MetaRPCClient {
 }
 
 func (rmc *retryMetaClient) GetMeta(ctx context.Context, in *pb.GetMetaRequest, opts ...grpc.CallOption) (resp *pb.GetMetaResponse, err error) {
-	return rmc.mc.GetMeta(ctx, in, withRetryPolicy(repeatable))
+	return rmc.mc.GetMeta(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retryMetaClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
+	return rmc.mc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
+	return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
+	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
+	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 type retryBpmnClient struct {
@@ -67,25 +83,25 @@ func RetryBpmnClient(conn *grpc.ClientConn) pb.BpmnRPCClient {
 }
 
 func (rbc *retryBpmnClient) DeployDefinition(ctx context.Context, in *pb.DeployDefinitionRequest, opts ...grpc.CallOption) (resp *pb.DeployDefinitionResponse, err error) {
-	return rbc.bc.DeployDefinition(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.DeployDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) ListDefinition(ctx context.Context, in *pb.ListDefinitionRequest, opts ...grpc.CallOption) (*pb.ListDefinitionResponse, error) {
-	return rbc.bc.ListDefinition(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.ListDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) GetDefinition(ctx context.Context, in *pb.GetDefinitionRequest, opts ...grpc.CallOption) (*pb.GetDefinitionResponse, error) {
-	return rbc.bc.GetDefinition(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.GetDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveDefinitionRequest, opts ...grpc.CallOption) (*pb.RemoveDefinitionResponse, error) {
-	return rbc.bc.RemoveDefinition(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.RemoveDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
-	return rbc.bc.ExecuteDefinition(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (*pb.GetProcessInstanceResponse, error) {
-	return rbc.bc.GetProcessInstance(ctx, in, withRetryPolicy(repeatable))
+	return rbc.bc.GetProcessInstance(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

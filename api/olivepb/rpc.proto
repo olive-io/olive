@@ -34,12 +34,60 @@ service MetaRPC {
       get: "/v1/meta/get"
     };
   };
+  rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runners"
+    };
+  };
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner/{id}"
+    };
+  };
+  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
+    option (google.api.http) = {
+      get: "/v1/regions"
+    };
+  };
+  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
+    option (google.api.http) = {
+      get: "/v1/region/{id}"
+    };
+  };
 }
 
 message GetMetaRequest {}
 
 message GetMetaResponse {
   olivepb.Meta meta = 1;
+}
+
+message ListRunnerRequest {}
+
+message ListRunnerResponse {
+  repeated olivepb.Runner runners = 1;
+}
+
+message GetRunnerRequest {
+  uint64 id = 1;
+}
+
+message GetRunnerResponse {
+  olivepb.Runner runner = 1;
+}
+
+message ListRegionRequest {}
+
+message ListRegionResponse {
+  repeated olivepb.Region regions = 1;
+}
+
+message GetRegionRequest {
+  uint64 id = 1;
+}
+
+message GetRegionResponse {
+  olivepb.Region region = 1;
 }
 
 service BpmnRPC {
