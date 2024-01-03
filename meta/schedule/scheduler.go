@@ -257,8 +257,11 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		Replicas:     map[uint64]*pb.RegionReplica{},
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
-		State:        pb.State_NotReady,
-		Timestamp:    time.Now().Unix(),
+
+		DefinitionsLimit: uint64(sc.limit.DefinitionLimit),
+
+		State:     pb.State_NotReady,
+		Timestamp: time.Now().Unix(),
 	}
 	initial := map[uint64]string{}
 	for i, runner := range runners {
@@ -474,7 +477,7 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 		return nil, false, nil
 	}
 
-	if int(region.Definitions) >= sc.limit.DefinitionLimit {
+	if region.Definitions >= region.DefinitionsLimit {
 		sc.dispatchMessage(new(regionAllocMessage))
 		return nil, false, ErrRegionNoSpace
 	}

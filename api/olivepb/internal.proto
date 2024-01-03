@@ -98,6 +98,7 @@ message Region {
   uint64 leader = 8;
 
   uint64 definitions = 11;
+  uint64 definitionsLimit = 13;
   int64 rev = 12;
 
   State state = 21;
