@@ -104,6 +104,12 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Id) == 0 {
 		return fmt.Errorf("missing id")
 	}
+	if cfg.RegisterInterval == 0 {
+		cfg.RegisterInterval = DefaultRegisterInterval
+	}
+	if cfg.RegisterTTL == 0 {
+		cfg.RegisterTTL = DefaultRegisterTTL
+	}
 
 	return nil
 }
