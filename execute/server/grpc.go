@@ -32,3 +32,12 @@ func (e *Executor) Execute(ctx context.Context, req *dsypb.ExecuteRequest) (*dsy
 	}
 	return resp, nil
 }
+
+func (e *Executor) Forward(stream dsypb.Gateway_ForwardServer) error {
+	_ = stream.Context()
+	_, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	return nil
+}

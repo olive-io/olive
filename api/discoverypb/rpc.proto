@@ -60,3 +60,15 @@ message ExecuteRequest {
 message ExecuteResponse {
   discoverypb.Response response = 1;
 }
+
+service Gateway {
+  rpc Forward(stream ForwardRequest) returns (stream ForwardResponse);
+}
+
+message ForwardRequest {
+
+}
+
+message ForwardResponse {
+
+}

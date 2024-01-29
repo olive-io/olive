@@ -57,11 +57,10 @@ type Executor struct {
 	gs        *grpc.Server
 	serve     *http.Server
 
-	handlers map[string]execute.IHandler
-
 	started chan struct{}
 
 	rmu        sync.RWMutex
+	handlers   map[string]execute.IHandler
 	registered bool
 	// registry service instance
 	rsvc *dsypb.Service
@@ -219,6 +218,7 @@ func (e *Executor) buildGRPCServer() *grpc.Server {
 	}
 	gs := grpc.NewServer(sopts...)
 	dsypb.RegisterExecutorServer(gs, e)
+	dsypb.RegisterGatewayServer(gs, e)
 
 	return gs
 }

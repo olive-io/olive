@@ -153,8 +153,12 @@ func newBackend(cfg BackendConfig) *backend {
 
 	comparer := pebble.DefaultComparer
 	comparer.Split = defaultSplit
+	plg := cfg.Logger.
+		WithOptions(zap.Fields(zap.String("pkg", "pebble"))).
+		Sugar()
 	options := &pebble.Options{
 		Comparer: comparer,
+		Logger:   plg,
 	}
 	if cfg.CacheSize != 0 {
 		options.Cache = pebble.NewCache(int64(cfg.CacheSize))
