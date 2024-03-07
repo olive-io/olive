@@ -15,7 +15,6 @@
 package raft
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -26,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
 var noPrefixEnd = []byte{0}
@@ -107,19 +105,6 @@ func rangePrefix(r *pb.RegionRangeRequest) {
 		return
 	}
 	r.RangeEnd = getPrefix(r.Key)
-}
-
-func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
-	pkey := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
-		[]byte(fmt.Sprintf("%d", process.Id)))
-
-	value, err := process.Marshal()
-	if err != nil {
-		return err
-	}
-	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
-	return err
 }
 
 type SV interface {

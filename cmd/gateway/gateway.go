@@ -17,11 +17,12 @@ package main
 import (
 	"os"
 
-	"github.com/olive-io/olive/cmd/meta/app"
+	"github.com/olive-io/olive/cmd/gateway/app"
 	"github.com/olive-io/olive/pkg/cliutil"
 )
 
 func main() {
-	command := app.NewMetaCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(command))
+	command := app.NewGatewayCommand(os.Stdout, os.Stderr)
+	code := cliutil.Run(command)
+	os.Exit(code)
 }

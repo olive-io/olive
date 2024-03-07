@@ -39,7 +39,7 @@ const (
 	// specifies larger limit initially, it won't be changed.
 	maxLimit = 10000
 
-	defaultTimeout = time.Second * 15
+	defaultTimeout = time.Second * 30
 )
 
 type definitionMeta struct {

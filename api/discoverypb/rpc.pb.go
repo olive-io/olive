@@ -103,25 +103,25 @@ func (m *PingResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PingResponse proto.InternalMessageInfo
 
-type ExecuteRequest struct {
+type TransmitRequest struct {
 	Activity    Activity          `protobuf:"varint,1,opt,name=activity,proto3,enum=discoverypb.Activity" json:"activity,omitempty"`
 	Headers     map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Properties  map[string]*Box   `protobuf:"bytes,3,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	DataObjects map[string]*Box   `protobuf:"bytes,4,rep,name=dataObjects,proto3" json:"dataObjects,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *ExecuteRequest) Reset()         { *m = ExecuteRequest{} }
-func (m *ExecuteRequest) String() string { return proto.CompactTextString(m) }
-func (*ExecuteRequest) ProtoMessage()    {}
-func (*ExecuteRequest) Descriptor() ([]byte, []int) {
+func (m *TransmitRequest) Reset()         { *m = TransmitRequest{} }
+func (m *TransmitRequest) String() string { return proto.CompactTextString(m) }
+func (*TransmitRequest) ProtoMessage()    {}
+func (*TransmitRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_923437bba5c30b07, []int{2}
 }
-func (m *ExecuteRequest) XXX_Unmarshal(b []byte) error {
+func (m *TransmitRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ExecuteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TransmitRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ExecuteRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TransmitRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -131,34 +131,34 @@ func (m *ExecuteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *ExecuteRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExecuteRequest.Merge(m, src)
+func (m *TransmitRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransmitRequest.Merge(m, src)
 }
-func (m *ExecuteRequest) XXX_Size() int {
+func (m *TransmitRequest) XXX_Size() int {
 	return m.XSize()
 }
-func (m *ExecuteRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExecuteRequest.DiscardUnknown(m)
+func (m *TransmitRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransmitRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ExecuteRequest proto.InternalMessageInfo
+var xxx_messageInfo_TransmitRequest proto.InternalMessageInfo
 
-type ExecuteResponse struct {
+type TransmitResponse struct {
 	Response *Response `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 }
 
-func (m *ExecuteResponse) Reset()         { *m = ExecuteResponse{} }
-func (m *ExecuteResponse) String() string { return proto.CompactTextString(m) }
-func (*ExecuteResponse) ProtoMessage()    {}
-func (*ExecuteResponse) Descriptor() ([]byte, []int) {
+func (m *TransmitResponse) Reset()         { *m = TransmitResponse{} }
+func (m *TransmitResponse) String() string { return proto.CompactTextString(m) }
+func (*TransmitResponse) ProtoMessage()    {}
+func (*TransmitResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_923437bba5c30b07, []int{3}
 }
-func (m *ExecuteResponse) XXX_Unmarshal(b []byte) error {
+func (m *TransmitResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ExecuteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TransmitResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ExecuteResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TransmitResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -168,100 +168,26 @@ func (m *ExecuteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *ExecuteResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExecuteResponse.Merge(m, src)
+func (m *TransmitResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransmitResponse.Merge(m, src)
 }
-func (m *ExecuteResponse) XXX_Size() int {
+func (m *TransmitResponse) XXX_Size() int {
 	return m.XSize()
 }
-func (m *ExecuteResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExecuteResponse.DiscardUnknown(m)
+func (m *TransmitResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransmitResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ExecuteResponse proto.InternalMessageInfo
-
-type ForwardRequest struct {
-}
-
-func (m *ForwardRequest) Reset()         { *m = ForwardRequest{} }
-func (m *ForwardRequest) String() string { return proto.CompactTextString(m) }
-func (*ForwardRequest) ProtoMessage()    {}
-func (*ForwardRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_923437bba5c30b07, []int{4}
-}
-func (m *ForwardRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ForwardRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ForwardRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ForwardRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ForwardRequest.Merge(m, src)
-}
-func (m *ForwardRequest) XXX_Size() int {
-	return m.XSize()
-}
-func (m *ForwardRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ForwardRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ForwardRequest proto.InternalMessageInfo
-
-type ForwardResponse struct {
-}
-
-func (m *ForwardResponse) Reset()         { *m = ForwardResponse{} }
-func (m *ForwardResponse) String() string { return proto.CompactTextString(m) }
-func (*ForwardResponse) ProtoMessage()    {}
-func (*ForwardResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_923437bba5c30b07, []int{5}
-}
-func (m *ForwardResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ForwardResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ForwardResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ForwardResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ForwardResponse.Merge(m, src)
-}
-func (m *ForwardResponse) XXX_Size() int {
-	return m.XSize()
-}
-func (m *ForwardResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ForwardResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ForwardResponse proto.InternalMessageInfo
+var xxx_messageInfo_TransmitResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*PingRequest)(nil), "discoverypb.PingRequest")
 	proto.RegisterType((*PingResponse)(nil), "discoverypb.PingResponse")
-	proto.RegisterType((*ExecuteRequest)(nil), "discoverypb.ExecuteRequest")
-	proto.RegisterMapType((map[string]*Box)(nil), "discoverypb.ExecuteRequest.DataObjectsEntry")
-	proto.RegisterMapType((map[string]string)(nil), "discoverypb.ExecuteRequest.HeadersEntry")
-	proto.RegisterMapType((map[string]*Box)(nil), "discoverypb.ExecuteRequest.PropertiesEntry")
-	proto.RegisterType((*ExecuteResponse)(nil), "discoverypb.ExecuteResponse")
-	proto.RegisterType((*ForwardRequest)(nil), "discoverypb.ForwardRequest")
-	proto.RegisterType((*ForwardResponse)(nil), "discoverypb.ForwardResponse")
+	proto.RegisterType((*TransmitRequest)(nil), "discoverypb.TransmitRequest")
+	proto.RegisterMapType((map[string]*Box)(nil), "discoverypb.TransmitRequest.DataObjectsEntry")
+	proto.RegisterMapType((map[string]string)(nil), "discoverypb.TransmitRequest.HeadersEntry")
+	proto.RegisterMapType((map[string]*Box)(nil), "discoverypb.TransmitRequest.PropertiesEntry")
+	proto.RegisterType((*TransmitResponse)(nil), "discoverypb.TransmitResponse")
 }
 
 func init() {
@@ -269,41 +195,39 @@ func init() {
 }
 
 var fileDescriptor_923437bba5c30b07 = []byte{
-	// 544 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0x4f, 0x6f, 0x12, 0x41,
-	0x14, 0x67, 0x28, 0x0a, 0xbe, 0xad, 0x80, 0x93, 0x1a, 0xd7, 0x95, 0xac, 0xcd, 0x46, 0x0d, 0xa9,
-	0xca, 0x0a, 0x8d, 0x89, 0xe2, 0x49, 0xd2, 0x6a, 0x13, 0x13, 0x4b, 0xe8, 0xcd, 0x8b, 0x19, 0x96,
-	0xc9, 0x76, 0x2c, 0xee, 0xac, 0xb3, 0x03, 0x2d, 0x57, 0xfd, 0x02, 0x26, 0x7e, 0xa9, 0x1e, 0x9b,
-	0x78, 0xe9, 0x51, 0xc1, 0x0f, 0x62, 0xd8, 0x19, 0xd6, 0x65, 0x43, 0x48, 0x13, 0x6f, 0xbf, 0x99,
-	0xf7, 0xfb, 0xf3, 0xf6, 0xf1, 0x18, 0xd8, 0xf5, 0x99, 0x3c, 0x1e, 0xf5, 0x1b, 0x1e, 0xff, 0xec,
-	0xf2, 0x21, 0x1b, 0xd3, 0xa7, 0x8c, 0x2b, 0xe0, 0x92, 0x90, 0xb9, 0x03, 0x16, 0x79, 0x7c, 0x4c,
-	0xc5, 0x24, 0xec, 0xbb, 0x22, 0xf4, 0x1a, 0xa1, 0xe0, 0x92, 0x63, 0x23, 0x75, 0x6d, 0x6d, 0xf9,
-	0xdc, 0xe7, 0xf1, 0xbd, 0x3b, 0x47, 0x8a, 0x62, 0xbd, 0xbc, 0xba, 0x6f, 0x82, 0xb5, 0xb4, 0xe6,
-	0x73, 0xee, 0x0f, 0x15, 0x8f, 0x04, 0x01, 0x97, 0x44, 0x32, 0x1e, 0x44, 0xaa, 0xea, 0xdc, 0x04,
-	0xa3, 0xcb, 0x02, 0xbf, 0x47, 0xbf, 0x8c, 0x68, 0x24, 0x9d, 0x07, 0xb0, 0xa9, 0x8e, 0x51, 0xc8,
-	0x83, 0x88, 0xe2, 0x2d, 0xb8, 0x26, 0x68, 0x38, 0x9c, 0x98, 0x68, 0x1b, 0xd5, 0x6f, 0xf4, 0xd4,
-	0xc1, 0xf9, 0x56, 0x80, 0xf2, 0xfe, 0x19, 0xf5, 0x46, 0x92, 0x6a, 0x21, 0x6e, 0x42, 0x89, 0x78,
-	0x92, 0x8d, 0x99, 0x54, 0xdc, 0x72, 0xeb, 0x76, 0x23, 0xd5, 0x55, 0xe3, 0xb5, 0x2e, 0xf6, 0x12,
-	0x1a, 0xee, 0x40, 0xf1, 0x98, 0x92, 0x01, 0x15, 0x91, 0x99, 0xdf, 0xde, 0xa8, 0x1b, 0xad, 0xfa,
-	0x92, 0x62, 0x39, 0xa0, 0x71, 0xa0, 0xa8, 0xfb, 0x81, 0x14, 0x93, 0xde, 0x42, 0x88, 0xdf, 0x01,
-	0x84, 0x82, 0x87, 0x54, 0x48, 0x46, 0x23, 0x73, 0x23, 0xb6, 0x79, 0xbc, 0xce, 0xa6, 0x9b, 0xb0,
-	0x95, 0x53, 0x4a, 0x8e, 0xdf, 0x83, 0x31, 0x20, 0x92, 0x1c, 0xf6, 0x3f, 0x51, 0x4f, 0x46, 0x66,
-	0x21, 0x76, 0x7b, 0xb2, 0xce, 0x6d, 0xef, 0x1f, 0x5d, 0xd9, 0xa5, 0x0d, 0xac, 0x36, 0x6c, 0xa6,
-	0xbb, 0xc6, 0x55, 0xd8, 0x38, 0xa1, 0x8b, 0x51, 0xce, 0xe1, 0x7c, 0xbc, 0x63, 0x32, 0x1c, 0x51,
-	0x33, 0xaf, 0xc6, 0x1b, 0x1f, 0xda, 0xf9, 0x17, 0xc8, 0x3a, 0x84, 0x4a, 0xa6, 0xd5, 0x15, 0xf2,
-	0x47, 0x69, 0xb9, 0xd1, 0xaa, 0x2e, 0xb5, 0xda, 0xe1, 0x67, 0x69, 0xc3, 0x2e, 0x54, 0xb3, 0xdd,
-	0xfe, 0x9f, 0xa3, 0xb3, 0x07, 0x95, 0x64, 0x1c, 0x7a, 0x5d, 0x9a, 0x50, 0x12, 0x1a, 0xc7, 0xae,
-	0x46, 0x66, 0x0b, 0x16, 0xc4, 0x5e, 0x42, 0x73, 0xaa, 0x50, 0x7e, 0xc3, 0xc5, 0x29, 0x11, 0x83,
-	0xc5, 0x0e, 0xde, 0x82, 0x4a, 0x72, 0xa3, 0x48, 0xad, 0x4b, 0x04, 0x25, 0x95, 0xc5, 0x05, 0xfe,
-	0x08, 0x85, 0xf9, 0x8e, 0x62, 0x73, 0xc9, 0x3a, 0xb5, 0xc5, 0xd6, 0xdd, 0x15, 0x15, 0x1d, 0xe7,
-	0x7c, 0xfd, 0xf9, 0xe7, 0x47, 0xbe, 0xe6, 0xdc, 0x71, 0xc7, 0x4d, 0xfd, 0x07, 0xa2, 0xda, 0xd8,
-	0x0d, 0x59, 0xe0, 0xb7, 0xd1, 0x0e, 0x3e, 0x81, 0xa2, 0xfe, 0x30, 0x7c, 0x6f, 0xcd, 0xaf, 0x6f,
-	0xd5, 0x56, 0x17, 0x75, 0xd2, 0xc3, 0x38, 0xe9, 0xbe, 0x63, 0xad, 0x48, 0x52, 0x80, 0xb6, 0xd1,
-	0x4e, 0xeb, 0x08, 0x8a, 0x6f, 0x89, 0xa4, 0xa7, 0x64, 0x82, 0x0f, 0xa0, 0xa8, 0x3f, 0x3c, 0x93,
-	0xbb, 0x3c, 0xa0, 0x4c, 0x6e, 0x66, 0x56, 0x75, 0xf4, 0x0c, 0x75, 0x8e, 0xce, 0x7f, 0xdb, 0xb9,
-	0xf3, 0xa9, 0x8d, 0x2e, 0xa6, 0x36, 0xfa, 0x35, 0xb5, 0xd1, 0xf7, 0x99, 0x9d, 0xbb, 0x98, 0xd9,
-	0xb9, 0xcb, 0x99, 0x9d, 0xfb, 0xf0, 0xfc, 0xca, 0x8f, 0xc9, 0xab, 0x14, 0xee, 0x5f, 0x8f, 0x5f,
-	0x8c, 0xdd, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x5f, 0x34, 0xa2, 0x12, 0xe4, 0x04, 0x00, 0x00,
+	// 507 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x93, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0x86, 0xe3, 0x24, 0xd0, 0x30, 0x2e, 0x34, 0x5a, 0x15, 0x64, 0x4c, 0x31, 0xc5, 0x02, 0x54,
+	0x2a, 0x6a, 0x2b, 0xa9, 0x90, 0x20, 0x9c, 0x28, 0x54, 0x70, 0x40, 0x4a, 0x64, 0x38, 0x71, 0x40,
+	0xda, 0x38, 0x2b, 0x77, 0x21, 0xf5, 0x2e, 0xbb, 0x1b, 0x43, 0xae, 0x5c, 0xb8, 0x22, 0xf1, 0x52,
+	0x3d, 0x56, 0xe2, 0x02, 0x37, 0x48, 0x78, 0x10, 0x14, 0xaf, 0x93, 0x6e, 0x42, 0x89, 0x2a, 0x71,
+	0x9b, 0xf5, 0xfc, 0xff, 0x37, 0xa3, 0xf1, 0x0c, 0xec, 0x26, 0x54, 0x1d, 0x0c, 0xba, 0x41, 0xcc,
+	0x0e, 0x43, 0xd6, 0xa7, 0x19, 0xd9, 0xa1, 0x4c, 0x07, 0x21, 0xe6, 0x34, 0xec, 0x51, 0x19, 0xb3,
+	0x8c, 0x88, 0x21, 0xef, 0x86, 0x82, 0xc7, 0x01, 0x17, 0x4c, 0x31, 0x64, 0x1b, 0x9f, 0xdd, 0xf5,
+	0x84, 0x25, 0x2c, 0xff, 0x1e, 0x4e, 0x22, 0x2d, 0x71, 0x1f, 0x9e, 0x9d, 0x3b, 0x8b, 0x0b, 0xeb,
+	0x46, 0xc2, 0x58, 0xd2, 0xd7, 0x3a, 0x9c, 0xa6, 0x4c, 0x61, 0x45, 0x59, 0x2a, 0x75, 0xd6, 0xbf,
+	0x08, 0x76, 0x87, 0xa6, 0x49, 0x44, 0xde, 0x0f, 0x88, 0x54, 0xfe, 0x2d, 0x58, 0xd5, 0x4f, 0xc9,
+	0x59, 0x2a, 0x09, 0x5a, 0x87, 0x73, 0x82, 0xf0, 0xfe, 0xd0, 0xb1, 0x36, 0xad, 0xad, 0x0b, 0x91,
+	0x7e, 0xf8, 0x9f, 0xab, 0xb0, 0xf6, 0x4a, 0xe0, 0x54, 0x1e, 0x52, 0x55, 0x38, 0x51, 0x03, 0x6a,
+	0x38, 0x56, 0x34, 0xa3, 0x4a, 0x8b, 0x2f, 0x35, 0x2f, 0x07, 0x46, 0x5b, 0xc1, 0xe3, 0x22, 0x19,
+	0xcd, 0x64, 0xe8, 0x09, 0xac, 0x1c, 0x10, 0xdc, 0x23, 0x42, 0x3a, 0xe5, 0xcd, 0xca, 0x96, 0xdd,
+	0xbc, 0x3b, 0xe7, 0x58, 0xa8, 0x10, 0x3c, 0xd7, 0xda, 0xfd, 0x54, 0x89, 0x61, 0x34, 0x75, 0xa2,
+	0x17, 0x00, 0x5c, 0x30, 0x4e, 0x84, 0xa2, 0x44, 0x3a, 0x95, 0x9c, 0x73, 0x6f, 0x29, 0xa7, 0x33,
+	0x93, 0x6b, 0x94, 0xe1, 0x47, 0x6d, 0xb0, 0x7b, 0x58, 0xe1, 0x76, 0xf7, 0x2d, 0x89, 0x95, 0x74,
+	0xaa, 0x39, 0x6e, 0x67, 0x29, 0xee, 0xe9, 0x89, 0x5e, 0xf3, 0x4c, 0x82, 0xdb, 0x82, 0x55, 0xb3,
+	0x6f, 0x54, 0x87, 0xca, 0x3b, 0x32, 0x1d, 0xe7, 0x24, 0x9c, 0x8c, 0x38, 0xc3, 0xfd, 0x01, 0x71,
+	0xca, 0x7a, 0xc4, 0xf9, 0xa3, 0x55, 0x7e, 0x60, 0xb9, 0x6d, 0x58, 0x5b, 0xe8, 0xf5, 0x14, 0xfb,
+	0x1d, 0xd3, 0x6e, 0x37, 0xeb, 0x73, 0xbd, 0xee, 0xb1, 0x8f, 0x26, 0xb0, 0x03, 0xf5, 0xc5, 0x6e,
+	0xff, 0x8f, 0xe8, 0xef, 0x43, 0xfd, 0x64, 0x1e, 0xc5, 0xce, 0x34, 0xa0, 0x26, 0x8a, 0x38, 0xc7,
+	0xda, 0x0b, 0x9b, 0x30, 0x15, 0x46, 0x33, 0x59, 0xf3, 0x87, 0x05, 0x2b, 0xcf, 0xb0, 0x22, 0x1f,
+	0xf0, 0x10, 0xbd, 0x81, 0xea, 0x64, 0x05, 0x91, 0x33, 0x67, 0x32, 0x96, 0xd4, 0xbd, 0x7a, 0x4a,
+	0x46, 0x83, 0xfc, 0x9b, 0x9f, 0xbe, 0xfd, 0xfe, 0x5a, 0xbe, 0xe6, 0x5f, 0x09, 0xb3, 0x46, 0x71,
+	0x1f, 0x89, 0xe6, 0x86, 0x9c, 0xa6, 0x49, 0xcb, 0xda, 0x46, 0x29, 0xd4, 0xa6, 0x2d, 0xa3, 0x8d,
+	0x65, 0x7f, 0xd6, 0xbd, 0xfe, 0x8f, 0x6c, 0x51, 0xeb, 0x76, 0x5e, 0xeb, 0x86, 0xef, 0xfe, 0x5d,
+	0x4b, 0x15, 0xda, 0x96, 0xb5, 0xbd, 0xf7, 0xf2, 0xe8, 0x97, 0x57, 0x3a, 0x1a, 0x79, 0xd6, 0xf1,
+	0xc8, 0xb3, 0x7e, 0x8e, 0x3c, 0xeb, 0xcb, 0xd8, 0x2b, 0x1d, 0x8f, 0xbd, 0xd2, 0xf7, 0xb1, 0x57,
+	0x7a, 0x7d, 0xff, 0xcc, 0x87, 0xfd, 0xc8, 0x88, 0xbb, 0xe7, 0xf3, 0xeb, 0xdd, 0xfd, 0x13, 0x00,
+	0x00, 0xff, 0xff, 0xad, 0xc8, 0x7e, 0x1a, 0x70, 0x04, 0x00, 0x00,
 }
 
 func (m *PingRequest) XSize() (n int) {
@@ -328,7 +252,7 @@ func (m *PingResponse) XSize() (n int) {
 	return n
 }
 
-func (m *ExecuteRequest) XSize() (n int) {
+func (m *TransmitRequest) XSize() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -374,7 +298,7 @@ func (m *ExecuteRequest) XSize() (n int) {
 	return n
 }
 
-func (m *ExecuteResponse) XSize() (n int) {
+func (m *TransmitResponse) XSize() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -384,24 +308,6 @@ func (m *ExecuteResponse) XSize() (n int) {
 		l = m.Response.XSize()
 		n += 1 + l + sovRpc(uint64(l))
 	}
-	return n
-}
-
-func (m *ForwardRequest) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *ForwardResponse) XSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
 	return n
 }
 
@@ -464,7 +370,7 @@ func (m *PingResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ExecuteRequest) Marshal() (dAtA []byte, err error) {
+func (m *TransmitRequest) Marshal() (dAtA []byte, err error) {
 	size := m.XSize()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -474,12 +380,12 @@ func (m *ExecuteRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ExecuteRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransmitRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.XSize()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ExecuteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransmitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -563,7 +469,7 @@ func (m *ExecuteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ExecuteResponse) Marshal() (dAtA []byte, err error) {
+func (m *TransmitResponse) Marshal() (dAtA []byte, err error) {
 	size := m.XSize()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -573,12 +479,12 @@ func (m *ExecuteResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ExecuteResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *TransmitResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.XSize()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ExecuteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TransmitResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -595,52 +501,6 @@ func (m *ExecuteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xa
 	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ForwardRequest) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ForwardRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ForwardRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *ForwardResponse) Marshal() (dAtA []byte, err error) {
-	size := m.XSize()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ForwardResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.XSize()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ForwardResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
 	return len(dAtA) - i, nil
 }
 
@@ -787,7 +647,7 @@ func (m *PingResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ExecuteRequest) Unmarshal(dAtA []byte) error {
+func (m *TransmitRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -810,10 +670,10 @@ func (m *ExecuteRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ExecuteRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: TransmitRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExecuteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TransmitRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1241,7 +1101,7 @@ func (m *ExecuteRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ExecuteResponse) Unmarshal(dAtA []byte) error {
+func (m *TransmitResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1264,10 +1124,10 @@ func (m *ExecuteResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ExecuteResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: TransmitResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExecuteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TransmitResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1306,106 +1166,6 @@ func (m *ExecuteResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ForwardRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ForwardRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ForwardRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRpc(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthRpc
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ForwardResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRpc
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ForwardResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ForwardResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpc(dAtA[iNdEx:])
@@ -1512,119 +1272,12 @@ var (
 	ErrUnexpectedEndOfGroupRpc = fmt.Errorf("proto: unexpected end of group")
 )
 
-// ExecutorClient is the client API for Executor service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type ExecutorClient interface {
-	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error)
-}
-
-type executorClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewExecutorClient(cc *grpc.ClientConn) ExecutorClient {
-	return &executorClient{cc}
-}
-
-func (c *executorClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
-	out := new(PingResponse)
-	err := c.cc.Invoke(ctx, "/discoverypb.Executor/Ping", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *executorClient) Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error) {
-	out := new(ExecuteResponse)
-	err := c.cc.Invoke(ctx, "/discoverypb.Executor/Execute", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ExecutorServer is the server API for Executor service.
-type ExecutorServer interface {
-	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error)
-}
-
-// UnimplementedExecutorServer can be embedded to have forward compatible implementations.
-type UnimplementedExecutorServer struct {
-}
-
-func (*UnimplementedExecutorServer) Ping(ctx context.Context, req *PingRequest) (*PingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
-}
-func (*UnimplementedExecutorServer) Execute(ctx context.Context, req *ExecuteRequest) (*ExecuteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
-}
-
-func RegisterExecutorServer(s *grpc.Server, srv ExecutorServer) {
-	s.RegisterService(&_Executor_serviceDesc, srv)
-}
-
-func _Executor_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ExecutorServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/discoverypb.Executor/Ping",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExecutorServer).Ping(ctx, req.(*PingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Executor_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExecuteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ExecutorServer).Execute(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/discoverypb.Executor/Execute",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExecutorServer).Execute(ctx, req.(*ExecuteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _Executor_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "discoverypb.Executor",
-	HandlerType: (*ExecutorServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Ping",
-			Handler:    _Executor_Ping_Handler,
-		},
-		{
-			MethodName: "Execute",
-			Handler:    _Executor_Execute_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/discoverypb/rpc.proto",
-}
-
 // GatewayClient is the client API for Gateway service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GatewayClient interface {
-	Forward(ctx context.Context, opts ...grpc.CallOption) (Gateway_ForwardClient, error)
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	Transmit(ctx context.Context, in *TransmitRequest, opts ...grpc.CallOption) (*TransmitResponse, error)
 }
 
 type gatewayClient struct {
@@ -1635,91 +1288,94 @@ func NewGatewayClient(cc *grpc.ClientConn) GatewayClient {
 	return &gatewayClient{cc}
 }
 
-func (c *gatewayClient) Forward(ctx context.Context, opts ...grpc.CallOption) (Gateway_ForwardClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Gateway_serviceDesc.Streams[0], "/discoverypb.Gateway/Forward", opts...)
+func (c *gatewayClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, "/discoverypb.Gateway/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &gatewayForwardClient{stream}
-	return x, nil
+	return out, nil
 }
 
-type Gateway_ForwardClient interface {
-	Send(*ForwardRequest) error
-	Recv() (*ForwardResponse, error)
-	grpc.ClientStream
-}
-
-type gatewayForwardClient struct {
-	grpc.ClientStream
-}
-
-func (x *gatewayForwardClient) Send(m *ForwardRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *gatewayForwardClient) Recv() (*ForwardResponse, error) {
-	m := new(ForwardResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
+func (c *gatewayClient) Transmit(ctx context.Context, in *TransmitRequest, opts ...grpc.CallOption) (*TransmitResponse, error) {
+	out := new(TransmitResponse)
+	err := c.cc.Invoke(ctx, "/discoverypb.Gateway/Transmit", in, out, opts...)
+	if err != nil {
 		return nil, err
 	}
-	return m, nil
+	return out, nil
 }
 
 // GatewayServer is the server API for Gateway service.
 type GatewayServer interface {
-	Forward(Gateway_ForwardServer) error
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	Transmit(context.Context, *TransmitRequest) (*TransmitResponse, error)
 }
 
 // UnimplementedGatewayServer can be embedded to have forward compatible implementations.
 type UnimplementedGatewayServer struct {
 }
 
-func (*UnimplementedGatewayServer) Forward(srv Gateway_ForwardServer) error {
-	return status.Errorf(codes.Unimplemented, "method Forward not implemented")
+func (*UnimplementedGatewayServer) Ping(ctx context.Context, req *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (*UnimplementedGatewayServer) Transmit(ctx context.Context, req *TransmitRequest) (*TransmitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Transmit not implemented")
 }
 
 func RegisterGatewayServer(s *grpc.Server, srv GatewayServer) {
 	s.RegisterService(&_Gateway_serviceDesc, srv)
 }
 
-func _Gateway_Forward_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(GatewayServer).Forward(&gatewayForwardServer{stream})
-}
-
-type Gateway_ForwardServer interface {
-	Send(*ForwardResponse) error
-	Recv() (*ForwardRequest, error)
-	grpc.ServerStream
-}
-
-type gatewayForwardServer struct {
-	grpc.ServerStream
-}
-
-func (x *gatewayForwardServer) Send(m *ForwardResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *gatewayForwardServer) Recv() (*ForwardRequest, error) {
-	m := new(ForwardRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Gateway_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(GatewayServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/discoverypb.Gateway/Ping",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_Transmit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransmitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).Transmit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/discoverypb.Gateway/Transmit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).Transmit(ctx, req.(*TransmitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Gateway_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "discoverypb.Gateway",
 	HandlerType: (*GatewayServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Forward",
-			Handler:       _Gateway_Forward_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Ping",
+			Handler:    _Gateway_Ping_Handler,
+		},
+		{
+			MethodName: "Transmit",
+			Handler:    _Gateway_Transmit_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "github.com/olive-io/olive/api/discoverypb/rpc.proto",
 }

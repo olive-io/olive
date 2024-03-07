@@ -17,12 +17,11 @@ package meta
 import (
 	"strings"
 
+	"github.com/olive-io/olive/pkg/cliutil/flags"
+	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 	"go.etcd.io/etcd/server/v3/embed"
-
-	"github.com/olive-io/olive/pkg/component-base/cli/flags"
-	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 const (
@@ -101,7 +100,7 @@ func (cfg *Config) newFlags() *pflag.FlagSet {
 	fs.BoolVar(&cfg.Config.SocketOpts.ReusePort, "socket-reuse-port", cfg.Config.SocketOpts.ReusePort, "Enable to set socket option SO_REUSEPORT on listeners allowing rebinding of a port already in use.")
 	fs.BoolVar(&cfg.Config.SocketOpts.ReuseAddress, "socket-reuse-address", cfg.Config.SocketOpts.ReuseAddress, "Enable to set socket option SO_REUSEADDR on listeners allowing binding to an address in `TIME_WAIT` state.")
 
-	fs.StringVar(&cfg.Config.InitialCluster, "initial-cluster", cfg.Config.InitialClusterToken,
+	fs.StringVar(&cfg.Config.InitialCluster, "initial-cluster", cfg.Config.InitialCluster,
 		"Initial cluster configuration for bootstrapping.")
 	fs.Var(cfg.clusterState, "initial-cluster-state", "Initial cluster state ('new' or 'existing').")
 
@@ -130,13 +129,13 @@ func (cfg *Config) newFlags() *pflag.FlagSet {
 	// logging
 	fs.StringVar(&cfg.Config.Logger, "logger", "zap",
 		"Currently only supports 'zap' for structured logging.")
-	fs.Var(flags.NewUniqueStringsValue(logs.DefaultLogOutput), "log-outputs",
+	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
 		"Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.")
-	fs.StringVar(&cfg.Config.LogLevel, "log-level", logs.DefaultLogLevel,
+	fs.StringVar(&cfg.Config.LogLevel, "log-level", logutil.DefaultLogLevel,
 		"Configures log level. Only supports debug, info, warn, error, panic, or fatal. Default 'info'.")
 	fs.BoolVar(&cfg.Config.EnableLogRotation, "enable-log-rotation", false,
 		"Enable log rotation of a single log-outputs file target.")
-	fs.StringVar(&cfg.Config.LogRotationConfigJSON, "log-rotation-config-json", logs.DefaultLogRotationConfig,
+	fs.StringVar(&cfg.Config.LogRotationConfigJSON, "log-rotation-config-json", logutil.DefaultLogRotationConfig,
 		"Configures log rotation if enabled with a JSON logger config. Default: MaxSize=100(MB), MaxAge=0(days,no limit), MaxBackups=0(no limit), LocalTime=false(UTC), Compress=false(gzip)")
 
 	return fs

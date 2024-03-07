@@ -39,7 +39,7 @@ import (
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/internal/gateway"
+	"github.com/olive-io/olive/runner/proxy"
 )
 
 var (
@@ -77,7 +77,7 @@ type Region struct {
 	openWait wait.Wait
 
 	tracer tracing.ITracer
-	gw     gateway.IGateway
+	proxy  proxy.IProxy
 
 	reqIDGen *idutil.Generator
 
@@ -119,7 +119,7 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		lg:         c.cfg.Logger,
 		openWait:   c.regionW,
 		tracer:     tracer,
-		gw:         c.gw,
+		proxy:      c.proxy,
 		applyW:     wait.New(),
 		commitW:    wait.New(),
 		reqIDGen:   reqIDGen,

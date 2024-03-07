@@ -38,7 +38,7 @@ import (
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/internal/gateway"
+	"github.com/olive-io/olive/runner/proxy"
 )
 
 type Controller struct {
@@ -52,7 +52,7 @@ type Controller struct {
 	regionW wait.Wait
 
 	tracer tracing.ITracer
-	gw     gateway.IGateway
+	proxy  proxy.IProxy
 
 	reqId *idutil.Generator
 	reqW  wait.Wait
@@ -101,11 +101,11 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 		return nil, err
 	}
 
-	gwCfg := gateway.Config{
+	gwCfg := proxy.Config{
 		Logger:    lg,
 		Discovery: discovery,
 	}
-	gw, err := gateway.NewGateway(gwCfg)
+	py, err := proxy.NewProxy(gwCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 		cfg:     cfg,
 		nh:      nh,
 		tracer:  tracer,
-		gw:      gw,
+		proxy:   py,
 		be:      be,
 		regionW: wait.New(),
 		reqId:   idutil.NewGenerator(0, time.Now()),

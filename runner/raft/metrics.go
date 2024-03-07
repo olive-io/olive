@@ -17,9 +17,8 @@ package raft
 import (
 	"fmt"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/olive-io/olive/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (

@@ -28,17 +28,17 @@ import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
-service Executor {
+service Gateway {
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/executor/ping",
+      post: "/v1/olive/gateway/ping",
       body: "*"
     };
   };
 
-  rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
+  rpc Transmit(TransmitRequest) returns (TransmitResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/executor/execute",
+      post: "/v1/olive/gateway/transmit",
       body: "*"
     };
   }
@@ -50,25 +50,14 @@ message PingResponse {
   string reply = 1;
 }
 
-message ExecuteRequest {
+message TransmitRequest {
   discoverypb.Activity activity = 1;
   map<string, string> headers = 2;
   map<string, discoverypb.Box> properties = 3;
   map<string, discoverypb.Box> dataObjects = 4;
 }
 
-message ExecuteResponse {
+message TransmitResponse {
   discoverypb.Response response = 1;
 }
 
-service Gateway {
-  rpc Forward(stream ForwardRequest) returns (stream ForwardResponse);
-}
-
-message ForwardRequest {
-
-}
-
-message ForwardResponse {
-
-}

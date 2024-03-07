@@ -394,9 +394,9 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 }
 
 func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context, options ...runnerOption) ([]*pb.Runner, error) {
-	var option runnerOptions
+	option := newRunnerOptions()
 	for _, opt := range options {
-		opt(&option)
+		opt(option)
 	}
 
 	lg := sc.lg

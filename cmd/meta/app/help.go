@@ -110,9 +110,9 @@ Clustering:
 
 Regions:
   --region-limit '` + fmt.Sprintf("%d", meta.DefaultRegionLimit) + `'
-    Sets the maximum number of regions in a runner
+    Sets the maximum number of regions in one runner
   --region-definitions-limit '` + fmt.Sprintf("%d", meta.DefaultRegionDefinitionsLimit) + `'
-    Sets the maximum number of bpmn definitions in a region
+    Sets the maximum number of bpmn definitions in one runner-region
 
 Logging:
   --log-outputs 'default'

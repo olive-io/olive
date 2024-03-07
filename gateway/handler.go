@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package gateway
 
-import (
-	"os"
+type HandlerOption func(*HandlerOptions)
 
-	"github.com/olive-io/olive/cmd/meta/app"
-	"github.com/olive-io/olive/pkg/cliutil"
-)
-
-func main() {
-	command := app.NewMetaCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(command))
+type HandlerOptions struct {
+	Internal bool
+	Metadata map[string]map[string]string
 }

@@ -24,13 +24,13 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/lni/dragonboat/v4/logger"
+	"github.com/olive-io/olive/pkg/cliutil/flags"
+	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/component-base/cli/flags"
-	"github.com/olive-io/olive/pkg/component-base/logs"
 )
 
 var (
@@ -41,7 +41,7 @@ const (
 	DefaultDataDir   = "default"
 	DefaultCacheSize = 4 * 1024 * 1024
 
-	DefaultBackendBatchInterval = time.Hour
+	DefaultBackendBatchInterval = time.Minute * 10
 	DefaultBackendBatchLimit    = 10000
 
 	DefaultListenPeerURL   = "http://127.0.0.1:5380"
@@ -53,7 +53,7 @@ const (
 )
 
 type Config struct {
-	logs.LogConfig
+	logutil.LogConfig
 
 	fs *pflag.FlagSet
 
@@ -78,7 +78,7 @@ type Config struct {
 
 func NewConfig() *Config {
 
-	logging := logs.NewLogConfig()
+	logging := logutil.NewLogConfig()
 
 	clientCfg := client.Config{}
 	clientCfg.Endpoints = DefaultEndpoints
@@ -118,18 +118,22 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	fs.StringVar(&cfg.ListenClientURL, "listen-client-url", cfg.ListenClientURL, "Set the URL to listen on for client traffic.")
 	fs.StringVar(&cfg.AdvertiseClientURL, "advertise-client-url", cfg.AdvertiseClientURL, "Set advertise URL to listen on for client traffic.")
 
+	// Backend
+	fs.DurationVar(&cfg.BackendBatchInterval, "backend-batch-interval", cfg.BackendBatchInterval, "the maximum time before commit the backend transaction.")
+	fs.IntVar(&cfg.BackendBatchLimit, "backend-batch-limit", cfg.BackendBatchLimit, "the maximum operations before commit the backend transaction.")
+
 	// Region
 	fs.StringVar(&cfg.ListenPeerURL, "listen-peer-url", cfg.ListenPeerURL, "Set the URL to listen on for peer traffic.")
 	fs.StringVar(&cfg.AdvertisePeerURL, "advertise-peer-url", cfg.AdvertisePeerURL, "Set advertise URL to listen on for peer traffic.")
 
 	// logging
-	fs.Var(flags.NewUniqueStringsValue(logs.DefaultLogOutput), "log-outputs",
+	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
 		"Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.")
-	fs.StringVar(&cfg.LogLevel, "log-level", logs.DefaultLogLevel,
+	fs.StringVar(&cfg.LogLevel, "log-level", logutil.DefaultLogLevel,
 		"Configures log level. Only supports debug, info, warn, error, panic, or fatal. Default 'info'.")
 	fs.BoolVar(&cfg.EnableLogRotation, "enable-log-rotation", false,
 		"Enable log rotation of a single log-outputs file target.")
-	fs.StringVar(&cfg.LogRotationConfigJSON, "log-rotation-config-json", logs.DefaultLogRotationConfig,
+	fs.StringVar(&cfg.LogRotationConfigJSON, "log-rotation-config-json", logutil.DefaultLogRotationConfig,
 		"Configures log rotation if enabled with a JSON logger config. Default: MaxSize=100(MB), MaxAge=0(days,no limit), MaxBackups=0(no limit), LocalTime=false(UTC), Compress=false(gzip)")
 
 	return fs

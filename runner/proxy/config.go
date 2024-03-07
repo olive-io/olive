@@ -12,16 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package proxy
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/olive-io/olive/cmd/meta/app"
-	"github.com/olive-io/olive/pkg/cliutil"
+	"go.uber.org/zap"
+
+	dsy "github.com/olive-io/olive/pkg/discovery"
 )
 
-func main() {
-	command := app.NewMetaCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(command))
+var (
+	DefaultMaxRecvSize int64 = 1024 * 1024 * 100 // 100Mb
+)
+
+type Config struct {
+	Logger      *zap.Logger
+	Discovery   dsy.IDiscovery
+	MaxRecvSize int64
+}
+
+func (cfg *Config) validate() error {
+	if cfg.Logger == nil {
+		cfg.Logger = zap.NewNop()
+	}
+	if cfg.Discovery == nil {
+		return fmt.Errorf("missing discovery")
+	}
+	if cfg.MaxRecvSize == 0 {
+		cfg.MaxRecvSize = DefaultMaxRecvSize
+	}
+
+	return nil
 }

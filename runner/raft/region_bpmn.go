@@ -39,7 +39,7 @@ import (
 
 	"github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/execute"
+	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
@@ -263,11 +263,11 @@ LOOP:
 			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)
-			switch trace := trace.(type) {
+			switch tt := trace.(type) {
 			case flow.VisitTrace:
-				id, _ := trace.Node.Id()
+				id, _ := tt.Node.Id()
 
-				switch trace.Node.(type) {
+				switch tt.Node.(type) {
 				case schema.EndEventInterface:
 				case schema.EventInterface:
 					r.metric.event.Inc()
@@ -284,27 +284,27 @@ LOOP:
 						Id:        *id,
 						StartTime: time.Now().Unix(),
 					}
-					if name, has := trace.Node.Name(); has {
+					if name, has := tt.Node.Name(); has {
 						flowNode.Name = *name
 					}
 					process.FlowNodes[*id] = flowNode
 				}
 
 			case flow.LeaveTrace:
-				id, _ := trace.Node.Id()
+				id, _ := tt.Node.Id()
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
 					flowNode.EndTime = time.Now().Unix()
 				}
 
-				switch trace.Node.(type) {
+				switch tt.Node.(type) {
 				case schema.EventInterface:
 					r.metric.event.Dec()
 				}
 
 			case activity.ActiveBoundaryTrace:
-				if trace.Start {
+				if tt.Start {
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
@@ -313,7 +313,7 @@ LOOP:
 					process.RunningState.Variables = toTMap[[]byte](inst.Locator.CloneVariables())
 				}
 			case *activity.Trace:
-				act := trace.GetActivity()
+				act := tt.GetActivity()
 				id, _ := act.Element().Id()
 
 				flowNode, ok := process.FlowNodes[*id]
@@ -327,13 +327,13 @@ LOOP:
 
 				_, ok = completed[*id]
 				if ok {
-					trace.Do()
+					tt.Do()
 				} else {
-					r.handleActivity(ctx, trace, inst, process)
+					r.handleActivity(ctx, tt, inst, process)
 				}
 			case tracing.ErrorTrace:
 				finish = true
-				err = trace.Error
+				err = tt.Error
 				r.lg.Error("process error occurred", append(fields, zap.Error(err))...)
 			case flow.CeaseFlowTrace:
 				finish = true
@@ -381,15 +381,15 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		act = discoverypb.Activity_CallActivity
 	}
 
-	urlText := headers[execute.URLKey]
+	urlText := headers[gateway.URLKey]
 	if urlText == "" {
-		urlText = execute.DefaultTaskURL
+		urlText = gateway.DefaultTaskURL
 	}
-	method := headers[execute.MethodKey]
+	method := headers[gateway.MethodKey]
 	if method == "" {
 		method = "POST"
 	}
-	protocol := headers[execute.ProtocolKey]
+	protocol := headers[gateway.ProtocolKey]
 
 	hurl, err := url.Parse(urlText)
 	if err != nil {
@@ -398,7 +398,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		return
 	}
 
-	in := &discoverypb.ExecuteRequest{
+	in := &discoverypb.TransmitRequest{
 		Activity:    act,
 		Headers:     headers,
 		Properties:  map[string]*discoverypb.Box{},
@@ -415,7 +415,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 
 	header := http.Header{}
 	for key, value := range headers {
-		if strings.HasPrefix(key, execute.HeaderKeyPrefix) {
+		if strings.HasPrefix(key, gateway.HeaderKeyPrefix) {
 			continue
 		}
 		header.Set(key, value)
@@ -423,7 +423,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	if header.Get("Content-Type") == "" {
 		header.Set("Content-Type", "application/json")
 	}
-	header.Set(execute.RequestActivityKey, act.String())
+	header.Set(gateway.RequestActivityKey, act.String())
 
 	hreq := &http.Request{
 		Method: method,
@@ -435,7 +435,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	hreq = hreq.WithContext(ctx)
 
 	doOpts := make([]activity.DoOption, 0)
-	resp, err := r.gw.Handle(hreq)
+	resp, err := r.proxy.Handle(hreq)
 	if err != nil {
 		r.lg.Error("handle task", append(fields, zap.Error(err))...)
 		doOpts = append(doOpts, activity.WithErr(err))
@@ -451,4 +451,17 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		doOpts = append(doOpts, activity.WithProperties(dp), activity.WithObjects(ddo))
 	}
 	trace.Do(doOpts...)
+}
+
+func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
+	pkey := bytesutil.PathJoin(processPrefix,
+		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
+		[]byte(fmt.Sprintf("%d", process.Id)))
+
+	value, err := process.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
+	return err
 }

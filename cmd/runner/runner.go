@@ -18,10 +18,10 @@ import (
 	"os"
 
 	"github.com/olive-io/olive/cmd/runner/app"
-	"github.com/olive-io/olive/pkg/component-base/cli"
+	"github.com/olive-io/olive/pkg/cliutil"
 )
 
 func main() {
 	command := app.NewRunnerCommand(os.Stdout, os.Stderr)
-	os.Exit(cli.Run(command))
+	os.Exit(cliutil.Run(command))
 }
