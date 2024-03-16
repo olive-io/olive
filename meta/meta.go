@@ -81,6 +81,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 	}
 
 	ec.ServiceRegister = func(gs *grpc.Server) {
+		olivepb.RegisterClusterServer(gs, s)
 		olivepb.RegisterMetaRPCServer(gs, s)
 		olivepb.RegisterBpmnRPCServer(gs, s)
 	}

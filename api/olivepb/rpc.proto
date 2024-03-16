@@ -28,6 +28,109 @@ import "github.com/olive-io/olive/api/olivepb/internal.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
+
+service Cluster {
+  // MemberAdd adds a member into the cluster.
+  rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/add"
+      body: "*"
+    };
+  }
+
+  // MemberRemove removes an existing member from the cluster.
+  rpc MemberRemove(MemberRemoveRequest) returns (MemberRemoveResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/remove"
+      body: "*"
+    };
+  }
+
+  // MemberUpdate updates the member configuration.
+  rpc MemberUpdate(MemberUpdateRequest) returns (MemberUpdateResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/update"
+      body: "*"
+    };
+  }
+
+  // MemberList lists all the members in the cluster.
+  rpc MemberList(MemberListRequest) returns (MemberListResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/list"
+      body: "*"
+    };
+  }
+
+  // MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
+  rpc MemberPromote(MemberPromoteRequest) returns (MemberPromoteResponse) {
+    option (google.api.http) = {
+      post: "/v3/cluster/member/promote"
+      body: "*"
+    };
+  }
+}
+
+message MemberAddRequest {
+  // peerURLs is the list of URLs the added member will use to communicate with the cluster.
+  repeated string peerURLs = 1;
+  // isLearner indicates if the added member is raft learner.
+  bool isLearner = 2;
+}
+
+message MemberAddResponse {
+  ResponseHeader header = 1;
+  // member is the member information for the added member.
+  Member member = 2;
+  // members is a list of all members after adding the new member.
+  repeated Member members = 3;
+}
+
+message MemberRemoveRequest {
+  // ID is the member ID of the member to remove.
+  uint64 ID = 1;
+}
+
+message MemberRemoveResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members after removing the member.
+  repeated Member members = 2;
+}
+
+message MemberUpdateRequest {
+  // ID is the member ID of the member to update.
+  uint64 ID = 1;
+  // peerURLs is the new list of URLs the member will use to communicate with the cluster.
+  repeated string peerURLs = 2;
+}
+
+message MemberUpdateResponse{
+  ResponseHeader header = 1;
+  // members is a list of all members after updating the member.
+  repeated Member members = 2;
+}
+
+message MemberListRequest {
+  bool linearizable = 1;
+}
+
+message MemberListResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members associated with the cluster.
+  repeated Member members = 2;
+}
+
+message MemberPromoteRequest {
+  // ID is the member ID of the member to promote.
+  uint64 ID = 1;
+}
+
+message MemberPromoteResponse {
+  ResponseHeader header = 1;
+  // members is a list of all members after promoting the member.
+  repeated Member members = 2;
+}
+
 service MetaRPC {
   rpc GetMeta(GetMetaRequest) returns (GetMetaResponse) {
     option (google.api.http) = {

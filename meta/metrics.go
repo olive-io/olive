@@ -17,9 +17,8 @@ package meta
 import (
 	goruntime "runtime"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/olive-io/olive/pkg/version"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (

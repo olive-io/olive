@@ -91,9 +91,7 @@ func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.
 		meta.Members = append(meta.Members, m)
 	}
 
-	resp = &pb.GetMetaResponse{
-		Meta: meta,
-	}
+	resp = &pb.GetMetaResponse{Meta: meta}
 	return resp, nil
 }
 

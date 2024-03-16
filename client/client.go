@@ -16,6 +16,7 @@ package client
 
 import (
 	"context"
+	gerrs "errors"
 	"fmt"
 
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
@@ -27,6 +28,7 @@ import (
 
 // Client provides and manages an olive-meta client session.
 type Client struct {
+	Cluster
 	MetaRPC
 	BpmnRPC
 
@@ -76,6 +78,7 @@ func newClient(cfg *Config) (*Client, error) {
 		client.callOpts = callOpts
 	}
 
+	client.Cluster = NewCluster(client)
 	client.MetaRPC = NewMetaRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
 
@@ -106,7 +109,8 @@ func toErr(ctx context.Context, err error) error {
 		return nil
 	}
 	err = rpctypes.Error(err)
-	if _, ok := err.(rpctypes.EtcdError); ok {
+	var etcdError rpctypes.EtcdError
+	if gerrs.As(err, &etcdError) {
 		return err
 	}
 	if ev, ok := status.FromError(err); ok {

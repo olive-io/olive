@@ -513,7 +513,7 @@ func (sc *Scheduler) waitUtilLeader() bool {
 }
 
 func (sc *Scheduler) run() {
-	tickDuration := time.Second
+	tickDuration := time.Millisecond * 500
 	ticker := time.NewTimer(tickDuration)
 	defer ticker.Stop()
 
@@ -526,8 +526,6 @@ func (sc *Scheduler) run() {
 			}
 			continue
 		}
-
-		//TODO: handle regions (expend raft shard replica)
 
 		ticker.Reset(time.Second)
 

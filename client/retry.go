@@ -40,6 +40,37 @@ func (rp retryPolicy) String() string {
 	}
 }
 
+type retryClusterClient struct {
+	cc pb.ClusterClient
+}
+
+// RetryClusterClient implements a ClusterClient.
+func RetryClusterClient(c *Client) pb.ClusterClient {
+	return &retryClusterClient{
+		cc: pb.NewClusterClient(c.conn),
+	}
+}
+
+func (rcc *retryClusterClient) MemberList(ctx context.Context, in *pb.MemberListRequest, opts ...grpc.CallOption) (resp *pb.MemberListResponse, err error) {
+	return rcc.cc.MemberList(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rcc *retryClusterClient) MemberAdd(ctx context.Context, in *pb.MemberAddRequest, opts ...grpc.CallOption) (resp *pb.MemberAddResponse, err error) {
+	return rcc.cc.MemberAdd(ctx, in, opts...)
+}
+
+func (rcc *retryClusterClient) MemberRemove(ctx context.Context, in *pb.MemberRemoveRequest, opts ...grpc.CallOption) (resp *pb.MemberRemoveResponse, err error) {
+	return rcc.cc.MemberRemove(ctx, in, opts...)
+}
+
+func (rcc *retryClusterClient) MemberUpdate(ctx context.Context, in *pb.MemberUpdateRequest, opts ...grpc.CallOption) (resp *pb.MemberUpdateResponse, err error) {
+	return rcc.cc.MemberUpdate(ctx, in, opts...)
+}
+
+func (rcc *retryClusterClient) MemberPromote(ctx context.Context, in *pb.MemberPromoteRequest, opts ...grpc.CallOption) (resp *pb.MemberPromoteResponse, err error) {
+	return rcc.cc.MemberPromote(ctx, in, opts...)
+}
+
 type retryMetaClient struct {
 	mc pb.MetaRPCClient
 }
