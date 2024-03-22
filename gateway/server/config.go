@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 
@@ -25,6 +26,8 @@ import (
 )
 
 var (
+	DefaultId        = "gateway"
+	DefaultDataDir   = "gateway"
 	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
 )
 
@@ -43,6 +46,8 @@ type Config struct {
 
 	Id       string
 	Metadata map[string]string
+
+	DataDir string
 
 	ListenURL    string
 	AdvertiseURL string
@@ -63,6 +68,8 @@ func NewConfig() *Config {
 	cfg := Config{
 		LogConfig:        logging,
 		Client:           clientCfg,
+		Id:               DefaultId,
+		DataDir:          DefaultDataDir,
 		ListenURL:        DefaultListenURL,
 		RegisterInterval: DefaultRegisterInterval,
 		RegisterTTL:      DefaultRegisterTTL,
@@ -77,14 +84,26 @@ func (cfg *Config) FlagSet() *pflag.FlagSet {
 }
 
 func (cfg *Config) newFlagSet() *pflag.FlagSet {
-	fs := pflag.NewFlagSet("executor", pflag.ExitOnError)
+	fs := pflag.NewFlagSet("gateway", pflag.ExitOnError)
+
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
 		"Set gRPC endpoints to connect the cluster of olive-meta")
 	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Executor Id.")
+	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for gRPC traffic.")
 	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for gRPC traffic.")
 	fs.DurationVar(&cfg.RegisterInterval, "register-interval", cfg.RegisterInterval, "Set Register interval.")
 	fs.DurationVar(&cfg.RegisterTTL, "register-ttl", cfg.RegisterTTL, "Set Register ttl.")
+
+	// logging
+	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
+		"Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.")
+	fs.StringVar(&cfg.LogLevel, "log-level", logutil.DefaultLogLevel,
+		"Configures log level. Only supports debug, info, warn, error, panic, or fatal. Default 'info'.")
+	fs.BoolVar(&cfg.EnableLogRotation, "enable-log-rotation", false,
+		"Enable log rotation of a single log-outputs file target.")
+	fs.StringVar(&cfg.LogRotationConfigJSON, "log-rotation-config-json", logutil.DefaultLogRotationConfig,
+		"Configures log rotation if enabled with a JSON logger config. Default: MaxSize=100(MB), MaxAge=0(days,no limit), MaxBackups=0(no limit), LocalTime=false(UTC), Compress=false(gzip)")
 
 	return fs
 }
@@ -103,6 +122,9 @@ func (cfg *Config) Validate() error {
 	}
 	if len(cfg.Id) == 0 {
 		return fmt.Errorf("missing id")
+	}
+	if len(cfg.DataDir) == 0 {
+		return fmt.Errorf("missing data-dir")
 	}
 	if cfg.RegisterInterval == 0 {
 		cfg.RegisterInterval = DefaultRegisterInterval

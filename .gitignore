@@ -26,3 +26,4 @@ go.work
 
 _output
 /vendor
+dist

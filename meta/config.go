@@ -50,6 +50,7 @@ func NewConfig() *Config {
 	ec.AdvertiseClientUrls = ec.ListenClientUrls
 	ec.ListenPeerUrls, _ = types.NewURLs(strings.Split(DefaultListenerPeerAddress, ","))
 	ec.AdvertisePeerUrls = ec.ListenPeerUrls
+	ec.InitialCluster = DefaultName + "=" + DefaultListenerPeerAddress
 
 	cfg := Config{
 		Config: ec,
