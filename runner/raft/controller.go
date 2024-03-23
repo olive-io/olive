@@ -36,9 +36,9 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/jsonpatch"
+	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/proxy"
 )
 
 type Controller struct {

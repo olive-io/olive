@@ -35,11 +35,11 @@ import (
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
+	"github.com/olive-io/olive/pkg/proxy/api"
 	"go.uber.org/zap"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
@@ -381,15 +381,15 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		act = dsypb.Activity_CallActivity
 	}
 
-	urlText := headers[gateway.URLKey]
+	urlText := headers[api.URLKey]
 	if urlText == "" {
-		urlText = gateway.DefaultTaskURL
+		urlText = api.DefaultTaskURL
 	}
-	method := headers[gateway.MethodKey]
+	method := headers[api.MethodKey]
 	if method == "" {
 		method = http.MethodPost
 	}
-	protocol := headers[gateway.ProtocolKey]
+	protocol := headers[api.ProtocolKey]
 
 	hurl, err := urlpkg.Parse(urlText)
 	if err != nil {
@@ -412,7 +412,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 	header := http.Header{}
 	for key, value := range headers {
-		if strings.HasPrefix(key, gateway.HeaderKeyPrefix) {
+		if strings.HasPrefix(key, api.HeaderKeyPrefix) {
 			continue
 		}
 		header.Set(key, value)
@@ -420,7 +420,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	if header.Get("Content-Type") == "" {
 		header.Set("Content-Type", "application/json")
 	}
-	header.Set(gateway.RequestActivityKey, act.String())
+	header.Set(api.RequestActivityKey, act.String())
 
 	buf, _ := json.Marshal(in)
 	hreq := &http.Request{

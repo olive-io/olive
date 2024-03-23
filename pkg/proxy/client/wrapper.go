@@ -12,27 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package client
 
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
-func (gw *Gateway) Ping(ctx context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
-	return &pb.PingResponse{Reply: "pong"}, nil
-}
+// CallFunc represents the individual call func
+type CallFunc func(ctx context.Context, node *pb.Node, req IRequest, rsp interface{}, opts CallOptions) error
 
-func (gw *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
-	lg := gw.Logger()
-	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
-	resp := &pb.TransmitResponse{}
-	resp.Response = &pb.Response{
-		Properties:  map[string]*pb.Box{},
-		DataObjects: map[string]*pb.Box{},
-	}
-	return resp, nil
-}
+// CallWrapper is a low level wrapper for the CallFunc
+type CallWrapper func(CallFunc) CallFunc
+
+// Wrapper wraps a client and returns a client
+type Wrapper func(IClient) IClient
+
+// StreamWrapper wraps a Stream and returns the equivalent
+type StreamWrapper func(IStream) IStream

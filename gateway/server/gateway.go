@@ -33,12 +33,12 @@ import (
 
 	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/mnet"
+	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
@@ -63,7 +63,7 @@ type Gateway struct {
 	started chan struct{}
 
 	rmu        sync.RWMutex
-	handlers   map[string]gateway.IHandler
+	handlers   map[string]api.IHandler
 	registered bool
 	// registry service instance
 	rsvc *pb.Service
@@ -95,7 +95,7 @@ func NewGateway(cfg Config) (*Gateway, error) {
 		oct:          oct,
 		discovery:    discovery,
 
-		handlers: map[string]gateway.IHandler{},
+		handlers: map[string]api.IHandler{},
 
 		started: make(chan struct{}),
 	}
@@ -381,7 +381,7 @@ func (gw *Gateway) register() error {
 	gw.rmu.RUnlock()
 
 	svc := &pb.Service{
-		Name:      gateway.DefaultService,
+		Name:      api.DefaultService,
 		Version:   version.Version,
 		Nodes:     []*pb.Node{node},
 		Endpoints: endpoints,
@@ -456,7 +456,7 @@ func (gw *Gateway) deregister() error {
 	}
 
 	svc := &pb.Service{
-		Name:    gateway.DefaultService,
+		Name:    api.DefaultService,
 		Version: version.Version,
 		Nodes:   []*pb.Node{node},
 	}

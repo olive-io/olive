@@ -36,10 +36,10 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
+	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/proxy"
 )
 
 var (
