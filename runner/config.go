@@ -158,7 +158,7 @@ func (cfg *Config) Validate() error {
 			return err
 		}
 	}
-	if !stat.IsDir() {
+	if stat != nil && !stat.IsDir() {
 		return fmt.Errorf("data-dir is not a directory")
 	}
 
