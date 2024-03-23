@@ -111,7 +111,7 @@ type SV interface {
 	[]byte | string
 }
 
-func toTMap[V SV](in map[string]any) map[string]V {
+func toGenericMap[V SV](in map[string]any) map[string]V {
 	out := make(map[string]V)
 	for key, value := range in {
 		var vv V

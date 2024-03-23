@@ -25,7 +25,7 @@ type TestData struct {
 	Name string `json:"name"`
 }
 
-func TestBoxFromT(t *testing.T) {
+func TestBoxFromAny(t *testing.T) {
 	type args struct {
 		value any
 	}
@@ -36,23 +36,23 @@ func TestBoxFromT(t *testing.T) {
 		args args
 		want *Box
 	}{
-		{"BoxFromT_string", args{value: "a"}, &Box{Type: Box_String, Data: []byte("a")}},
-		{"BoxFromT_string_ptr", args{value: schema.NewStringP("a")}, &Box{Type: Box_String, Data: []byte("a")}},
-		{"BoxFromT_int", args{value: 1}, &Box{Type: Box_Integer, Data: []byte("1")}},
-		{"BoxFromT_int_ptr", args{value: schema.NewIntegerP[int](1)}, &Box{Type: Box_Integer, Data: []byte("1")}},
-		{"BoxFromT_float", args{value: 1.1}, &Box{Type: Box_Float, Data: []byte("1.100000")}},
-		{"BoxFromT_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &Box{Type: Box_Float, Data: []byte("1.100000")}},
-		{"BoxFromT_boolean", args{value: true}, &Box{Type: Box_Boolean, Data: []byte("true")}},
-		{"BoxFromT_boolean_ptr", args{value: schema.NewBoolP(true)}, &Box{Type: Box_Boolean, Data: []byte("true")}},
-		{"BoxFromT_array", args{value: []int32{1, 2}}, &Box{Type: Box_Array, Data: []byte(`[1,2]`)}},
-		{"BoxFromT_array_ptr", args{value: &arr}, &Box{Type: Box_Array, Data: []byte(`[1,2]`)}},
-		{"BoxFromT_struct", args{value: t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromT_struct_ptr", args{value: &t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_string", args{value: "a"}, &Box{Type: Box_String, Data: []byte("a")}},
+		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &Box{Type: Box_String, Data: []byte("a")}},
+		{"BoxFromAny_int", args{value: 1}, &Box{Type: Box_Integer, Data: []byte("1")}},
+		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &Box{Type: Box_Integer, Data: []byte("1")}},
+		{"BoxFromAny_float", args{value: 1.1}, &Box{Type: Box_Float, Data: []byte("1.100000")}},
+		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &Box{Type: Box_Float, Data: []byte("1.100000")}},
+		{"BoxFromAny_boolean", args{value: true}, &Box{Type: Box_Boolean, Data: []byte("true")}},
+		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &Box{Type: Box_Boolean, Data: []byte("true")}},
+		{"BoxFromAny_array", args{value: []int32{1, 2}}, &Box{Type: Box_Array, Data: []byte(`[1,2]`)}},
+		{"BoxFromAny_array_ptr", args{value: &arr}, &Box{Type: Box_Array, Data: []byte(`[1,2]`)}},
+		{"BoxFromAny_struct", args{value: t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_struct_ptr", args{value: &t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BoxFromT(tt.args.value); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BoxFromT() = %v, want %v", got, tt.want)
+			if got := BoxFromAny(tt.args.value); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BoxFromAny() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -39,7 +39,8 @@ const (
 
 const (
 	DefaultTaskURL = "/discoverypb.Gateway/Transmit"
-	DefaultName    = "io.olive.gateway"
+	DefaultService = "io.olive.gateway"
+	DefaultRPC     = "Gateway"
 )
 
 // IHandler interface represents a request handler. It's generated

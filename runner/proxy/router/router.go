@@ -437,27 +437,44 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 
 	// service name
 	name := rp.Name
+	var opts []dsy.GetOption
 
 	ctx := req.Context()
 	// get service
-	services, err := r.rc.GetService(ctx, name)
+	services, err := r.rc.GetService(ctx, name, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	// construct api service
-	gs := &api.Service{
-		Name: name,
-		Endpoint: &api.Endpoint{
-			Name:   rp.Path,
-			Host:   []string{req.Host},
-			Method: []string{req.Method},
-			Path:   []string{req.URL.Path},
-		},
-		Services: services,
+	var service *api.Service
+	switch rp.Handler {
+	case resolver.RPC:
+		// rpc handler
+		service = &api.Service{
+			Name: name,
+			Endpoint: &api.Endpoint{
+				Name:    rp.Method,
+				Handler: string(rp.Handler),
+			},
+			Services: services,
+		}
+	case resolver.HTTP:
+		service = &api.Service{
+			Name: name,
+			Endpoint: &api.Endpoint{
+				Name:    rp.Path,
+				Host:    []string{req.Host},
+				Method:  []string{req.Method},
+				Path:    []string{req.URL.Path},
+				Handler: string(rp.Handler),
+			},
+			Services: services,
+		}
+	default:
+		return nil, ErrNoResolver
 	}
 
-	return gs, nil
+	return service, nil
 }
 
 func (r *registryRouter) Close() error {

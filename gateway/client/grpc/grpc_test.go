@@ -41,7 +41,7 @@ func TestCall(t *testing.T) {
 	}
 
 	body := &dsypb.TransmitRequest{Headers: map[string]string{"a": "b"}}
-	req := cc.NewRequest(gateway.DefaultName, "/discoverypb.Executor/Execute", body)
+	req := cc.NewRequest(gateway.DefaultService, "/discoverypb.Executor/Execute", body)
 	rsp := &dsypb.TransmitResponse{}
 	err = cc.Call(context.TODO(), req, rsp, client.WithAddress("127.0.0.1:15290"))
 	if !assert.NoError(t, err) {

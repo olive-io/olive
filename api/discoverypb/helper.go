@@ -32,13 +32,13 @@ func (m *Node) SupportActivity(act Activity) bool {
 	return false
 }
 
-func BoxFromT(value any) *Box {
-	return boxFromT(reflect.ValueOf(value), value)
+func BoxFromAny(value any) *Box {
+	return boxFromAny(reflect.ValueOf(value), value)
 }
 
-func boxFromT(vf reflect.Value, v any) *Box {
+func boxFromAny(vf reflect.Value, v any) *Box {
 	if vf.Type().Kind() == reflect.Pointer {
-		return boxFromT(vf.Elem(), v)
+		return boxFromAny(vf.Elem(), v)
 	}
 
 	box := &Box{}

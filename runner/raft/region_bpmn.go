@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	urlpkg "net/url"
 	"strings"
 	"time"
 
@@ -37,7 +37,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -308,9 +308,9 @@ LOOP:
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
-					process.RunningState.DataObjects = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorObject))
-					process.RunningState.Properties = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
-					process.RunningState.Variables = toTMap[[]byte](inst.Locator.CloneVariables())
+					process.RunningState.DataObjects = toGenericMap[[]byte](inst.Locator.CloneItems(data.LocatorObject))
+					process.RunningState.Properties = toGenericMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
+					process.RunningState.Variables = toGenericMap[[]byte](inst.Locator.CloneVariables())
 				}
 			case *activity.Trace:
 				act := tt.GetActivity()
@@ -320,9 +320,9 @@ LOOP:
 				if ok {
 					flowNode.EndTime = time.Now().Unix()
 					headers, dataSets, dataObjects := activity.FetchTaskDataInput(inst.Locator, act.Element())
-					flowNode.Headers = toTMap[string](headers)
-					flowNode.Properties = toTMap[[]byte](dataSets)
-					flowNode.DataObjects = toTMap[[]byte](dataObjects)
+					flowNode.Headers = toGenericMap[string](headers)
+					flowNode.Properties = toGenericMap[[]byte](dataSets)
+					flowNode.DataObjects = toGenericMap[[]byte](dataObjects)
 				}
 
 				_, ok = completed[*id]
@@ -359,26 +359,26 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 
 	actType := taskAct.Type()
-	headers := toTMap[string](trace.GetHeaders())
+	headers := toGenericMap[string](trace.GetHeaders())
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	var act discoverypb.Activity
+	var act dsypb.Activity
 	switch actType {
 	case activity.TaskType:
-		act = discoverypb.Activity_Task
+		act = dsypb.Activity_Task
 	case activity.ServiceType:
-		act = discoverypb.Activity_ServiceTask
+		act = dsypb.Activity_ServiceTask
 	case activity.ScriptType:
-		act = discoverypb.Activity_ScriptTask
+		act = dsypb.Activity_ScriptTask
 	case activity.UserType:
-		act = discoverypb.Activity_UserTask
+		act = dsypb.Activity_UserTask
 	case activity.SendType:
-		act = discoverypb.Activity_SendTask
+		act = dsypb.Activity_SendTask
 	case activity.ReceiveType:
-		act = discoverypb.Activity_ReceiveTask
+		act = dsypb.Activity_ReceiveTask
 	case activity.CallType:
-		act = discoverypb.Activity_CallActivity
+		act = dsypb.Activity_CallActivity
 	}
 
 	urlText := headers[gateway.URLKey]
@@ -387,32 +387,29 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 	method := headers[gateway.MethodKey]
 	if method == "" {
-		method = "POST"
+		method = http.MethodPost
 	}
 	protocol := headers[gateway.ProtocolKey]
 
-	hurl, err := url.Parse(urlText)
+	hurl, err := urlpkg.Parse(urlText)
 	if err != nil {
 		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
 		trace.Do(activity.WithErr(err))
 		return
 	}
 
-	in := &discoverypb.TransmitRequest{
+	in := &dsypb.TransmitRequest{
 		Activity:    act,
 		Headers:     headers,
-		Properties:  map[string]*discoverypb.Box{},
-		DataObjects: map[string]*discoverypb.Box{},
+		Properties:  map[string]*dsypb.Box{},
+		DataObjects: map[string]*dsypb.Box{},
 	}
 	for key, value := range properties {
-		in.Properties[key] = discoverypb.BoxFromT(value)
+		in.Properties[key] = dsypb.BoxFromAny(value)
 	}
 	for key, value := range dataObjects {
-		in.DataObjects[key] = discoverypb.BoxFromT(value)
+		in.DataObjects[key] = dsypb.BoxFromAny(value)
 	}
-
-	buf, _ := json.Marshal(in)
-
 	header := http.Header{}
 	for key, value := range headers {
 		if strings.HasPrefix(key, gateway.HeaderKeyPrefix) {
@@ -425,6 +422,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 	header.Set(gateway.RequestActivityKey, act.String())
 
+	buf, _ := json.Marshal(in)
 	hreq := &http.Request{
 		Method: method,
 		URL:    hurl,

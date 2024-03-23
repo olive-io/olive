@@ -19,8 +19,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
 // Endpoint is a mapping between an RPC method and HTTP endpoint
@@ -28,7 +27,7 @@ type Endpoint struct {
 	// RPC Method e.g. Greeter.Hello
 	Name string `json:"name,omitempty"`
 	// Endpoint Activity
-	Activity dsypb.Activity `json:"activity,omitempty"`
+	Activity pb.Activity `json:"activity,omitempty"`
 	// API Handler e.g rpc, proxy
 	Handler string `json:"handler,omitempty"`
 	// HTTP Host e.g example.com
@@ -52,7 +51,7 @@ type Service struct {
 	// The endpoint for this service
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// Versions of this service
-	Services []*dsypb.Service `json:"services,omitempty"`
+	Services []*pb.Service `json:"services,omitempty"`
 }
 
 // Encode encodes an endpoint to endpoint metadata

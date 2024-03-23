@@ -44,6 +44,10 @@ import (
 	"github.com/olive-io/olive/pkg/version"
 )
 
+const (
+	DefaultMaxHeaderBytes = 1024 * 1024 * 20
+)
+
 type Gateway struct {
 	genericserver.IEmbedServer
 
@@ -54,7 +58,6 @@ type Gateway struct {
 
 	oct       *client.Client
 	discovery dsy.IDiscovery
-	gs        *grpc.Server
 	serve     *http.Server
 
 	started chan struct{}
@@ -129,12 +132,12 @@ func (gw *Gateway) Start(stopc <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
-	handler := gw.buildUserHandler()
 
+	handler := gw.buildUserHandler()
 	mux := gw.createMux(gwmux, handler)
 	gw.serve = &http.Server{
 		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
-		MaxHeaderBytes: 1024 * 1024 * 20,
+		MaxHeaderBytes: DefaultMaxHeaderBytes,
 	}
 
 	// announce self to the world
@@ -239,7 +242,7 @@ func (gw *Gateway) buildUserHandler() http.Handler {
 
 func (gw *Gateway) internalHandler(svc interface{}, stream grpc.ServerStream) error {
 	resp := &pb.Response{
-		Properties: map[string]*pb.Box{"a": pb.BoxFromT("a")},
+		Properties: map[string]*pb.Box{"a": pb.BoxFromAny("a")},
 	}
 	return stream.SendMsg(&pb.TransmitResponse{Response: resp})
 }
@@ -378,7 +381,7 @@ func (gw *Gateway) register() error {
 	gw.rmu.RUnlock()
 
 	svc := &pb.Service{
-		Name:      gateway.DefaultName,
+		Name:      gateway.DefaultService,
 		Version:   version.Version,
 		Nodes:     []*pb.Node{node},
 		Endpoints: endpoints,
@@ -453,7 +456,7 @@ func (gw *Gateway) deregister() error {
 	}
 
 	svc := &pb.Service{
-		Name:    gateway.DefaultName,
+		Name:    gateway.DefaultService,
 		Version: version.Version,
 		Nodes:   []*pb.Node{node},
 	}
