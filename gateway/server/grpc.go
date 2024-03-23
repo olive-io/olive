@@ -17,21 +17,21 @@ package server
 import (
 	"context"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/discoverypb"
 	"go.uber.org/zap"
 )
 
-func (gw *Gateway) Ping(ctx context.Context, req *dsypb.PingRequest) (*dsypb.PingResponse, error) {
-	return &dsypb.PingResponse{Reply: "pong"}, nil
+func (gw *Gateway) Ping(ctx context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
+	return &pb.PingResponse{Reply: "pong"}, nil
 }
 
-func (gw *Gateway) Transmit(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.TransmitResponse, error) {
+func (gw *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := gw.Logger()
 	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
-	resp := &dsypb.TransmitResponse{}
-	resp.Response = &dsypb.Response{
-		Properties:  map[string]*dsypb.Box{},
-		DataObjects: map[string]*dsypb.Box{},
+	resp := &pb.TransmitResponse{}
+	resp.Response = &pb.Response{
+		Properties:  map[string]*pb.Box{},
+		DataObjects: map[string]*pb.Box{},
 	}
 	return resp, nil
 }

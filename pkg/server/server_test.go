@@ -25,7 +25,7 @@ func TestGenericServer(t *testing.T) {
 	queue := make([]int, 0)
 
 	logger := zap.NewExample()
-	s1 := NewInnerServer(logger)
+	s1 := NewEmbedServer(logger)
 	s1.Destroy(func() {
 		queue = append(queue, 2)
 	})

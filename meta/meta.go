@@ -35,7 +35,7 @@ import (
 )
 
 type Server struct {
-	genericserver.Inner
+	genericserver.IEmbedServer
 
 	cfg Config
 
@@ -56,12 +56,12 @@ type Server struct {
 func NewServer(cfg Config) (*Server, error) {
 
 	lg := cfg.Config.GetLogger()
-	inner := genericserver.NewInnerServer(lg)
+	embedServer := genericserver.NewEmbedServer(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{
-		Inner: inner,
-		cfg:   cfg,
+		IEmbedServer: embedServer,
+		cfg:          cfg,
 
 		ctx:    ctx,
 		cancel: cancel,
@@ -106,7 +106,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	s.Inner.Destroy(s.destroy)
+	s.IEmbedServer.Destroy(s.destroy)
 
 	<-stopc
 
@@ -114,7 +114,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 }
 
 func (s *Server) stop() error {
-	s.Inner.Shutdown()
+	s.IEmbedServer.Shutdown()
 	return nil
 }
 

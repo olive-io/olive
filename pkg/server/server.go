@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Inner interface {
+type IEmbedServer interface {
 	// StopNotify returns a channel that receives an empty struct
 	// when the server is stopped.
 	StopNotify() <-chan struct{}
@@ -41,7 +41,7 @@ type Inner interface {
 	Shutdown()
 }
 
-type innerServer struct {
+type embedServer struct {
 	lg *zap.Logger
 
 	stopping chan struct{}
@@ -52,8 +52,8 @@ type innerServer struct {
 	wg   sync.WaitGroup
 }
 
-func NewInnerServer(lg *zap.Logger) Inner {
-	s := &innerServer{
+func NewEmbedServer(lg *zap.Logger) IEmbedServer {
+	s := &embedServer{
 		lg:       lg,
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -65,11 +65,11 @@ func NewInnerServer(lg *zap.Logger) Inner {
 	return s
 }
 
-func (s *innerServer) StopNotify() <-chan struct{} { return s.done }
+func (s *embedServer) StopNotify() <-chan struct{} { return s.done }
 
-func (s *innerServer) StoppingNotify() <-chan struct{} { return s.stopping }
+func (s *embedServer) StoppingNotify() <-chan struct{} { return s.stopping }
 
-func (s *innerServer) GoAttach(fn func()) {
+func (s *embedServer) GoAttach(fn func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
 	defer s.wgMu.RUnlock()
 	select {
@@ -87,11 +87,11 @@ func (s *innerServer) GoAttach(fn func()) {
 	}()
 }
 
-func (s *innerServer) Destroy(fn func()) {
+func (s *embedServer) Destroy(fn func()) {
 	go s.destroy(fn)
 }
 
-func (s *innerServer) destroy(fn func()) {
+func (s *embedServer) destroy(fn func()) {
 	defer func() {
 		s.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
 		close(s.stopping)
@@ -109,7 +109,7 @@ func (s *innerServer) destroy(fn func()) {
 	<-s.stop
 }
 
-func (s *innerServer) Shutdown() {
+func (s *embedServer) Shutdown() {
 	select {
 	case s.stop <- struct{}{}:
 	case <-s.done:

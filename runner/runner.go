@@ -43,7 +43,7 @@ import (
 )
 
 type Runner struct {
-	genericserver.Inner
+	genericserver.IEmbedServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -80,13 +80,13 @@ func NewRunner(cfg Config) (*Runner, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	be := newBackend(&cfg)
 
-	inner := genericserver.NewInnerServer(lg)
+	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
-		Inner:  inner,
-		ctx:    ctx,
-		cancel: cancel,
-		cfg:    cfg,
-		gLock:  gLock,
+		IEmbedServer: embedServer,
+		ctx:          ctx,
+		cancel:       cancel,
+		cfg:          cfg,
+		gLock:        gLock,
 
 		oct: oct,
 		be:  be,
@@ -144,7 +144,7 @@ func (r *Runner) start() error {
 }
 
 func (r *Runner) stop() error {
-	r.Inner.Shutdown()
+	r.IEmbedServer.Shutdown()
 	return nil
 }
 

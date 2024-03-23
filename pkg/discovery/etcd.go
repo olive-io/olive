@@ -40,25 +40,24 @@ type etcdRegistry struct {
 	leases   map[string]clientv3.LeaseID
 }
 
-func encode(s *dsypb.Service) string {
-	b, _ := s.Marshal()
-	return string(b)
-}
+func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
+	options := NewOptions(opts...)
+	e := &etcdRegistry{
+		client:   client,
+		options:  options,
+		register: make(map[string]uint64),
+		leases:   make(map[string]clientv3.LeaseID),
+	}
 
-func decode(ds []byte) *dsypb.Service {
-	s := &dsypb.Service{}
-	_ = s.Unmarshal(ds)
-	return s
-}
+	for _, o := range opts {
+		o(&e.options)
+	}
 
-func nodePath(prefix, ns, s, id string) string {
-	service := strings.ReplaceAll(s, "/", "-")
-	node := strings.ReplaceAll(id, "/", "-")
-	return path.Join(prefix, ns, service, node)
-}
+	if e.options.Timeout == 0 {
+		e.options.Timeout = 10 * time.Second
+	}
 
-func servicePath(prefix, ns, s string) string {
-	return path.Join(prefix, ns, strings.Replace(s, "/", "-", -1))
+	return e, nil
 }
 
 func (e *etcdRegistry) Options() Options {
@@ -398,22 +397,23 @@ func (e *etcdRegistry) Watch(ctx context.Context, opts ...WatchOption) (Watcher,
 	return newEtcdWatcher(ctx, e, opts...)
 }
 
-func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
-	options := NewOptions(opts...)
-	e := &etcdRegistry{
-		client:   client,
-		options:  options,
-		register: make(map[string]uint64),
-		leases:   make(map[string]clientv3.LeaseID),
-	}
+func encode(s *dsypb.Service) string {
+	b, _ := s.Marshal()
+	return string(b)
+}
 
-	for _, o := range opts {
-		o(&e.options)
-	}
+func decode(ds []byte) *dsypb.Service {
+	s := &dsypb.Service{}
+	_ = s.Unmarshal(ds)
+	return s
+}
 
-	if e.options.Timeout == 0 {
-		e.options.Timeout = 10 * time.Second
-	}
+func nodePath(prefix, ns, s, id string) string {
+	service := strings.ReplaceAll(s, "/", "-")
+	node := strings.ReplaceAll(id, "/", "-")
+	return path.Join(prefix, ns, service, node)
+}
 
-	return e, nil
+func servicePath(prefix, ns, s string) string {
+	return path.Join(prefix, ns, strings.Replace(s, "/", "-", -1))
 }

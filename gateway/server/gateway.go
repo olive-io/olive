@@ -31,7 +31,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/addr"
@@ -45,7 +45,7 @@ import (
 )
 
 type Gateway struct {
-	genericserver.Inner
+	genericserver.IEmbedServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -63,12 +63,12 @@ type Gateway struct {
 	handlers   map[string]gateway.IHandler
 	registered bool
 	// registry service instance
-	rsvc *dsypb.Service
+	rsvc *pb.Service
 }
 
 func NewGateway(cfg Config) (*Gateway, error) {
 	lg := cfg.GetLogger()
-	inner := genericserver.NewInnerServer(lg)
+	embedServer := genericserver.NewEmbedServer(lg)
 
 	lg.Debug("connect to olive-meta",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
@@ -85,12 +85,12 @@ func NewGateway(cfg Config) (*Gateway, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	gw := &Gateway{
-		Inner:     inner,
-		ctx:       ctx,
-		cancel:    cancel,
-		cfg:       cfg,
-		oct:       oct,
-		discovery: discovery,
+		IEmbedServer: embedServer,
+		ctx:          ctx,
+		cancel:       cancel,
+		cfg:          cfg,
+		oct:          oct,
+		discovery:    discovery,
 
 		handlers: map[string]gateway.IHandler{},
 
@@ -159,7 +159,7 @@ func (gw *Gateway) stop() error {
 	if err := gw.serve.Shutdown(gw.ctx); err != nil {
 		return err
 	}
-	gw.Inner.Shutdown()
+	gw.IEmbedServer.Shutdown()
 	return nil
 }
 
@@ -217,14 +217,14 @@ func (gw *Gateway) buildGRPCServer() *grpc.Server {
 		grpc.UnknownServiceHandler(gw.internalHandler),
 	}
 	gs := grpc.NewServer(sopts...)
-	dsypb.RegisterGatewayServer(gs, gw)
+	pb.RegisterGatewayServer(gs, gw)
 
 	return gs
 }
 
 func (gw *Gateway) buildGRPCGateway() (*gwr.ServeMux, error) {
 	gwmux := gwr.NewServeMux()
-	if err := dsypb.RegisterGatewayHandlerServer(gw.ctx, gwmux, gw); err != nil {
+	if err := pb.RegisterGatewayHandlerServer(gw.ctx, gwmux, gw); err != nil {
 		return nil, err
 	}
 	return gwmux, nil
@@ -238,10 +238,10 @@ func (gw *Gateway) buildUserHandler() http.Handler {
 }
 
 func (gw *Gateway) internalHandler(svc interface{}, stream grpc.ServerStream) error {
-	resp := &dsypb.Response{
-		Properties: map[string]*dsypb.Box{"a": dsypb.BoxFromT("a")},
+	resp := &pb.Response{
+		Properties: map[string]*pb.Box{"a": pb.BoxFromT("a")},
 	}
-	return stream.SendMsg(&dsypb.TransmitResponse{Response: resp})
+	return stream.SendMsg(&pb.TransmitResponse{Response: resp})
 }
 
 func (gw *Gateway) createMux(gwmux *gwr.ServeMux, handler http.Handler) *http.ServeMux {
@@ -280,7 +280,7 @@ func (gw *Gateway) register() error {
 	rsvc := gw.rsvc
 	gw.rmu.RUnlock()
 
-	regFunc := func(service *dsypb.Service) error {
+	regFunc := func(service *pb.Service) error {
 		var regErr error
 
 		for i := 0; i < 3; i++ {
@@ -351,7 +351,7 @@ func (gw *Gateway) register() error {
 	md := cxmd.Copy(cfg.Metadata)
 
 	// register service
-	node := &dsypb.Node{
+	node := &pb.Node{
 		Id:       cfg.Id,
 		Address:  mnet.HostPort(saddr, port),
 		Metadata: md,
@@ -371,16 +371,16 @@ func (gw *Gateway) register() error {
 	}
 	sort.Strings(handlerList)
 
-	endpoints := make([]*dsypb.Endpoint, 0, len(handlerList))
+	endpoints := make([]*pb.Endpoint, 0, len(handlerList))
 	for _, h := range handlerList {
 		endpoints = append(endpoints, gw.handlers[h].Endpoints()...)
 	}
 	gw.rmu.RUnlock()
 
-	svc := &dsypb.Service{
+	svc := &pb.Service{
 		Name:      gateway.DefaultName,
 		Version:   version.Version,
-		Nodes:     []*dsypb.Node{node},
+		Nodes:     []*pb.Node{node},
 		Endpoints: endpoints,
 	}
 
@@ -447,15 +447,15 @@ func (gw *Gateway) deregister() error {
 		return err
 	}
 
-	node := &dsypb.Node{
+	node := &pb.Node{
 		Id:      cfg.Id,
 		Address: mnet.HostPort(nAddr, port),
 	}
 
-	svc := &dsypb.Service{
+	svc := &pb.Service{
 		Name:    gateway.DefaultName,
 		Version: version.Version,
-		Nodes:   []*dsypb.Node{node},
+		Nodes:   []*pb.Node{node},
 	}
 
 	lg.Info("Deregistering node", zap.String("id", node.Id))
