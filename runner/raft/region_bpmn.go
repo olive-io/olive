@@ -329,7 +329,7 @@ LOOP:
 				if ok {
 					tt.Do()
 				} else {
-					r.handleActivity(ctx, tt, inst, process)
+					r.handle(ctx, tt, inst, process)
 				}
 			case tracing.ErrorTrace:
 				finish = true
@@ -347,7 +347,7 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Region) handle(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	taskAct := trace.GetActivity()
 	id, _ := taskAct.Element().Id()
