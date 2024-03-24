@@ -29,6 +29,9 @@ func (gw *Gateway) Ping(ctx context.Context, _ *pb.PingRequest) (*pb.PingRespons
 func (gw *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := gw.Logger()
 	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
+	for key, value := range req.Properties {
+		lg.Sugar().Infof("%s=%+v\n", key, value.Value())
+	}
 	resp := &pb.TransmitResponse{}
 	resp.Response = &pb.Response{
 		Properties:  map[string]*pb.Box{},

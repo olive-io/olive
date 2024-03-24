@@ -28,7 +28,6 @@ import "github.com/olive-io/olive/api/olivepb/internal.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
-
 service Cluster {
   // MemberAdd adds a member into the cluster.
   rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
