@@ -46,16 +46,16 @@ func (r *Region) heartbeat() {
 				break LOOP
 			case <-timer.C:
 				timer.Reset(duration)
-				r.tracer.Trace(RegionStatTrace(r.stat()))
+				r.tracer.Trace(&RegionStatTrace{Stat: r.stat()})
 			}
 		}
 	}
 }
 
-func (r *Region) stat() pb.RegionStat {
+func (r *Region) stat() *pb.RegionStat {
 	info := r.getInfo()
 	replicas := int32(len(info.Replicas))
-	rs := pb.RegionStat{
+	rs := &pb.RegionStat{
 		Id:                 r.getID(),
 		Leader:             r.getLeader(),
 		Term:               r.getTerm(),

@@ -17,12 +17,7 @@ syntax = "proto3";
 package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.sizer_all) = true;
-option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_getters_all) = false;
 
-import "gogoproto/gogo.proto";
 import "github.com/olive-io/olive/api/olivepb/internal.proto";
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 

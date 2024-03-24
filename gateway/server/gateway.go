@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	gwr "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
@@ -50,6 +50,7 @@ const (
 
 type Gateway struct {
 	genericserver.IEmbedServer
+	pb.UnsafeGatewayServer
 
 	ctx    context.Context
 	cancel context.CancelFunc

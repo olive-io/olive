@@ -16,8 +16,6 @@ package olivepb
 
 import (
 	"fmt"
-
-	"github.com/gogo/protobuf/proto"
 )
 
 // InternalRaftStringer implements custom proto Stringer:
@@ -38,21 +36,9 @@ func (as *InternalRaftStringer) String() string {
 	return as.Request.String()
 }
 
-// loggablePutRequest implements a custom proto String to replace value bytes field with a value
-// size field.
-// To preserve proto encoding of the key bytes, a faked out proto type is used here.
-type loggablePutRequest struct {
-	Key       []byte `protobuf:"bytes,1,opt,name=key,proto3"`
-	ValueSize int64  `protobuf:"varint,2,opt,name=value_size,proto3"`
-}
-
-func NewLoggablePutRequest(request *RegionPutRequest) *loggablePutRequest {
-	return &loggablePutRequest{
-		request.Key,
-		int64(len(request.Value)),
+func NewLoggablePutRequest(request *RegionPutRequest) *LoggablePutRequest {
+	return &LoggablePutRequest{
+		Key:       request.Key,
+		ValueSize: int64(len(request.Value)),
 	}
 }
-
-func (m *loggablePutRequest) Reset()         { *m = loggablePutRequest{} }
-func (m *loggablePutRequest) String() string { return proto.CompactTextString(m) }
-func (*loggablePutRequest) ProtoMessage()    {}

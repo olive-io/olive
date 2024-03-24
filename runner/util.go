@@ -21,6 +21,7 @@ import (
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
@@ -29,7 +30,7 @@ import (
 
 func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
 	region := new(pb.Region)
-	err := region.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, region)
 	if err != nil {
 		return nil, false, err
 	}
@@ -45,7 +46,7 @@ func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, erro
 
 func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
 	definition := new(pb.Definition)
-	err := definition.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, definition)
 	if err != nil {
 		return nil, false, err
 	}
@@ -60,7 +61,7 @@ func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
 
 func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
 	process := new(pb.ProcessInstance)
-	err := process.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, process)
 	if err != nil {
 		return nil, false, err
 	}
@@ -87,7 +88,7 @@ func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.C
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
 		process.DefinitionId, fmt.Sprintf("%d", process.DefinitionVersion),
 		fmt.Sprintf("%d", process.Id))
-	data, _ := process.Marshal()
+	data, _ := proto.Marshal(process)
 	_, err := client.Put(ctx, key, string(data))
 	if err != nil {
 		lg.Error("update process instance",

@@ -42,6 +42,11 @@ func boxFromAny(vf reflect.Value, v any) *Box {
 	}
 
 	box := &Box{}
+	if vv, ok := v.([]byte); ok {
+		if err := json.Unmarshal(vv, &box); err == nil {
+			return box
+		}
+	}
 	switch vf.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		box.Type = Box_Integer
@@ -68,8 +73,9 @@ func boxFromAny(vf reflect.Value, v any) *Box {
 	case reflect.Struct:
 		box.Type = Box_Object
 		box.Data, _ = json.Marshal(v)
-
 	default:
+		box.Type = Box_Object
+		box.Data, _ = json.Marshal(v)
 	}
 
 	return box

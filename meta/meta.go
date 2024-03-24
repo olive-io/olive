@@ -28,7 +28,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
 	genericserver "github.com/olive-io/olive/pkg/server"
@@ -36,6 +36,9 @@ import (
 
 type Server struct {
 	genericserver.IEmbedServer
+	pb.UnsafeClusterServer
+	pb.UnsafeMetaRPCServer
+	pb.UnsafeBpmnRPCServer
 
 	cfg Config
 
@@ -81,9 +84,9 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 	}
 
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		olivepb.RegisterClusterServer(gs, s)
-		olivepb.RegisterMetaRPCServer(gs, s)
-		olivepb.RegisterBpmnRPCServer(gs, s)
+		pb.RegisterClusterServer(gs, s)
+		pb.RegisterMetaRPCServer(gs, s)
+		pb.RegisterBpmnRPCServer(gs, s)
 	}
 
 	var err error

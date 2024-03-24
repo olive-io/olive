@@ -26,6 +26,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	humanize "github.com/dustin/go-humanize"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 )
@@ -360,7 +361,7 @@ func (b *backend) Recover(reader io.Reader) error {
 			return err
 		}
 		rkv := &pb.InternalKV{}
-		if err := rkv.Unmarshal(data); err != nil {
+		if err := proto.Unmarshal(data, rkv); err != nil {
 			panic(err)
 		}
 		wb.Set(rkv.Key, rkv.Value, b.pwo)

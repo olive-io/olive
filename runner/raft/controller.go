@@ -32,6 +32,7 @@ import (
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -255,7 +256,7 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	}
 
 	key := fmt.Sprintf("%d", region.Id)
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	tx := c.be.BatchTx()
 	tx.Lock()
 	_ = tx.UnsafePut(buckets.Region, []byte(key), data)
@@ -320,7 +321,7 @@ func (c *Controller) prepareRegions() error {
 	readTx.RLock()
 	err := readTx.UnsafeForEach(buckets.Region, func(k, v []byte) error {
 		region := &pb.Region{}
-		err := region.Unmarshal(v)
+		err := proto.Unmarshal(v, region)
 		if err != nil {
 			return err
 		}

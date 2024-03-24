@@ -17,12 +17,7 @@ syntax = "proto3";
 package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.sizer_all) = true;
-option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_getters_all) = false;
 
-import "gogoproto/gogo.proto";
 import "github.com/olive-io/olive/api/olivepb/internal.proto";
 
 message InternalKV {
@@ -47,6 +42,11 @@ message RaftInternalRequest {
 
   RegionDeployDefinitionRequest deploy_definition = 11;
   RegionExecuteDefinitionRequest execute_definition = 12;
+}
+
+message LoggablePutRequest  {
+  bytes key = 1;
+  int64 valueSize = 2;
 }
 
 message RaftResponseHeader {

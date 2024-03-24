@@ -37,6 +37,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
@@ -50,7 +51,7 @@ var (
 
 func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, error) {
 	resp := &pb.RegionDeployDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{DeployDefinition: req})
+	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefin
 
 func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, error) {
 	resp := &pb.RegionExecuteDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{ExecuteDefinition: req})
+	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{ExecuteDefinition: req})
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, de
 		return nil, ErrNotFound
 	}
 	instance := new(pb.ProcessInstance)
-	_ = instance.Unmarshal(rsp.Kvs[0].Value)
+	_ = proto.Unmarshal(rsp.Kvs[0].Value, instance)
 
 	return instance, nil
 }
@@ -151,7 +152,7 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 			return
 		}
 		definition := new(pb.Definition)
-		_ = definition.Unmarshal(kv.Value)
+		_ = proto.Unmarshal(kv.Value, definition)
 		process.DefinitionContent = definition.Content
 	}
 
@@ -168,23 +169,28 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		return
 	}
 	processElement := (*definitions.Processes())[0]
-	properties := process.Properties
 	dataObjects := process.DataObjects
-	var variables map[string][]byte
+
+	variables := make(map[string][]byte)
+	for name, value := range process.Properties {
+		box, _ := json.Marshal(value)
+		variables[name] = box
+	}
 	if state := process.RunningState; state != nil {
 		for key, value := range state.Properties {
-			properties[key] = value
+			variables[key] = value
 		}
 		for key, value := range state.DataObjects {
 			dataObjects[key] = value
 		}
-		variables = state.Variables
+		for key, value := range state.Variables {
+			variables[key] = value
+		}
 	}
 
 	ctx := context.Background()
 	options := []bpi.Option{
 		bpi.WithLocator(locator),
-		bpi.WithVariables(toAnyMap[[]byte](properties)),
 		bpi.WithDataObjects(toAnyMap[[]byte](dataObjects)),
 		bpi.WithVariables(toAnyMap[[]byte](variables)),
 	}
@@ -456,7 +462,7 @@ func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInsta
 		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
 		[]byte(fmt.Sprintf("%d", process.Id)))
 
-	value, err := process.Marshal()
+	value, err := proto.Marshal(process)
 	if err != nil {
 		return err
 	}

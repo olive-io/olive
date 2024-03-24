@@ -27,6 +27,7 @@ import (
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
@@ -398,13 +399,13 @@ func (e *etcdRegistry) Watch(ctx context.Context, opts ...WatchOption) (Watcher,
 }
 
 func encode(s *dsypb.Service) string {
-	b, _ := s.Marshal()
+	b, _ := proto.Marshal(s)
 	return string(b)
 }
 
 func decode(ds []byte) *dsypb.Service {
 	s := &dsypb.Service{}
-	_ = s.Unmarshal(ds)
+	_ = proto.Unmarshal(ds, s)
 	return s
 }
 

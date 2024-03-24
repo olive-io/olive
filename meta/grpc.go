@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
@@ -54,7 +55,7 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 	definition.Header.Region = dm.Region
 	definition.Version = newVersion
 	key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", newVersion))
-	data, _ := definition.Marshal()
+	data, _ := proto.Marshal(definition)
 	rsp, err := dm.client.Put(ctx, key, string(data))
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 	dm.Version = newVersion
 	dm.EndRev = rev
 
-	data, _ = dm.Marshal()
+	data, _ = proto.Marshal(dm)
 	key = path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
 	_, err = dm.client.Put(ctx, key, string(data))
 	return err
@@ -109,7 +110,7 @@ func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (res
 	runners := make([]*pb.Runner, 0, rsp.Count)
 	for _, kv := range rsp.Kvs {
 		runner := new(pb.Runner)
-		if e1 := runner.Unmarshal(kv.Value); e1 == nil {
+		if e1 := proto.Unmarshal(kv.Value, runner); e1 == nil {
 			runners = append(runners, runner)
 		}
 	}
@@ -137,7 +138,7 @@ func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, e
 		return nil, rpctypes.ErrKeyNotFound
 	}
 	runner = new(pb.Runner)
-	_ = runner.Unmarshal(rsp.Kvs[0].Value)
+	_ = proto.Unmarshal(rsp.Kvs[0].Value, runner)
 	return
 }
 
@@ -155,7 +156,7 @@ func (s *Server) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (res
 	regions := make([]*pb.Region, 0, rsp.Count)
 	for _, kv := range rsp.Kvs {
 		region := new(pb.Region)
-		if e1 := region.Unmarshal(kv.Value); e1 == nil {
+		if e1 := proto.Unmarshal(kv.Value, region); e1 == nil {
 			regions = append(regions, region)
 		}
 	}
@@ -183,7 +184,7 @@ func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, e
 		return nil, rpctypes.ErrKeyNotFound
 	}
 	region = new(pb.Region)
-	_ = region.Unmarshal(rsp.Kvs[0].Value)
+	_ = proto.Unmarshal(rsp.Kvs[0].Value, region)
 	return
 }
 
@@ -221,7 +222,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 			if ok {
 				definition.Header.Region = dm.Region
 				key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
-				data, _ := definition.Marshal()
+				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
 				if e1 != nil {
 					s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
@@ -302,7 +303,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 			lastKey = kv.Key
 			id := path.Clean(string(lastKey))
 			dm := &pb.DefinitionMeta{}
-			if err = dm.Unmarshal(kv.Value); err != nil {
+			if err = proto.Unmarshal(kv.Value, dm); err != nil {
 				continue
 			}
 			version := dm.Version
@@ -315,7 +316,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 
 			dkv := rsp.Kvs[0]
 			definition := &pb.Definition{}
-			if err = definition.Unmarshal(dkv.Value); err != nil {
+			if err = proto.Unmarshal(dkv.Value, definition); err != nil {
 				continue
 			}
 			definition.Header.Rev = dkv.ModRevision
@@ -387,7 +388,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	}
 	definition := &pb.Definition{}
 	kv := rsp.Kvs[0]
-	if err = definition.Unmarshal(kv.Value); err != nil {
+	if err = proto.Unmarshal(kv.Value, definition); err != nil {
 		return nil, err
 	}
 	if definition.Header == nil {
@@ -403,7 +404,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 			if ok {
 				definition.Header.Region = dm.Region
 				key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
-				data, _ := definition.Marshal()
+				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
 				if e1 != nil {
 					s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
@@ -413,7 +414,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	} else if dm.Region != definition.Header.Region {
 		definition.Header.Region = dm.Region
 		key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
-		data, _ := definition.Marshal()
+		data, _ := proto.Marshal(definition)
 		_, e1 := dm.client.Put(ctx, key, string(data))
 		if e1 != nil {
 			s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
@@ -471,7 +472,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
 		definition.Id, fmt.Sprintf("%d", definition.Version), fmt.Sprintf("%d", instance.Id))
-	data, _ := instance.Marshal()
+	data, _ := proto.Marshal(instance)
 	rsp, err := s.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
@@ -499,7 +500,7 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
 	instance := new(pb.ProcessInstance)
-	err = instance.Unmarshal(rsp.Kvs[0].Value)
+	err = proto.Unmarshal(rsp.Kvs[0].Value, instance)
 	if err != nil {
 		return nil, err
 	}
@@ -566,7 +567,7 @@ func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
 
-	_ = dm.DefinitionMeta.Unmarshal(rsp.Kvs[0].Value)
+	_ = proto.Unmarshal(rsp.Kvs[0].Value, &dm.DefinitionMeta)
 	return dm, nil
 }
 

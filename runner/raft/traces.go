@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/lni/dragonboat/v4/raftio"
-
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
@@ -26,9 +25,11 @@ type leaderTrace raftio.LeaderInfo
 
 func (t leaderTrace) TraceInterface() {}
 
-type RegionStatTrace pb.RegionStat
+type RegionStatTrace struct {
+	Stat *pb.RegionStat
+}
 
-func (t RegionStatTrace) TraceInterface() {}
+func (t *RegionStatTrace) TraceInterface() {}
 
 type proposeTrace struct {
 	ctx    context.Context

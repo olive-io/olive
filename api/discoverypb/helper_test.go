@@ -48,6 +48,7 @@ func TestBoxFromAny(t *testing.T) {
 		{"BoxFromAny_array_ptr", args{value: &arr}, &Box{Type: Box_Array, Data: []byte(`[1,2]`)}},
 		{"BoxFromAny_struct", args{value: t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
 		{"BoxFromAny_struct_ptr", args{value: &t1}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &Box{Type: Box_Object, Data: []byte(`{"name":"t1"}`)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -76,6 +77,7 @@ func TestBox_ValueFor(t *testing.T) {
 	boolean := new(bool)
 	floatT := new(float32)
 	arr := make([]int32, 0)
+	m := make(map[string]string)
 	tests := []struct {
 		name    string
 		fields  fields
@@ -86,6 +88,7 @@ func TestBox_ValueFor(t *testing.T) {
 		{"value_for_bool", fields{Type: Box_Boolean, Data: []byte("true")}, args{target: boolean}, false},
 		{"value_for_float", fields{Type: Box_Float, Data: []byte("1.1")}, args{target: floatT}, false},
 		{"value_for_array", fields{Type: Box_Array, Data: []byte(`[1,2,3]`)}, args{target: arr}, false},
+		{"value_for_map", fields{Type: Box_Object, Data: box.Data}, args{target: m}, false},
 		{"value_for_struct", fields{Type: Box_Object, Data: box.Data}, args{target: t1}, false},
 	}
 	for _, tt := range tests {

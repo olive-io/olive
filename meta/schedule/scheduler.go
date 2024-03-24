@@ -25,6 +25,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
@@ -154,7 +155,7 @@ func (sc *Scheduler) sync() error {
 	}
 	for _, kv := range resp.Kvs {
 		runner := new(pb.Runner)
-		err = runner.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, runner)
 		if err != nil {
 			continue
 		}
@@ -172,7 +173,7 @@ func (sc *Scheduler) sync() error {
 	}
 	for _, kv := range resp.Kvs {
 		region := new(pb.Region)
-		err = region.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, region)
 		if err != nil {
 			continue
 		}
@@ -189,7 +190,7 @@ func (sc *Scheduler) sync() error {
 	}
 	for _, kv := range resp.Kvs {
 		dm := new(pb.DefinitionMeta)
-		err = dm.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, dm)
 		if err != nil {
 			continue
 		}
@@ -281,7 +282,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	}
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	resp, err := sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
@@ -339,7 +340,7 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 	}
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	resp, err := sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
@@ -384,7 +385,7 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 
 	dm.Region = region.Id
 	key := path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
-	data, _ := dm.Marshal()
+	data, _ := proto.Marshal(dm)
 	_, err = sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, false, err
@@ -485,7 +486,7 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 	region.Definitions += 1
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	if _, err := sc.v3cli.Put(ctx, key, string(data)); err != nil {
 		return nil, false, err
 	}
@@ -591,7 +592,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 	switch {
 	case strings.HasPrefix(key, runtime.DefaultMetaRunnerStat):
 		rs := new(pb.RunnerStat)
-		if err := rs.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RunnerState", zap.Error(err))
 			return
 		}
@@ -599,7 +600,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		sc.handleRunnerStat(rs)
 	case strings.HasPrefix(key, runtime.DefaultMetaRegionStat):
 		rs := new(pb.RegionStat)
-		if err := rs.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RegionState", zap.Error(err))
 			return
 		}
@@ -607,7 +608,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		sc.handleRegionStat(rs)
 	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistry):
 		runner := new(pb.Runner)
-		if err := runner.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, runner); err != nil {
 			lg.Error("unmarshal Runner", zap.Error(err))
 			return
 		}

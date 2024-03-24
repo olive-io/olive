@@ -26,6 +26,7 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/idutil"
@@ -46,7 +47,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	data, _ := readTx.UnsafeGet(bucket, key)
 	readTx.RUnlock()
 	if len(data) != 0 {
-		_ = runner.Unmarshal(data)
+		_ = proto.Unmarshal(data, runner)
 	}
 
 	cpuTotal := uint64(0)
@@ -95,7 +96,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	tx := r.be.BatchTx()
 	tx.Lock()
 	defer tx.Unlock()
-	data, _ = runner.Marshal()
+	data, _ = proto.Marshal(runner)
 	tx.UnsafePut(bucket, key, data)
 
 	return runner, nil
@@ -109,7 +110,7 @@ func (r *Runner) process() {
 	cfg := r.cfg
 
 	rKey := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", runner.Id))
-	data, _ := runner.Marshal()
+	data, _ := proto.Marshal(runner)
 	_, err := r.oct.Put(ctx, rKey, string(data))
 	if err != nil {
 		lg.Panic("olive-runner register", zap.Error(err))
@@ -131,12 +132,12 @@ func (r *Runner) process() {
 			return
 		case trace := <-r.traces:
 			switch tt := trace.(type) {
-			case raft.RegionStatTrace:
-				stat := pb.RegionStat(tt)
-				lg.Debug("update region stat", zap.Stringer("stat", &stat))
+			case *raft.RegionStatTrace:
+				stat := tt.Stat
+				lg.Debug("update region stat", zap.Stringer("stat", stat))
 
 				key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
-				data, _ = stat.Marshal()
+				data, _ = proto.Marshal(stat)
 				_, err = r.oct.Put(ctx, key, string(data))
 				if err != nil {
 					lg.Error("olive-runner update region stat", zap.Error(err))
@@ -148,7 +149,7 @@ func (r *Runner) process() {
 
 			lg.Debug("update runner stat", zap.Stringer("stat", stat))
 			key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
-			data, _ = stat.Marshal()
+			data, _ = proto.Marshal(stat)
 			_, err = r.oct.Put(ctx, key, string(data))
 			if err != nil {
 				lg.Error("olive-runner update runner stat", zap.Error(err))

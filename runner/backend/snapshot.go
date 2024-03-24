@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/cockroachdb/pebble"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 )
@@ -64,7 +65,7 @@ func (s *snapshot) WriteTo(w io.Writer, prefix []byte) (n int64, err error) {
 	n += int64(c)
 
 	for _, rkv := range values {
-		data, err := rkv.Marshal()
+		data, err := proto.Marshal(rkv)
 		if err != nil {
 			panic(err)
 		}

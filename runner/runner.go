@@ -24,7 +24,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
-	gw "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olive-io/bpmn/tracing"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
@@ -44,6 +44,7 @@ import (
 
 type Runner struct {
 	genericserver.IEmbedServer
+	pb.UnsafeRunnerRPCServer
 
 	ctx    context.Context
 	cancel context.CancelFunc

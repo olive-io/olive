@@ -19,10 +19,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	json "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 )
@@ -61,7 +61,7 @@ func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, slowApplies prometheus.
 	}
 	var resp string
 	if !isNil(rangeResponse) {
-		resp = fmt.Sprintf("range_response_count:%d size:%d", len(rangeResponse.Kvs), rangeResponse.XSize())
+		resp = fmt.Sprintf("range_response_count:%d size:%d", len(rangeResponse.Kvs), proto.Size(rangeResponse))
 	}
 	warnOfExpensiveGenericRequest(lg, slowApplies, warningApplyDuration, now, reqStringer, "read-only range ", resp, err)
 }

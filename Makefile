@@ -25,11 +25,11 @@ install:
 
 generate:
 	cd $(GOPATH)/src && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/discoverypb/discovery.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf -I $(GOPATH)/src/github.com/google/protobuf --gogo_out=:. --grpc-gateway_out=:. $(ROOT)/api/discoverypb/rpc.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/olivepb/internal.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf --gogo_out=:. $(ROOT)/api/olivepb/raft.proto && \
-	protoc -I . -I $(GOPATH)/src/github.com/olive-io/olive/api/olivepb -I $(GOPATH)/src/github.com/gogo/protobuf -I $(GOPATH)/src/github.com/google/protobuf --gogo_out=:. --grpc-gateway_out=:. $(ROOT)/api/olivepb/rpc.proto
+	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/discovery.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/discoverypb/rpc.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative  github.com/olive-io/olive/api/olivepb/internal.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/raft.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/discoverypb/rpc.proto
 
 	goimports -w api/*/**.go
 

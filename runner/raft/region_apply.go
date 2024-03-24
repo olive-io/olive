@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -117,7 +117,7 @@ func (a *applier) Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPu
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "key", Value: string(r.Key)},
-			traceutil.Field{Key: "req_size", Value: r.XSize()},
+			traceutil.Field{Key: "req_size", Value: proto.Size(r)},
 		)
 	}
 
@@ -172,7 +172,7 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefini
 	}
 
 	trace.Step("save definition", traceutil.Field{Key: "key", Value: key})
-	data, _ := definition.Marshal()
+	data, _ := proto.Marshal(definition)
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
@@ -208,7 +208,7 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 
 	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
 	process.Status = pb.ProcessInstance_Prepare
-	data, _ := process.Marshal()
+	data, _ := proto.Marshal(process)
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}

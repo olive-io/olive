@@ -26,13 +26,13 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
-	"github.com/gogo/protobuf/proto"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	"github.com/olive-io/bpmn/tracing"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -159,7 +159,7 @@ func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.Reg
 		trace.LogIfLong(traceThreshold)
 	}(time.Now())
 
-	result, err := r.raftQuery(ctx, pb.RaftInternalRequest{Range: req})
+	result, err := r.raftQuery(ctx, &pb.RaftInternalRequest{Range: req})
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.Reg
 
 func (r *Region) Put(ctx context.Context, req *pb.RegionPutRequest) (*pb.RegionPutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{Put: req})
+	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Put: req})
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (r *Region) Put(ctx context.Context, req *pb.RegionPutRequest) (*pb.RegionP
 }
 
 func (r *Region) Delete(ctx context.Context, req *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error) {
-	resp, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{Delete: req})
+	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Delete: req})
 	if err != nil {
 		return nil, err
 	}
@@ -213,31 +213,31 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 
 	kvs, _ = r.getRange(processPrefix, getPrefix(processPrefix), 0)
 	for _, kv := range kvs {
-		proc := new(pb.ProcessInstance)
-		err = proc.Unmarshal(kv.Value)
+		pi := new(pb.ProcessInstance)
+		err = proto.Unmarshal(kv.Value, pi)
 		if err != nil {
 			r.lg.Error("unmarshal process instance", zap.Error(err))
 			_ = r.del(kv.Key, true)
 			continue
 		}
-		if proc.Status == pb.ProcessInstance_Unknown ||
-			proc.Status == pb.ProcessInstance_Ok ||
-			proc.Status == pb.ProcessInstance_Fail ||
-			proc.DefinitionId == "" ||
-			proc.DefinitionVersion == 0 {
+		if pi.Status == pb.ProcessInstance_Unknown ||
+			pi.Status == pb.ProcessInstance_Ok ||
+			pi.Status == pb.ProcessInstance_Fail ||
+			pi.DefinitionId == "" ||
+			pi.DefinitionVersion == 0 {
 			continue
 		}
 
-		if proc.RunningState == nil {
-			proc.RunningState = &pb.ProcessRunningState{}
+		if pi.RunningState == nil {
+			pi.RunningState = &pb.ProcessRunningState{}
 		}
-		if proc.FlowNodes == nil {
-			proc.FlowNodes = map[string]*pb.FlowNodeStat{}
+		if pi.FlowNodes == nil {
+			pi.FlowNodes = map[string]*pb.FlowNodeStat{}
 		}
-		if proc.Status == pb.ProcessInstance_Waiting {
-			proc.Status = pb.ProcessInstance_Prepare
+		if pi.Status == pb.ProcessInstance_Waiting {
+			pi.Status = pb.ProcessInstance_Prepare
 		}
-		r.processQ.Push(proc)
+		r.processQ.Push(pi)
 	}
 
 	return applyIndex, nil
@@ -276,8 +276,8 @@ func (r *Region) waitLeader(ctx context.Context) (bool, error) {
 	}
 }
 
-func (r *Region) raftQuery(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
-	trace := newReadTrace(ctx, r.getID(), &req)
+func (r *Region) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
+	trace := newReadTrace(ctx, r.getID(), req)
 	defer trace.Close()
 	r.tracer.Trace(trace)
 
@@ -302,7 +302,7 @@ func (r *Region) raftQuery(ctx context.Context, req pb.RaftInternalRequest) (pro
 	}
 }
 
-func (r *Region) raftRequestOnce(ctx context.Context, req pb.RaftInternalRequest) (proto.Message, error) {
+func (r *Region) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
 	result, err := r.processInternalRaftRequestOnce(ctx, req)
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func (r *Region) raftRequestOnce(ctx context.Context, req pb.RaftInternalRequest
 	return result.resp, nil
 }
 
-func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req pb.RaftInternalRequest) (*applyResult, error) {
+func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (*applyResult, error) {
 	ai := r.getApplied()
 	ci := r.getCommitted()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
@@ -332,7 +332,7 @@ func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req pb.Raft
 	req.Header = &pb.RaftHeader{
 		ID: r.reqIDGen.Next(),
 	}
-	data, err := req.Marshal()
+	data, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +394,7 @@ func (r *Region) applyEntry(entry sm.Entry) {
 	}
 
 	var raftReq pb.RaftInternalRequest
-	if err := raftReq.Unmarshal(entry.Cmd); err != nil {
+	if err := proto.Unmarshal(entry.Cmd, &raftReq); err != nil {
 		r.lg.Warn("unmarshal entry cmd", zap.Uint64("index", entry.Index), zap.Error(err))
 		return
 	}
