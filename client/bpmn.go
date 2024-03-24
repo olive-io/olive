@@ -20,6 +20,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/olive-io/bpmn/schema"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
@@ -172,9 +173,14 @@ func WithHeaders(headers map[string]string) ExecDefinitionOption {
 	}
 }
 
-func WithProperties(properties map[string][]byte) ExecDefinitionOption {
+func WithProperties(properties map[string]any) ExecDefinitionOption {
 	return func(req *pb.ExecuteDefinitionRequest) {
-		req.Properties = properties
+		if req.Properties == nil {
+			req.Properties = map[string]*dsypb.Box{}
+		}
+		for name, value := range properties {
+			req.Properties[name] = dsypb.BoxFromAny(value)
+		}
 	}
 }
 

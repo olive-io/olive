@@ -468,6 +468,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 		FlowNodes:         make(map[string]*pb.FlowNodeStat),
 		Status:            pb.ProcessInstance_Waiting,
 	}
+
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
 		definition.Id, fmt.Sprintf("%d", definition.Version), fmt.Sprintf("%d", instance.Id))
 	data, _ := instance.Marshal()

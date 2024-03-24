@@ -24,6 +24,7 @@ option (gogoproto.goproto_getters_all) = false;
 
 import "gogoproto/gogo.proto";
 import "github.com/olive-io/olive/api/olivepb/internal.proto";
+import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";
@@ -276,7 +277,7 @@ message ExecuteDefinitionRequest {
   uint64 definitionVersion = 2;
   string name = 3;
   map<string, string> header = 4;
-  map<string, bytes> properties = 5;
+  map<string, discoverypb.Box> properties = 5;
 }
 
 message ExecuteDefinitionResponse {
