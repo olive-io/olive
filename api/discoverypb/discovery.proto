@@ -18,6 +18,8 @@ package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
+import "github.com/olive-io/olive/api/discoverypb/openapi.proto";
+
 enum Activity {
   Unknown = 0;
   Task = 1;
@@ -29,13 +31,31 @@ enum Activity {
   CallActivity = 7;
 }
 
+enum BoxType {
+  String = 0;
+  Integer = 1;
+  Float = 2;
+  Boolean = 3;
+  Object = 4;
+}
+
+// Box is an opaque value for a request or response
+message Box {
+  BoxType type = 1;
+  bool isArray = 2;
+  // Box Value by json.Marshal
+  bytes data = 3;
+  // the reference, points to OpenAPI Component when type is Object
+  string ref = 4;
+}
+
 // Endpoint is a endpoint provided by a service
 message Endpoint {
   string name = 1;
 
-  Value request = 2;
+  Box request = 2;
 
-  Value response = 3;
+  Box response = 3;
 
   map<string, string> metadata = 4;
 }
@@ -92,15 +112,8 @@ message Service {
   repeated Node nodes = 6;
 
   int64 ttl = 7;
-}
 
-// Value is an opaque value for a request or response
-message Value {
-  string name = 1;
-
-  string type = 2;
-
-  repeated Value values = 3;
+  discoverypb.OpenAPI openapi = 8;
 }
 
 // Response save the data from gateway Handle function
@@ -109,16 +122,3 @@ message Response {
   map<string, Box> dataObjects = 2;
 }
 
-message Box {
-  enum BoxType {
-    Unknown = 0;
-    Boolean = 1;
-    Integer = 2;
-    Float = 3;
-    String = 4;
-    Array = 5;
-    Object = 6;
-  }
-  BoxType type = 1;
-  bytes data = 2;
-}

@@ -46,6 +46,7 @@ type Config struct {
 
 	Id       string
 	Metadata map[string]string
+	OpenAPI  string
 
 	DataDir string
 
@@ -88,7 +89,8 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
 		"Set gRPC endpoints to connect the cluster of olive-meta")
-	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Executor Id.")
+	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Gateway Id.")
+	fs.StringVar(&cfg.OpenAPI, "openapiv3", "", "Set Path of openapi v3 docs")
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for gRPC traffic.")
 	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for gRPC traffic.")

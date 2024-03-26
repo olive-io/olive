@@ -35,12 +35,17 @@ var (
 	ErrWatcherStopped = errors.New("watcher stopped")
 )
 
+type IRegistry interface {
+	Register(context.Context, *dsypb.Service, ...RegisterOption) error
+	Deregister(context.Context, *dsypb.Service, ...DeregisterOption) error
+}
+
 // IDiscovery the registry provides an interface for service discovery
 // and an abstraction over varying implementations
 type IDiscovery interface {
+	IRegistry
+
 	Options() Options
-	Register(context.Context, *dsypb.Service, ...RegisterOption) error
-	Deregister(context.Context, *dsypb.Service, ...DeregisterOption) error
 	GetService(context.Context, string, ...GetOption) ([]*dsypb.Service, error)
 	ListServices(context.Context, ...ListOption) ([]*dsypb.Service, error)
 	Watch(context.Context, ...WatchOption) (Watcher, error)

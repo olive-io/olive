@@ -271,7 +271,7 @@ message ExecuteDefinitionRequest {
   uint64 definitionVersion = 2;
   string name = 3;
   map<string, string> header = 4;
-  map<string, discoverypb.Box> properties = 5;
+  map<string, discoverypb.Schema> properties = 5;
 }
 
 message ExecuteDefinitionResponse {

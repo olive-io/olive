@@ -38,8 +38,12 @@ var (
 
 	flagsline = `
 Execute:
+  --id 'gateway'
+    Set Gateway Id
+  --openapiv3 
+    Set Path of openapi v3 docs
   --data-dir 'default'
-    Path to the data directory.
+    Set the Path to the data directory.
   --endpoints [` + strings.Join(server.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
   --listen-url '` + server.DefaultListenURL + `'

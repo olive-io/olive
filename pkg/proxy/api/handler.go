@@ -15,7 +15,7 @@
 package api
 
 import (
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
 const (
@@ -53,12 +53,12 @@ const (
 //
 //	type Greeter struct{}
 //
-//	func (g *Greeter) Hello(context, request, response) error {
+//	func (g *Greeter) Hello(context, request) (response, error) {
 //		return nil
 //	}
 type IHandler interface {
 	Name() string
 	Handler() interface{}
-	Endpoints() []*dsypb.Endpoint
+	Endpoints() []*pb.Endpoint
 	Options() HandlerOptions
 }

@@ -16,9 +16,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	urlpkg "net/url"
+	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,10 +29,12 @@ import (
 	"time"
 
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	json "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"sigs.k8s.io/yaml"
 
 	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
@@ -386,6 +391,28 @@ func (gw *Gateway) register() error {
 		Version:   version.Version,
 		Nodes:     []*pb.Node{node},
 		Endpoints: endpoints,
+	}
+
+	// read openapi docs
+	if cfg.OpenAPI != "" {
+		data, err := os.ReadFile(cfg.OpenAPI)
+		if err != nil {
+			return fmt.Errorf("read openapi v3 docs: %v", err)
+		}
+
+		ext := path.Ext(cfg.OpenAPI)
+		switch ext {
+		case ".yml", ".yaml":
+			data, err = yaml.YAMLToJSON(data)
+			if err != nil {
+				return fmt.Errorf("convert openapi v3 docs: %v", err)
+			}
+		}
+		openapi := &pb.OpenAPI{}
+		if err = json.Unmarshal(data, &openapi); err != nil {
+			return fmt.Errorf("read openapi docs: %v", err)
+		}
+		svc.Openapi = openapi
 	}
 
 	gw.rmu.RLock()
