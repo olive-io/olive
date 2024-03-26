@@ -26,8 +26,7 @@ import "google/api/annotations.proto";
 service Gateway {
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/gateway/ping",
-      body: "*"
+      get: "/v1/olive/gateway/ping/{message=pong/*}",
     };
   };
 
@@ -39,7 +38,9 @@ service Gateway {
   }
 }
 
-message PingRequest {}
+message PingRequest {
+  string message = 1;
+}
 
 message PingResponse {
   string reply = 1;

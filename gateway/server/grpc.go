@@ -22,8 +22,8 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
-func (gw *Gateway) Ping(ctx context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
-	return &pb.PingResponse{Reply: "pong"}, nil
+func (gw *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
+	return &pb.PingResponse{Reply: req.Message}, nil
 }
 
 func (gw *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {

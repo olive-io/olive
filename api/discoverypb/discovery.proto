@@ -47,6 +47,7 @@ message Box {
   bytes data = 3;
   // the reference, points to OpenAPI Component when type is Object
   string ref = 4;
+  map<string, Box> parameters = 5;
 }
 
 // Endpoint is a endpoint provided by a service
