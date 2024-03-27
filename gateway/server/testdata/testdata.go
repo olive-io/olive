@@ -12,26 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api
+package testdata
 
 import (
+	"embed"
+	"testing"
+
+	json "github.com/json-iterator/go"
 	pb "github.com/olive-io/olive/api/discoverypb"
+	"sigs.k8s.io/yaml"
 )
 
-// IHandler interface represents a request handler. It's generated
-// by passing any type of public concrete object with endpoints into server.NewHandler.
-// Most will pass in a struct.
-//
-// Example:
-//
-//	type Greeter struct{}
-//
-//	func (g *Greeter) Hello(context, request) (response, error) {
-//		return nil
-//	}
-type IHandler interface {
-	Name() string
-	Handler() interface{}
-	Endpoints() []*pb.Endpoint
-	Options() HandlerOptions
+//go:embed rpc.yml
+var fs embed.FS
+
+func GetOpenAPIDocs(t *testing.T) *pb.OpenAPI {
+	data, err := fs.ReadFile("rpc.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err = yaml.YAMLToJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	openapi := new(pb.OpenAPI)
+	if err = json.Unmarshal(data, openapi); err != nil {
+		t.Fatal(err)
+	}
+	return openapi
 }

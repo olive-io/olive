@@ -30,12 +30,6 @@ import (
 
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	json "github.com/json-iterator/go"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tmc/grpc-websocket-proxy/wsproxy"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"sigs.k8s.io/yaml"
-
 	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/addr"
@@ -47,6 +41,11 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -55,7 +54,6 @@ const (
 
 type Gateway struct {
 	genericserver.IEmbedServer
-	pb.UnsafeGatewayServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -132,9 +130,7 @@ func (gw *Gateway) Start(stopc <-chan struct{}) error {
 	gw.cfg.ListenURL = scheme + ts.Addr().String()
 	gw.rmu.Unlock()
 
-	gs := gw.buildGRPCServer()
-
-	gwmux, err := gw.buildGRPCGateway()
+	gs, gwmux, err := gw.buildGRPCServer()
 	if err != nil {
 		return err
 	}
@@ -221,22 +217,20 @@ func (gw *Gateway) createListener() (string, net.Listener, error) {
 	return "http://", listener, nil
 }
 
-func (gw *Gateway) buildGRPCServer() *grpc.Server {
+func (gw *Gateway) buildGRPCServer() (*grpc.Server, *gwr.ServeMux, error) {
 	sopts := []grpc.ServerOption{
 		grpc.UnknownServiceHandler(gw.internalHandler),
 	}
 	gs := grpc.NewServer(sopts...)
-	pb.RegisterGatewayServer(gs, gw)
+	rpc := &gatewayRpc{gw: gw}
+	pb.RegisterGatewayServer(gs, rpc)
 
-	return gs
-}
-
-func (gw *Gateway) buildGRPCGateway() (*gwr.ServeMux, error) {
 	gwmux := gwr.NewServeMux()
-	if err := pb.RegisterGatewayHandlerServer(gw.ctx, gwmux, gw); err != nil {
-		return nil, err
+	if err := pb.RegisterGatewayHandlerServer(gw.ctx, gwmux, rpc); err != nil {
+		return nil, nil, err
 	}
-	return gwmux, nil
+
+	return gs, gwmux, nil
 }
 
 func (gw *Gateway) buildUserHandler() http.Handler {
@@ -384,16 +378,11 @@ func (gw *Gateway) register() error {
 	for _, h := range handlerList {
 		endpoints = append(endpoints, gw.handlers[h].Endpoints()...)
 	}
+
 	gw.rmu.RUnlock()
 
-	svc := &pb.Service{
-		Name:      api.DefaultService,
-		Version:   version.Version,
-		Nodes:     []*pb.Node{node},
-		Endpoints: endpoints,
-	}
-
 	// read openapi docs
+	var openapi *pb.OpenAPI
 	if cfg.OpenAPI != "" {
 		data, err := os.ReadFile(cfg.OpenAPI)
 		if err != nil {
@@ -403,16 +392,28 @@ func (gw *Gateway) register() error {
 		ext := path.Ext(cfg.OpenAPI)
 		switch ext {
 		case ".yml", ".yaml":
+			// convert yaml to json
 			data, err = yaml.YAMLToJSON(data)
 			if err != nil {
 				return fmt.Errorf("convert openapi v3 docs: %v", err)
 			}
 		}
-		openapi := &pb.OpenAPI{}
 		if err = json.Unmarshal(data, &openapi); err != nil {
 			return fmt.Errorf("read openapi docs: %v", err)
 		}
-		svc.Openapi = openapi
+
+		// extracts endpoints of OpenAPI docs
+		for _, ep := range extractOpenAPIDocs(openapi) {
+			endpoints = append(endpoints, ep)
+		}
+	}
+
+	svc := &pb.Service{
+		Name:      api.DefaultService,
+		Version:   version.Version,
+		Nodes:     []*pb.Node{node},
+		Endpoints: endpoints,
+		Openapi:   openapi,
 	}
 
 	gw.rmu.RLock()

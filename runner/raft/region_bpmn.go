@@ -357,6 +357,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 
 	taskAct := trace.GetActivity()
 	id, _ := taskAct.Element().Id()
+	name, _ := taskAct.Element().Name()
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionId),
 		zap.Uint64("version", process.DefinitionVersion),
@@ -369,22 +370,22 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	var act dsypb.Activity
+	var act dsypb.ActivityType
 	switch actType {
 	case activity.TaskType:
-		act = dsypb.Activity_Task
+		act = dsypb.ActivityType_Task
 	case activity.ServiceType:
-		act = dsypb.Activity_ServiceTask
+		act = dsypb.ActivityType_ServiceTask
 	case activity.ScriptType:
-		act = dsypb.Activity_ScriptTask
+		act = dsypb.ActivityType_ScriptTask
 	case activity.UserType:
-		act = dsypb.Activity_UserTask
+		act = dsypb.ActivityType_UserTask
 	case activity.SendType:
-		act = dsypb.Activity_SendTask
+		act = dsypb.ActivityType_SendTask
 	case activity.ReceiveType:
-		act = dsypb.Activity_ReceiveTask
+		act = dsypb.ActivityType_ReceiveTask
 	case activity.CallType:
-		act = dsypb.Activity_CallActivity
+		act = dsypb.ActivityType_CallActivity
 	}
 
 	urlText := headers[api.URLKey]
@@ -405,7 +406,11 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 	}
 
 	in := &dsypb.TransmitRequest{
-		Activity:    act,
+		Activity: &dsypb.Activity{
+			Type: act,
+			Id:   *id,
+			Name: *name,
+		},
 		Headers:     headers,
 		Properties:  map[string]*dsypb.Box{},
 		DataObjects: map[string]*dsypb.Box{},

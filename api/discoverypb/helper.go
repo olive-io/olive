@@ -22,16 +22,6 @@ import (
 	json "github.com/json-iterator/go"
 )
 
-// SupportActivity returns true if the given value in Activities
-func (m *Node) SupportActivity(act Activity) bool {
-	for _, item := range m.Activities {
-		if item == act {
-			return true
-		}
-	}
-	return false
-}
-
 func (m *Box) WithRef(ref string) *Box {
 	m.Ref = ref
 	return m
@@ -57,37 +47,42 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 		return boxFromAny(vt.Elem(), v)
 	}
 
-	bt, isArray := parseBoxType(vt)
-	box.Type = bt
-	box.IsArray = isArray
-
 	vv := reflect.ValueOf(v)
 	if vv.Type().Kind() == reflect.Pointer {
 		vv = vv.Elem()
 	}
-	if !isArray {
-		switch bt {
-		case BoxType_Integer:
-			box.Data = []byte(strconv.FormatInt(vv.Int(), 10))
-		case BoxType_Float:
-			box.Data = []byte(fmt.Sprintf("%f", vv.Float()))
-		case BoxType_Boolean:
-			box.Data = []byte("false")
-			if vv.Bool() {
-				box.Data = []byte("true")
-			}
-		case BoxType_String:
-			box.Data = []byte(vv.String())
-		case BoxType_Object:
-			box.Data, _ = json.Marshal(v)
+
+	bt := parseBoxType(vt)
+	box.Type = bt
+	switch bt {
+	case BoxType_integer:
+		box.Data = []byte(strconv.FormatInt(vv.Int(), 10))
+	case BoxType_float:
+		box.Data = []byte(fmt.Sprintf("%f", vv.Float()))
+	case BoxType_boolean:
+		box.Data = []byte("false")
+		if vv.Bool() {
+			box.Data = []byte("true")
 		}
-	} else {
+	case BoxType_string:
+		box.Data = []byte(vv.String())
+	case BoxType_array:
+		rt := parseBoxType(vt.Elem())
+		box.Ref = rt.String()
+		box.Data, _ = json.Marshal(v)
+	case BoxType_map:
+		box.Parameters = map[string]*Box{
+			"key":   &Box{Type: parseBoxType(vt.Key())},
+			"value": &Box{Type: parseBoxType(vt.Elem())},
+		}
+		box.Data, _ = json.Marshal(v)
+	default:
 		box.Data, _ = json.Marshal(v)
 	}
 	return box
 }
 
-func parseBoxType(vf reflect.Type) (BoxType, bool) {
+func parseBoxType(vf reflect.Type) BoxType {
 	if vf.Kind() == reflect.Pointer {
 		return parseBoxType(vf.Elem())
 	}
@@ -95,71 +90,72 @@ func parseBoxType(vf reflect.Type) (BoxType, bool) {
 	switch vf.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return BoxType_Integer, false
+		return BoxType_integer
 	case reflect.Float32, reflect.Float64:
-		return BoxType_Float, false
+		return BoxType_float
 	case reflect.Bool:
-		return BoxType_Boolean, false
+		return BoxType_boolean
 	case reflect.String:
-		return BoxType_String, false
+		return BoxType_string
 	case reflect.Slice:
-		bt, _ := parseBoxType(vf.Elem())
-		return bt, true
-
+		return BoxType_array
 	case reflect.Struct:
-		return BoxType_Object, false
+		return BoxType_object
 	case reflect.Map:
-		return BoxType_Object, false
+		return BoxType_map
 	default:
-		return BoxType_Object, false
+		return BoxType_object
 	}
 }
 
 func (m *Box) Value() any {
 	var value any
-	if !m.IsArray {
-		switch m.Type {
-		case BoxType_Boolean:
-			value = false
-			if string(m.Data) == "true" {
-				value = true
-			}
-		case BoxType_Integer:
-			n, _ := strconv.ParseInt(string(m.Data), 10, 64)
-			value = n
-		case BoxType_Float:
-			f, _ := strconv.ParseFloat(string(m.Data), 64)
-			value = f
-		case BoxType_String:
-			value = string(m.Data)
-		case BoxType_Object:
-			target := map[string]any{}
-			_ = json.Unmarshal(m.Data, &target)
-			value = target
+
+	switch m.Type {
+	case BoxType_boolean:
+		value = false
+		if string(m.Data) == "true" {
+			value = true
 		}
-	} else {
-		switch m.Type {
-		case BoxType_Boolean:
+	case BoxType_integer:
+		n, _ := strconv.ParseInt(string(m.Data), 10, 64)
+		value = n
+	case BoxType_float:
+		f, _ := strconv.ParseFloat(string(m.Data), 64)
+		value = f
+	case BoxType_string:
+		value = string(m.Data)
+	case BoxType_array:
+		switch BoxType(BoxType_value[m.Ref]) {
+		case BoxType_boolean:
 			target := make([]bool, 0)
 			_ = m.ValueFor(&target)
 			value = target
-		case BoxType_Integer:
+		case BoxType_integer:
 			target := make([]int64, 0)
 			_ = m.ValueFor(&target)
 			value = target
-		case BoxType_Float:
+		case BoxType_float:
 			target := make([]float64, 0)
 			_ = m.ValueFor(&target)
 			value = target
-		case BoxType_String:
+		case BoxType_string:
 			target := make([]string, 0)
 			_ = m.ValueFor(&target)
 			value = target
-		case BoxType_Object:
+		case BoxType_object, BoxType_map:
 			target := make([]map[string]any, 0)
 			_ = m.ValueFor(&target)
 			value = target
+		default:
+			target := make([]any, 0)
+			_ = m.ValueFor(&target)
+			value = target
 		}
+	default:
+		target := map[string]any{}
+		_ = json.Unmarshal(m.Data, &target)
+		value = target
 	}
 
 	return value

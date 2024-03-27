@@ -20,7 +20,7 @@ option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
 import "github.com/olive-io/olive/api/discoverypb/openapi.proto";
 
-enum Activity {
+enum ActivityType {
   Unknown = 0;
   Task = 1;
   ServiceTask = 2;
@@ -28,26 +28,34 @@ enum Activity {
   UserTask = 4;
   SendTask = 5;
   ReceiveTask = 6;
-  CallActivity = 7;
+  ManualTask = 7;
+  CallActivity = 8;
+}
+
+message Activity {
+  ActivityType type = 1;
+  string id = 2;
+  string name = 3;
 }
 
 enum BoxType {
-  String = 0;
-  Integer = 1;
-  Float = 2;
-  Boolean = 3;
-  Object = 4;
+  string = 0;
+  integer = 1;
+  float = 2;
+  boolean = 3;
+  array = 4;
+  object = 5;
+  map = 6;
 }
 
 // Box is an opaque value for a request or response
 message Box {
   BoxType type = 1;
-  bool isArray = 2;
   // Box Value by json.Marshal
-  bytes data = 3;
+  bytes data = 2;
   // the reference, points to OpenAPI Component when type is Object
-  string ref = 4;
-  map<string, Box> parameters = 5;
+  string ref = 3;
+  map<string, Box> parameters = 4;
 }
 
 // Endpoint is a endpoint provided by a service
@@ -85,8 +93,6 @@ message Node {
   int64 port = 3;
 
   map<string, string> metadata = 4;
-
-  repeated Activity activities = 5;
 }
 
 // Result is returns by the watcher

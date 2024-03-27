@@ -22,12 +22,18 @@ import (
 	pb "github.com/olive-io/olive/api/discoverypb"
 )
 
-func (gw *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
+type gatewayRpc struct {
+	pb.UnsafeGatewayServer
+
+	gw *Gateway
+}
+
+func (gr *gatewayRpc) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
 	return &pb.PingResponse{Reply: req.Message}, nil
 }
 
-func (gw *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
-	lg := gw.Logger()
+func (gr *gatewayRpc) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
+	lg := gr.gw.Logger()
 	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
 	for key, value := range req.Properties {
 		lg.Sugar().Infof("%s=%+v", key, value.Value())

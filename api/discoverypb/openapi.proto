@@ -4,6 +4,8 @@ package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
+import "google/protobuf/any.proto";
+
 message OpenAPI {
   string openapi = 1;
   OpenAPIInfo info = 2;
@@ -74,6 +76,9 @@ message PathSecurity {
   repeated string basic = 1;
   repeated string apiKeys = 2;
   repeated string bearer = 3;
+  repeated string oAuth2 = 4;
+  repeated string openId = 5;
+  repeated string cookieAuth = 6;
 }
 
 message PathParameters {
@@ -113,38 +118,35 @@ message PathResponse {
 }
 
 message OpenAPIComponents {
-  SecuritySchemes securitySchemes = 1;
+  map<string, SecuritySchema> securitySchemes = 1;
   map<string, Model> schemas = 2;
 }
 
-message SecuritySchemes {
-  BasicSecurity basic = 1;
-  APIKeysSecurity apiKeys = 2;
-  BearerSecurity bearer = 3;
-}
-
 // BasicSecurity is swagger Basic Authorization security (https://swagger.io/docs/specification/authentication/basic-authentication/)
-message BasicSecurity {
+message SecuritySchema {
   // http, apiKey, oauth, openIdConnect
   string type = 1;
   string scheme = 2;
-}
-
-// APIKeysSecurity is swagger API keys Authorization security (https://swagger.io/docs/specification/authentication/api-keys/)
-message APIKeysSecurity {
-  string type = 1;
   // header
-  string in = 2;
-  string name = 3;
+  string in = 3;
+  string name = 4;
+  string description = 5;
+
+  // JWT
+  string bearerFormat = 11;
+  // OAuth Flows
+  SecurityOAuthFlows flows = 12;
+  // openId
+  string openIdConnectUrl = 13;
 }
 
-// BearerSecurity is swagger Bearer Authorization security (https://swagger.io/docs/specification/authentication/bearer-authentication/)
-message BearerSecurity {
-  // http
-  string type = 1;
-  string scheme = 2;
-  // JWT
-  string bearerFormat = 3;
+message SecurityOAuthFlows {
+    OAuthFlowsImplicit implicit = 1;
+}
+
+message OAuthFlowsImplicit {
+  string authorizationUrl = 1;
+  map<string, string> scopes = 2;
 }
 
 // Model is swagger data models (https://swagger.io/docs/specification/data-models/)
@@ -153,11 +155,14 @@ message Model {
   string type = 1;
   repeated SchemaObject oneOf = 2;
   repeated SchemaObject allOf = 3;
-  map<string, SchemaObject> properties = 4;
-  repeated string required = 5;
+  repeated SchemaObject anyOf = 4;
+  repeated SchemaObject not = 5;
+  map<string, SchemaObject> properties = 6;
+  repeated string required = 7;
 }
 
 message SchemaObject {
+  // string, number, integer, boolean, array, object
   string type = 1;
   string format = 2;
   string description = 3;

@@ -136,7 +136,7 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *dsypb.Service, node 
 			zap.String("name", s.Name),
 			zap.Uint64("lease_id", uint64(leaseID)))
 
-		if _, err := e.client.KeepAliveOnce(context.TODO(), leaseID); err != nil {
+		if _, err := e.client.KeepAliveOnce(ctx, leaseID); err != nil {
 			if !errors.Is(err, rpctypes.ErrLeaseNotFound) {
 				return err
 			}

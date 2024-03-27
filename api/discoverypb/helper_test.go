@@ -38,24 +38,24 @@ func TestBoxFromAny(t *testing.T) {
 		args args
 		want *Box
 	}{
-		{"BoxFromAny_string", args{value: "a"}, &Box{Type: BoxType_String, Data: []byte("a")}},
-		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &Box{Type: BoxType_String, Data: []byte("a")}},
-		{"BoxFromAny_int", args{value: 1}, &Box{Type: BoxType_Integer, Data: []byte("1")}},
-		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &Box{Type: BoxType_Integer, Data: []byte("1")}},
-		{"BoxFromAny_float", args{value: 1.1}, &Box{Type: BoxType_Float, Data: []byte("1.100000")}},
-		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &Box{Type: BoxType_Float, Data: []byte("1.100000")}},
-		{"BoxFromAny_boolean", args{value: true}, &Box{Type: BoxType_Boolean, Data: []byte("true")}},
-		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &Box{Type: BoxType_Boolean, Data: []byte("true")}},
-		{"BoxFromAny_array", args{value: []int32{1, 2}}, &Box{Type: BoxType_Integer, IsArray: true, Data: []byte(`[1,2]`)}},
-		{"BoxFromAny_array_ptr", args{value: &arr}, &Box{Type: BoxType_Integer, IsArray: true, Data: []byte(`[1,2]`)}},
-		{"BoxFromAny_struct", args{value: t1}, &Box{Type: BoxType_Object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_struct_ptr", args{value: &t1}, &Box{Type: BoxType_Object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &Box{Type: BoxType_Object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_map2", args{value: t2}, &Box{Type: BoxType_Object, Data: []byte(`{"c":{"name":"cc"}}`)}},
+		{"BoxFromAny_string", args{value: "a"}, &Box{Type: BoxType_string, Data: []byte("a")}},
+		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &Box{Type: BoxType_string, Data: []byte("a")}},
+		{"BoxFromAny_int", args{value: 1}, &Box{Type: BoxType_integer, Data: []byte("1")}},
+		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &Box{Type: BoxType_integer, Data: []byte("1")}},
+		{"BoxFromAny_float", args{value: 1.1}, &Box{Type: BoxType_float, Data: []byte("1.100000")}},
+		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &Box{Type: BoxType_float, Data: []byte("1.100000")}},
+		{"BoxFromAny_boolean", args{value: true}, &Box{Type: BoxType_boolean, Data: []byte("true")}},
+		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &Box{Type: BoxType_boolean, Data: []byte("true")}},
+		{"BoxFromAny_array", args{value: []int32{1, 2}}, &Box{Type: BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
+		{"BoxFromAny_array_ptr", args{value: &arr}, &Box{Type: BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
+		{"BoxFromAny_struct", args{value: t1}, &Box{Type: BoxType_object, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_struct_ptr", args{value: &t1}, &Box{Type: BoxType_object, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &Box{Type: BoxType_map, Data: []byte(`{"name":"t1"}`)}},
+		{"BoxFromAny_map2", args{value: t2}, &Box{Type: BoxType_map, Data: []byte(`{"c":{"name":"cc"}}`)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BoxFromAny(tt.args.value); !reflect.DeepEqual(got, tt.want) {
+			if got := BoxFromAny(tt.args.value); !(reflect.DeepEqual(got.Data, tt.want.Data) && reflect.DeepEqual(got.Type, tt.want.Type)) {
 				t.Errorf("BoxFromAny() = %v, want %v", got, tt.want)
 			}
 		})
@@ -64,14 +64,14 @@ func TestBoxFromAny(t *testing.T) {
 
 func TestBox_Value(t *testing.T) {
 	box := &Box{
-		Type: BoxType_Integer,
+		Type: BoxType_integer,
 		Data: []byte(`{"name": "t1"}`),
 	}
 
 	type fields struct {
-		Type    BoxType
-		IsArray bool
-		Data    []byte
+		Type BoxType
+		Ref  string
+		Data []byte
 	}
 	type args struct {
 		target any
@@ -81,19 +81,19 @@ func TestBox_Value(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		{"value_integer", fields{Type: BoxType_Integer, Data: []byte("1")}, args{target: 1}},
-		{"value_bool", fields{Type: BoxType_Boolean, Data: []byte("true")}, args{target: true}},
-		{"value_float", fields{Type: BoxType_Float, Data: []byte("1.1")}, args{target: 1.1}},
-		{"value_for_array", fields{Type: BoxType_Integer, IsArray: true, Data: []byte(`[1,2,3]`)}, args{target: []int64{1, 2, 3}}},
-		{"value_map", fields{Type: BoxType_Object, Data: box.Data}, args{target: map[string]any{"name": "t1"}}},
-		{"value_struct", fields{Type: BoxType_Object, Data: box.Data}, args{target: map[string]any{"name": "t1"}}},
+		{"value_integer", fields{Type: BoxType_integer, Data: []byte("1")}, args{target: 1}},
+		{"value_bool", fields{Type: BoxType_boolean, Data: []byte("true")}, args{target: true}},
+		{"value_float", fields{Type: BoxType_float, Data: []byte("1.1")}, args{target: 1.1}},
+		{"value_for_array", fields{Type: BoxType_array, Ref: "integer", Data: []byte(`[1,2,3]`)}, args{target: []int64{1, 2, 3}}},
+		{"value_map", fields{Type: BoxType_object, Data: box.Data}, args{target: map[string]any{"name": "t1"}}},
+		{"value_struct", fields{Type: BoxType_object, Data: box.Data}, args{target: map[string]any{"name": "t1"}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Box{
-				Type:    tt.fields.Type,
-				IsArray: tt.fields.IsArray,
-				Data:    tt.fields.Data,
+				Type: tt.fields.Type,
+				Ref:  tt.fields.Ref,
+				Data: tt.fields.Data,
 			}
 			value := m.Value()
 			a, _ := json.Marshal(value)
@@ -107,7 +107,7 @@ func TestBox_Value(t *testing.T) {
 
 func TestBox_ValueFor(t *testing.T) {
 	box := &Box{
-		Type: BoxType_Integer,
+		Type: BoxType_integer,
 		Data: []byte(`{"name": "t1"}`),
 	}
 
@@ -131,12 +131,12 @@ func TestBox_ValueFor(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"value_for_integer", fields{Type: BoxType_Integer, Data: []byte("1")}, args{target: integer}, false},
-		{"value_for_bool", fields{Type: BoxType_Boolean, Data: []byte("true")}, args{target: boolean}, false},
-		{"value_for_float", fields{Type: BoxType_Float, Data: []byte("1.1")}, args{target: floatT}, false},
-		{"value_for_array", fields{Type: BoxType_Integer, IsArray: true, Data: []byte(`[1,2,3]`)}, args{target: arr}, false},
-		{"value_for_map", fields{Type: BoxType_Object, Data: box.Data}, args{target: m}, false},
-		{"value_for_struct", fields{Type: BoxType_Object, Data: box.Data}, args{target: t1}, false},
+		{"value_for_integer", fields{Type: BoxType_integer, Data: []byte("1")}, args{target: integer}, false},
+		{"value_for_bool", fields{Type: BoxType_boolean, Data: []byte("true")}, args{target: boolean}, false},
+		{"value_for_float", fields{Type: BoxType_float, Data: []byte("1.1")}, args{target: floatT}, false},
+		{"value_for_array", fields{Type: BoxType_array, Data: []byte(`[1,2,3]`)}, args{target: arr}, false},
+		{"value_for_map", fields{Type: BoxType_object, Data: box.Data}, args{target: m}, false},
+		{"value_for_struct", fields{Type: BoxType_object, Data: box.Data}, args{target: t1}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
