@@ -23,16 +23,7 @@ import (
 )
 
 var (
-	ErrUnknown     = errors.New("unknown name from URL")
-	ErrNotFound    = errors.New("not found")
-	ErrInvalidPath = errors.New("invalid path")
-)
-
-type HandlerType string
-
-const (
-	HTTP HandlerType = "http"
-	RPC  HandlerType = "rpc"
+	ErrNotFound = errors.New("not found")
 )
 
 // IResolver resolves requests to endpoints
@@ -51,7 +42,7 @@ type Endpoint struct {
 	// HTTP Path e.g /greeter.
 	Path string
 	// the Handler of router
-	Handler HandlerType
+	Handler string
 }
 
 // resolver the Resolver implementation for IResolver
@@ -63,19 +54,26 @@ func NewResolver() IResolver {
 
 func (r *resolver) Resolve(req *http.Request) (*Endpoint, error) {
 	// /foo.Bar/Service
-	path := req.URL.Path
-	switch path {
-	case "/":
-		return nil, ErrUnknown
-	case api.DefaultTaskURL:
+	handler := req.Header.Get(api.RequestHandler)
+	if handler == "" {
+		handler = api.RPCHandler
+	}
+
+	switch handler {
+	case api.RPCHandler:
 		return &Endpoint{
 			Name:    api.DefaultService,
 			Host:    req.Host,
 			Method:  req.Method,
-			Path:    path,
-			Handler: HTTP,
+			Path:    api.DefaultTaskURL,
+			Handler: api.HTTPHandler,
 		}, nil
+	case api.HTTPHandler:
+	default:
+		return nil, errors.WithDetailf(ErrNotFound, "invalid handler: %s", handler)
 	}
+
+	path := req.URL.Path
 
 	// [foo.Bar, Service]
 	parts := strings.Split(path[1:], "/")
@@ -88,7 +86,7 @@ func (r *resolver) Resolve(req *http.Request) (*Endpoint, error) {
 		Host:    req.Host,
 		Method:  req.Method,
 		Path:    path,
-		Handler: RPC,
+		Handler: handler,
 	}
 
 	return endpoint, nil

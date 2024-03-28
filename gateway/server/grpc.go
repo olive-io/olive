@@ -38,8 +38,7 @@ func (gr *gatewayRpc) Transmit(ctx context.Context, req *pb.TransmitRequest) (*p
 	for key, value := range req.Properties {
 		lg.Sugar().Infof("%s=%+v", key, value.Value())
 	}
-	resp := &pb.TransmitResponse{}
-	resp.Response = &pb.Response{
+	resp := &pb.TransmitResponse{
 		Properties:  map[string]*pb.Box{},
 		DataObjects: map[string]*pb.Box{},
 	}

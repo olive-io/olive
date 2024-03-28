@@ -60,7 +60,7 @@ func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
 			api.MethodKey:  method,
 			api.HostKey:    strings.Join(hosts, ","),
 			api.URLKey:     url,
-			api.HandlerKey: "rpc",
+			api.HandlerKey: api.RPCHandler,
 			"summary":      apiEp.Summary,
 			api.DescKey:    apiEp.Description,
 		}

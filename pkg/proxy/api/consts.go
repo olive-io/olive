@@ -16,16 +16,20 @@ package api
 
 const (
 	HeaderKeyPrefix = "ov:"
-	NodeIdKey       = "ov:node_id"
-	ActivityIdKey   = "ov:activity_id"
+	ActivityKey     = "ov:activity"
 	ProtocolKey     = "ov:protocol"
 	MethodKey       = "ov:method"
 	SecurityKey     = "ov:security"
-	ContentTypeKey  = "ov:content-type"
+	ContentTypeKey  = "ov:content_type"
 	HostKey         = "ov:host"
 	URLKey          = "ov:url"
 	HandlerKey      = "ov:handler"
 	DescKey         = "ov:desc"
+)
+
+const (
+	RPCHandler  = "rpc"
+	HTTPHandler = "http"
 )
 
 // the keys of ServiceTask Header
@@ -36,7 +40,9 @@ const (
 
 // http Request Header Key
 const (
-	RequestActivityKey = "x-olive-activity"
+	RequestPrefix   = "X-Olive-"
+	RequestActivity = RequestPrefix + "Activity"
+	RequestHandler  = RequestPrefix + "Handler"
 )
 
 const (

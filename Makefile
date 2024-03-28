@@ -37,6 +37,7 @@ generate:
 	sed -i "" 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
 	sed -i "" 's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
 	sed -i "" 's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	rm -fr api/*/**swagger.json
 
 docker:
 

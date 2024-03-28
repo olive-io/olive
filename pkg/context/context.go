@@ -44,9 +44,9 @@ func FromRequest(r *http.Request) context.Context {
 		md.Set("Host", r.Host)
 	}
 	md.Set("Method", r.Method)
-	if _, ok = md.Get("Olive-Api-Path"); !ok {
+	if _, ok = md.Get("X-Olive-Path"); !ok {
 		if r.URL != nil {
-			md.Set("Olive-Api-Path", r.URL.Path)
+			md.Set("X-Olive-Path", r.URL.Path)
 		}
 	}
 	return cxmd.NewContext(r.Context(), md)

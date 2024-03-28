@@ -122,10 +122,3 @@ message Service {
 
   discoverypb.OpenAPI openapi = 8;
 }
-
-// Response save the data from gateway Handle function
-message Response {
-  map<string, Box> properties = 1;
-  map<string, Box> dataObjects = 2;
-}
-

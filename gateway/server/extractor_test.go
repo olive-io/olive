@@ -15,10 +15,8 @@
 package server
 
 import (
-	"reflect"
 	"testing"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/gateway/server/testdata"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,19 +28,19 @@ func Test_extractOpenAPIDocs(t *testing.T) {
 }
 
 func Test_extractHandler(t *testing.T) {
-	handler := &gatewayRpc{}
-
-	typ := reflect.TypeOf(handler)
-	hdlr := reflect.ValueOf(handler)
-	name := reflect.Indirect(hdlr).Type().Name()
-	
-	var endpoints []*pb.Endpoint
-
-	for m := 0; m < typ.NumMethod(); m++ {
-		if e := extractEndpoint(typ.Method(m)); e != nil {
-			e.Name = name + "." + e.Name
-
-			endpoints = append(endpoints, e)
-		}
-	}
+	//handler := &gatewayRpc{}
+	//
+	//typ := reflect.TypeOf(handler)
+	//hdlr := reflect.ValueOf(handler)
+	//name := reflect.Indirect(hdlr).Type().Name()
+	//
+	//var endpoints []*pb.Endpoint
+	//
+	//for m := 0; m < typ.NumMethod(); m++ {
+	//	if e := extractEndpoint(typ.Method(m)); e != nil {
+	//		e.Name = name + "." + e.Name
+	//
+	//		endpoints = append(endpoints, e)
+	//	}
+	//}
 }

@@ -241,10 +241,10 @@ func (gw *Gateway) buildUserHandler() http.Handler {
 }
 
 func (gw *Gateway) internalHandler(svc interface{}, stream grpc.ServerStream) error {
-	resp := &pb.Response{
+	resp := &pb.TransmitResponse{
 		Properties: map[string]*pb.Box{"a": pb.BoxFromAny("a")},
 	}
-	return stream.SendMsg(&pb.TransmitResponse{Response: resp})
+	return stream.SendMsg(resp)
 }
 
 func (gw *Gateway) createMux(gwmux *gwr.ServeMux, handler http.Handler) *http.ServeMux {

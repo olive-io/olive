@@ -107,11 +107,11 @@ func rangePrefix(r *pb.RegionRangeRequest) {
 	r.RangeEnd = getPrefix(r.Key)
 }
 
-type SV interface {
+type CString interface {
 	[]byte | string
 }
 
-func toGenericMap[V SV](in map[string]any) map[string]V {
+func toGenericMap[V CString](in map[string]any) map[string]V {
 	out := make(map[string]V)
 	for key, value := range in {
 		var vv V

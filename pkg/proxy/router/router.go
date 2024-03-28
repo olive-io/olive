@@ -448,17 +448,17 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 
 	var service *api.Service
 	switch rp.Handler {
-	case resolver.RPC:
+	case api.RPCHandler:
 		// rpc handler
 		service = &api.Service{
 			Name: name,
 			Endpoint: &api.Endpoint{
 				Name:    rp.Method,
-				Handler: string(rp.Handler),
+				Handler: rp.Handler,
 			},
 			Services: services,
 		}
-	case resolver.HTTP:
+	case api.HTTPHandler:
 		service = &api.Service{
 			Name: name,
 			Endpoint: &api.Endpoint{
@@ -466,7 +466,7 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 				Host:    []string{req.Host},
 				Method:  []string{req.Method},
 				Path:    []string{req.URL.Path},
-				Handler: string(rp.Handler),
+				Handler: rp.Handler,
 			},
 			Services: services,
 		}

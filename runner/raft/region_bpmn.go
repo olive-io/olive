@@ -15,27 +15,21 @@
 package raft
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	urlpkg "net/url"
-	"strings"
 	"time"
 
 	"github.com/cockroachdb/pebble"
 	json "github.com/json-iterator/go"
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
-	"github.com/olive-io/bpmn/flow_node/activity"
+	bact "github.com/olive-io/bpmn/flow_node/activity"
 	bp "github.com/olive-io/bpmn/process"
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
-	"github.com/olive-io/olive/pkg/proxy/api"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -309,7 +303,7 @@ LOOP:
 					r.metric.event.Dec()
 				}
 
-			case activity.ActiveBoundaryTrace:
+			case bact.ActiveBoundaryTrace:
 				if tt.Start {
 					r.metric.task.Inc()
 				} else {
@@ -318,14 +312,14 @@ LOOP:
 					process.RunningState.Properties = toGenericMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
 					process.RunningState.Variables = toGenericMap[[]byte](inst.Locator.CloneVariables())
 				}
-			case *activity.Trace:
+			case *bact.Trace:
 				act := tt.GetActivity()
 				id, _ := act.Element().Id()
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
 					flowNode.EndTime = time.Now().Unix()
-					headers, dataSets, dataObjects := activity.FetchTaskDataInput(inst.Locator, act.Element())
+					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
 					flowNode.Headers = toGenericMap[string](headers)
 					flowNode.Properties = toGenericMap[[]byte](dataSets)
 					flowNode.DataObjects = toGenericMap[[]byte](dataObjects)
@@ -353,101 +347,49 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	taskAct := trace.GetActivity()
-	id, _ := taskAct.Element().Id()
-	name, _ := taskAct.Element().Name()
+	actType := taskAct.Type()
+	dsyAct := &dsypb.Activity{
+		Type: actCov(actType),
+	}
+	if id, ok := taskAct.Element().Id(); ok {
+		dsyAct.Id = *id
+	}
+	if name, ok := taskAct.Element().Name(); ok {
+		dsyAct.Name = *name
+	}
+
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionId),
 		zap.Uint64("version", process.DefinitionVersion),
 		zap.Uint64("process", process.Id),
-		zap.String("task", *id),
+		zap.String("task", dsyAct.Id),
 	}
 
-	actType := taskAct.Type()
 	headers := toGenericMap[string](trace.GetHeaders())
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	var act dsypb.ActivityType
-	switch actType {
-	case activity.TaskType:
-		act = dsypb.ActivityType_Task
-	case activity.ServiceType:
-		act = dsypb.ActivityType_ServiceTask
-	case activity.ScriptType:
-		act = dsypb.ActivityType_ScriptTask
-	case activity.UserType:
-		act = dsypb.ActivityType_UserTask
-	case activity.SendType:
-		act = dsypb.ActivityType_SendTask
-	case activity.ReceiveType:
-		act = dsypb.ActivityType_ReceiveTask
-	case activity.CallType:
-		act = dsypb.ActivityType_CallActivity
-	}
-
-	urlText := headers[api.URLKey]
-	if urlText == "" {
-		urlText = api.DefaultTaskURL
-	}
-	method := headers[api.MethodKey]
-	if method == "" {
-		method = http.MethodPost
-	}
-	protocol := headers[api.ProtocolKey]
-
-	hurl, err := urlpkg.Parse(urlText)
-	if err != nil {
-		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	in := &dsypb.TransmitRequest{
-		Activity: &dsypb.Activity{
-			Type: act,
-			Id:   *id,
-			Name: *name,
-		},
+	req := &dsypb.TransmitRequest{
+		Activity:    dsyAct,
 		Headers:     headers,
 		Properties:  map[string]*dsypb.Box{},
 		DataObjects: map[string]*dsypb.Box{},
 	}
 	for key, value := range properties {
-		in.Properties[key] = dsypb.BoxFromAny(value)
+		req.Properties[key] = dsypb.BoxFromAny(value)
 	}
 	for key, value := range dataObjects {
-		in.DataObjects[key] = dsypb.BoxFromAny(value)
+		req.DataObjects[key] = dsypb.BoxFromAny(value)
 	}
-	header := http.Header{}
-	for key, value := range headers {
-		if strings.HasPrefix(key, api.HeaderKeyPrefix) {
-			continue
-		}
-		header.Set(key, value)
-	}
-	if header.Get("Content-Type") == "" {
-		header.Set("Content-Type", "application/json")
-	}
-	header.Set(api.RequestActivityKey, act.String())
 
-	buf, _ := json.Marshal(in)
-	hreq := &http.Request{
-		Method: method,
-		URL:    hurl,
-		Proto:  protocol,
-		Header: header,
-		Body:   io.NopCloser(bytes.NewBuffer(buf)),
-	}
-	hreq = hreq.WithContext(ctx)
-
-	doOpts := make([]activity.DoOption, 0)
-	resp, err := r.proxy.Handle(hreq)
+	doOpts := make([]bact.DoOption, 0)
+	resp, err := r.proxy.Handle(ctx, req)
 	if err != nil {
 		r.lg.Error("handle task", append(fields, zap.Error(err))...)
-		doOpts = append(doOpts, activity.WithErr(err))
+		doOpts = append(doOpts, bact.WithErr(err))
 	} else {
 		dp := map[string]any{}
 		ddo := map[string]any{}
@@ -457,7 +399,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *activity.Trace, inst
 		for key, value := range resp.DataObjects {
 			ddo[key] = value.Value()
 		}
-		doOpts = append(doOpts, activity.WithProperties(dp), activity.WithObjects(ddo))
+		doOpts = append(doOpts, bact.WithProperties(dp), bact.WithObjects(ddo))
 	}
 	trace.Do(doOpts...)
 }
@@ -473,4 +415,28 @@ func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInsta
 	}
 	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
 	return err
+}
+
+// actCov converts bact.Type to discoverypb.ActivityType
+func actCov(actType bact.Type) dsypb.ActivityType {
+	var act dsypb.ActivityType
+	switch actType {
+	case bact.TaskType:
+		act = dsypb.ActivityType_Task
+	case bact.ServiceType:
+		act = dsypb.ActivityType_ServiceTask
+	case bact.ScriptType:
+		act = dsypb.ActivityType_ScriptTask
+	case bact.UserType:
+		act = dsypb.ActivityType_UserTask
+	case bact.SendType:
+		act = dsypb.ActivityType_SendTask
+	case bact.ReceiveType:
+		act = dsypb.ActivityType_ReceiveTask
+	case bact.CallType:
+		act = dsypb.ActivityType_CallActivity
+	default:
+		act = dsypb.ActivityType_Task
+	}
+	return act
 }

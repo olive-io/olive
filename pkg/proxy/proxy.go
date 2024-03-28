@@ -15,14 +15,18 @@
 package proxy
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"net/http"
+	urlpkg "net/url"
 	"strings"
 
 	"github.com/cockroachdb/errors"
 	json "github.com/json-iterator/go"
-
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	cx "github.com/olive-io/olive/pkg/context"
+	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/grpc"
 	"github.com/olive-io/olive/pkg/proxy/client/selector"
@@ -34,7 +38,7 @@ var (
 )
 
 type IProxy interface {
-	Handle(req *http.Request) (*dsypb.Response, error)
+	Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.TransmitResponse, error)
 }
 
 // strategy is a hack for selection
@@ -87,11 +91,17 @@ func (p *proxy) Stop() error {
 	return nil
 }
 
-func (p *proxy) Handle(hreq *http.Request) (*dsypb.Response, error) {
+func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.TransmitResponse, error) {
 	bsize := DefaultMaxRecvSize
 	if p.MaxRecvSize > 0 {
 		bsize = p.MaxRecvSize
 	}
+
+	hreq, err := newRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	hreq = hreq.WithContext(ctx)
 
 	ct := hreq.Header.Get("Content-Type")
 	if ct == "" {
@@ -100,7 +110,7 @@ func (p *proxy) Handle(hreq *http.Request) (*dsypb.Response, error) {
 	}
 
 	// create context
-	ctx := cx.FromRequest(hreq)
+	ctx = cx.FromRequest(hreq)
 	//for k, v := range h.opts.Metadata {
 	//	cx = metadata.Set(cx, k, v)
 	//}
@@ -144,16 +154,60 @@ func (p *proxy) Handle(hreq *http.Request) (*dsypb.Response, error) {
 
 	// create request/response
 	rsp := &dsypb.TransmitResponse{}
-	req := p.cc.NewRequest(
+	cr := p.cc.NewRequest(
 		service.Name,
 		service.Endpoint.Name,
 		request,
 	)
 
 	// make the call
-	if err = p.cc.Call(ctx, req, rsp, callOpts...); err != nil {
+	if err = p.cc.Call(ctx, cr, rsp, callOpts...); err != nil {
 		return nil, err
 	}
 
-	return rsp.Response, nil
+	return rsp, nil
+}
+
+func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
+	headers := req.Headers
+	urlText := headers[api.URLKey]
+	if urlText == "" {
+		urlText = api.DefaultTaskURL
+	}
+	method := headers[api.MethodKey]
+	if method == "" {
+		method = http.MethodPost
+	}
+	protocol := headers[api.ProtocolKey]
+
+	hurl, err := urlpkg.Parse(urlText)
+	if err != nil {
+		return nil, err
+	}
+
+	header := http.Header{}
+	for key, value := range headers {
+		if key == api.ContentTypeKey {
+			key = "Content-Type"
+		}
+		if idx := strings.Index(key, api.HeaderKeyPrefix); idx > 0 {
+			key = api.RequestPrefix + key[idx+len(api.HeaderKeyPrefix):]
+		}
+		header.Set(key, value)
+	}
+	if header.Get("Content-Type") == "" {
+		header.Set("Content-Type", "application/json")
+	}
+	header.Set(api.RequestActivity, req.Activity.Type.String())
+
+	buf, _ := json.Marshal(req)
+	hreq := &http.Request{
+		Method: method,
+		URL:    hurl,
+		Proto:  protocol,
+		Header: header,
+		Body:   io.NopCloser(bytes.NewBuffer(buf)),
+	}
+
+	return hreq, nil
 }
