@@ -38,6 +38,7 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/mnet"
 	"github.com/olive-io/olive/pkg/proxy/api"
+	"github.com/olive-io/olive/pkg/proxy/server"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
@@ -67,7 +68,7 @@ type Gateway struct {
 	started chan struct{}
 
 	rmu        sync.RWMutex
-	handlers   map[string]api.IHandler
+	handlers   map[string]server.IHandler
 	registered bool
 	// registry service instance
 	rsvc *pb.Service
@@ -99,7 +100,7 @@ func NewGateway(cfg Config) (*Gateway, error) {
 		oct:          oct,
 		discovery:    discovery,
 
-		handlers: map[string]api.IHandler{},
+		handlers: map[string]server.IHandler{},
 
 		started: make(chan struct{}),
 	}

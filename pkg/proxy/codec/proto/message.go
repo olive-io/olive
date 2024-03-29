@@ -12,26 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api
+package proto
 
-import (
-	pb "github.com/olive-io/olive/api/discoverypb"
-)
+type Message struct {
+	Data []byte
+}
 
-// IHandler interface represents a request handler. It's generated
-// by passing any type of public concrete object with endpoints into server.NewHandler.
-// Most will pass in a struct.
-//
-// Example:
-//
-//	type Greeter struct{}
-//
-//	func (g *Greeter) Hello(context, request) (response, error) {
-//		return nil
-//	}
-type IHandler interface {
-	Name() string
-	Handler() interface{}
-	Endpoints() []*pb.Endpoint
-	Options() HandlerOptions
+func (m *Message) MarshalJSON() ([]byte, error) {
+	return m.Data, nil
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	m.Data = data
+	return nil
+}
+
+func (m *Message) ProtoMessage() {}
+
+func (m *Message) Reset() {
+	*m = Message{}
+}
+
+func (m *Message) String() string {
+	return string(m.Data)
+}
+
+func (m *Message) Marshal() ([]byte, error) {
+	return m.Data, nil
+}
+
+func (m *Message) Unmarshal(data []byte) error {
+	m.Data = data
+	return nil
+}
+
+func NewMessage(data []byte) *Message {
+	return &Message{data}
 }

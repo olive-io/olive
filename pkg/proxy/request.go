@@ -15,11 +15,16 @@
 package proxy
 
 import (
+	"bytes"
+	"io"
 	"net/http"
+	urlpkg "net/url"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/qson"
 	"github.com/oxtoacart/bpool"
 
@@ -29,6 +34,51 @@ import (
 var (
 	bufferPool = bpool.NewSizedBufferPool(1024, 8)
 )
+
+// newRequest builds new *http.Request from *discoverypb.TransmitRequest
+func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
+	headers := req.Headers
+	urlText := headers[api.URLKey]
+	if urlText == "" {
+		urlText = api.DefaultTaskURL
+	}
+	method := headers[api.MethodKey]
+	if method == "" {
+		method = http.MethodPost
+	}
+	protocol := headers[api.ProtocolKey]
+
+	hurl, err := urlpkg.Parse(urlText)
+	if err != nil {
+		return nil, err
+	}
+
+	header := http.Header{}
+	for key, value := range headers {
+		if key == api.ContentTypeKey {
+			key = "Content-Type"
+		}
+		if idx := strings.Index(key, api.HeaderKeyPrefix); idx > 0 {
+			key = api.RequestPrefix + key[idx+len(api.HeaderKeyPrefix):]
+		}
+		header.Set(key, value)
+	}
+	if header.Get("Content-Type") == "" {
+		header.Set("Content-Type", "application/json")
+	}
+	header.Set(api.RequestActivity, req.Activity.Type.String())
+
+	buf, _ := json.Marshal(req)
+	hreq := &http.Request{
+		Method: method,
+		URL:    hurl,
+		Proto:  protocol,
+		Header: header,
+		Body:   io.NopCloser(bytes.NewBuffer(buf)),
+	}
+
+	return hreq, nil
+}
 
 // requestPayload takes a *http.Request.
 // If the request is a GET the query string parameters are extracted and marshaled to JSON and the raw bytes are returned.

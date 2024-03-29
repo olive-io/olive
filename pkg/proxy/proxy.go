@@ -15,18 +15,13 @@
 package proxy
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"net/http"
-	urlpkg "net/url"
 	"strings"
 
 	"github.com/cockroachdb/errors"
 	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	cx "github.com/olive-io/olive/pkg/context"
-	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/grpc"
 	"github.com/olive-io/olive/pkg/proxy/client/selector"
@@ -166,48 +161,4 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 	}
 
 	return rsp, nil
-}
-
-func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
-	headers := req.Headers
-	urlText := headers[api.URLKey]
-	if urlText == "" {
-		urlText = api.DefaultTaskURL
-	}
-	method := headers[api.MethodKey]
-	if method == "" {
-		method = http.MethodPost
-	}
-	protocol := headers[api.ProtocolKey]
-
-	hurl, err := urlpkg.Parse(urlText)
-	if err != nil {
-		return nil, err
-	}
-
-	header := http.Header{}
-	for key, value := range headers {
-		if key == api.ContentTypeKey {
-			key = "Content-Type"
-		}
-		if idx := strings.Index(key, api.HeaderKeyPrefix); idx > 0 {
-			key = api.RequestPrefix + key[idx+len(api.HeaderKeyPrefix):]
-		}
-		header.Set(key, value)
-	}
-	if header.Get("Content-Type") == "" {
-		header.Set("Content-Type", "application/json")
-	}
-	header.Set(api.RequestActivity, req.Activity.Type.String())
-
-	buf, _ := json.Marshal(req)
-	hreq := &http.Request{
-		Method: method,
-		URL:    hurl,
-		Proto:  protocol,
-		Header: header,
-		Body:   io.NopCloser(bytes.NewBuffer(buf)),
-	}
-
-	return hreq, nil
 }

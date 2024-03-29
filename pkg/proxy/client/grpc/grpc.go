@@ -19,14 +19,17 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/olive-io/olive/pkg/context/metadata"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding"
 	gmetadata "google.golang.org/grpc/metadata"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
@@ -163,6 +166,11 @@ func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IReq
 	md := gmetadata.New(header)
 	ctx = gmetadata.NewOutgoingContext(ctx, md)
 
+	cf, err := g.newGRPCCodec(req.ContentType())
+	if err != nil {
+		return err
+	}
+
 	maxRecvMsgSize := g.maxRecvMsgSizeValue()
 	maxSendMsgSize := g.maxSendMsgSizeValue()
 
@@ -189,13 +197,16 @@ func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IReq
 	ch := make(chan error, 1)
 
 	go func() {
-		callOpts := []grpc.CallOption{}
+		grpcCallOptions := []grpc.CallOption{
+			grpc.ForceCodec(cf),
+			grpc.CallContentSubtype(cf.Name()),
+		}
 		if lopts := g.getGrpcCallOptions(); lopts != nil {
-			callOpts = append(callOpts, lopts...)
+			grpcCallOptions = append(grpcCallOptions, lopts...)
 		}
 
 		method := methodToGRPC(req.Service(), req.Endpoint())
-		invokeErr := cc.Invoke(ctx, method, req.Body(), rsp, callOpts...)
+		invokeErr := cc.Invoke(ctx, method, req.Body(), rsp, grpcCallOptions...)
 		ch <- parseErr(invokeErr)
 	}()
 
@@ -207,6 +218,125 @@ func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IReq
 	}
 
 	return grr
+}
+
+func (g *grpcClient) stream(ctx context.Context, node *dsypb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
+	var header map[string]string
+
+	address := node.Address
+
+	if md, ok := metadata.FromContext(ctx); ok {
+		header = make(map[string]string, len(md))
+		for k, v := range md {
+			header[k] = v
+		}
+	} else {
+		header = make(map[string]string)
+	}
+
+	// set timeout in nanoseconds
+	if opts.StreamTimeout > time.Duration(0) {
+		header["timeout"] = fmt.Sprintf("%d", opts.StreamTimeout)
+	}
+	// set the content type for the request
+	header["x-content-type"] = req.ContentType()
+
+	md := gmetadata.New(header)
+	ctx = gmetadata.NewOutgoingContext(ctx, md)
+
+	cf, err := g.newGRPCCodec(req.ContentType())
+	if err != nil {
+		return err
+	}
+
+	var dialCtx context.Context
+	var cancel context.CancelFunc
+	if opts.DialTimeout >= 0 {
+		dialCtx, cancel = context.WithTimeout(ctx, opts.DialTimeout)
+	} else {
+		dialCtx, cancel = context.WithCancel(ctx)
+	}
+	defer cancel()
+
+	wc := wrapCodec{cf}
+
+	maxRecvMsgSize := g.maxRecvMsgSizeValue()
+	maxSendMsgSize := g.maxSendMsgSizeValue()
+
+	grpcDialOptions := []grpc.DialOption{
+		g.secure(address, &opts),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxRecvMsgSize),
+			grpc.MaxCallSendMsgSize(maxSendMsgSize),
+		),
+	}
+
+	if opts := g.getGrpcDialOptions(); opts != nil {
+		grpcDialOptions = append(grpcDialOptions, opts...)
+	}
+
+	cc, err := grpc.DialContext(dialCtx, address, grpcDialOptions...)
+	if err != nil {
+		return err
+	}
+
+	desc := &grpc.StreamDesc{
+		StreamName:    req.Service() + req.Endpoint(),
+		ClientStreams: true,
+		ServerStreams: true,
+	}
+
+	grpcCallOptions := []grpc.CallOption{
+		grpc.ForceCodec(wc),
+		grpc.CallContentSubtype(cf.Name()),
+	}
+	if opts := g.getGrpcCallOptions(); opts != nil {
+		grpcCallOptions = append(grpcCallOptions, opts...)
+	}
+
+	// create a new cancelling context
+	newCtx, cancel := context.WithCancel(ctx)
+
+	st, err := cc.NewStream(newCtx, desc, methodToGRPC(req.Service(), req.Endpoint()), grpcCallOptions...)
+	if err != nil {
+		// we need to clean up as we dialled and created a context
+		// cancel the context
+		cancel()
+		// close the connection
+		_ = cc.Close()
+		// now return the error
+		return fmt.Errorf("Error creating stream: %v", err)
+	}
+
+	codec := &grpcCodec{
+		s: st,
+		c: wc,
+	}
+
+	// set request codec
+	if r, ok := req.(*grpcRequest); ok {
+		r.codec = codec
+	}
+
+	// setup the stream response
+	stream := &grpcStream{
+		ctx:     ctx,
+		request: req,
+		response: &response{
+			conn:   cc,
+			stream: st,
+			codec:  cf,
+			gcodec: codec,
+		},
+		stream: st,
+		conn:   cc,
+		cancel: cancel,
+	}
+
+	// set the stream as the response
+	val := reflect.ValueOf(rsp).Elem()
+	val.Set(reflect.ValueOf(stream).Elem())
+	return nil
 }
 
 func (g *grpcClient) poolMaxStreams() int {
@@ -223,6 +353,22 @@ func (g *grpcClient) maxRecvMsgSizeValue() int {
 
 func (g *grpcClient) maxSendMsgSizeValue() int {
 	return DefaultMaxSendMsgSize
+}
+
+func (g *grpcClient) newGRPCCodec(contentType string) (encoding.Codec, error) {
+	codecs := make(map[string]encoding.Codec)
+	if g.opts.Context != nil {
+		if v := g.opts.Context.Value(codecsKey{}); v != nil {
+			codecs = v.(map[string]encoding.Codec)
+		}
+	}
+	if c, ok := codecs[contentType]; ok {
+		return wrapCodec{c}, nil
+	}
+	if c, ok := defaultGRPCCodecs[contentType]; ok {
+		return wrapCodec{c}, nil
+	}
+	return nil, fmt.Errorf("unsupported Content-Type: %s", contentType)
 }
 
 func (g *grpcClient) Init(opts ...client.Option) error {
@@ -359,6 +505,103 @@ func (g *grpcClient) Call(ctx context.Context, req client.IRequest, rsp interfac
 	}
 
 	return gerr
+}
+
+func (g *grpcClient) Stream(ctx context.Context, req client.IRequest, opts ...client.CallOption) (client.IStream, error) {
+	// make a copy of call opts
+	callOpts := g.opts.CallOptions
+	for _, opt := range opts {
+		opt(&callOpts)
+	}
+
+	next, err := g.next(req, callOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	// #200 - streams shouldn't have a request timeout set on the context
+
+	// should we noop right here?
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	// make a copy of stream
+	gstream := g.stream
+
+	// wrap the call in reverse
+	for i := len(callOpts.CallWrappers); i > 0; i-- {
+		gstream = callOpts.CallWrappers[i-1](gstream)
+	}
+
+	call := func(i int) (client.IStream, error) {
+		// call backoff first. Someone may want an initial start delay
+		t, err := callOpts.Backoff(ctx, req, i)
+		if err != nil {
+			return nil, err
+		}
+
+		// only sleep if greater than 0
+		if t.Seconds() > 0 {
+			time.Sleep(t)
+		}
+
+		node, err := next()
+		service := req.Service()
+		if err != nil {
+			if errors.Is(err, selector.ErrNotFound) {
+				return nil, err
+			}
+			return nil, err
+		}
+
+		// make the call
+		stream := &grpcStream{}
+		err = g.stream(ctx, node, req, stream, callOpts)
+
+		g.opts.Selector.Mark(service, node, err)
+		return stream, err
+	}
+
+	type response struct {
+		stream client.IStream
+		err    error
+	}
+
+	ch := make(chan response, callOpts.Retries+1)
+	var grr error
+
+	for i := 0; i <= callOpts.Retries; i++ {
+		go func(i int) {
+			s, err := call(i)
+			ch <- response{s, err}
+		}(i)
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case rsp := <-ch:
+			// if the call succeeded lets bail early
+			if rsp.err == nil {
+				return rsp.stream, nil
+			}
+
+			retry, rerr := callOpts.Retry(ctx, req, i, err)
+			if rerr != nil {
+				return nil, rerr
+			}
+
+			if !retry {
+				return nil, rsp.err
+			}
+
+			grr = rsp.err
+		}
+	}
+
+	return nil, grr
 }
 
 func (g *grpcClient) String() string {

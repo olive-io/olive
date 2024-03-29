@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/olive-io/olive/pkg/proxy/client"
+	"github.com/olive-io/olive/pkg/proxy/codec"
 )
 
 type grpcRequest struct {
@@ -27,6 +28,7 @@ type grpcRequest struct {
 	contentType string
 	request     interface{}
 	opts        client.RequestOptions
+	codec       codec.Codec
 }
 
 // service Struct.Method /service.Struct/Method
