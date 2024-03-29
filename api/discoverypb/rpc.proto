@@ -36,6 +36,10 @@ service Gateway {
       body: "*"
     };
   }
+
+  // rpc ClientStream(stream PingRequest) returns (PingResponse) {};
+  // rpc ServerStream(PingRequest) returns (stream PingResponse) {};
+  // rpc BinaryStream(stream PingRequest) returns (stream PingResponse) {};
 }
 
 message PingRequest {
