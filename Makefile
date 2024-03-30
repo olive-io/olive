@@ -33,10 +33,10 @@ generate:
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/discoverypb/rpc.proto
 
 	goimports -w api/*/**.go
-	sed -i "" 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i  's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i  's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i  's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i  's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
 	rm -fr api/*/**swagger.json
 
 docker:

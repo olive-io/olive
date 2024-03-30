@@ -19,10 +19,13 @@ import (
 
 	pb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/proxy/codec"
+	"google.golang.org/grpc"
 )
 
 // IServer is a simple vine server abstraction
 type IServer interface {
+	grpc.ServiceRegistrar
+
 	// Handle register a handler
 	Handle(IHandler) error
 	// NewHandler create a new handler

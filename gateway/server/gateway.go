@@ -224,7 +224,7 @@ func (gw *Gateway) buildGRPCServer() (*grpc.Server, *gwr.ServeMux, error) {
 	}
 	gs := grpc.NewServer(sopts...)
 	rpc := &gatewayRpc{gw: gw}
-	pb.RegisterGatewayServer(gs, rpc)
+	//pb.RegisterGatewayServer(gs, rpc)
 
 	gwmux := gwr.NewServeMux()
 	if err := pb.RegisterGatewayHandlerServer(gw.ctx, gwmux, rpc); err != nil {

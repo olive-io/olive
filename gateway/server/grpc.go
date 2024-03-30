@@ -44,3 +44,18 @@ func (gr *gatewayRpc) Transmit(ctx context.Context, req *pb.TransmitRequest) (*p
 	}
 	return resp, nil
 }
+
+func (gr *gatewayRpc) ClientStream(server pb.Gateway_ClientStreamServer) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (gr *gatewayRpc) ServerStream(request *pb.PingRequest, server pb.Gateway_ServerStreamServer) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (gr *gatewayRpc) BinaryStream(server pb.Gateway_BinaryStreamServer) error {
+	//TODO implement me
+	panic("implement me")
+}

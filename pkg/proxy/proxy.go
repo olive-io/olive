@@ -16,10 +16,10 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	cx "github.com/olive-io/olive/pkg/context"
 	"github.com/olive-io/olive/pkg/proxy/client"
@@ -142,9 +142,11 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 		return nil, errors.Wrapf(ErrLargeRequest, "request(%d) > limit(%d)", lsize, bsize)
 	}
 
-	request := &dsypb.TransmitRequest{}
-	if err = json.Unmarshal(br, request); err != nil {
-		return nil, err
+	// default to trying json
+	var request json.RawMessage
+	// if the extracted payload isn't empty lets use it
+	if len(br) > 0 {
+		request = br
 	}
 
 	// create request/response
@@ -153,6 +155,7 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 		service.Name,
 		service.Endpoint.Name,
 		request,
+		client.WithContentType(ct),
 	)
 
 	// make the call

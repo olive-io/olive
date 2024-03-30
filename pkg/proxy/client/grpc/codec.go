@@ -15,7 +15,7 @@
 package grpc
 
 import (
-	b "bytes"
+	goBytes "bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -142,7 +142,7 @@ func (jsonCodec) Unmarshal(data []byte, bb interface{}) error {
 		return nil
 	}
 	if pb, ok := bb.(proto.Message); ok {
-		return jsonpb.Unmarshal(b.NewReader(data), pb)
+		return jsonpb.Unmarshal(goBytes.NewReader(data), pb)
 	}
 
 	return json.Unmarshal(data, bb)

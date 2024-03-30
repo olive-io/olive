@@ -26,8 +26,6 @@ import (
 type Endpoint struct {
 	// RPC Method e.g. Greeter.Hello
 	Name string `json:"name,omitempty"`
-	// Endpoint Activity
-	Activity pb.Activity `json:"activity,omitempty"`
 	// API Handler e.g rpc, proxy
 	Handler string `json:"handler,omitempty"`
 	// HTTP Host e.g example.com
