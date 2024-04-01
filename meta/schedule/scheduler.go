@@ -148,7 +148,7 @@ func (sc *Scheduler) sync() error {
 		clientv3.WithSerializable(),
 	}
 
-	key := runtime.DefaultMetaRunnerRegistry
+	key := runtime.DefaultMetaRunnerRegistrar
 	resp, err := client.Get(ctx, key, options...)
 	if err != nil {
 		return err
@@ -297,7 +297,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 }
 
 func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
-	idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRegionRegistryId, sc.v3cli)
+	idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRegionRegistrarId, sc.v3cli)
 	if err != nil {
 		return 0, err
 	}
@@ -606,7 +606,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		}
 
 		sc.handleRegionStat(rs)
-	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistry):
+	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistrar):
 		runner := new(pb.Runner)
 		if err := proto.Unmarshal(kv.Value, runner); err != nil {
 			lg.Error("unmarshal Runner", zap.Error(err))

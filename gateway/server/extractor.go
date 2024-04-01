@@ -15,19 +15,21 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
-func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
-	eps := make([]*pb.Endpoint, 0)
+func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
+	eps := make([]*dsypb.Endpoint, 0)
 
 	for url, pt := range svc.Paths {
 		var method string
-		var apiEp *pb.OpenAPIEndpoint
+		var apiEp *dsypb.OpenAPIEndpoint
 		if pt.Get != nil {
 			method = http.MethodGet
 			apiEp = pt.Get
@@ -65,14 +67,14 @@ func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
 			api.DescKey:    apiEp.Description,
 		}
 
-		req := &pb.Box{
-			Type: pb.BoxType_object,
+		req := &dsypb.Box{
+			Type: dsypb.BoxType_object,
 		}
 		if method == http.MethodGet {
 			md[api.ContentTypeKey] = "application/json"
-			parameters := map[string]*pb.Box{}
+			parameters := map[string]*dsypb.Box{}
 			for _, param := range apiEp.Parameters {
-				item := &pb.Box{}
+				item := &dsypb.Box{}
 				extractSchema(param.Schema, svc.Components, item)
 				parameters[param.Name] = item
 			}
@@ -92,7 +94,7 @@ func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
 				md[api.ContentTypeKey] = "application/yaml"
 			}
 		}
-		rsp := &pb.Box{Type: pb.BoxType_object}
+		rsp := &dsypb.Box{Type: dsypb.BoxType_object}
 		if resp, ok := apiEp.Responses["200"]; ok {
 			content := resp.Content
 			if content.ApplicationJson != nil {
@@ -126,7 +128,7 @@ func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
 			}
 		}
 
-		ep := &pb.Endpoint{
+		ep := &dsypb.Endpoint{
 			Name:     name,
 			Request:  req,
 			Response: rsp,
@@ -139,28 +141,28 @@ func extractOpenAPIDocs(svc *pb.OpenAPI) []*pb.Endpoint {
 	return eps
 }
 
-func extractSchema(so *pb.SchemaObject, components *pb.OpenAPIComponents, target *pb.Box) {
+func extractSchema(so *dsypb.SchemaObject, components *dsypb.OpenAPIComponents, target *dsypb.Box) {
 	if len(so.Example) != 0 {
 		target.Data = []byte(so.Example)
 	}
 
 	switch so.Type {
 	case "string":
-		target.Type = pb.BoxType_string
+		target.Type = dsypb.BoxType_string
 		return
 	case "integer":
-		target.Type = pb.BoxType_integer
+		target.Type = dsypb.BoxType_integer
 		return
 	case "number":
-		target.Type = pb.BoxType_float
+		target.Type = dsypb.BoxType_float
 		return
 	case "boolean":
-		target.Type = pb.BoxType_boolean
+		target.Type = dsypb.BoxType_boolean
 		return
 	case "object":
-		target.Type = pb.BoxType_object
+		target.Type = dsypb.BoxType_object
 		if so.AdditionalProperties != nil {
-			target.Type = pb.BoxType_map
+			target.Type = dsypb.BoxType_map
 			target.Ref = so.AdditionalProperties.Ref
 			return
 		}
@@ -169,7 +171,7 @@ func extractSchema(so *pb.SchemaObject, components *pb.OpenAPIComponents, target
 		if target.Ref == "" {
 			target.Ref = so.Type
 		}
-		target.Type = pb.BoxType_array
+		target.Type = dsypb.BoxType_array
 		return
 	}
 
@@ -180,80 +182,146 @@ func extractSchema(so *pb.SchemaObject, components *pb.OpenAPIComponents, target
 	}
 	target.Ref = so.Ref
 
-	parameters := map[string]*pb.Box{}
+	parameters := map[string]*dsypb.Box{}
 	for name := range model.Properties {
-		param := &pb.Box{}
+		param := &dsypb.Box{}
 		extractSchema(model.Properties[name], components, param)
 		parameters[name] = param
 	}
 	target.Parameters = parameters
 }
 
-//func extractEndpoint(method reflect.Method) *pb.Endpoint {
-//	if method.PkgPath != "" {
-//		return nil
-//	}
-//
-//	var rspType, reqType reflect.Type
-//	var stream bool
-//	mt := method.Type
-//
-//	in, out := mt.NumIn(), mt.NumOut()
-//	if in == 3 && out == 2 {
-//		reqType = mt.In(2)
-//		rspType = mt.Out(0)
-//	} else if in == 3 && out == 1 {
-//		reqType = mt.In(1)
-//		rspType = mt.In(2)
-//	} else if in == 2 && out == 1 {
-//		reqType = mt.In(1)
-//		rspType = mt.In(1)
-//	} else {
-//		panic("invalid grpc endpoint")
-//	}
-//
-//	// are we dealing with a stream?
-//	switch rspType.Kind() {
-//	case reflect.Func, reflect.Interface:
-//		stream = true
-//	default:
-//	}
-//
-//	request := extractBox(reqType, 0)
-//	response := extractBox(rspType, 0)
-//
-//	ep := &pb.Endpoint{
-//		Name:     method.Name,
-//		Request:  request,
-//		Response: response,
-//		Metadata: make(map[string]string),
-//	}
-//
-//	if stream {
-//		if _, exists := ep.Metadata["stream"]; !exists {
-//			ep.Metadata["stream"] = fmt.Sprintf("%v", stream)
-//		}
-//	}
-//
-//	return ep
-//}
-//
-//func extractBox(v reflect.Type, d int) *pb.Box {
-//	if d == 3 {
-//		return nil
-//	}
-//	if v == nil {
-//		return nil
-//	}
-//
-//	if v.Kind() == reflect.Ptr {
-//		v = v.Elem()
-//	}
-//
-//	name := v.Name()
-//	pkgPath := v.PkgPath()
-//	_ = pkgPath
-//	_ = name
-//
-//	return &pb.Box{}
-//}
+func extractGRPCEndpoint(method reflect.Method) *dsypb.Endpoint {
+	if method.PkgPath != "" {
+		return nil
+	}
+
+	var rspType, reqType reflect.Type
+	var stream bool
+	mt := method.Type
+
+	in, out := mt.NumIn(), mt.NumOut()
+	if in == 3 && out == 2 {
+		reqType = mt.In(2)
+		rspType = mt.Out(0)
+	} else if in == 3 && out == 1 {
+		reqType = mt.In(1)
+		rspType = mt.In(2)
+	} else if in == 2 && out == 1 {
+		reqType = mt.In(1)
+		rspType = mt.In(1)
+	} else {
+		panic("invalid grpc endpoint")
+	}
+
+	// are we dealing with a stream?
+	switch rspType.Kind() {
+	case reflect.Func, reflect.Interface:
+		stream = true
+	default:
+	}
+
+	request := extractGRPCBox(reqType, 0)
+	response := extractGRPCBox(rspType, 0)
+
+	ep := &dsypb.Endpoint{
+		Name:     method.Name,
+		Request:  request,
+		Response: response,
+		Metadata: make(map[string]string),
+	}
+
+	if stream {
+		if _, exists := ep.Metadata["stream"]; !exists {
+			ep.Metadata["stream"] = fmt.Sprintf("%v", stream)
+		}
+	}
+
+	return ep
+}
+
+func extractGRPCBox(v reflect.Type, d int) *dsypb.Box {
+	if d == 3 {
+		return nil
+	}
+	if v == nil {
+		return nil
+	}
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	box := &dsypb.Box{}
+
+	switch v.Kind() {
+	case reflect.Uint32, reflect.Uint64, reflect.Int32, reflect.Int64:
+		box.Type = dsypb.BoxType_integer
+	case reflect.Float32, reflect.Float64:
+		box.Type = dsypb.BoxType_float
+	case reflect.String:
+		box.Type = dsypb.BoxType_string
+	case reflect.Bool:
+		box.Type = dsypb.BoxType_boolean
+	case reflect.Struct:
+		box.Type = dsypb.BoxType_object
+		parameters := map[string]*dsypb.Box{}
+		for i := 0; i < v.NumField(); i++ {
+			ftp := v.Field(i)
+			field := extractGRPCBox(ftp.Type, d+1)
+			if field == nil {
+				continue
+			}
+
+			var name string
+			// if we can find a json tag use it
+			if tags := ftp.Tag.Get("json"); len(tags) > 0 {
+				parts := strings.Split(tags, ",")
+				if parts[0] == "-" || parts[0] == "omitempty" {
+					continue
+				}
+				name = parts[0]
+			}
+
+			// if there's no name default it
+			if len(name) == 0 {
+				name = v.Field(i).Name
+			}
+
+			parameters[name] = field
+		}
+		box.Parameters = parameters
+		box.Ref = boxRefPath(v)
+	case reflect.Slice:
+		p := v.Elem()
+		if p.Kind() == reflect.Ptr {
+			p = p.Elem()
+		}
+
+		box.Type = dsypb.BoxType_array
+		if p.Kind() == reflect.Uint8 {
+			box.Type = dsypb.BoxType_string
+		} else {
+			ref := extractGRPCBox(p, d+1)
+			box.Ref = ref.Ref
+			if ref.Ref == "" {
+				box.Ref = ref.Type.String()
+			}
+		}
+	case reflect.Map:
+		// arg.Type = fmt.Sprintf(`map %s:%s`, v.Key().String(), v.Elem().String())
+		box.Type = dsypb.BoxType_map
+		ref := extractGRPCBox(v.Elem(), d+1)
+		box.Ref = ref.Ref
+		if ref.Ref == "" {
+			box.Ref = ref.Type.String()
+		}
+	default:
+	}
+
+	return box
+}
+
+func boxRefPath(v reflect.Type) string {
+	return strings.ReplaceAll(v.PkgPath(), "/", ".") + "." + v.Name()
+}

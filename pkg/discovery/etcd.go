@@ -32,7 +32,7 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
-type etcdRegistry struct {
+type etcdRegistrar struct {
 	client  *clientv3.Client
 	options Options
 
@@ -43,7 +43,7 @@ type etcdRegistry struct {
 
 func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
 	options := NewOptions(opts...)
-	e := &etcdRegistry{
+	e := &etcdRegistrar{
 		client:   client,
 		options:  options,
 		register: make(map[string]uint64),
@@ -61,11 +61,11 @@ func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
 	return e, nil
 }
 
-func (e *etcdRegistry) Options() Options {
+func (e *etcdRegistrar) Options() Options {
 	return e.options
 }
 
-func (e *etcdRegistry) registerNode(ctx context.Context, s *dsypb.Service, node *dsypb.Node, opts ...RegisterOption) error {
+func (e *etcdRegistrar) registerNode(ctx context.Context, s *dsypb.Service, node *dsypb.Node, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -214,7 +214,7 @@ func (e *etcdRegistry) registerNode(ctx context.Context, s *dsypb.Service, node 
 	return nil
 }
 
-func (e *etcdRegistry) Register(ctx context.Context, s *dsypb.Service, opts ...RegisterOption) error {
+func (e *etcdRegistrar) Register(ctx context.Context, s *dsypb.Service, opts ...RegisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("require at lease one node")
 	}
@@ -232,7 +232,7 @@ func (e *etcdRegistry) Register(ctx context.Context, s *dsypb.Service, opts ...R
 	return grr
 }
 
-func (e *etcdRegistry) Deregister(ctx context.Context, s *dsypb.Service, opts ...DeregisterOption) error {
+func (e *etcdRegistrar) Deregister(ctx context.Context, s *dsypb.Service, opts ...DeregisterOption) error {
 	if len(s.Nodes) == 0 {
 		return errors.New("required at lease one node")
 	}
@@ -275,7 +275,7 @@ func (e *etcdRegistry) Deregister(ctx context.Context, s *dsypb.Service, opts ..
 	return nil
 }
 
-func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetOption) ([]*dsypb.Service, error) {
+func (e *etcdRegistrar) GetService(ctx context.Context, name string, opts ...GetOption) ([]*dsypb.Service, error) {
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
 	defer cancel()
 
@@ -331,7 +331,7 @@ func (e *etcdRegistry) GetService(ctx context.Context, name string, opts ...GetO
 	return services, nil
 }
 
-func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]*dsypb.Service, error) {
+func (e *etcdRegistrar) ListServices(ctx context.Context, opts ...ListOption) ([]*dsypb.Service, error) {
 	versions := make(map[string]*dsypb.Service)
 
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
@@ -394,7 +394,7 @@ func (e *etcdRegistry) ListServices(ctx context.Context, opts ...ListOption) ([]
 	return services, nil
 }
 
-func (e *etcdRegistry) Watch(ctx context.Context, opts ...WatchOption) (Watcher, error) {
+func (e *etcdRegistrar) Watch(ctx context.Context, opts ...WatchOption) (Watcher, error) {
 	return newEtcdWatcher(ctx, e, opts...)
 }
 

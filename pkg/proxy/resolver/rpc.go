@@ -1,4 +1,4 @@
-// Copyright 2023 The olive Authors
+// Copyright 2024 The olive Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,28 +17,22 @@ package resolver
 import (
 	"net/http"
 
-	"github.com/cockroachdb/errors"
+	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
-var (
-	ErrNotFound = errors.New("not found")
-)
+// rpcResolver the Resolver implementation for IResolver
+type rpcResolver struct{}
 
-// IResolver resolves requests to endpoints
-type IResolver interface {
-	Resolve(r *http.Request) (*Endpoint, error)
+func NewRPCResolver() IResolver {
+	return new(rpcResolver)
 }
 
-// Endpoint is the endpoint for a http request
-type Endpoint struct {
-	// e.g greeter
-	Name string
-	// HTTP Host e.g example.com
-	Host string
-	// HTTP Methods e.g GET, POST
-	Method string
-	// HTTP Path e.g /greeter.
-	Path string
-	// the Handler of router
-	Handler string
+func (r *rpcResolver) Resolve(req *http.Request) (*Endpoint, error) {
+	return &Endpoint{
+		Name:    api.DefaultService,
+		Host:    req.Host,
+		Method:  req.Method,
+		Path:    api.DefaultTaskURL,
+		Handler: api.RPCHandler,
+	}, nil
 }

@@ -14,9 +14,20 @@
 
 package server
 
+import (
+	"google.golang.org/grpc"
+)
+
 type HandlerOption func(*HandlerOptions)
 
 type HandlerOptions struct {
-	Internal bool
-	Metadata map[string]map[string]string
+	Internal    bool
+	Metadata    map[string]map[string]string
+	ServiceDesc *grpc.ServiceDesc
+}
+
+func WithServerDesc(desc *grpc.ServiceDesc) HandlerOption {
+	return func(opts *HandlerOptions) {
+		opts.ServiceDesc = desc
+	}
 }

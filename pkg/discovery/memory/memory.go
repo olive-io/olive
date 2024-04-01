@@ -46,7 +46,7 @@ type record struct {
 	Endpoints []*dsypb.Endpoint
 }
 
-type Registry struct {
+type Registrar struct {
 	options dsy.Options
 
 	sync.RWMutex
@@ -54,7 +54,7 @@ type Registry struct {
 	watchers map[string]*Watcher
 }
 
-func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
+func NewRegistrar(opts ...dsy.Option) dsy.IDiscovery {
 	options := dsy.Options{}
 
 	for _, o := range opts {
@@ -71,7 +71,7 @@ func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
 		records = make(map[string]map[string]*record)
 	}
 
-	reg := &Registry{
+	reg := &Registrar{
 		options:  options,
 		records:  records,
 		watchers: make(map[string]*Watcher),
@@ -82,7 +82,7 @@ func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
 	return reg
 }
 
-func (m *Registry) ttlPrune() {
+func (m *Registrar) ttlPrune() {
 	prune := time.NewTicker(ttlPruneTime)
 	defer prune.Stop()
 
@@ -96,7 +96,7 @@ func (m *Registry) ttlPrune() {
 				for version, record := range records {
 					for id, n := range record.Nodes {
 						if n.TTL != 0 && time.Since(n.LastSeen) > n.TTL {
-							lg.Debugf("Registry TTL expired for node %s of service %s", n.Id, name)
+							lg.Debugf("Registrar TTL expired for node %s of service %s", n.Id, name)
 						}
 						delete(m.records[name][version].Nodes, id)
 					}
@@ -107,7 +107,7 @@ func (m *Registry) ttlPrune() {
 	}
 }
 
-func (m *Registry) sendEvent(r *dsypb.Result) {
+func (m *Registrar) sendEvent(r *dsypb.Result) {
 	m.RLock()
 	watchers := make([]*Watcher, 0, len(m.watchers))
 	for i := range m.watchers {
@@ -131,7 +131,7 @@ func (m *Registry) sendEvent(r *dsypb.Result) {
 	}
 }
 
-func (m *Registry) Init(opts ...dsy.Option) error {
+func (m *Registrar) Init(opts ...dsy.Option) error {
 	for _, o := range opts {
 		o(&m.options)
 	}
@@ -160,11 +160,11 @@ func (m *Registry) Init(opts ...dsy.Option) error {
 	return nil
 }
 
-func (m *Registry) Options() dsy.Options {
+func (m *Registrar) Options() dsy.Options {
 	return m.options
 }
 
-func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.RegisterOption) error {
+func (m *Registrar) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.RegisterOption) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -183,7 +183,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 
 	if _, ok := m.records[s.Name][s.Version]; !ok {
 		m.records[s.Name][s.Version] = r
-		lg.Debugf("Registry added new service: %s, version: %s", s.Name, s.Version)
+		lg.Debugf("Registrar added new service: %s, version: %s", s.Name, s.Version)
 		go m.sendEvent(&dsypb.Result{Action: "update", Service: s})
 		return nil
 	}
@@ -209,7 +209,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 	}
 
 	if addedNodes {
-		lg.Debugf("Registry added new node to service: %s, version: %s", s.Name, s.Version)
+		lg.Debugf("Registrar added new node to service: %s, version: %s", s.Name, s.Version)
 		go m.sendEvent(&dsypb.Result{Action: "update", Service: s})
 		return nil
 	}
@@ -224,7 +224,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 	return nil
 }
 
-func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy.DeregisterOption) error {
+func (m *Registrar) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy.DeregisterOption) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -234,18 +234,18 @@ func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy
 		if _, ok := m.records[s.Name][s.Version]; ok {
 			for _, n := range s.Nodes {
 				if _, ok := m.records[s.Name][s.Version].Nodes[n.Id]; ok {
-					lg.Debugf("Registry removed node from service: %s, version: %s", s.Name, s.Version)
+					lg.Debugf("Registrar removed node from service: %s, version: %s", s.Name, s.Version)
 					delete(m.records[s.Name][s.Version].Nodes, n.Id)
 				}
 			}
 			if len(m.records[s.Name][s.Version].Nodes) == 0 {
 				delete(m.records[s.Name], s.Version)
-				lg.Debugf("Registry removed service: %s, version: %s", s.Name, s.Version)
+				lg.Debugf("Registrar removed service: %s, version: %s", s.Name, s.Version)
 			}
 		}
 		if len(m.records[s.Name]) == 0 {
 			delete(m.records, s.Name)
-			lg.Debugf("Registry removed service: %s", s.Name)
+			lg.Debugf("Registrar removed service: %s", s.Name)
 		}
 		go m.sendEvent(&dsypb.Result{Action: "delete", Service: s})
 	}
@@ -253,7 +253,7 @@ func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy
 	return nil
 }
 
-func (m *Registry) GetService(ctx context.Context, name string, opts ...dsy.GetOption) ([]*dsypb.Service, error) {
+func (m *Registrar) GetService(ctx context.Context, name string, opts ...dsy.GetOption) ([]*dsypb.Service, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -272,7 +272,7 @@ func (m *Registry) GetService(ctx context.Context, name string, opts ...dsy.GetO
 	return services, nil
 }
 
-func (m *Registry) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]*dsypb.Service, error) {
+func (m *Registrar) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]*dsypb.Service, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -286,7 +286,7 @@ func (m *Registry) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]
 	return services, nil
 }
 
-func (m *Registry) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watcher, error) {
+func (m *Registrar) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watcher, error) {
 	var wo dsy.WatchOptions
 	for _, o := range opts {
 		o(&wo)
@@ -306,6 +306,6 @@ func (m *Registry) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watc
 	return w, nil
 }
 
-func (m *Registry) String() string {
+func (m *Registrar) String() string {
 	return "memory"
 }

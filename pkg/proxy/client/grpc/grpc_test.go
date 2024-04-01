@@ -18,10 +18,10 @@ import (
 	"context"
 	"testing"
 
+	dsypb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/stretchr/testify/assert"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/discovery/memory"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/grpc"
@@ -29,7 +29,7 @@ import (
 )
 
 func TestCall(t *testing.T) {
-	discovery := memory.NewRegistry()
+	discovery := memory.NewRegistrar()
 	so, err := selector.NewSelector(selector.Discovery(discovery))
 	if !assert.NoError(t, err) {
 		return

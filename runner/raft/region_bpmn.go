@@ -17,10 +17,10 @@ package raft
 import (
 	"context"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
 	json "github.com/json-iterator/go"
 	"github.com/olive-io/bpmn/data"
@@ -30,6 +30,7 @@ import (
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
+	"github.com/olive-io/olive/api/gatewaypb"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -360,6 +361,11 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	if name, ok := taskAct.Element().Name(); ok {
 		dsyAct.Name = *name
 	}
+	if extension, ok := taskAct.Element().ExtensionElements(); ok {
+		if td := extension.TaskDefinitionField; td != nil {
+			dsyAct.TaskType = td.Type
+		}
+	}
 
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionId),
@@ -372,7 +378,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	req := &dsypb.TransmitRequest{
+	req := &gatewaypb.TransmitRequest{
 		Activity:    dsyAct,
 		Headers:     headers,
 		Properties:  map[string]*dsypb.Box{},
@@ -388,6 +394,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	doOpts := make([]bact.DoOption, 0)
 	resp, err := r.proxy.Handle(ctx, req)
 	if err != nil {
+		err = fmt.Errorf("%s", err.Error())
 		r.lg.Error("handle task", append(fields, zap.Error(err))...)
 		doOpts = append(doOpts, bact.WithErr(err))
 	} else {

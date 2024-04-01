@@ -34,7 +34,7 @@ func NewOptions(opts ...Option) Options {
 	}
 
 	if options.Timeout == 0 {
-		options.Timeout = DefaultRegistryTimeout
+		options.Timeout = DefaultRegistrarTimeout
 	}
 
 	if options.Namespace == "" {

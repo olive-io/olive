@@ -70,7 +70,7 @@ type registryRouter struct {
 	lg *zap.Logger
 
 	discovery dsy.IDiscovery
-	resolver  resolver.IResolver
+	resolvers map[string]resolver.IResolver
 
 	// registry cache
 	rc cache.Cache
@@ -81,6 +81,36 @@ type registryRouter struct {
 	ceps map[string]*endpoint
 
 	stopc chan struct{}
+}
+
+// NewRouter returns the default router
+func NewRouter(lg *zap.Logger, discovery dsy.IDiscovery) Router {
+	if lg == nil {
+		lg = zap.NewNop()
+	}
+
+	rc := cache.New(discovery)
+
+	resolvers := map[string]resolver.IResolver{
+		api.RPCHandler:  resolver.NewRPCResolver(),
+		api.HTTPHandler: resolver.NewHTTPResolver(),
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	r := &registryRouter{
+		ctx:       ctx,
+		cancel:    cancel,
+		lg:        lg,
+		rc:        rc,
+		discovery: discovery,
+		resolvers: resolvers,
+		eps:       make(map[string]*api.Service),
+		ceps:      make(map[string]*endpoint),
+		stopc:     make(chan struct{}),
+	}
+	go r.watch()
+	go r.refresh()
+	return r
 }
 
 func (r *registryRouter) isClosed() bool {
@@ -419,18 +449,25 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 		return nil, ErrClosed
 	}
 
-	// try to get an endpoint
-	ep, err := r.Endpoint(req)
-	if err == nil {
-		return ep, nil
+	handler := req.Header.Get(api.OliveHttpKey(api.HandlerKey))
+	rsv, ok := r.resolvers[handler]
+	if !ok {
+		return nil, ErrNoResolver
 	}
 
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		return nil, err
+	switch handler {
+	case api.RPCHandler:
+		return r.routeRPC(req, rsv)
+	case api.HTTPHandler:
+		return r.routeHTTP(req, rsv)
+	default:
+		return nil, ErrNotFound
 	}
+}
 
+func (r *registryRouter) routeRPC(req *http.Request, rsv resolver.IResolver) (*api.Service, error) {
 	// get the service name
-	rp, err := r.resolver.Resolve(req)
+	rp, err := rsv.Resolve(req)
 	if err != nil {
 		return nil, err
 	}
@@ -446,32 +483,54 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 		return nil, err
 	}
 
-	var service *api.Service
-	switch rp.Handler {
-	case api.RPCHandler:
-		// rpc handler
-		service = &api.Service{
-			Name: name,
-			Endpoint: &api.Endpoint{
-				Name:    rp.Method,
-				Handler: rp.Handler,
-			},
-			Services: services,
-		}
-	case api.HTTPHandler:
-		service = &api.Service{
-			Name: name,
-			Endpoint: &api.Endpoint{
-				Name:    rp.Path,
-				Host:    []string{req.Host},
-				Method:  []string{req.Method},
-				Path:    []string{req.URL.Path},
-				Handler: rp.Handler,
-			},
-			Services: services,
-		}
-	default:
-		return nil, ErrNoResolver
+	return &api.Service{
+		Name: name,
+		Endpoint: &api.Endpoint{
+			Name:    rp.Method,
+			Handler: rp.Handler,
+		},
+		Services: services,
+	}, nil
+}
+
+func (r *registryRouter) routeHTTP(req *http.Request, rsv resolver.IResolver) (*api.Service, error) {
+	// try to get an endpoint
+	ep, err := r.Endpoint(req)
+	if err == nil {
+		return ep, nil
+	}
+
+	// get the service name
+	rp, err := rsv.Resolve(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// service name
+	name := rp.Name
+	var opts []dsy.GetOption
+
+	ctx := req.Context()
+	// get service
+	services, err := r.rc.GetService(ctx, name, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+
+	service := &api.Service{
+		Name: name,
+		Endpoint: &api.Endpoint{
+			Name:    rp.Path,
+			Host:    []string{req.Host},
+			Method:  []string{req.Method},
+			Path:    []string{req.URL.Path},
+			Handler: rp.Handler,
+		},
+		Services: services,
 	}
 
 	return service, nil
@@ -487,29 +546,4 @@ func (r *registryRouter) Close() error {
 		r.cancel()
 	}
 	return nil
-}
-
-// NewRouter returns the default router
-func NewRouter(lg *zap.Logger, discovery dsy.IDiscovery) Router {
-	if lg == nil {
-		lg = zap.NewNop()
-	}
-
-	rc := cache.New(discovery)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	r := &registryRouter{
-		ctx:       ctx,
-		cancel:    cancel,
-		lg:        lg,
-		rc:        rc,
-		discovery: discovery,
-		resolver:  resolver.NewResolver(),
-		eps:       make(map[string]*api.Service),
-		ceps:      make(map[string]*endpoint),
-		stopc:     make(chan struct{}),
-	}
-	go r.watch()
-	go r.refresh()
-	return r
 }

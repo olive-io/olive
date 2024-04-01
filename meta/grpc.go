@@ -98,7 +98,7 @@ func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.
 
 func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
 	resp = &pb.ListRunnerResponse{}
-	key := runtime.DefaultMetaRunnerRegistry
+	key := runtime.DefaultMetaRunnerRegistrar
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
@@ -125,7 +125,7 @@ func (s *Server) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp 
 }
 
 func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
-	key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", id))
+	key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
