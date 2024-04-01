@@ -30,6 +30,7 @@ const (
 	codesPackage   = protogen.GoImportPath("google.golang.org/grpc/codes")
 	statusPackage  = protogen.GoImportPath("google.golang.org/grpc/status")
 
+	clientPackage = protogen.GoImportPath("github.com/olive-io/olive/pkg/proxy/client")
 	serverPackage = protogen.GoImportPath("github.com/olive-io/olive/pkg/proxy/server")
 )
 
