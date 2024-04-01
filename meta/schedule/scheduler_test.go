@@ -110,7 +110,7 @@ func newScheduler(t *testing.T) (*Scheduler, *clientv3.Client, func()) {
 func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	ctx := context.TODO()
 	if n > 0 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r1.Id))
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r1.Id))
 		data, _ := r1.Marshal()
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {
@@ -119,7 +119,7 @@ func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	}
 
 	if n > 1 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r2.Id))
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r2.Id))
 		data, _ := r2.Marshal()
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {
@@ -128,7 +128,7 @@ func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	}
 
 	if n > 2 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r3.Id))
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r3.Id))
 		data, _ := r3.Marshal()
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {

@@ -21,6 +21,7 @@ import (
 	"github.com/cockroachdb/errors"
 	json "github.com/json-iterator/go"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/api/gatewaypb"
 	cx "github.com/olive-io/olive/pkg/context"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/grpc"
@@ -33,7 +34,8 @@ var (
 )
 
 type IProxy interface {
-	Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.TransmitResponse, error)
+	Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*gatewaypb.TransmitResponse, error)
+	Stop() error
 }
 
 // strategy is a hack for selection
@@ -79,36 +81,13 @@ func NewProxy(cfg Config) (IProxy, error) {
 	return gw, nil
 }
 
-func (p *proxy) Stop() error {
-	if err := p.gr.Close(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.TransmitResponse, error) {
-	bsize := DefaultMaxRecvSize
-	if p.MaxRecvSize > 0 {
-		bsize = p.MaxRecvSize
-	}
+func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*gatewaypb.TransmitResponse, error) {
 
 	hreq, err := newRequest(req)
 	if err != nil {
 		return nil, err
 	}
 	hreq = hreq.WithContext(ctx)
-
-	ct := hreq.Header.Get("Content-Type")
-	if ct == "" {
-		hreq.Header.Set("Content-Type", "application/json")
-		ct = "application/json"
-	}
-
-	// create context
-	ctx = cx.FromRequest(hreq)
-	//for k, v := range h.opts.Metadata {
-	//	cx = metadata.Set(cx, k, v)
-	//}
 
 	// set merged context to request
 	r := hreq.Clone(ctx)
@@ -126,6 +105,32 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 		client.WithSelectOption(so),
 	}
 
+	if req.Activity.Type != dsypb.ActivityType_ServiceTask {
+		rsp := &gatewaypb.TransmitResponse{}
+		cr := p.cc.NewRequest(
+			service.Name,
+			service.Endpoint.Name,
+			req,
+		)
+
+		// make the call
+		if err = p.cc.Call(ctx, cr, rsp, callOpts...); err != nil {
+			return nil, err
+		}
+		return rsp, nil
+	}
+
+	// create context
+	ctx = cx.FromRequest(hreq)
+	//for k, v := range h.opts.Metadata {
+	//	cx = metadata.Set(cx, k, v)
+	//}
+
+	ct := hreq.Header.Get("Content-Type")
+	if ct == "" {
+		hreq.Header.Set("Content-Type", "application/json")
+		ct = "application/json"
+	}
 	// Strip charset from Content-Type (like `application/json; charset=UTF-8`)
 	if idx := strings.IndexRune(ct, ';'); idx >= 0 {
 		ct = ct[:idx]
@@ -138,17 +143,22 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 		return nil, err
 	}
 
+	bsize := DefaultMaxRecvSize
+	if p.MaxRecvSize > 0 {
+		bsize = p.MaxRecvSize
+	}
+
 	if lsize := int64(len(br)); lsize > bsize {
 		return nil, errors.Wrapf(ErrLargeRequest, "request(%d) > limit(%d)", lsize, bsize)
 	}
 
-	request := &dsypb.TransmitRequest{}
+	request := &gatewaypb.TransmitRequest{}
 	if err = json.Unmarshal(br, request); err != nil {
 		return nil, err
 	}
 
 	// create request/response
-	rsp := &dsypb.TransmitResponse{}
+	rsp := &gatewaypb.TransmitResponse{}
 	cr := p.cc.NewRequest(
 		service.Name,
 		service.Endpoint.Name,
@@ -161,4 +171,11 @@ func (p *proxy) Handle(ctx context.Context, req *dsypb.TransmitRequest) (*dsypb.
 	}
 
 	return rsp, nil
+}
+
+func (p *proxy) Stop() error {
+	if err := p.gr.Close(); err != nil {
+		return err
+	}
+	return nil
 }

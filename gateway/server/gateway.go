@@ -30,7 +30,8 @@ import (
 
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	json "github.com/json-iterator/go"
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
@@ -55,6 +56,7 @@ const (
 
 type Gateway struct {
 	genericserver.IEmbedServer
+	pb.UnsafeGatewayServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -64,6 +66,7 @@ type Gateway struct {
 	oct       *client.Client
 	discovery dsy.IDiscovery
 	serve     *http.Server
+	gs        *grpc.Server
 
 	started chan struct{}
 
@@ -71,7 +74,7 @@ type Gateway struct {
 	handlers   map[string]server.IHandler
 	registered bool
 	// registry service instance
-	rsvc *pb.Service
+	rsvc *dsypb.Service
 }
 
 func NewGateway(cfg Config) (*Gateway, error) {
@@ -99,17 +102,46 @@ func NewGateway(cfg Config) (*Gateway, error) {
 		cfg:          cfg,
 		oct:          oct,
 		discovery:    discovery,
-
-		handlers: map[string]server.IHandler{},
-
-		started: make(chan struct{}),
+		handlers:     map[string]server.IHandler{},
+		started:      make(chan struct{}),
 	}
+
+	var gwmux *gwr.ServeMux
+	gw.gs, gwmux, err = gw.buildGRPCServer()
+	if err != nil {
+		return nil, err
+	}
+
+	handler := gw.buildUserHandler()
+	mux := gw.createMux(gwmux, handler)
+	gw.serve = &http.Server{
+		Handler:        genericserver.GRPCHandlerFunc(gw.gs, mux),
+		MaxHeaderBytes: DefaultMaxHeaderBytes,
+	}
+
+	pb.RegisterTestServiceServerHandler(gw, &testRPC{})
 
 	return gw, nil
 }
 
 func (gw *Gateway) Logger() *zap.Logger {
 	return gw.cfg.GetLogger()
+}
+
+func (gw *Gateway) Handle(hdlr server.IHandler) error {
+	gw.rmu.Lock()
+	defer gw.rmu.Unlock()
+	gw.handlers[hdlr.Name()] = hdlr
+	return nil
+}
+
+func (gw *Gateway) NewHandler(h any, opts ...server.HandlerOption) server.IHandler {
+	handler := newRPCHandler(h, opts...)
+	if desc := handler.options.ServiceDesc; desc != nil {
+		gw.gs.RegisterService(desc, h)
+	}
+
+	return handler
 }
 
 func (gw *Gateway) Start(stopc <-chan struct{}) error {
@@ -131,25 +163,15 @@ func (gw *Gateway) Start(stopc <-chan struct{}) error {
 	gw.cfg.ListenURL = scheme + ts.Addr().String()
 	gw.rmu.Unlock()
 
-	gs, gwmux, err := gw.buildGRPCServer()
-	if err != nil {
-		return err
-	}
-
-	handler := gw.buildUserHandler()
-	mux := gw.createMux(gwmux, handler)
-	gw.serve = &http.Server{
-		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
-		MaxHeaderBytes: DefaultMaxHeaderBytes,
-	}
-
 	// announce self to the world
 	if err = gw.register(); err != nil {
 		lg.Error("Server register", zap.Error(err))
 	}
 
 	gw.GoAttach(func() {
-		_ = gw.serve.Serve(ts)
+		if e1 := gw.serve.Serve(ts); e1 != nil {
+			gw.Logger().Sugar().Errorf("starting gateway server: %v", e1)
+		}
 	})
 	gw.GoAttach(gw.process)
 	gw.Destroy(gw.destroy)
@@ -223,11 +245,11 @@ func (gw *Gateway) buildGRPCServer() (*grpc.Server, *gwr.ServeMux, error) {
 		grpc.UnknownServiceHandler(gw.internalHandler),
 	}
 	gs := grpc.NewServer(sopts...)
-	rpc := &gatewayRpc{gw: gw}
-	pb.RegisterGatewayServer(gs, rpc)
+	pb.RegisterGatewayServer(gs, gw)
 
+	ctx := gw.ctx
 	gwmux := gwr.NewServeMux()
-	if err := pb.RegisterGatewayHandlerServer(gw.ctx, gwmux, rpc); err != nil {
+	if err := pb.RegisterGatewayHandlerServer(ctx, gwmux, gw); err != nil {
 		return nil, nil, err
 	}
 
@@ -243,7 +265,8 @@ func (gw *Gateway) buildUserHandler() http.Handler {
 
 func (gw *Gateway) internalHandler(svc interface{}, stream grpc.ServerStream) error {
 	resp := &pb.TransmitResponse{
-		Properties: map[string]*pb.Box{"a": pb.BoxFromAny("a")},
+		Properties:  map[string]*dsypb.Box{},
+		DataObjects: map[string]*dsypb.Box{},
 	}
 	return stream.SendMsg(resp)
 }
@@ -284,7 +307,7 @@ func (gw *Gateway) register() error {
 	rsvc := gw.rsvc
 	gw.rmu.RUnlock()
 
-	regFunc := func(service *pb.Service) error {
+	regFunc := func(service *dsypb.Service) error {
 		var regErr error
 
 		for i := 0; i < 3; i++ {
@@ -355,7 +378,7 @@ func (gw *Gateway) register() error {
 	md := cxmd.Copy(cfg.Metadata)
 
 	// register service
-	node := &pb.Node{
+	node := &dsypb.Node{
 		Id:       cfg.Id,
 		Address:  mnet.HostPort(saddr, port),
 		Metadata: md,
@@ -375,7 +398,7 @@ func (gw *Gateway) register() error {
 	}
 	sort.Strings(handlerList)
 
-	endpoints := make([]*pb.Endpoint, 0, len(handlerList))
+	endpoints := make([]*dsypb.Endpoint, 0, len(handlerList))
 	for _, h := range handlerList {
 		endpoints = append(endpoints, gw.handlers[h].Endpoints()...)
 	}
@@ -383,7 +406,7 @@ func (gw *Gateway) register() error {
 	gw.rmu.RUnlock()
 
 	// read openapi docs
-	var openapi *pb.OpenAPI
+	var openapi *dsypb.OpenAPI
 	if cfg.OpenAPI != "" {
 		data, err := os.ReadFile(cfg.OpenAPI)
 		if err != nil {
@@ -409,10 +432,10 @@ func (gw *Gateway) register() error {
 		}
 	}
 
-	svc := &pb.Service{
+	svc := &dsypb.Service{
 		Name:      api.DefaultService,
 		Version:   version.Version,
-		Nodes:     []*pb.Node{node},
+		Nodes:     []*dsypb.Node{node},
 		Endpoints: endpoints,
 		Openapi:   openapi,
 	}
@@ -480,15 +503,15 @@ func (gw *Gateway) deregister() error {
 		return err
 	}
 
-	node := &pb.Node{
+	node := &dsypb.Node{
 		Id:      cfg.Id,
 		Address: mnet.HostPort(nAddr, port),
 	}
 
-	svc := &pb.Service{
+	svc := &dsypb.Service{
 		Name:    api.DefaultService,
 		Version: version.Version,
-		Nodes:   []*pb.Node{node},
+		Nodes:   []*dsypb.Node{node},
 	}
 
 	lg.Info("Deregistering node", zap.String("id", node.Id))

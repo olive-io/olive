@@ -30,9 +30,6 @@ import (
 	"github.com/olive-io/olive/pkg/proxy/codec/bytes"
 )
 
-type jsonCodec struct{}
-type protoCodec struct{}
-type bytesCodec struct{}
 type wrapCodec struct{ encoding.Codec }
 
 // create buffer pool with 16 instances each preallocated with 256 bytes
@@ -72,6 +69,8 @@ func (w wrapCodec) Unmarshal(data []byte, v interface{}) error {
 	return w.Codec.Unmarshal(data, v)
 }
 
+type protoCodec struct{}
+
 func (protoCodec) Marshal(v interface{}) ([]byte, error) {
 	switch m := v.(type) {
 	case *bytes.Frame:
@@ -94,6 +93,8 @@ func (protoCodec) Name() string {
 	return "proto"
 }
 
+type bytesCodec struct{}
+
 func (bytesCodec) Marshal(v interface{}) ([]byte, error) {
 	b, ok := v.(*[]byte)
 	if !ok {
@@ -114,6 +115,8 @@ func (bytesCodec) Unmarshal(data []byte, v interface{}) error {
 func (bytesCodec) Name() string {
 	return "bytes"
 }
+
+type jsonCodec struct{}
 
 func (jsonCodec) Marshal(v interface{}) ([]byte, error) {
 	if b, ok := v.(*bytes.Frame); ok {

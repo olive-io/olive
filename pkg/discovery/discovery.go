@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	DefaultRegistryTimeout = time.Second * 10
+	DefaultRegistrarTimeout = time.Second * 10
 	// DefaultNamespace the default value of namespace
 	DefaultNamespace = "default"
 
@@ -35,7 +35,7 @@ var (
 	ErrWatcherStopped = errors.New("watcher stopped")
 )
 
-type IRegistry interface {
+type IRegistrar interface {
 	Register(context.Context, *dsypb.Service, ...RegisterOption) error
 	Deregister(context.Context, *dsypb.Service, ...DeregisterOption) error
 }
@@ -43,7 +43,7 @@ type IRegistry interface {
 // IDiscovery the registry provides an interface for service discovery
 // and an abstraction over varying implementations
 type IDiscovery interface {
-	IRegistry
+	IRegistrar
 
 	Options() Options
 	GetService(context.Context, string, ...GetOption) ([]*dsypb.Service, error)

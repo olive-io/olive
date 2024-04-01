@@ -100,8 +100,8 @@ var (
 	}
 )
 
-func TestMemoryRegistry(t *testing.T) {
-	m := NewRegistry()
+func TestMemoryRegistrar(t *testing.T) {
+	m := NewRegistrar()
 
 	ctx := context.TODO()
 	fn := func(k string, v []*dsypb.Service) {
@@ -192,7 +192,7 @@ func TestMemoryRegistry(t *testing.T) {
 }
 
 func TestMemoryRegisterTTL(t *testing.T) {
-	m := NewRegistry()
+	m := NewRegistrar()
 
 	ctx := context.TODO()
 	for _, v := range testData {
@@ -222,7 +222,7 @@ func TestMemoryRegisterTTL(t *testing.T) {
 func TestMemoryRegisterTTLConcurrent(t *testing.T) {
 	concurrency := 1000
 	waitTime := ttlPruneTime * 2
-	m := NewRegistry()
+	m := NewRegistrar()
 	ctx := context.TODO()
 
 	for _, v := range testData {

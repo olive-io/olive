@@ -36,6 +36,7 @@ message Activity {
   ActivityType type = 1;
   string id = 2;
   string name = 3;
+  string taskType = 4;
 }
 
 enum BoxType {

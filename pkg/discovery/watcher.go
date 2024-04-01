@@ -41,7 +41,7 @@ type etcdWatcher struct {
 	client *clientv3.Client
 }
 
-func newEtcdWatcher(ctx context.Context, r *etcdRegistry, opts ...WatchOption) (Watcher, error) {
+func newEtcdWatcher(ctx context.Context, r *etcdRegistrar, opts ...WatchOption) (Watcher, error) {
 	var wo WatchOptions
 	for _, o := range opts {
 		o(&wo)

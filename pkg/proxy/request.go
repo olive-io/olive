@@ -15,15 +15,13 @@
 package proxy
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	urlpkg "net/url"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/qson"
 	"github.com/oxtoacart/bpool"
@@ -35,8 +33,8 @@ var (
 	bufferPool = bpool.NewSizedBufferPool(1024, 8)
 )
 
-// newRequest builds new *http.Request from *discoverypb.TransmitRequest
-func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
+// newRequest builds new *http.Request from *gatewaypb.TransmitRequest
+func newRequest(req *pb.TransmitRequest) (*http.Request, error) {
 	headers := req.Headers
 	urlText := headers[api.URLKey]
 	if urlText == "" {
@@ -54,6 +52,13 @@ func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
 	}
 
 	header := http.Header{}
+	header.Set(api.OliveHttpKey(api.ActivityKey), req.Activity.Type.String())
+
+	handlerKey := api.OliveHttpKey(api.HandlerKey)
+	if header.Get(handlerKey) == "" {
+		header.Set(handlerKey, api.RPCHandler)
+	}
+
 	for key, value := range headers {
 		if key == api.ContentTypeKey {
 			key = "Content-Type"
@@ -64,17 +69,14 @@ func newRequest(req *dsypb.TransmitRequest) (*http.Request, error) {
 		header.Set(key, value)
 	}
 	if header.Get("Content-Type") == "" {
-		header.Set("Content-Type", "application/json")
+		header.Set("Content-Type", "application/grpc+json")
 	}
-	header.Set(api.RequestActivity, req.Activity.Type.String())
 
-	buf, _ := json.Marshal(req)
 	hreq := &http.Request{
 		Method: method,
 		URL:    hurl,
 		Proto:  protocol,
 		Header: header,
-		Body:   io.NopCloser(bytes.NewBuffer(buf)),
 	}
 
 	return hreq, nil

@@ -17,30 +17,33 @@ package server
 import (
 	"context"
 
+	"github.com/olive-io/olive/api/gatewaypb"
 	"go.uber.org/zap"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
-type gatewayRpc struct {
-	pb.UnsafeGatewayServer
-
-	gw *Gateway
+func (gw *Gateway) Ping(ctx context.Context, req *gatewaypb.PingRequest) (*gatewaypb.PingResponse, error) {
+	return &gatewaypb.PingResponse{Reply: "pong"}, nil
 }
 
-func (gr *gatewayRpc) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
-	return &pb.PingResponse{Reply: req.Message}, nil
-}
-
-func (gr *gatewayRpc) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
-	lg := gr.gw.Logger()
+func (gw *Gateway) Transmit(ctx context.Context, req *gatewaypb.TransmitRequest) (*gatewaypb.TransmitResponse, error) {
+	lg := gw.Logger()
 	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
 	for key, value := range req.Properties {
 		lg.Sugar().Infof("%s=%+v", key, value.Value())
 	}
-	resp := &pb.TransmitResponse{
-		Properties:  map[string]*pb.Box{},
-		DataObjects: map[string]*pb.Box{},
+	resp := &gatewaypb.TransmitResponse{
+		Properties:  map[string]*dsypb.Box{},
+		DataObjects: map[string]*dsypb.Box{},
 	}
 	return resp, nil
+}
+
+type testRPC struct {
+	gatewaypb.UnsafeTestServiceServer
+}
+
+func (t testRPC) Hello(ctx context.Context, req *gatewaypb.HelloRequest) (*gatewaypb.HelloResponse, error) {
+	return &gatewaypb.HelloResponse{Reply: "hello world"}, nil
 }

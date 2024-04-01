@@ -14,6 +14,10 @@
 
 package api
 
+import (
+	"strings"
+)
+
 const (
 	HeaderKeyPrefix = "ov:"
 	ActivityKey     = "ov:activity"
@@ -38,15 +42,24 @@ const (
 
 // the keys of SendTask and ReceiveTask header
 
-// http Request Header Key
 const (
-	RequestPrefix   = "X-Olive-"
-	RequestActivity = RequestPrefix + "Activity"
-	RequestHandler  = RequestPrefix + "Handler"
+	// RequestPrefix http Request Header Key
+	RequestPrefix = "X-Olive-"
 )
 
 const (
-	DefaultTaskURL = "/discoverypb.Gateway/Transmit"
+	DefaultTaskURL = "/gatewaypb.Gateway/Transmit"
 	DefaultService = "io.olive.gateway"
-	DefaultRPC     = "Gateway"
 )
+
+func OliveHttpKey(key string) string {
+	s := strings.TrimPrefix(key, HeaderKeyPrefix)
+	s = strings.ToUpper(string(s[0])) + s[1:]
+	return RequestPrefix + s
+}
+
+func OliveKey(key string) string {
+	s := strings.TrimPrefix(key, RequestPrefix)
+	s = strings.ToLower(string(s[0])) + s[1:]
+	return HeaderKeyPrefix + s
+}

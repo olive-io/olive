@@ -14,9 +14,9 @@
 
 syntax = "proto3";
 
-package discoverypb;
+package gatewaypb;
 
-option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
+option go_package = "github.com/olive-io/olive/api/gatewaypb;gatewaypb";
 
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
@@ -26,7 +26,7 @@ import "google/api/annotations.proto";
 service Gateway {
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
-      get: "/v1/olive/gateway/ping/{message}",
+      get: "/v1/olive/gateway/ping",
     };
   };
 
@@ -36,15 +36,9 @@ service Gateway {
       body: "*"
     };
   }
-
-  // rpc ClientStream(stream PingRequest) returns (PingResponse) {};
-  // rpc ServerStream(PingRequest) returns (stream PingResponse) {};
-  // rpc BinaryStream(stream PingRequest) returns (stream PingResponse) {};
 }
 
-message PingRequest {
-  string message = 1;
-}
+message PingRequest {}
 
 message PingResponse {
   string reply = 1;
@@ -59,7 +53,16 @@ message TransmitRequest {
 
 // Response save the data from gateway Handle function
 message TransmitResponse {
-  map<string, Box> properties = 1;
-  map<string, Box> dataObjects = 2;
+  map<string, discoverypb.Box> properties = 1;
+  map<string, discoverypb.Box> dataObjects = 2;
 }
 
+service TestService {
+  rpc Hello(HelloRequest) returns (HelloResponse) {}
+}
+
+message HelloRequest {}
+
+message HelloResponse {
+  string reply = 1;
+}
