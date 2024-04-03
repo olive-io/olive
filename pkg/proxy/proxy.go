@@ -19,10 +19,11 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	json "github.com/json-iterator/go"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/api/gatewaypb"
 	cx "github.com/olive-io/olive/pkg/context"
+	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/grpc"
 	"github.com/olive-io/olive/pkg/proxy/client/selector"
@@ -83,15 +84,13 @@ func NewProxy(cfg Config) (IProxy, error) {
 
 func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*gatewaypb.TransmitResponse, error) {
 
-	hreq, err := newRequest(req)
+	hr, err := newRequest(req)
 	if err != nil {
 		return nil, err
 	}
-	hreq = hreq.WithContext(ctx)
 
 	// set merged context to request
-	r := hreq.Clone(ctx)
-	service, err := p.gr.Route(r)
+	service, err := p.gr.Route(hr.Clone(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +98,14 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 	if len(service.Services) == 0 {
 		return nil, router.ErrNotFound
 	}
+	ep := service.Endpoint
 
 	so := selector.WithStrategy(strategy(service.Services))
 	callOpts := []client.CallOption{
 		client.WithSelectOption(so),
 	}
 
-	if req.Activity.Type != dsypb.ActivityType_ServiceTask {
+	if ep.Name == api.DefaultTaskURL {
 		rsp := &gatewaypb.TransmitResponse{}
 		cr := p.cc.NewRequest(
 			service.Name,
@@ -120,25 +120,33 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		return rsp, nil
 	}
 
+	hr = hr.WithContext(ctx)
 	// create context
-	ctx = cx.FromRequest(hreq)
+	ctx = cx.FromRequest(hr)
+	hr.WithContext(ctx)
 	//for k, v := range h.opts.Metadata {
 	//	cx = metadata.Set(cx, k, v)
 	//}
 
-	ct := hreq.Header.Get("Content-Type")
-	if ct == "" {
-		hreq.Header.Set("Content-Type", "application/json")
-		ct = "application/json"
-	}
+	ct := hr.Header.Get("Content-Type")
 	// Strip charset from Content-Type (like `application/json; charset=UTF-8`)
 	if idx := strings.IndexRune(ct, ';'); idx >= 0 {
 		ct = ct[:idx]
 	}
 
+	cc := p.cc
+	requestBox, responseBox := ep.Request, ep.Response
+	br, err := EncodeBox(requestBox)
+	if err != nil {
+		return nil, err
+	}
 	// walk the standard call path
 	// get payload
-	br, err := requestPayload(r)
+	payload, err := requestPayload(hr)
+	if err != nil {
+		return nil, err
+	}
+	br, err = jsonpatch.MergePatch(br, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -152,26 +160,87 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		return nil, errors.Wrapf(ErrLargeRequest, "request(%d) > limit(%d)", lsize, bsize)
 	}
 
-	request := &gatewaypb.TransmitRequest{}
-	if err = json.Unmarshal(br, request); err != nil {
+	var out []byte
+
+	if handler := req.Headers[api.HandlerKey]; handler == api.HTTPHandler {
+		//TODO: handles http request
+	}
+
+	switch {
+	// proto codecs
+	case hasCodec(ct, protoCodecs):
+		request := &Message{}
+		// if the extracted payload isn't empty lets use it
+		if len(br) > 0 {
+			request = NewMessage(br)
+		}
+
+		rsp := &Message{}
+		rr := cc.NewRequest(
+			service.Name,
+			ep.Name,
+			request,
+			client.WithContentType(ct),
+		)
+
+		// make the call
+		if err = cc.Call(ctx, rr, rsp, callOpts...); err != nil {
+			return nil, err
+		}
+
+		// marshall response
+		out, err = rsp.Marshal()
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		// if json codec is not present set to json
+		if !hasCodec(ct, jsonCodecs) {
+			ct = "application/json"
+		}
+
+		// default to trying json
+		var request RawMessage
+		// if the extracted payload isn't empty lets use it
+		if len(br) > 0 {
+			request = br
+		}
+
+		// create request/response
+		var rsp RawMessage
+		rr := cc.NewRequest(
+			service.Name,
+			ep.Name,
+			&request,
+			client.WithContentType(ct),
+		)
+		// make the call
+		if err = cc.Call(ctx, rr, &rsp, callOpts...); err != nil {
+			return nil, err
+		}
+
+		// marshall response
+		out, err = rsp.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = DecodeBox(out, responseBox); err != nil {
 		return nil, err
 	}
 
-	// create request/response
-	rsp := &gatewaypb.TransmitResponse{}
-	cr := p.cc.NewRequest(
-		service.Name,
-		service.Endpoint.Name,
-		request,
-		client.WithContentType(ct),
-	)
-
-	// make the call
-	if err = p.cc.Call(ctx, cr, rsp, callOpts...); err != nil {
-		return nil, err
+	//TODO: *discoverypb.Box is Property or DataObject?
+	response := &gatewaypb.TransmitResponse{
+		Properties:  make(map[string]*dsypb.Box),
+		DataObjects: make(map[string]*dsypb.Box),
+	}
+	for name := range responseBox.Parameters {
+		response.Properties[name] = responseBox.Parameters[name]
 	}
 
-	return rsp, nil
+	return response, nil
 }
 
 func (p *proxy) Stop() error {

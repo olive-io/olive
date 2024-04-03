@@ -29,27 +29,27 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 
 	for url, pt := range svc.Paths {
 		var method string
-		var apiEp *dsypb.OpenAPIEndpoint
+		var ep *dsypb.OpenAPIEndpoint
 		if pt.Get != nil {
 			method = http.MethodGet
-			apiEp = pt.Get
+			ep = pt.Get
 		} else if pt.Post != nil {
 			method = http.MethodPost
-			apiEp = pt.Post
+			ep = pt.Post
 		} else if pt.Put != nil {
 			method = http.MethodPut
-			apiEp = pt.Put
+			ep = pt.Put
 		} else if pt.Patch != nil {
 			method = http.MethodPatch
-			apiEp = pt.Patch
+			ep = pt.Patch
 		} else if pt.Delete != nil {
 			method = http.MethodDelete
-			apiEp = pt.Delete
+			ep = pt.Delete
 		} else {
 			continue
 		}
 
-		name := apiEp.OperationId
+		name := ep.OperationId
 		if name == "" {
 			name = url
 		}
@@ -59,12 +59,13 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 			hosts = append(hosts, server.Url)
 		}
 		md := map[string]string{
-			api.MethodKey:  method,
-			api.HostKey:    strings.Join(hosts, ","),
-			api.URLKey:     url,
-			api.HandlerKey: api.RPCHandler,
-			"summary":      apiEp.Summary,
-			api.DescKey:    apiEp.Description,
+			api.EndpointKey: name,
+			api.MethodKey:   method,
+			api.HostKey:     strings.Join(hosts, ","),
+			api.URLKey:      url,
+			api.HandlerKey:  api.RPCHandler,
+			"summary":       ep.Summary,
+			api.DescKey:     ep.Description,
 		}
 
 		req := &dsypb.Box{
@@ -73,14 +74,14 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 		if method == http.MethodGet {
 			md[api.ContentTypeKey] = "application/json"
 			parameters := map[string]*dsypb.Box{}
-			for _, param := range apiEp.Parameters {
+			for _, param := range ep.Parameters {
 				item := &dsypb.Box{}
 				extractSchema(param.Schema, svc.Components, item)
 				parameters[param.Name] = item
 			}
 			req.Parameters = parameters
 		} else {
-			content := apiEp.RequestBody.Content
+			content := ep.RequestBody.Content
 			if content.ApplicationJson != nil {
 				extractSchema(content.ApplicationJson.Schema, svc.Components, req)
 				md[api.ContentTypeKey] = "application/json"
@@ -95,7 +96,7 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 			}
 		}
 		rsp := &dsypb.Box{Type: dsypb.BoxType_object}
-		if resp, ok := apiEp.Responses["200"]; ok {
+		if resp, ok := ep.Responses["200"]; ok {
 			content := resp.Content
 			if content.ApplicationJson != nil {
 				extractSchema(content.ApplicationJson.Schema, svc.Components, rsp)
@@ -108,11 +109,7 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 			}
 		}
 
-		for key, value := range apiEp.Metadata {
-			md[key] = value
-		}
-
-		for _, item := range apiEp.Security {
+		for _, item := range ep.Security {
 			if item.Basic != nil {
 				md[api.SecurityKey] = strings.Join(append([]string{"basic"}, strings.Join(item.Basic, ",")), "::")
 			} else if item.ApiKeys != nil {
@@ -128,14 +125,16 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 			}
 		}
 
-		ep := &dsypb.Endpoint{
+		for key, value := range ep.Metadata {
+			md[key] = value
+		}
+
+		eps = append(eps, &dsypb.Endpoint{
 			Name:     name,
 			Request:  req,
 			Response: rsp,
 			Metadata: md,
-		}
-
-		eps = append(eps, ep)
+		})
 	}
 
 	return eps
@@ -241,7 +240,7 @@ func extractGRPCEndpoint(method reflect.Method) *dsypb.Endpoint {
 }
 
 func extractGRPCBox(v reflect.Type, d int) *dsypb.Box {
-	if d == 3 {
+	if d == 5 {
 		return nil
 	}
 	if v == nil {
@@ -285,7 +284,7 @@ func extractGRPCBox(v reflect.Type, d int) *dsypb.Box {
 
 			// if there's no name default it
 			if len(name) == 0 {
-				name = v.Field(i).Name
+				continue
 			}
 
 			parameters[name] = field
@@ -302,19 +301,21 @@ func extractGRPCBox(v reflect.Type, d int) *dsypb.Box {
 		if p.Kind() == reflect.Uint8 {
 			box.Type = dsypb.BoxType_string
 		} else {
-			ref := extractGRPCBox(p, d+1)
-			box.Ref = ref.Ref
-			if ref.Ref == "" {
-				box.Ref = ref.Type.String()
+			if ref := extractGRPCBox(p, d+1); ref != nil {
+				box.Ref = ref.Ref
+				if ref.Ref == "" {
+					box.Ref = ref.Type.String()
+				}
 			}
 		}
 	case reflect.Map:
 		// arg.Type = fmt.Sprintf(`map %s:%s`, v.Key().String(), v.Elem().String())
 		box.Type = dsypb.BoxType_map
-		ref := extractGRPCBox(v.Elem(), d+1)
-		box.Ref = ref.Ref
-		if ref.Ref == "" {
-			box.Ref = ref.Type.String()
+		if ref := extractGRPCBox(v.Elem(), d+1); ref != nil {
+			box.Ref = ref.Ref
+			if ref.Ref == "" {
+				box.Ref = ref.Type.String()
+			}
 		}
 	default:
 	}

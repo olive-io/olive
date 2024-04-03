@@ -21,6 +21,7 @@ import (
 const (
 	HeaderKeyPrefix = "ov:"
 	ActivityKey     = "ov:activity"
+	EndpointKey     = "ov:endpoint"
 	ProtocolKey     = "ov:protocol"
 	MethodKey       = "ov:method"
 	SecurityKey     = "ov:security"
@@ -58,7 +59,7 @@ func OliveHttpKey(key string) string {
 	return RequestPrefix + s
 }
 
-func OliveKey(key string) string {
+func HttpOliveKey(key string) string {
 	s := strings.TrimPrefix(key, RequestPrefix)
 	s = strings.ToLower(string(s[0])) + s[1:]
 	return HeaderKeyPrefix + s

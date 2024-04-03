@@ -4,8 +4,6 @@ package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
-import "google/protobuf/any.proto";
-
 message OpenAPI {
   string openapi = 1;
   OpenAPIInfo info = 2;

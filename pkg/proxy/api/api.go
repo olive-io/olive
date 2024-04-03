@@ -19,7 +19,8 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/pkg/proxy/server"
 )
 
 // Endpoint is a mapping between an RPC method and HTTP endpoint
@@ -34,10 +35,12 @@ type Endpoint struct {
 	Method []string `json:"method,omitempty"`
 	// HTTP Path e.g /greeter. Expect POSIX regex
 	Path []string `json:"path,omitempty"`
-	// Body destination
-	// "*" or "" - top level message value
-	// "string" - inner message value
-	Body string `json:"body,omitempty"`
+	// Security HTTP authorization, e.g. Basic, Bearer
+	Security string `json:"security,omitempty"`
+
+	Request  *dsypb.Box `json:"request,omitempty"`
+	Response *dsypb.Box `json:"response,omitempty"`
+
 	// Stream flag
 	Stream string `json:"stream,omitempty"`
 }
@@ -49,7 +52,7 @@ type Service struct {
 	// The endpoint for this service
 	Endpoint *Endpoint `json:"endpoint,omitempty"`
 	// Versions of this service
-	Services []*pb.Service `json:"services,omitempty"`
+	Services []*dsypb.Service `json:"services,omitempty"`
 }
 
 // Encode encodes an endpoint to endpoint metadata
@@ -69,11 +72,12 @@ func Encode(e *Endpoint) map[string]string {
 		ep[k] = v
 	}
 
-	set("endpoint", e.Name)
-	set("handler", e.Handler)
-	set("method", strings.Join(e.Method, ","))
-	set("path", strings.Join(e.Path, ","))
-	set("host", strings.Join(e.Host, ","))
+	set(EndpointKey, e.Name)
+	set(HandlerKey, e.Handler)
+	set(MethodKey, strings.Join(e.Method, ","))
+	set(URLKey, strings.Join(e.Path, ","))
+	set(SecurityKey, e.Security)
+	set(HostKey, strings.Join(e.Host, ","))
 	set("stream", string(e.Stream))
 
 	return ep
@@ -86,12 +90,13 @@ func Decode(e map[string]string) *Endpoint {
 	}
 
 	return &Endpoint{
-		Name:    e["endpoint"],
-		Handler: e["handler"],
-		Method:  slice(e["method"]),
-		Path:    slice(e["path"]),
-		Host:    slice(e["host"]),
-		Stream:  e["stream"],
+		Name:     e[EndpointKey],
+		Handler:  e[HandlerKey],
+		Method:   slice(e[MethodKey]),
+		Path:     slice(e[URLKey]),
+		Security: e[SecurityKey],
+		Host:     slice(e[HostKey]),
+		Stream:   e["stream"],
 	}
 }
 
@@ -142,4 +147,18 @@ func slice(s string) []string {
 	}
 
 	return sl
+}
+
+// WithEndpoint returns a server.HandlerOption with endpoint metadata set
+//
+// Usage:
+//
+//	proto.RegisterHandler(service.Server(), new(Handler), api.WithEndpoint(
+//		&api.Endpoint{
+//			Name: "Greeter.Hello",
+//			Path: []string{"/greeter"},
+//		},
+//	))
+func WithEndpoint(e *Endpoint) server.HandlerOption {
+	return server.EndpointMetadata(e.Name, Encode(e))
 }

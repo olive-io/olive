@@ -26,6 +26,17 @@ type HandlerOptions struct {
 	ServiceDesc *grpc.ServiceDesc
 }
 
+// EndpointMetadata is a Handler option that allows metadata to be added to
+// individual endpoints.
+func EndpointMetadata(name string, md map[string]string) HandlerOption {
+	return func(opts *HandlerOptions) {
+		if opts.Metadata == nil {
+			opts.Metadata = map[string]map[string]string{}
+		}
+		opts.Metadata[name] = md
+	}
+}
+
 func WithServerDesc(desc *grpc.ServiceDesc) HandlerOption {
 	return func(opts *HandlerOptions) {
 		opts.ServiceDesc = desc

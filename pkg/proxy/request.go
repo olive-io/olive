@@ -15,14 +15,21 @@
 package proxy
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 	urlpkg "net/url"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
+	"github.com/olive-io/olive/pkg/proxy/codec"
+	"github.com/olive-io/olive/pkg/proxy/codec/jsonrpc"
+	"github.com/olive-io/olive/pkg/proxy/codec/protorpc"
 	"github.com/olive-io/olive/pkg/qson"
 	"github.com/oxtoacart/bpool"
 
@@ -30,56 +37,150 @@ import (
 )
 
 var (
+	// supported json codecs
+	jsonCodecs = []string{
+		"application/grpc+json",
+		"application/json",
+		"application/json-rpc",
+	}
+
+	// supported proto codecs
+	protoCodecs = []string{
+		"application/grpc",
+		"application/grpc+proto",
+		"application/proto",
+		"application/protobuf",
+		"application/proto-rpc",
+		"application/octet-stream",
+	}
+
+	// supported multipart/form-data codecs
+	dataCodecs = []string{
+		"multipart/form-data",
+	}
+
 	bufferPool = bpool.NewSizedBufferPool(1024, 8)
 )
+
+func hasCodec(ct string, codecs []string) bool {
+	for _, c := range codecs {
+		if ct == c {
+			return true
+		}
+	}
+	return false
+}
+
+type RawMessage json.RawMessage
+
+// MarshalJSON returns m as the JSON encoding of m.
+func (m *RawMessage) MarshalJSON() ([]byte, error) {
+	if m == nil {
+		return []byte("null"), nil
+	}
+	return *m, nil
+}
+
+// UnmarshalJSON sets *m to a copy of data.
+func (m *RawMessage) UnmarshalJSON(data []byte) error {
+	if m == nil {
+		return fmt.Errorf("RawMessage: UnmarshalJSON on nil pointer")
+	}
+	*m = append((*m)[0:0], data...)
+	return nil
+}
+
+type Message struct {
+	data []byte
+}
+
+func NewMessage(data []byte) *Message {
+	return &Message{data}
+}
+
+func (m *Message) ProtoMessage() {}
+
+func (m *Message) Reset() {
+	*m = Message{}
+}
+
+func (m *Message) String() string {
+	return string(m.data)
+}
+
+func (m *Message) Marshal() ([]byte, error) {
+	return m.data, nil
+}
+
+func (m *Message) Unmarshal(data []byte) error {
+	m.data = data
+	return nil
+}
+
+type buffer struct {
+	io.ReadCloser
+}
+
+func (b *buffer) Write(_ []byte) (int, error) {
+	return 0, nil
+}
 
 // newRequest builds new *http.Request from *gatewaypb.TransmitRequest
 func newRequest(req *pb.TransmitRequest) (*http.Request, error) {
 	headers := req.Headers
-	urlText := headers[api.URLKey]
-	if urlText == "" {
+	if _, ok := headers[api.HandlerKey]; !ok {
+		headers[api.HandlerKey] = api.RPCHandler
+	}
+
+	if req.Activity.Type == dsypb.ActivityType_ServiceTask {
+		taskType := req.Activity.TaskType
+		switch taskType {
+		case "grpc":
+			headers[api.HandlerKey] = api.RPCHandler
+		case "http":
+			headers[api.HandlerKey] = api.HTTPHandler
+		}
+	}
+
+	urlText, ok := headers[api.URLKey]
+	if !ok {
 		urlText = api.DefaultTaskURL
+		headers[api.URLKey] = urlText
 	}
-	method := headers[api.MethodKey]
-	if method == "" {
+	method, ok := headers[api.MethodKey]
+	if !ok {
 		method = http.MethodPost
+		headers[api.MethodKey] = method
 	}
-	protocol := headers[api.ProtocolKey]
+	protocol := "HTTP/1.2"
 
 	hurl, err := urlpkg.Parse(urlText)
 	if err != nil {
 		return nil, err
 	}
 
+	// set the header of *http.Request
 	header := http.Header{}
 	header.Set(api.OliveHttpKey(api.ActivityKey), req.Activity.Type.String())
-
-	handlerKey := api.OliveHttpKey(api.HandlerKey)
-	if header.Get(handlerKey) == "" {
-		header.Set(handlerKey, api.RPCHandler)
-	}
-
 	for key, value := range headers {
 		if key == api.ContentTypeKey {
 			key = "Content-Type"
 		}
-		if idx := strings.Index(key, api.HeaderKeyPrefix); idx > 0 {
-			key = api.RequestPrefix + key[idx+len(api.HeaderKeyPrefix):]
+		if strings.HasPrefix(key, api.HeaderKeyPrefix) {
+			key = api.OliveHttpKey(key)
 		}
 		header.Set(key, value)
 	}
-	if header.Get("Content-Type") == "" {
-		header.Set("Content-Type", "application/grpc+json")
-	}
 
-	hreq := &http.Request{
+	hr := &http.Request{
 		Method: method,
 		URL:    hurl,
 		Proto:  protocol,
 		Header: header,
+		Body:   io.NopCloser(bytes.NewBufferString("{}")),
 	}
 
-	return hreq, nil
+	return hr, nil
 }
 
 // requestPayload takes a *http.Request.
@@ -91,6 +192,55 @@ func requestPayload(r *http.Request) ([]byte, error) {
 	// we have to decode json-rpc and proto-rpc because we suck
 	// well actually because there's no proxy codec right now
 	ct := r.Header.Get("Content-Type")
+	switch {
+	case strings.Contains(ct, "application/json-rpc"):
+		msg := codec.Message{
+			Type:   codec.Request,
+			Header: make(map[string]string),
+		}
+
+		c := jsonrpc.NewCodec(&buffer{r.Body})
+		if err = c.ReadHeader(&msg, codec.Request); err != nil {
+			return nil, err
+		}
+		var raw RawMessage
+		if err = c.ReadBody(&raw); err != nil {
+			return nil, err
+		}
+		return raw, nil
+	case strings.Contains(ct, "application/proto-rpc"), strings.Contains(ct, "application/octet-stream"):
+		msg := codec.Message{
+			Type:   codec.Request,
+			Header: make(map[string]string),
+		}
+		c := protorpc.NewCodec(&buffer{r.Body})
+		if err = c.ReadHeader(&msg, codec.Request); err != nil {
+			return nil, err
+		}
+		var raw Message
+		if err = c.ReadBody(&raw); err != nil {
+			return nil, err
+		}
+		return raw.Marshal()
+	case strings.Contains(ct, "application/x-www-form-urlencoded"):
+		// generate a new set of values from the form
+		vals := make(map[string]string)
+		for key, values := range r.PostForm {
+			vals[key] = strings.Join(values, ",")
+		}
+		for key, values := range r.URL.Query() {
+			vv, ok := vals[key]
+			if !ok {
+				vals[key] = strings.Join(values, ",")
+			} else {
+				vals[key] = vv + "," + strings.Join(values, ",")
+			}
+		}
+
+		// marshal
+		return json.Marshal(vals)
+		// TODO: application/grpc
+	}
 
 	// otherwise as per usual
 	rctx := r.Context()
@@ -216,7 +366,7 @@ func requestPayload(r *http.Request) ([]byte, error) {
 		return bodybuf, nil
 	}
 
-	return []byte{}, nil
+	return []byte("{}"), nil
 }
 
 func nestField(matches map[string]interface{}) map[string]interface{} {

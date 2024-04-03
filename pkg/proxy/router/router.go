@@ -198,6 +198,8 @@ func (r *registryRouter) store(services []*dsypb.Service) {
 			key := fmt.Sprintf("%s.%s", service.Name, sep.Name)
 			// decode endpoint
 			end := api.Decode(sep.Metadata)
+			end.Request = sep.Request
+			end.Response = sep.Response
 
 			// if we got nothing skip
 			if err := api.Validate(end); err != nil {
@@ -413,7 +415,9 @@ func (r *registryRouter) Endpoint(req *http.Request) (*api.Service, error) {
 			for k, v := range matches {
 				md.Set("x-api-field-"+k, v)
 			}
-			md.Set("x-api-body", ep.Body)
+			//TODO: parse request
+			// md.Set("x-api-body", ep.Body)
+			md.Set("x-api-body", "*")
 			*req = *req.Clone(metadata.NewContext(ctx, md))
 			break
 		}
@@ -466,6 +470,13 @@ func (r *registryRouter) Route(req *http.Request) (*api.Service, error) {
 }
 
 func (r *registryRouter) routeRPC(req *http.Request, rsv resolver.IResolver) (*api.Service, error) {
+	// try to get an endpoint
+	ep, err := r.Endpoint(req)
+	if err == nil {
+		req.Header.Set("Content-Type", "application/grpc+json")
+		return ep, nil
+	}
+
 	// get the service name
 	rp, err := rsv.Resolve(req)
 	if err != nil {
@@ -483,11 +494,14 @@ func (r *registryRouter) routeRPC(req *http.Request, rsv resolver.IResolver) (*a
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/proto")
 	return &api.Service{
 		Name: name,
 		Endpoint: &api.Endpoint{
-			Name:    rp.Method,
-			Handler: rp.Handler,
+			Name:     rp.Method,
+			Handler:  rp.Handler,
+			Request:  &dsypb.Box{Type: dsypb.BoxType_object},
+			Response: &dsypb.Box{Type: dsypb.BoxType_object},
 		},
 		Services: services,
 	}, nil

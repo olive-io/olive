@@ -16,6 +16,7 @@ package resolver
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
@@ -28,11 +29,27 @@ func NewRPCResolver() IResolver {
 }
 
 func (r *rpcResolver) Resolve(req *http.Request) (*Endpoint, error) {
+	path := req.URL.Path
+	if path == "/" || path == api.DefaultTaskURL {
+		return &Endpoint{
+			Name:    api.DefaultService,
+			Host:    req.Host,
+			Method:  req.Method,
+			Path:    api.DefaultTaskURL,
+			Handler: api.RPCHandler,
+		}, nil
+	}
+
+	// [foo.Bar, Service]
+	parts := strings.Split(path[1:], "/")
+	// [foo, Bar]
+	names := strings.Split(parts[0], ".")
+	name := strings.Join(names[:len(names)-1], ".")
+	// foo
 	return &Endpoint{
-		Name:    api.DefaultService,
-		Host:    req.Host,
-		Method:  req.Method,
-		Path:    api.DefaultTaskURL,
-		Handler: api.RPCHandler,
+		Name:   name,
+		Host:   req.Host,
+		Method: req.Method,
+		Path:   path,
 	}, nil
 }

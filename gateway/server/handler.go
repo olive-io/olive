@@ -61,17 +61,19 @@ func newRPCHandler(handler any, opts ...server.HandlerOption) *rpcHandler {
 
 	for m := 0; m < typ.NumMethod(); m++ {
 		if e := extractGRPCEndpoint(typ.Method(m)); e != nil {
-			e.Name = path.Join("/", name, e.Name)
+			paths := path.Join("/", name, e.Name)
+			e.Name = name + "." + e.Name
+
+			e.Metadata[api.EndpointKey] = e.Name
+			e.Metadata[api.HandlerKey] = api.RPCHandler
+			e.Metadata[api.ContentTypeKey] = "application/grpc+json"
+			e.Metadata[api.URLKey] = paths
+			e.Metadata[api.MethodKey] = paths
+			e.Metadata[api.ProtocolKey] = "grpc"
 
 			for k, v := range options.Metadata[e.Name] {
 				e.Metadata[k] = v
 			}
-
-			e.Metadata[api.HandlerKey] = api.RPCHandler
-			e.Metadata[api.ContentTypeKey] = "application/grpc+json"
-			e.Metadata[api.URLKey] = name
-			e.Metadata[api.MethodKey] = name
-			e.Metadata[api.ProtocolKey] = "grpc"
 
 			endpoints = append(endpoints, e)
 		}
