@@ -17,6 +17,7 @@ package server
 import (
 	"path"
 	"reflect"
+	"strings"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
@@ -25,6 +26,7 @@ import (
 
 type rpcHandler struct {
 	options server.HandlerOptions
+	handler any
 	eps     []*dsypb.Endpoint
 }
 
@@ -32,8 +34,8 @@ func (r *rpcHandler) Name() string {
 	return r.options.ServiceDesc.ServiceName
 }
 
-func (r *rpcHandler) Handler() interface{} {
-	return r
+func (r *rpcHandler) Handler() any {
+	return r.handler
 }
 
 func (r *rpcHandler) Endpoints() []*dsypb.Endpoint {
@@ -56,13 +58,14 @@ func newRPCHandler(handler any, opts ...server.HandlerOption) *rpcHandler {
 
 	typ := reflect.TypeOf(handler)
 	name := options.ServiceDesc.ServiceName
+	names := strings.Split(name, ".")
 
 	endpoints := make([]*dsypb.Endpoint, 0)
 
 	for m := 0; m < typ.NumMethod(); m++ {
 		if e := extractGRPCEndpoint(typ.Method(m)); e != nil {
 			paths := path.Join("/", name, e.Name)
-			e.Name = name + "." + e.Name
+			e.Name = names[len(names)-1] + "." + e.Name
 
 			e.Metadata[api.EndpointKey] = e.Name
 			e.Metadata[api.HandlerKey] = api.RPCHandler
@@ -81,6 +84,7 @@ func newRPCHandler(handler any, opts ...server.HandlerOption) *rpcHandler {
 
 	return &rpcHandler{
 		options: options,
+		handler: handler,
 		eps:     endpoints,
 	}
 }

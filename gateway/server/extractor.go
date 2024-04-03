@@ -206,9 +206,11 @@ func extractGRPCEndpoint(method reflect.Method) *dsypb.Endpoint {
 	} else if in == 3 && out == 1 {
 		reqType = mt.In(1)
 		rspType = mt.In(2)
+		stream = true
 	} else if in == 2 && out == 1 {
 		reqType = mt.In(1)
 		rspType = mt.In(1)
+		stream = true
 	} else {
 		panic("invalid grpc endpoint")
 	}

@@ -170,10 +170,24 @@ func genService(gen *protogen.Plugin, file *protogen.File, g *protogen.Generated
 	if service.Desc.Options().(*descriptorpb.ServiceOptions).GetDeprecated() {
 		g.P(deprecationComment)
 	}
+	/*
+		func RegisterTestServiceServerHandler(s server.IServer, srv TestServiceServer,  opts ...server.HandlerOption) error {
+			type TestServiceEmbedXX struct {
+				TestServiceServer
+			}
+			opts = append(opts, server.WithServerDesc(&TestService_ServiceDesc))
+			handler := s.NewHandler(&TestServiceEmbedXX{srv}, opts...)
+			return s.Handle(handler)
+		}
+	*/
 	serviceDescVar := service.GoName + "_ServiceDesc"
-	g.P("func Register", service.GoName, "ServerHandler(s ", serverPackage.Ident("IServer"), ", srv ", serverType, ") {")
-	g.P("handler := s.NewHandler(srv, ", serverPackage.Ident("WithServerDesc"), "(&", serviceDescVar, "))")
-	g.P("s.Handle(handler)")
+	g.P("func Register", service.GoName, "ServerHandler(s ", serverPackage.Ident("IServer"), ", srv ", serverType, ", opts ...", serverPackage.Ident("HandlerOption"), ") error {")
+	g.P("type ", service.GoName, "EmbedXX struct {")
+	g.P(serverType)
+	g.P("}")
+	g.P("opts = append(opts, ", serverPackage.Ident("WithServerDesc"), "(&", serviceDescVar, "))")
+	g.P("handler := s.NewHandler(&", service.GoName, "EmbedXX{srv}, opts...)")
+	g.P("return s.Handle(handler)")
 	g.P("}")
 	g.P()
 
