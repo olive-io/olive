@@ -23,8 +23,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/cockroachdb/errors"
-	"github.com/olive-io/olive/pkg/proxy/server"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/pkg/proxy/server"
 )
 
 var (

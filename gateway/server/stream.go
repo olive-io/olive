@@ -17,8 +17,9 @@ package server
 import (
 	"context"
 
-	"github.com/olive-io/olive/pkg/proxy/server"
 	"google.golang.org/grpc"
+
+	"github.com/olive-io/olive/pkg/proxy/server"
 )
 
 // rpcStream implements a server side Stream.

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/olive-io/olive/pkg/context/metadata"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -33,6 +32,7 @@ import (
 	gmetadata "google.golang.org/grpc/metadata"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/proxy/client"
 	"github.com/olive-io/olive/pkg/proxy/client/selector"

@@ -527,10 +527,6 @@ func (r *registryRouter) routeHTTP(req *http.Request, rsv resolver.IResolver) (*
 	ctx := req.Context()
 	// get service
 	services, err := r.rc.GetService(ctx, name, opts...)
-	if err != nil {
-		return nil, err
-	}
-
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
