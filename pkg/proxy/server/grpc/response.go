@@ -12,30 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package grpc
 
 import (
-	"testing"
-
-	pb "github.com/olive-io/olive/api/gatewaypb"
-	"github.com/olive-io/olive/gateway/server/testdata"
-	"github.com/stretchr/testify/assert"
+	"github.com/olive-io/olive/pkg/proxy/codec"
 )
 
-func Test_extractOpenAPIDocs(t *testing.T) {
-	docs := testdata.GetOpenAPIDocs(t)
-	eps := extractOpenAPIDocs(docs)
-	assert.Equal(t, len(eps), 13)
+type rpcResponse struct {
+	header map[string]string
+	codec  codec.Codec
 }
 
-func Test_extractHandler(t *testing.T) {
-	cfg := NewConfig()
+func (r *rpcResponse) Codec() codec.Writer {
+	return r.codec
+}
 
-	gw, err := NewGateway(*cfg)
-	if err != nil {
-		t.Fatal(err)
+func (r *rpcResponse) WriteHeader(hdr map[string]string) {
+	for k, v := range hdr {
+		r.header[k] = v
 	}
+}
 
-	rpc := &testRPC{}
-	pb.RegisterTestServiceServerHandler(gw, rpc)
+func (r *rpcResponse) Write(b []byte) error {
+	return r.codec.Write(&codec.Message{
+		Header: r.header,
+		Body:   b,
+	}, nil)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package grpc
 
 import (
 	"github.com/olive-io/olive/pkg/proxy/codec"
@@ -28,15 +28,6 @@ type rpcRequest struct {
 	body        []byte
 	stream      bool
 	payload     interface{}
-}
-
-type rpcMessage struct {
-	topic       string
-	contentType string
-	payload     interface{}
-	header      map[string]string
-	body        []byte
-	codec       codec.Codec
 }
 
 func (r *rpcRequest) ContentType() string {
@@ -77,6 +68,15 @@ func (r *rpcRequest) Stream() bool {
 
 func (r *rpcRequest) Body() interface{} {
 	return r.payload
+}
+
+type rpcMessage struct {
+	topic       string
+	contentType string
+	payload     interface{}
+	header      map[string]string
+	body        []byte
+	codec       codec.Codec
 }
 
 func (r *rpcMessage) ContentType() string {

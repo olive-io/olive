@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package gateway
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/olive-io/olive/pkg/cliutil/flags"
-	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/pkg/cliutil/flags"
+	"github.com/olive-io/olive/pkg/logutil"
+	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
 )
 
 var (
@@ -39,41 +40,34 @@ const (
 
 type Config struct {
 	logutil.LogConfig
+	grpcproxy.Config
 
 	fs *pflag.FlagSet
 
 	Client client.Config
 
-	Id       string
-	Metadata map[string]string
-	OpenAPI  string
+	DataDir string `json:"data-dir"`
 
-	DataDir string
-
-	ListenURL    string
-	AdvertiseURL string
-	// The interval on which to register
-	RegisterInterval time.Duration
-	// The register expiry time
-	RegisterTTL time.Duration
+	// EnableGRPCGateway enables grpc gateway.
+	// The gateway translates a RESTful HTTP API into gRPC.
+	EnableGRPCGateway bool `json:"enable-grpc-gateway"`
 }
 
 func NewConfig() *Config {
 
 	logging := logutil.NewLogConfig()
+	pcfg := grpcproxy.NewConfig()
+	pcfg.Id = DefaultId
 
 	clientCfg := client.Config{}
 	clientCfg.Endpoints = DefaultEndpoints
 	clientCfg.Logger = logging.GetLogger()
 
 	cfg := Config{
-		LogConfig:        logging,
-		Client:           clientCfg,
-		Id:               DefaultId,
-		DataDir:          DefaultDataDir,
-		ListenURL:        DefaultListenURL,
-		RegisterInterval: DefaultRegisterInterval,
-		RegisterTTL:      DefaultRegisterTTL,
+		LogConfig: logging,
+		Config:    pcfg,
+		Client:    clientCfg,
+		DataDir:   DefaultDataDir,
 	}
 	cfg.fs = cfg.newFlagSet()
 
@@ -145,5 +139,6 @@ func (cfg *Config) setupLogging() error {
 
 	lg := cfg.GetLogger()
 	cfg.Client.Logger = lg
+	cfg.Config.SetLogger(lg)
 	return nil
 }

@@ -20,13 +20,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/olive-io/olive/gateway/server"
+	"github.com/olive-io/olive/gateway"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 )
 
 func NewGatewayCommand(stdout, stderr io.Writer) *cobra.Command {
-	cfg := server.NewConfig()
+	cfg := gateway.NewConfig()
 	app := &cobra.Command{
 		Use:     "olive-gateway",
 		Short:   "the gateway of olive cloud",
@@ -57,13 +57,13 @@ func NewGatewayCommand(stdout, stderr io.Writer) *cobra.Command {
 	return app
 }
 
-func setup(cfg server.Config) error {
+func setup(cfg gateway.Config) error {
 	stopc := genericserver.SetupSignalHandler()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
-	gws, err := server.NewGateway(cfg)
+	gws, err := gateway.NewGateway(cfg)
 	if err != nil {
 		return err
 	}

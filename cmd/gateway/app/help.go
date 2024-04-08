@@ -17,7 +17,7 @@ package app
 import (
 	"strings"
 
-	"github.com/olive-io/olive/gateway/server"
+	"github.com/olive-io/olive/gateway"
 )
 
 var (
@@ -33,8 +33,7 @@ var (
     Show the help information about olive-gateway.
 
   olive-gateway --config-file
-    Path to the server configuration file. Note that if a configuration file is provided, other command line flags and environment variables will be ignored.
-`
+    Path to the server configuration file. Note that if a configuration file is provided, other command line flags and environment variables will be ignored.`
 
 	flagsline = `
 Execute:
@@ -44,15 +43,15 @@ Execute:
     Set Path of openapi v3 docs
   --data-dir 'default'
     Set the Path to the data directory.
-  --endpoints [` + strings.Join(server.DefaultEndpoints, ",") + `]
+  --endpoints [` + strings.Join(gateway.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
-  --listen-url '` + server.DefaultListenURL + `'
+  --listen-url '` + gateway.DefaultListenURL + `'
     Set the URL to listen on for gRPC traffic.
   --advertise-url
     Set advertise URL to listen on for gRPC traffic.
-  --register-interval '` + server.DefaultRegisterInterval.String() + `'
+  --register-interval '` + gateway.DefaultRegisterInterval.String() + `'
     Set Register interval.
-  --register-ttl '` + server.DefaultRegisterTTL.String() + `'
+  --register-ttl '` + gateway.DefaultRegisterTTL.String() + `'
     Set Register ttl.
 
 Logging:

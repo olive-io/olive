@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/lni/dragonboat/v4/raftio"
+
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 

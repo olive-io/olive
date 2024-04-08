@@ -30,11 +30,11 @@ import (
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
-	"github.com/olive-io/olive/api/gatewaypb"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/api/gatewaypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )

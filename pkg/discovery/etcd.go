@@ -190,7 +190,7 @@ func (e *etcdRegistrar) registerNode(ctx context.Context, s *dsypb.Service, node
 		return err
 	}
 
-	lg.Sugar().Infof("Registering %s namespace %s id %s with lease %v and ttl %v",
+	lg.Sugar().Infof("Registering '%s' namespace '%s' id '%s' with lease %v and ttl %v",
 		service.Name, service.Namespace, node.Id, lgr.ID, options.TTL)
 	// create an entry for the node
 	if lgr != nil {

@@ -24,13 +24,13 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/lni/dragonboat/v4/logger"
-	"github.com/olive-io/olive/pkg/cliutil/flags"
-	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/pkg/cliutil/flags"
+	"github.com/olive-io/olive/pkg/logutil"
 )
 
 var (
