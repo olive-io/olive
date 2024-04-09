@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package gateway
 
@@ -41,7 +48,7 @@ type Gateway struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	cfg Config
+	cfg *Config
 
 	oct       *client.Client
 	discovery dsy.IDiscovery
@@ -49,7 +56,7 @@ type Gateway struct {
 	started chan struct{}
 }
 
-func NewGateway(cfg Config) (*Gateway, error) {
+func NewGateway(cfg *Config) (*Gateway, error) {
 	lg := cfg.GetLogger()
 	embedServer := genericserver.NewEmbedServer(lg)
 
@@ -77,16 +84,29 @@ func NewGateway(cfg Config) (*Gateway, error) {
 		started:      make(chan struct{}),
 	}
 
-	cfg.Config.UserHandlers = map[string]http.Handler{
-		"/metrics": promhttp.Handler(),
+	cfg.Config.Context = ctx
+	if cfg.Config.UserHandlers == nil {
+		cfg.Config.UserHandlers = map[string]http.Handler{}
 	}
+	cfg.Config.UserHandlers["/metrics"] = promhttp.Handler()
+
+	serviceRegister := cfg.Config.ServiceRegister
 	cfg.Config.ServiceRegister = func(gs *grpc.Server) {
+		if serviceRegister != nil {
+			serviceRegister(gs)
+		}
 		pb.RegisterGatewayServer(gs, gw)
 	}
 	if cfg.EnableGRPCGateway {
+		gatewayRegister := cfg.Config.GRPCGatewayRegister
 		cfg.Config.GRPCGatewayRegister = func(ctx context.Context, mux *gwr.ServeMux) error {
-			if rErr := pb.RegisterGatewayHandlerServer(ctx, mux, gw); rErr != nil {
-				return rErr
+			if gatewayRegister != nil {
+				if e1 := gatewayRegister(ctx, mux); e1 != nil {
+					return e1
+				}
+			}
+			if e1 := pb.RegisterGatewayHandlerServer(ctx, mux, gw); e1 != nil {
+				return e1
 			}
 			return nil
 		}
@@ -111,7 +131,6 @@ func (g *Gateway) Start(stopc <-chan struct{}) error {
 	if g.isStarted() {
 		return nil
 	}
-	defer g.beStarted()
 
 	if err := g.ProxyServer.Start(stopc); err != nil {
 		return fmt.Errorf("failed to start proxy server: %w", err)
@@ -119,6 +138,8 @@ func (g *Gateway) Start(stopc <-chan struct{}) error {
 
 	g.GoAttach(g.process)
 	g.Destroy(g.destroy)
+
+	g.beStarted()
 
 	<-stopc
 
@@ -130,6 +151,7 @@ func (g *Gateway) process() {}
 func (g *Gateway) destroy() {}
 
 func (g *Gateway) stop() error {
+	g.cancel()
 	g.IEmbedServer.Shutdown()
 	return nil
 }

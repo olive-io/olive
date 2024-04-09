@@ -2,8 +2,6 @@ module github.com/olive-io/olive
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
@@ -18,8 +16,8 @@ require (
 	github.com/lni/dragonboat/v4 v4.0.0-20231222133740-1d6e2d76cd57
 	github.com/mattbaird/jsonpatch v0.0.0-20240118010651-0ba75a80ca38
 	github.com/mitchellh/hashstructure v1.1.0
-	github.com/olive-io/bpmn v1.3.0
-	github.com/olive-io/bpmn/schema v1.3.0
+	github.com/olive-io/bpmn v1.3.1
+	github.com/olive-io/bpmn/schema v1.3.1
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/prometheus/client_golang v1.19.0
 	github.com/shirou/gopsutil/v3 v3.24.3
@@ -38,7 +36,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.24.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240401170217-c3f982113cda
-	google.golang.org/grpc v1.63.0
+	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	sigs.k8s.io/yaml v1.4.0

@@ -297,10 +297,10 @@ github.com/nats-io/nkeys v0.0.2/go.mod h1:dab7URMsZm6Z/jp9Z5UGa87Uutgc2mVpXLC4B7
 github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/olive-io/bpmn v1.3.0 h1:+0D5x6+FETl0nZV4khfkV7DsOT8jks4XIHHgkubtbh0=
-github.com/olive-io/bpmn v1.3.0/go.mod h1:xCDBKKpt+OISbXoJIAU6jdEhNTnQhmdJB6sthAH0jo8=
-github.com/olive-io/bpmn/schema v1.3.0 h1:rzKuyX50Oo6KXS1DczC7GyoGAXpB2JL0hHxd3r4JHNg=
-github.com/olive-io/bpmn/schema v1.3.0/go.mod h1:n/Pm2VkqktkOkA2PhpT5efK8J/5lgyhE/Ku75HTzWHQ=
+github.com/olive-io/bpmn v1.3.1 h1:/KZiUewCfe45mMMceb16eUL16XM0WTgSzw71HG5FcOM=
+github.com/olive-io/bpmn v1.3.1/go.mod h1:rKQViqVgcD5jpDz9QWeFXRCUj669bSIbt/f0FFauVz8=
+github.com/olive-io/bpmn/schema v1.3.1 h1:FkxnrFcQ0vG5CzVXb3T2loqxHNyqUZZDSJ9yVt1w734=
+github.com/olive-io/bpmn/schema v1.3.1/go.mod h1:n/Pm2VkqktkOkA2PhpT5efK8J/5lgyhE/Ku75HTzWHQ=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
 github.com/onsi/ginkgo v1.13.0/go.mod h1:+REjRxOmWfHCjfv9TTWB1jD1Frx4XydAD3zm1lskyM0=
@@ -625,8 +625,8 @@ google.golang.org/grpc v1.25.1/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQ
 google.golang.org/grpc v1.27.0/go.mod h1:qbnxyOmOxrQa7FizSgH+ReBfzJrCY1pSN7KXBS8abTk=
 google.golang.org/grpc v1.29.1/go.mod h1:itym6AZVZYACWQqET3MqgPpjcuV5QH3BxFS3IjizoKk=
 google.golang.org/grpc v1.33.1/go.mod h1:fr5YgcSWrqhRRxogOsw7RzIpsmvOZ6IcH4kBYTpR3n0=
-google.golang.org/grpc v1.63.0 h1:WjKe+dnvABXyPJMD7KDNLxtoGk5tgk+YFWN6cBWjZE8=
-google.golang.org/grpc v1.63.0/go.mod h1:WAX/8DgncnokcFUldAxq7GeB5DXHDbMF+lLvDomNkRA=
+google.golang.org/grpc v1.63.2 h1:MUeiw1B2maTVZthpU5xvASfTh3LDbxHd6IJ6QQVU+xM=
+google.golang.org/grpc v1.63.2/go.mod h1:WAX/8DgncnokcFUldAxq7GeB5DXHDbMF+lLvDomNkRA=
 google.golang.org/protobuf v0.0.0-20200109180630-ec00e32a8dfd/go.mod h1:DFci5gLYBciE7Vtevhsrf46CRTquxDuWsQurQQe4oz8=
 google.golang.org/protobuf v0.0.0-20200221191635-4d8936d0db64/go.mod h1:kwYJMbMJ01Woi6D6+Kah6886xMZcty6N08ah7+eCXa0=
 google.golang.org/protobuf v0.0.0-20200228230310-ab0ca4ff8a60/go.mod h1:cfTl7dwQJ+fmap5saPgwCLgHXTUD7jkjRqWcaiX5VyM=
