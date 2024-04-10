@@ -513,8 +513,8 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 
 	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
 		lg.Error("execute definition",
-			zap.String("id", process.DefinitionId),
-			zap.Uint64("version", process.DefinitionVersion),
+			zap.String("id", process.DefinitionsId),
+			zap.Uint64("version", process.DefinitionsVersion),
 			zap.Error(err))
 		return
 	}

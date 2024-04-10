@@ -27,25 +27,6 @@ option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
 import "github.com/olive-io/olive/api/discoverypb/openapi.proto";
 
-enum ActivityType {
-  Unknown = 0;
-  Task = 1;
-  ServiceTask = 2;
-  ScriptTask = 3;
-  UserTask = 4;
-  SendTask = 5;
-  ReceiveTask = 6;
-  ManualTask = 7;
-  CallActivity = 8;
-}
-
-message Activity {
-  ActivityType type = 1;
-  string id = 2;
-  string name = 3;
-  string taskType = 4;
-}
-
 enum BoxType {
   string = 0;
   integer = 1;

@@ -73,7 +73,7 @@ func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, err
 		return nil, false, err
 	}
 	if process.Status != pb.ProcessInstance_Waiting ||
-		process.DefinitionId == "" ||
+		process.DefinitionsId == "" ||
 		process.OliveHeader == nil ||
 		process.OliveHeader.Region == 0 {
 		return process, false, nil
@@ -93,14 +93,14 @@ func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.C
 		process.Status = pb.ProcessInstance_Prepare
 	}
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
-		process.DefinitionId, fmt.Sprintf("%d", process.DefinitionVersion),
+		process.DefinitionsId, fmt.Sprintf("%d", process.DefinitionsVersion),
 		fmt.Sprintf("%d", process.Id))
 	data, _ := proto.Marshal(process)
 	_, err := client.Put(ctx, key, string(data))
 	if err != nil {
 		lg.Error("update process instance",
-			zap.String("definition", process.DefinitionId),
-			zap.Uint64("version", process.DefinitionVersion),
+			zap.String("definition", process.DefinitionsId),
+			zap.Uint64("version", process.DefinitionsVersion),
 			zap.Uint64("id", process.Id),
 			zap.Error(err))
 		return

@@ -230,8 +230,8 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 		if pi.Status == pb.ProcessInstance_Unknown ||
 			pi.Status == pb.ProcessInstance_Ok ||
 			pi.Status == pb.ProcessInstance_Fail ||
-			pi.DefinitionId == "" ||
-			pi.DefinitionVersion == 0 {
+			pi.DefinitionsId == "" ||
+			pi.DefinitionsVersion == 0 {
 			continue
 		}
 

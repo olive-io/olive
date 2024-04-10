@@ -34,11 +34,14 @@ func (g *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingRespon
 	return &pb.PingResponse{Reply: "pong"}, nil
 }
 
+/*
+/<activity>/<id>/
+*/
 func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := g.Logger()
 	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
 	for key, value := range req.Properties {
-		lg.Sugar().Infof("%s=%+v", key, value.Value())
+		lg.Sugar().Infof("%s=%#v", key, value.Value())
 	}
 	resp := &pb.TransmitResponse{
 		Properties:  map[string]*dsypb.Box{},

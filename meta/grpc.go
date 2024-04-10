@@ -465,16 +465,16 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	}
 
 	instance := &pb.ProcessInstance{
-		OliveHeader:       &pb.OliveHeader{Region: definition.Header.Region},
-		Id:                s.idReq.Next(),
-		Name:              req.Name,
-		DefinitionId:      definition.Id,
-		DefinitionVersion: definition.Version,
-		Headers:           req.Header,
-		Properties:        req.Properties,
-		RunningState:      &pb.ProcessRunningState{},
-		FlowNodes:         make(map[string]*pb.FlowNodeStat),
-		Status:            pb.ProcessInstance_Waiting,
+		OliveHeader:        &pb.OliveHeader{Region: definition.Header.Region},
+		Id:                 s.idReq.Next(),
+		Name:               req.Name,
+		DefinitionsId:      definition.Id,
+		DefinitionsVersion: definition.Version,
+		Headers:            req.Header,
+		Properties:         req.Properties,
+		RunningState:       &pb.ProcessRunningState{},
+		FlowNodes:          make(map[string]*pb.FlowNodeStat),
+		Status:             pb.ProcessInstance_Waiting,
 	}
 
 	key := path.Join(runtime.DefaultRunnerProcessInstance,

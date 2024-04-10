@@ -541,7 +541,7 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 
 func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
 	lg := c.cfg.Logger
-	if instance.DefinitionId == "" || instance.OliveHeader.Region == 0 {
+	if instance.DefinitionsId == "" || instance.OliveHeader.Region == 0 {
 		lg.Warn("invalid process instance")
 		return nil
 	}
@@ -555,8 +555,8 @@ func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.Process
 	}
 
 	lg.Info("definition executed",
-		zap.String("id", instance.DefinitionId),
-		zap.Uint64("version", instance.DefinitionVersion))
+		zap.String("id", instance.DefinitionsId),
+		zap.Uint64("version", instance.DefinitionsVersion))
 
 	req := &pb.RegionExecuteDefinitionRequest{ProcessInstance: instance}
 	resp, err := region.ExecuteDefinition(ctx, req)

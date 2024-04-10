@@ -25,6 +25,7 @@ package gatewaypb;
 
 option go_package = "github.com/olive-io/olive/api/gatewaypb;gatewaypb";
 
+import "github.com/olive-io/olive/api/discoverypb/activity.proto";
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 // for grpc-gateway

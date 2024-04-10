@@ -297,10 +297,10 @@ github.com/nats-io/nkeys v0.0.2/go.mod h1:dab7URMsZm6Z/jp9Z5UGa87Uutgc2mVpXLC4B7
 github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/olive-io/bpmn v1.3.1 h1:/KZiUewCfe45mMMceb16eUL16XM0WTgSzw71HG5FcOM=
-github.com/olive-io/bpmn v1.3.1/go.mod h1:rKQViqVgcD5jpDz9QWeFXRCUj669bSIbt/f0FFauVz8=
-github.com/olive-io/bpmn/schema v1.3.1 h1:FkxnrFcQ0vG5CzVXb3T2loqxHNyqUZZDSJ9yVt1w734=
-github.com/olive-io/bpmn/schema v1.3.1/go.mod h1:n/Pm2VkqktkOkA2PhpT5efK8J/5lgyhE/Ku75HTzWHQ=
+github.com/olive-io/bpmn v1.3.3 h1:v4RVOyotwGDD7kq4iOEoJqfqwxbUBL3xDIgn6NzXk8Y=
+github.com/olive-io/bpmn v1.3.3/go.mod h1:MaeyTVuPvaMQ2Q7vyYAMQ3mkYZynGlvyQ7jBG75Ly8U=
+github.com/olive-io/bpmn/schema v1.3.3 h1:hxGThSx/5HKRGyo3V7iq9P8Z8tBxntEm/ibWxqzt7gw=
+github.com/olive-io/bpmn/schema v1.3.3/go.mod h1:n/Pm2VkqktkOkA2PhpT5efK8J/5lgyhE/Ku75HTzWHQ=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
 github.com/onsi/ginkgo v1.13.0/go.mod h1:+REjRxOmWfHCjfv9TTWB1jD1Frx4XydAD3zm1lskyM0=

@@ -27,17 +27,18 @@ generate:
 	cd $(GOPATH)/src && \
 	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/discovery.proto && \
 	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/openapi.proto && \
+	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/activity.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go-olive_out=. --go-olive_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative --openapiv2_out=. --openapiv2_opt use_go_templates=true github.com/olive-io/olive/api/gatewaypb/rpc.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/internal.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/raft.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/rpc.proto
 
 	goimports -w api/*/**.go
-	sed -i "" 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i "" 's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
-	rm -fr api/*/**swagger.json
+	sed -i.bak 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i.bak 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i.bak 's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i.bak 's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	rm -fr api/*/**swagger.json api/*/**.bak
 
 docker:
 

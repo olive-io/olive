@@ -199,14 +199,14 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "process_instance", Value: process.Id},
-			traceutil.Field{Key: "definition_id", Value: process.DefinitionId},
-			traceutil.Field{Key: "definition_version", Value: process.DefinitionVersion},
+			traceutil.Field{Key: "definition_id", Value: process.DefinitionsId},
+			traceutil.Field{Key: "definition_version", Value: process.DefinitionsVersion},
 		)
 	}
 
 	prefix := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId),
-		[]byte(fmt.Sprintf("%d", process.DefinitionVersion)))
+		[]byte(process.DefinitionsId),
+		[]byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
 	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", process.Id)))
 
 	if kv, _ := a.r.get(key); kv != nil {

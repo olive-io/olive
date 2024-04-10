@@ -142,9 +142,9 @@ func (r *Region) scheduleCycle() {
 }
 
 func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
-	if len(process.DefinitionContent) == 0 {
+	if len(process.DefinitionsContent) == 0 {
 		definitionKey := bytesutil.PathJoin(definitionPrefix,
-			[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)))
+			[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
 
 		kv, err := r.get(definitionKey)
 		if err != nil {
@@ -155,11 +155,11 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		}
 		definition := new(pb.Definition)
 		_ = proto.Unmarshal(kv.Value, definition)
-		process.DefinitionContent = definition.Content
+		process.DefinitionsContent = definition.Content
 	}
 
 	var definitions *schema.Definitions
-	err := xml.Unmarshal(process.DefinitionContent, &definitions)
+	err := xml.Unmarshal(process.DefinitionsContent, &definitions)
 	if err != nil {
 		return
 	}
@@ -172,6 +172,9 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	}
 	processElement := (*definitions.Processes())[0]
 	dataObjects := process.DataObjects
+	if id, ok := processElement.Id(); ok {
+		process.DefinitionsProcess = *id
+	}
 
 	variables := make(map[string][]byte)
 	for name, value := range process.Properties {
@@ -207,8 +210,8 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	defer r.metric.process.Dec()
 
 	fields := []zap.Field{
-		zap.String("definition", process.DefinitionId),
-		zap.Uint64("version", process.DefinitionVersion),
+		zap.String("definition", process.DefinitionsId),
+		zap.Uint64("version", process.DefinitionsVersion),
 		zap.Uint64("process", process.Id),
 	}
 
@@ -361,13 +364,18 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	taskAct := trace.GetActivity()
 	actType := taskAct.Type()
 	dsyAct := &dsypb.Activity{
-		Type: actCov(actType),
+		Type:               actCov(actType),
+		Definitions:        process.DefinitionsId,
+		DefinitionsVersion: process.DefinitionsVersion,
 	}
 	if id, ok := taskAct.Element().Id(); ok {
 		dsyAct.Id = *id
 	}
 	if name, ok := taskAct.Element().Name(); ok {
 		dsyAct.Name = *name
+	}
+	if id, ok := inst.Process().Id(); ok {
+		dsyAct.Process = *id
 	}
 	if extension, ok := taskAct.Element().ExtensionElements(); ok {
 		if td := extension.TaskDefinitionField; td != nil {
@@ -376,8 +384,8 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	}
 
 	fields := []zap.Field{
-		zap.String("definition", process.DefinitionId),
-		zap.Uint64("version", process.DefinitionVersion),
+		zap.String("definition", process.DefinitionsId),
+		zap.Uint64("version", process.DefinitionsVersion),
 		zap.Uint64("process", process.Id),
 		zap.String("task", dsyAct.Id),
 	}
@@ -421,7 +429,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 
 func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
 	pkey := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
+		[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
 		[]byte(fmt.Sprintf("%d", process.Id)))
 
 	value, err := proto.Marshal(process)

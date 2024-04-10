@@ -180,12 +180,13 @@ message ProcessInstance {
   OliveHeader oliveHeader = 100;
   uint64 id = 1;
   string name = 2;
-  string definitionId = 3;
-  uint64 definitionVersion = 4;
-  bytes definitionContent = 5;
-  map<string, string> headers = 6;
-  map<string, discoverypb.Box> properties = 7;
-  map<string, bytes> dataObjects = 8;
+  string definitionsId = 3;
+  uint64 definitionsVersion = 4;
+  string definitionsProcess = 5;
+  bytes definitionsContent = 6;
+  map<string, string> headers = 7;
+  map<string, discoverypb.Box> properties = 8;
+  map<string, bytes> dataObjects = 9;
 
   ProcessRunningState runningState = 16;
   map<string, FlowNodeStat> flowNodes = 17;
