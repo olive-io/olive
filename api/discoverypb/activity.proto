@@ -53,3 +53,10 @@ message Activity {
   // the id if bpmn process
   string process = 7;
 }
+
+message Consumer {
+  ActivityType activity = 1;
+  // the id of Consumer
+  string id = 2;
+  string action = 3;
+}

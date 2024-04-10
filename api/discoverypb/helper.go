@@ -44,10 +44,14 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 	}
 
 	box := &Box{}
-	if vv, ok := v.([]byte); ok {
+	switch vv := v.(type) {
+	case []byte:
 		if err := json.Unmarshal(vv, &box); err == nil {
 			return box
 		}
+	case *Box:
+		return vv
+	default:
 	}
 
 	if vt.Kind() == reflect.Pointer {

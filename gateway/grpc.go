@@ -23,31 +23,94 @@ package gateway
 
 import (
 	"context"
+	"fmt"
+	"path"
+	"runtime/debug"
+	"strings"
 
 	"go.uber.org/zap"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
+	"github.com/olive-io/olive/gateway/consumer"
+	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
 func (g *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
 	return &pb.PingResponse{Reply: "pong"}, nil
 }
 
-/*
-/<activity>/<id>/
-*/
 func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := g.Logger()
-	lg.Info("transmit executed", zap.String("activity", req.Activity.String()))
-	for key, value := range req.Properties {
-		lg.Sugar().Infof("%s=%#v", key, value.Value())
+	lg.Debug("transmit executed", zap.String("activity", req.Activity.String()))
+
+	act := req.Activity
+	prefix := path.Join("/", act.Type.String(), act.TaskType)
+
+	var handler consumer.IConsumer
+	g.popConsumer(prefix, func(key string, c consumer.IConsumer) bool {
+		key = strings.TrimPrefix(key, prefix+"/")
+		if value, ok := req.Headers[api.RequestPrefix+"Id"]; ok {
+			if key == value {
+				handler = c
+			}
+			return true
+		}
+
+		handler = c
+		return false
+	})
+	if handler != nil {
+		return nil, fmt.Errorf("not found handler")
 	}
+
+	// define the handler func
+	fn := func(ctx *consumer.Context) (rsp any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic recovered: %v", r)
+				lg.Sugar().Error(err.Error())
+				lg.Error(string(debug.Stack()))
+			}
+		}()
+
+		rsp, err = handler.Handle(ctx)
+		return rsp, err
+	}
+
+	// wrap the handler func
+	for i := len(g.handlerWrappers); i > 0; i-- {
+		fn = g.handlerWrappers[i-1](fn)
+	}
+
+	cc := g.createTransmitContext(ctx, req)
+	out, err := fn(cc)
+	if err != nil {
+		// TODO: handle error
+		return nil, err
+	}
+
+	responseBox := dsypb.BoxFromAny(out)
+
 	resp := &pb.TransmitResponse{
 		Properties:  map[string]*dsypb.Box{},
 		DataObjects: map[string]*dsypb.Box{},
 	}
+	for name := range responseBox.Parameters {
+		resp.Properties[name] = responseBox.Parameters[name]
+	}
+
 	return resp, nil
+}
+
+func (g *Gateway) createTransmitContext(parent context.Context, r *pb.TransmitRequest) *consumer.Context {
+	ctx := &consumer.Context{
+		Context:     parent,
+		Headers:     r.Headers,
+		Properties:  r.Properties,
+		DataObjects: r.DataObjects,
+	}
+	return ctx
 }
 
 type TestRPC struct {

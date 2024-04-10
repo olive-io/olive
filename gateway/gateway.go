@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,6 +35,7 @@ import (
 
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/gateway/consumer"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
 	"github.com/olive-io/olive/pkg/runtime"
@@ -54,6 +56,10 @@ type Gateway struct {
 	discovery dsy.IDiscovery
 
 	started chan struct{}
+
+	hmu             sync.RWMutex
+	hall            *hall
+	handlerWrappers []consumer.HandlerWrapper
 }
 
 func NewGateway(cfg *Config) (*Gateway, error) {
@@ -75,13 +81,15 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	gw := &Gateway{
-		IEmbedServer: embedServer,
-		ctx:          ctx,
-		cancel:       cancel,
-		cfg:          cfg,
-		oct:          oct,
-		discovery:    discovery,
-		started:      make(chan struct{}),
+		IEmbedServer:    embedServer,
+		ctx:             ctx,
+		cancel:          cancel,
+		cfg:             cfg,
+		oct:             oct,
+		discovery:       discovery,
+		started:         make(chan struct{}),
+		hall:            createHall(),
+		handlerWrappers: make([]consumer.HandlerWrapper, 0),
 	}
 
 	cfg.Config.Context = ctx
@@ -125,6 +133,10 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 
 func (g *Gateway) Logger() *zap.Logger {
 	return g.cfg.GetLogger()
+}
+
+func (g *Gateway) StartNotify() <-chan struct{} {
+	return g.started
 }
 
 func (g *Gateway) Start(stopc <-chan struct{}) error {
@@ -172,8 +184,4 @@ func (g *Gateway) isStarted() bool {
 	default:
 		return false
 	}
-}
-
-func (g *Gateway) StartNotify() <-chan struct{} {
-	return g.started
 }
