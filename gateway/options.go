@@ -22,51 +22,69 @@
 package gateway
 
 import (
-	pb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
-type AddConsumerOptions struct {
-	identity *pb.Consumer
+type AddOptions struct {
+	identity *dsypb.Consumer
 	path     string
 }
 
-type AddConsumerOption func(*AddConsumerOptions)
+type AddOption func(*AddOptions)
 
-func WithConsumerIdentity(identity *pb.Consumer) AddConsumerOption {
-	return func(options *AddConsumerOptions) {
+func AddWithIdentity(identity *dsypb.Consumer) AddOption {
+	return func(options *AddOptions) {
 		options.identity = identity
 	}
 }
 
-func WithConsumerActivity(activity pb.ActivityType) AddConsumerOption {
-	return func(options *AddConsumerOptions) {
+func AddWithActivity(activity dsypb.ActivityType) AddOption {
+	return func(options *AddOptions) {
 		if options.identity == nil {
-			options.identity = &pb.Consumer{}
+			options.identity = &dsypb.Consumer{}
 		}
 		options.identity.Activity = activity
 	}
 }
 
-func WithConsumerId(id string) AddConsumerOption {
-	return func(options *AddConsumerOptions) {
+func AddWithId(id string) AddOption {
+	return func(options *AddOptions) {
 		if options.identity == nil {
-			options.identity = &pb.Consumer{}
+			options.identity = &dsypb.Consumer{}
 		}
 		options.identity.Id = id
 	}
 }
 
-func WithConsumerAction(action string) AddConsumerOption {
-	return func(options *AddConsumerOptions) {
+func AddWithAction(action string) AddOption {
+	return func(options *AddOptions) {
 		if options.identity == nil {
-			options.identity = &pb.Consumer{}
+			options.identity = &dsypb.Consumer{}
 		}
 		options.identity.Action = action
 	}
 }
 
-func WithConsumerPath(path string) AddConsumerOption {
-	return func(options *AddConsumerOptions) {
+func AddWithRequest(request any) AddOption {
+	return func(options *AddOptions) {
+		if options.identity == nil {
+			options.identity = &dsypb.Consumer{}
+		}
+		options.identity.Request = dsypb.BoxFromAny(request)
+	}
+}
+
+func AddWithResponse(response any) AddOption {
+	return func(options *AddOptions) {
+		if options.identity == nil {
+			options.identity = &dsypb.Consumer{}
+		}
+		options.identity.Response = dsypb.BoxFromAny(response)
+	}
+}
+
+func AddWithPath(path string) AddOption {
+	return func(options *AddOptions) {
 		options.path = path
 	}
 }

@@ -39,7 +39,7 @@ type HandlerFunc func(ctx *Context) (any, error)
 // HandlerWrapper wraps the HandlerFunc and returns the equivalent
 type HandlerWrapper func(HandlerFunc) HandlerFunc
 
-type IKnownConsumer interface {
+type IRegularConsumer interface {
 	IConsumer
 	Identity() *dsypb.Consumer
 }

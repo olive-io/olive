@@ -47,6 +47,7 @@ import (
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"sigs.k8s.io/yaml"
 
@@ -265,6 +266,7 @@ func (ps *ProxyServer) buildGRPCServer() (*grpc.Server, *gwr.ServeMux, error) {
 		grpc.UnknownServiceHandler(ps.handler),
 	}
 	gsvc := grpc.NewServer(sopts...)
+	reflection.Register(gsvc)
 	if register := ps.cfg.ServiceRegister; register != nil {
 		register(gsvc)
 	}

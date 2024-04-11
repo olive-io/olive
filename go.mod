@@ -12,6 +12,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
+	github.com/hashicorp/go-immutable-radix v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/lni/dragonboat/v4 v4.0.0-20231222133740-1d6e2d76cd57
 	github.com/mattbaird/jsonpatch v0.0.0-20240118010651-0ba75a80ca38
@@ -73,7 +74,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect

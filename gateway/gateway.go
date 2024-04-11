@@ -109,12 +109,12 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 		gatewayRegister := cfg.Config.GRPCGatewayRegister
 		cfg.Config.GRPCGatewayRegister = func(ctx context.Context, mux *gwr.ServeMux) error {
 			if gatewayRegister != nil {
-				if e1 := gatewayRegister(ctx, mux); e1 != nil {
-					return e1
+				if err = gatewayRegister(ctx, mux); err != nil {
+					return err
 				}
 			}
-			if e1 := pb.RegisterGatewayHandlerServer(ctx, mux, gw); e1 != nil {
-				return e1
+			if err = pb.RegisterGatewayHandlerServer(ctx, mux, gw); err != nil {
+				return err
 			}
 			return nil
 		}
@@ -124,7 +124,8 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = pb.RegisterTestServiceServerHandler(gw, &TestRPC{}); err != nil {
+
+	if err = gw.installHandler(); err != nil {
 		return nil, err
 	}
 

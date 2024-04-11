@@ -34,6 +34,22 @@ func (m *Box) WithRef(ref string) *Box {
 	return m
 }
 
+func (m *Box) Split() map[string]*Box {
+	params := make(map[string]*Box)
+	for name, param := range m.Parameters {
+		params[name] = param
+	}
+	return params
+}
+
+func JoinBoxes(boxes map[string]*Box) *Box {
+	b := &Box{
+		Type:       BoxType_object,
+		Parameters: boxes,
+	}
+	return b
+}
+
 func BoxFromAny(value any) *Box {
 	return boxFromAny(reflect.TypeOf(value), value)
 }

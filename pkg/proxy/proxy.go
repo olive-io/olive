@@ -244,8 +244,9 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		Properties:  make(map[string]*dsypb.Box),
 		DataObjects: make(map[string]*dsypb.Box),
 	}
-	for name := range responseBox.Parameters {
-		response.Properties[name] = responseBox.Parameters[name]
+	outs := responseBox.Split()
+	for name := range outs {
+		response.Properties[name] = outs[name]
 	}
 
 	return response, nil

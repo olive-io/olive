@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"path"
 	"runtime/debug"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -42,25 +41,29 @@ func (g *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingRespon
 
 func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := g.Logger()
-	lg.Debug("transmit executed", zap.String("activity", req.Activity.String()))
+	lg.Debug("transmit executed",
+		zap.Stringer("activity", req.Activity))
 
 	act := req.Activity
 	prefix := path.Join("/", act.Type.String(), act.TaskType)
 
+	if cid, ok := req.Headers[api.RequestPrefix+"Id"]; ok {
+		prefix = path.Join(prefix, cid)
+	}
+
 	var handler consumer.IConsumer
-	g.popConsumer(prefix, func(key string, c consumer.IConsumer) bool {
-		key = strings.TrimPrefix(key, prefix+"/")
-		if value, ok := req.Headers[api.RequestPrefix+"Id"]; ok {
-			if key == value {
-				handler = c
-			}
+	g.walkConsumer(prefix, func(key string, c consumer.IConsumer) bool {
+		handler = c
+
+		if key == prefix {
 			return true
 		}
 
-		handler = c
+		//TODO: more selector?
+
 		return false
 	})
-	if handler != nil {
+	if handler == nil {
 		return nil, fmt.Errorf("not found handler")
 	}
 
@@ -91,13 +94,13 @@ func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.Tr
 	}
 
 	responseBox := dsypb.BoxFromAny(out)
-
 	resp := &pb.TransmitResponse{
 		Properties:  map[string]*dsypb.Box{},
 		DataObjects: map[string]*dsypb.Box{},
 	}
-	for name := range responseBox.Parameters {
-		resp.Properties[name] = responseBox.Parameters[name]
+	outs := responseBox.Split()
+	for name := range outs {
+		resp.Properties[name] = outs[name]
 	}
 
 	return resp, nil
@@ -111,12 +114,4 @@ func (g *Gateway) createTransmitContext(parent context.Context, r *pb.TransmitRe
 		DataObjects: r.DataObjects,
 	}
 	return ctx
-}
-
-type TestRPC struct {
-	pb.UnsafeTestServiceServer
-}
-
-func (t *TestRPC) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	return &pb.HelloResponse{Reply: "hello world"}, nil
 }

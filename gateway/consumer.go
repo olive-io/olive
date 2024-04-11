@@ -44,7 +44,7 @@ type hall struct {
 
 func createHall() *hall {
 	h := &hall{
-		tree: iradix.New[consumer.IConsumer](),
+		tree: iradix.New(),
 	}
 	return h
 }
@@ -124,8 +124,8 @@ func (g *Gateway) AddHandlerWrapper(wrapper consumer.HandlerWrapper) {
 	g.handlerWrappers = append(g.handlerWrappers, wrapper)
 }
 
-func (g *Gateway) AddConsumer(c consumer.IConsumer, opts ...AddConsumerOption) error {
-	var options AddConsumerOptions
+func (g *Gateway) AddConsumer(c consumer.IConsumer, opts ...AddOption) error {
+	var options AddOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -135,8 +135,8 @@ func (g *Gateway) AddConsumer(c consumer.IConsumer, opts ...AddConsumerOption) e
 		paths = consumerPath(idt)
 	}
 	if paths == "" {
-		if kc, ok := c.(consumer.IKnownConsumer); ok {
-			paths = consumerPath(kc.Identity())
+		if rc, ok := c.(consumer.IRegularConsumer); ok {
+			paths = consumerPath(rc.Identity())
 		}
 	}
 	if paths == "" {
@@ -156,7 +156,7 @@ func (g *Gateway) addConsumer(name string, c consumer.IConsumer) error {
 	return g.hall.insert(name, c)
 }
 
-func (g *Gateway) popConsumer(prefix string, fn func(key string, c consumer.IConsumer) bool) {
+func (g *Gateway) walkConsumer(prefix string, fn func(key string, c consumer.IConsumer) bool) {
 	g.hmu.RLock()
 	defer g.hmu.RUnlock()
 	g.hall.walkPrefix(prefix, fn)

@@ -25,16 +25,17 @@ package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
+import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
+
 enum ActivityType {
-  Unknown = 0;
-  Task = 1;
-  ServiceTask = 2;
-  ScriptTask = 3;
-  UserTask = 4;
-  SendTask = 5;
-  ReceiveTask = 6;
-  ManualTask = 7;
-  CallActivity = 8;
+  Task = 0;
+  ServiceTask = 1;
+  ScriptTask = 2;
+  UserTask = 3;
+  SendTask = 4;
+  ReceiveTask = 5;
+  ManualTask = 6;
+  CallActivity = 7;
 }
 
 message Activity {
@@ -59,4 +60,7 @@ message Consumer {
   // the id of Consumer
   string id = 2;
   string action = 3;
+
+  discoverypb.Box request = 11;
+  discoverypb.Box response = 12;
 }
