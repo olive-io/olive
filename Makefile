@@ -36,8 +36,8 @@ generate:
 	goimports -w api/*/**.go
 	sed -i.bak 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
 	sed -i.bak 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i.bak 's/json:"applicationXml,omitempty"/json:"application\/xml,,omitempty"/g' api/discoverypb/openapi.pb.go
-	sed -i.bak 's/json:"applicationYaml,omitempty"/json:"application\/yaml,,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i.bak 's/json:"applicationXml,omitempty"/json:"application\/xml,omitempty"/g' api/discoverypb/openapi.pb.go
+	sed -i.bak 's/json:"applicationYaml,omitempty"/json:"application\/yaml,omitempty"/g' api/discoverypb/openapi.pb.go
 	rm -fr api/*/**swagger.json api/*/**.bak
 
 docker:

@@ -57,10 +57,11 @@ message Activity {
 
 message Consumer {
   ActivityType activity = 1;
+  string action = 2;
   // the id of Consumer
-  string id = 2;
-  string action = 3;
+  string id = 3;
 
-  discoverypb.Box request = 11;
-  discoverypb.Box response = 12;
+  map<string, string> headers = 11;
+  discoverypb.Box request = 12;
+  discoverypb.Box response = 13;
 }

@@ -65,6 +65,15 @@ func AddWithAction(action string) AddOption {
 	}
 }
 
+func AddWithHeaders(headers map[string]string) AddOption {
+	return func(options *AddOptions) {
+		if options.identity == nil {
+			options.identity = &dsypb.Consumer{}
+		}
+		options.identity.Headers = headers
+	}
+}
+
 func AddWithRequest(request any) AddOption {
 	return func(options *AddOptions) {
 		if options.identity == nil {

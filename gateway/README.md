@@ -4,7 +4,7 @@
 
 # 接入方式
 - Gateway 原生 Consumer ✅
-- Gateway gRPC 接入 
 - Gateway HTTP 接入
+- Gateway gRPC 接入
 - Gateway openapi v3
 - Runner proxy http 接入

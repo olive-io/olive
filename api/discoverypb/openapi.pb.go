@@ -980,8 +980,8 @@ type PathRequestBodyContent struct {
 	unknownFields protoimpl.UnknownFields
 
 	ApplicationJson *ApplicationContent `protobuf:"bytes,1,opt,name=applicationJson,proto3" json:"application/json,omitempty"`
-	ApplicationXml  *ApplicationContent `protobuf:"bytes,2,opt,name=applicationXml,proto3" json:"application/xml,,omitempty"`
-	ApplicationYaml *ApplicationContent `protobuf:"bytes,3,opt,name=applicationYaml,proto3" json:"application/yaml,,omitempty"`
+	ApplicationXml  *ApplicationContent `protobuf:"bytes,2,opt,name=applicationXml,proto3" json:"application/xml,omitempty"`
+	ApplicationYaml *ApplicationContent `protobuf:"bytes,3,opt,name=applicationYaml,proto3" json:"application/yaml,omitempty"`
 }
 
 func (x *PathRequestBodyContent) Reset() {
