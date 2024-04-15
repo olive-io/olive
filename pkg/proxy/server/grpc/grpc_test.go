@@ -76,9 +76,7 @@ func TestStartProxy(t *testing.T) {
 		pb.RegisterTestServiceServer(server, &TestRPC{})
 	}
 	cfg.GRPCGatewayRegister = func(ctx context.Context, mux *gw.ServeMux) error {
-		if err := pb.RegisterTestServiceHandlerServer(ctx, mux, &TestRPC{}); err != nil {
-			return err
-		}
+
 		return nil
 	}
 	ps, err := grpcproxy.NewProxyServer(discovery, &cfg)

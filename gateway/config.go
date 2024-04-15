@@ -55,6 +55,7 @@ type Config struct {
 
 	DataDir string `json:"data-dir"`
 
+	OpenAPI string `json:"openapi"`
 	// EnableGRPCGateway enables grpc gateway.
 	// The gateway translates a RESTful HTTP API into gRPC.
 	EnableGRPCGateway bool `json:"enable-grpc-gateway"`

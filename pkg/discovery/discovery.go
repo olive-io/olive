@@ -42,15 +42,23 @@ var (
 	ErrWatcherStopped = errors.New("watcher stopped")
 )
 
+// IRegistrar registry service
 type IRegistrar interface {
 	Register(context.Context, *dsypb.Service, ...RegisterOption) error
 	Deregister(context.Context, *dsypb.Service, ...DeregisterOption) error
+}
+
+// IRouter registry endpoint
+type IRouter interface {
+	Inject(context.Context, *dsypb.Endpoint, ...InjectOption) error
+	ListEndpoints(context.Context, ...ListEndpointsOption) ([]*dsypb.Endpoint, error)
 }
 
 // IDiscovery the registry provides an interface for service discovery
 // and an abstraction over varying implementations
 type IDiscovery interface {
 	IRegistrar
+	IRouter
 
 	Options() Options
 	GetService(context.Context, string, ...GetOption) ([]*dsypb.Service, error)

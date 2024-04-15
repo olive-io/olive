@@ -61,7 +61,7 @@ message Consumer {
   // the id of Consumer
   string id = 3;
 
-  map<string, string> headers = 11;
+  map<string, string> metadata = 11;
   discoverypb.Box request = 12;
   discoverypb.Box response = 13;
 }

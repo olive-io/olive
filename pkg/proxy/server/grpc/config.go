@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
@@ -49,7 +50,6 @@ type Config struct {
 	Id       string            `json:"id"`
 	Name     string            `json:"name"`
 	Metadata map[string]string `json:"-"`
-	OpenAPI  string            `json:"openapi"`
 
 	ListenURL    string `json:"listen-url"`
 	AdvertiseURL string `json:"advertise-url"`
@@ -72,6 +72,8 @@ type Config struct {
 	ServiceRegister func(*grpc.Server) `json:"-"`
 	// GRPCGatewayRegister is for registering users' gRPC gateway services.
 	GRPCGatewayRegister func(ctx context.Context, mux *gwr.ServeMux) error `json:"-"`
+
+	ExtensionEndpoints []*dsypb.Endpoint `json:"-"`
 
 	logger *zap.Logger
 }

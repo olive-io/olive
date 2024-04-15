@@ -27,8 +27,6 @@ import (
 	"net"
 	"net/http"
 	urlpkg "net/url"
-	"os"
-	"path"
 	"reflect"
 	"runtime/debug"
 	"sort"
@@ -39,7 +37,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	json "github.com/json-iterator/go"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -49,7 +46,6 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"sigs.k8s.io/yaml"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/addr"
@@ -744,34 +740,10 @@ func (ps *ProxyServer) register() error {
 	for _, h := range handlerList {
 		endpoints = append(endpoints, ps.handlers[h].Endpoints()...)
 	}
-
 	ps.rmu.RUnlock()
 
-	// read openapi docs
-	var openapi *dsypb.OpenAPI
-	if cfg.OpenAPI != "" {
-		data, err := os.ReadFile(cfg.OpenAPI)
-		if err != nil {
-			return fmt.Errorf("read openapi v3 docs: %v", err)
-		}
-
-		ext := path.Ext(cfg.OpenAPI)
-		switch ext {
-		case ".yml", ".yaml":
-			// convert yaml to json
-			data, err = yaml.YAMLToJSON(data)
-			if err != nil {
-				return fmt.Errorf("convert openapi v3 docs: %v", err)
-			}
-		}
-		if err = json.Unmarshal(data, &openapi); err != nil {
-			return fmt.Errorf("read openapi docs: %v", err)
-		}
-
-		// extracts endpoints of OpenAPI docs
-		for _, ep := range extractOpenAPIDocs(openapi) {
-			endpoints = append(endpoints, ep)
-		}
+	for _, ep := range cfg.ExtensionEndpoints {
+		endpoints = append(endpoints, ep)
 	}
 
 	svc := &dsypb.Service{
@@ -779,7 +751,6 @@ func (ps *ProxyServer) register() error {
 		Version:   version.Version,
 		Nodes:     []*dsypb.Node{node},
 		Endpoints: endpoints,
-		Openapi:   openapi,
 	}
 
 	ps.rmu.RLock()
@@ -795,7 +766,6 @@ func (ps *ProxyServer) register() error {
 		return err
 	}
 
-	// already registered? don't need to register subscribers
 	if registered {
 		return nil
 	}

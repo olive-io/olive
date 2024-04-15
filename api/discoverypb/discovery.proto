@@ -90,7 +90,9 @@ message Result {
 
   Service service = 2;
 
-  int64 timestamp = 3;
+  Endpoint endpoint = 3;
+
+  int64 timestamp = 4;
 }
 
 // Service represents a olive service
@@ -108,6 +110,4 @@ message Service {
   repeated Node nodes = 6;
 
   int64 ttl = 7;
-
-  discoverypb.OpenAPI openapi = 8;
 }

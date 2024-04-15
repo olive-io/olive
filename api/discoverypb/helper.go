@@ -103,6 +103,20 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 			"value": &Box{Type: parseBoxType(vt.Elem())},
 		}
 		box.Data, _ = json.Marshal(v)
+	case BoxType_object:
+		params := make(map[string]*Box)
+		for i := 0; i < vt.NumField(); i++ {
+			vf := vt.Field(i)
+			tag := vf.Tag.Get("json")
+			if tag == "" || tag == "-" {
+				continue
+			}
+			vfv := reflect.New(vf.Type).Interface()
+			fb := boxFromAny(vf.Type, vfv)
+			params[tag] = fb
+		}
+		box.Parameters = params
+		box.Data, _ = json.Marshal(v)
 	default:
 		box.Data, _ = json.Marshal(v)
 	}

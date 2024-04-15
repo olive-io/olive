@@ -25,14 +25,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"sync"
 
 	gwr "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	json "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"sigs.k8s.io/yaml"
 
+	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/gateway/consumer"
@@ -60,6 +65,8 @@ type Gateway struct {
 	hmu             sync.RWMutex
 	hall            *hall
 	handlerWrappers []consumer.HandlerWrapper
+
+	openapiDocs *dsypb.OpenAPI
 }
 
 func NewGateway(cfg *Config) (*Gateway, error) {
@@ -91,6 +98,38 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 		hall:            createHall(),
 		handlerWrappers: make([]consumer.HandlerWrapper, 0),
 	}
+
+	if cfg.ExtensionEndpoints == nil {
+		cfg.ExtensionEndpoints = make([]*dsypb.Endpoint, 0)
+	}
+
+	// read openapi docs
+	var openapi *dsypb.OpenAPI
+	if cfg.OpenAPI != "" {
+		data, err := os.ReadFile(cfg.OpenAPI)
+		if err != nil {
+			return nil, fmt.Errorf("read openapi v3 docs: %v", err)
+		}
+
+		ext := path.Ext(cfg.OpenAPI)
+		switch ext {
+		case ".yml", ".yaml":
+			// convert yaml to json
+			data, err = yaml.YAMLToJSON(data)
+			if err != nil {
+				return nil, fmt.Errorf("convert openapi v3 docs: %v", err)
+			}
+		}
+		if err = json.Unmarshal(data, &openapi); err != nil {
+			return nil, fmt.Errorf("read openapi docs: %v", err)
+		}
+
+		// extracts endpoints of OpenAPI docs
+		for _, ep := range extractOpenAPIDocs(openapi) {
+			cfg.ExtensionEndpoints = append(cfg.ExtensionEndpoints, ep)
+		}
+	}
+	gw.openapiDocs = openapi
 
 	cfg.Config.Context = ctx
 	if cfg.Config.UserHandlers == nil {

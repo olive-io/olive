@@ -39,10 +39,17 @@ func (g *Gateway) installHandler() error {
 		return err
 	}
 
-	if err := g.AddConsumer(&ScriptTaskConsumer{}, AddWithActivity(dsypb.ActivityType_ScriptTask)); err != nil {
+	if err := g.AddConsumer(&ScriptTaskConsumer{},
+		AddWithRequest(&ScriptTaskRequest{}),
+		AddWithResponse(&ScriptTaskResponse{}),
+		AddWithActivity(dsypb.ActivityType_ScriptTask),
+	); err != nil {
 		return err
 	}
-	if err := g.AddConsumer(&SendTaskConsumer{}, AddWithActivity(dsypb.ActivityType_SendTask)); err != nil {
+	if err := g.AddConsumer(&SendTaskConsumer{},
+		AddWithRequest(&SendTaskRequest{}),
+		AddWithResponse(&SendTaskResponse{}),
+		AddWithActivity(dsypb.ActivityType_SendTask)); err != nil {
 		return err
 	}
 
@@ -71,14 +78,31 @@ func TestHandlerWrapper(lg *zap.Logger) consumer.HandlerWrapper {
 	}
 }
 
+type ScriptTaskRequest struct {
+	Expr string `json:"expr"`
+}
+
+type ScriptTaskResponse struct {
+	Sum int64 `json:"sum"`
+}
+
 type ScriptTaskConsumer struct{}
 
 func (c *ScriptTaskConsumer) Handle(ctx *consumer.Context) (any, error) {
 	return 1, nil
 }
 
+type SendTaskRequest struct {
+	Topic    string `json:"topic"`
+	Username string `json:"username"`
+}
+
+type SendTaskResponse struct {
+	Result string `json:"result"`
+}
+
 type SendTaskConsumer struct{}
 
 func (c *SendTaskConsumer) Handle(ctx *consumer.Context) (any, error) {
-	return "OK", nil
+	return &SendTaskResponse{Result: "OK"}, nil
 }

@@ -260,6 +260,14 @@ func (m *Registrar) Deregister(ctx context.Context, s *dsypb.Service, opts ...ds
 	return nil
 }
 
+func (m *Registrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, option ...dsy.InjectOption) error {
+	return nil
+}
+
+func (m *Registrar) ListEndpoints(ctx context.Context, option ...dsy.ListEndpointsOption) ([]*dsypb.Endpoint, error) {
+	return make([]*dsypb.Endpoint, 0), nil
+}
+
 func (m *Registrar) GetService(ctx context.Context, name string, opts ...dsy.GetOption) ([]*dsypb.Service, error) {
 	m.RLock()
 	defer m.RUnlock()

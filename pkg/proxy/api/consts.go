@@ -28,6 +28,7 @@ import (
 const (
 	HeaderKeyPrefix = "ov:"
 	ActivityKey     = "ov:activity"
+	TaskTypeKey     = "ov:task_type"
 	EndpointKey     = "ov:endpoint"
 	ProtocolKey     = "ov:protocol"
 	MethodKey       = "ov:method"

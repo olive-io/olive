@@ -131,16 +131,22 @@ func (g *Gateway) AddConsumer(c consumer.IConsumer, opts ...AddOption) error {
 	}
 
 	var paths string
-	if idt := options.identity; idt != nil {
+	var idt *dsypb.Consumer
+	if idt = options.identity; idt != nil {
 		paths = consumerPath(idt)
 	}
 	if paths == "" {
 		if rc, ok := c.(consumer.IRegularConsumer); ok {
-			paths = consumerPath(rc.Identity())
+			idt = rc.Identity()
+			paths = consumerPath(idt)
 		}
 	}
 	if paths == "" {
 		paths = options.path
+	}
+	if idt != nil {
+		ep := extractConsumer(idt, g.cfg.Name)
+		g.cfg.ExtensionEndpoints = append(g.cfg.ExtensionEndpoints, ep)
 	}
 
 	return g.addConsumer(paths, c)

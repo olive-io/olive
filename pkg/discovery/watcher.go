@@ -22,6 +22,7 @@
 package discovery
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"path"
@@ -105,9 +106,9 @@ func (ew *etcdWatcher) Next() (*dsypb.Result, error) {
 			return nil, errors.New("could not get next, watch is canceled")
 		}
 		for _, ev := range wresp.Events {
-			service := decode(ev.Kv.Value)
 			var action string
 
+			value := ev.Kv.Value
 			switch ev.Type {
 			case clientv3.EventTypePut:
 				if ev.IsCreate() {
@@ -118,16 +119,27 @@ func (ew *etcdWatcher) Next() (*dsypb.Result, error) {
 			case clientv3.EventTypeDelete:
 				action = "delete"
 
-				// get service from prevKv
-				service = decode(ev.PrevKv.Value)
+				value = ev.PrevKv.Value
+
 			}
 
-			if service == nil {
+			var service *dsypb.Service
+			var endpoint *dsypb.Endpoint
+			// get service from prevKv
+			if bytes.Contains(ev.Kv.Key, []byte("_ep_")) {
+				endpoint = decodeEp(value)
+			} else {
+				service = decode(value)
+			}
+
+			if service == nil && endpoint == nil {
 				continue
 			}
+
 			return &dsypb.Result{
 				Action:    action,
 				Service:   service,
+				Endpoint:  endpoint,
 				Timestamp: time.Now().Unix(),
 			}, nil
 		}

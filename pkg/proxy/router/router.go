@@ -169,21 +169,67 @@ func (r *registryRouter) refresh() {
 // process watch event
 func (r *registryRouter) process(res *dsypb.Result) {
 	// skip these things
-	if res == nil || res.Service == nil {
+	if res == nil || res.Service == nil || res.Endpoint == nil {
 		return
 	}
 
-	// get entry from cache
-	service, err := r.rc.GetService(r.ctx, res.Service.Name)
-	if err != nil {
-		r.lg.Error("unable to get service",
-			zap.String("service", res.Service.Name),
-			zap.Error(err))
+	if s := res.Service; s != nil {
+		// get entry from cache
+		service, err := r.rc.GetService(r.ctx, s.Name)
+		if err != nil {
+			r.lg.Error("unable to get service",
+				zap.String("service", s.Name),
+				zap.Error(err))
+			return
+		}
+
+		// update our local endpoints
+		r.store(service)
 		return
 	}
 
-	// update our local endpoints
-	r.store(service)
+	if sep := res.Endpoint; sep != nil {
+		// endpoints
+		eps := map[string]*api.Service{}
+
+		sname, ok := sep.Metadata["service"]
+		if !ok {
+			return
+		}
+
+		// get entry from cache
+		service, err := r.rc.GetService(r.ctx, sname)
+		if err != nil {
+			r.lg.Error("unable to get service",
+				zap.String("service", sname),
+				zap.Error(err))
+			return
+		}
+
+		// create a key service:endpoint_name
+		key := fmt.Sprintf("%s.%s", sname, sep.Name)
+		// decode endpoint
+		end := api.Decode(sep.Metadata)
+		end.Request = sep.Request
+		end.Response = sep.Response
+
+		// if we got nothing skip
+		if err := api.Validate(end); err != nil {
+			r.lg.Debug("endpoint validation failed", zap.Error(err))
+			return
+		}
+
+		ep := &api.Service{Name: sname}
+
+		// overwrite the endpoint
+		ep.Endpoint = end
+		// append services
+		ep.Services = append(ep.Services, service...)
+		// store it
+		eps[key] = ep
+
+		r.updateEps(eps)
+	}
 }
 
 // store local endpoint cache
@@ -230,8 +276,6 @@ func (r *registryRouter) store(services []*dsypb.Service) {
 	}
 
 	r.Lock()
-	defer r.Unlock()
-
 	// delete any existing eps for services we know
 	for key, service := range r.eps {
 		// skip what we don't care about
@@ -243,6 +287,14 @@ func (r *registryRouter) store(services []*dsypb.Service) {
 		// delete delete delete
 		delete(r.eps, key)
 	}
+	r.Unlock()
+
+	r.updateEps(eps)
+}
+
+func (r *registryRouter) updateEps(eps map[string]*api.Service) {
+	r.Lock()
+	defer r.Unlock()
 
 	// now set the eps we have
 	for name, ep := range eps {

@@ -45,6 +45,7 @@ type etcdRegistrar struct {
 
 	sync.RWMutex
 	register map[string]uint64
+	endpoint map[string]uint64
 	leases   map[string]clientv3.LeaseID
 }
 
@@ -200,7 +201,7 @@ func (e *etcdRegistrar) registerNode(ctx context.Context, s *dsypb.Service, node
 	lg.Sugar().Infof("Registering '%s' namespace '%s' id '%s' with lease %v and ttl %v",
 		service.Name, service.Namespace, node.Id, lgr.ID, options.TTL)
 	// create an entry for the node
-	if lgr != nil {
+	if lgr.ID != 0 {
 		_, err = e.client.Put(ctx, nodePath(prefix, service.Namespace, service.Name, node.Id), encode(service), clientv3.WithLease(lgr.ID))
 	} else {
 		_, err = e.client.Put(ctx, nodePath(prefix, service.Namespace, service.Name, node.Id), encode(service))
@@ -213,7 +214,7 @@ func (e *etcdRegistrar) registerNode(ctx context.Context, s *dsypb.Service, node
 	// save our hash of the service
 	e.register[s.Name+node.Id] = h
 	// save our leaseID of the service
-	if lgr != nil {
+	if lgr.ID != 0 {
 		e.leases[s.Name+node.Id] = lgr.ID
 	}
 	e.Unlock()
@@ -280,6 +281,190 @@ func (e *etcdRegistrar) Deregister(ctx context.Context, s *dsypb.Service, opts .
 	}
 
 	return nil
+}
+
+func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, opts ...InjectOption) error {
+	var options InjectOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	// check existing lease cache
+	sname := endpoint.Metadata["service"]
+	e.RLock()
+	leaseID, ok := e.leases[sname]
+	e.RUnlock()
+
+	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
+	defer cancel()
+
+	namespace := e.options.Namespace
+	if options.Namespace != "" {
+		namespace = options.Namespace
+	}
+
+	prefix := e.options.Prefix
+	lg := e.options.Logger
+
+	if !ok {
+		// missing lease, check if the key exists
+
+		// look for the existing key
+		rsp, err := e.client.Get(ctx, endpointPath(prefix, namespace, sname), clientv3.WithSerializable())
+		if err != nil {
+			return err
+		}
+
+		// get the existing lease
+		for _, kv := range rsp.Kvs {
+			if kv.Lease > 0 {
+				leaseID = clientv3.LeaseID(kv.Lease)
+
+				// decode the existing endpoints
+				ep := decodeEp(kv.Value)
+				if ep == nil || len(ep.Name) == 0 {
+					continue
+				}
+
+				// create hash of service; uint64
+				h, err := hash.Hash(ep, nil)
+				if err != nil {
+					continue
+				}
+
+				// save the info
+				e.Lock()
+				e.leases[sname] = leaseID
+				e.endpoint[sname+ep.Name] = h
+				e.Unlock()
+
+				break
+			}
+		}
+	}
+
+	var leaseNotFound bool
+
+	// renew the lease if it exists
+	if leaseID > 0 {
+		lg.Debug("Renewing existing lease",
+			zap.String("name", sname),
+			zap.Uint64("lease_id", uint64(leaseID)))
+
+		if _, err := e.client.KeepAliveOnce(ctx, leaseID); err != nil {
+			if !errors.Is(err, rpctypes.ErrLeaseNotFound) {
+				return err
+			}
+
+			lg.Error("Lease not found",
+				zap.String("name", sname),
+				zap.Uint64("lease_id", uint64(leaseID)))
+			// lease not found do register
+			leaseNotFound = true
+		}
+	}
+
+	// create hash of service; uint64
+	h, err := hash.Hash(endpoint, nil)
+	if err != nil {
+		return err
+	}
+
+	// get existing hash for the service node
+	e.Lock()
+	v, ok := e.endpoint[sname+endpoint.Name]
+	e.Unlock()
+
+	// the service is unchanged, skip registering
+	if ok && v == h && !leaseNotFound {
+		lg.Sugar().Debugf("Service %s endpoint %s unchanged skipping registration", sname, endpoint.Name)
+		return nil
+	}
+
+	var lgr *clientv3.LeaseGrantResponse
+	if options.TTL.Seconds() <= 0 {
+		options.TTL = time.Second * 30
+	}
+
+	// get a lease used to expire keys since we have a ttl
+	lgr, err = e.client.Grant(ctx, int64(options.TTL.Seconds()))
+	if err != nil {
+		return err
+	}
+
+	lg.Sugar().Infof("Registering '%s' with lease %v and ttl %v",
+		endpoint.Name, lgr.ID, options.TTL)
+	// create an entry for the node
+	if lgr.ID != 0 {
+		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, endpoint.Name), encodeEp(endpoint), clientv3.WithLease(lgr.ID))
+	} else {
+		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, endpoint.Name), encodeEp(endpoint))
+	}
+	if err != nil {
+		return err
+	}
+
+	e.Lock()
+	// save our hash of the endpoint
+	e.endpoint[sname+endpoint.Name] = h
+	// save our leaseID of the endpoint
+	if lgr.ID != 0 {
+		e.leases[sname] = lgr.ID
+	}
+	e.Unlock()
+
+	return nil
+}
+
+func (e *etcdRegistrar) ListEndpoints(ctx context.Context, opts ...ListEndpointsOption) ([]*dsypb.Endpoint, error) {
+	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
+	defer cancel()
+
+	var options ListEndpointsOptions
+	for _, o := range opts {
+		o(&options)
+	}
+
+	namespace := e.options.Namespace
+	if options.Namespace != "" {
+		namespace = options.Namespace
+	}
+
+	endpoints := make([]*dsypb.Endpoint, 0)
+	if len(options.Service) != 0 {
+		svcs, _ := e.GetService(ctx, options.Service, GetNamespace(namespace))
+		for _, svc := range svcs {
+			endpoints = append(endpoints, svc.Endpoints...)
+		}
+	}
+
+	prefix := e.options.Prefix
+	key := path.Join(prefix, namespace, "_ep_") + "/"
+	listOpts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := e.client.Get(ctx, key, listOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rsp.Kvs) == 0 {
+		return endpoints, nil
+	}
+
+	for _, n := range rsp.Kvs {
+		ep := decodeEp(n.Value)
+		if ep == nil {
+			continue
+		}
+		endpoints = append(endpoints, ep)
+	}
+
+	// sort the services
+	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].Name < endpoints[j].Name })
+
+	return endpoints, nil
 }
 
 func (e *etcdRegistrar) GetService(ctx context.Context, name string, opts ...GetOption) ([]*dsypb.Service, error) {
@@ -423,5 +608,20 @@ func nodePath(prefix, ns, s, id string) string {
 }
 
 func servicePath(prefix, ns, s string) string {
-	return path.Join(prefix, ns, strings.Replace(s, "/", "-", -1))
+	return path.Join(prefix, ns, strings.ReplaceAll(s, "/", "-"))
+}
+
+func encodeEp(ep *dsypb.Endpoint) string {
+	b, _ := proto.Marshal(ep)
+	return string(b)
+}
+
+func decodeEp(data []byte) *dsypb.Endpoint {
+	ep := &dsypb.Endpoint{}
+	_ = proto.Unmarshal(data, ep)
+	return ep
+}
+
+func endpointPath(prefix, ns, ep string) string {
+	return path.Join(prefix, ns, "_ep_", ep, strings.ReplaceAll(ep, "/", "-"))
 }
