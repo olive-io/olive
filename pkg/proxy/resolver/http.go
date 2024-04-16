@@ -38,6 +38,16 @@ func NewHTTPResolver() IResolver {
 func (r *httpResolver) Resolve(req *http.Request) (*Endpoint, error) {
 	// /foo.Bar/Service
 	path := req.URL.Path
+	endpointKey := api.OliveHttpKey(api.EndpointKey)
+	if ep := req.Header.Get(endpointKey); ep == api.DefaultTaskURL {
+		return &Endpoint{
+			Name:    api.DefaultService,
+			Host:    req.Host,
+			Method:  req.Method,
+			Path:    api.DefaultTaskURL,
+			Handler: api.RPCHandler,
+		}, nil
+	}
 
 	// [foo.Bar, Service]
 	parts := strings.Split(path[1:], "/")

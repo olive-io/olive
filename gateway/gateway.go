@@ -48,7 +48,6 @@ import (
 )
 
 type Gateway struct {
-	pb.UnsafeGatewayServer
 	genericserver.IEmbedServer
 	*grpcproxy.ProxyServer
 
@@ -65,6 +64,9 @@ type Gateway struct {
 	hmu             sync.RWMutex
 	hall            *hall
 	handlerWrappers []consumer.HandlerWrapper
+
+	// internal http Consumer
+	hc *consumer.HttpConsumer
 
 	openapiDocs *dsypb.OpenAPI
 }
@@ -137,12 +139,15 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	}
 	cfg.Config.UserHandlers["/metrics"] = promhttp.Handler()
 
+	gwImpl := &gatewayImpl{Gateway: gw}
+	routerImpl := &endpointRouterImpl{Gateway: gw}
 	serviceRegister := cfg.Config.ServiceRegister
 	cfg.Config.ServiceRegister = func(gs *grpc.Server) {
 		if serviceRegister != nil {
 			serviceRegister(gs)
 		}
-		pb.RegisterGatewayServer(gs, gw)
+		pb.RegisterGatewayServer(gs, gwImpl)
+		pb.RegisterEndpointRouterServer(gs, routerImpl)
 	}
 	if cfg.EnableGRPCGateway {
 		gatewayRegister := cfg.Config.GRPCGatewayRegister
@@ -152,7 +157,10 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 					return err
 				}
 			}
-			if err = pb.RegisterGatewayHandlerServer(ctx, mux, gw); err != nil {
+			if err = pb.RegisterGatewayHandlerServer(ctx, mux, gwImpl); err != nil {
+				return err
+			}
+			if err = pb.RegisterEndpointRouterHandlerServer(ctx, mux, routerImpl); err != nil {
 				return err
 			}
 			return nil
@@ -169,6 +177,18 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	}
 
 	return gw, nil
+}
+
+func (g *Gateway) installInternalHandler() (err error) {
+	// http consumer pattern
+	hp := path.Join("/", dsypb.ActivityType_ServiceTask.String(), "http")
+	hc := consumer.NewHttpConsumer()
+	if err = g.addConsumer(hp, hc); err != nil {
+		return
+	}
+	g.hc = hc
+
+	return nil
 }
 
 func (g *Gateway) Logger() *zap.Logger {

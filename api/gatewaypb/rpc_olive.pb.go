@@ -53,3 +53,12 @@ func RegisterTestServiceServerHandler(s server.IServer, srv TestServiceServer, o
 	handler := s.NewHandler(&TestServiceEmbedXX{srv}, opts...)
 	return s.Handle(handler)
 }
+
+func RegisterEndpointRouterServerHandler(s server.IServer, srv EndpointRouterServer, opts ...server.HandlerOption) error {
+	type EndpointRouterEmbedXX struct {
+		EndpointRouterServer
+	}
+	opts = append(opts, server.WithServerDesc(&EndpointRouter_ServiceDesc))
+	handler := s.NewHandler(&EndpointRouterEmbedXX{srv}, opts...)
+	return s.Handle(handler)
+}

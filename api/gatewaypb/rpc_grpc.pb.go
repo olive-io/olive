@@ -226,3 +226,129 @@ var TestService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "github.com/olive-io/olive/api/gatewaypb/rpc.proto",
 }
+
+// EndpointRouterClient is the client API for EndpointRouter service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type EndpointRouterClient interface {
+	// Inject injects extension http router endpoint
+	Inject(ctx context.Context, in *InjectRequest, opts ...grpc.CallOption) (*InjectResponse, error)
+	// DigOut digs out extension http router endpoint
+	DigOut(ctx context.Context, in *DigOutRequest, opts ...grpc.CallOption) (*DigOutResponse, error)
+}
+
+type endpointRouterClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewEndpointRouterClient(cc grpc.ClientConnInterface) EndpointRouterClient {
+	return &endpointRouterClient{cc}
+}
+
+func (c *endpointRouterClient) Inject(ctx context.Context, in *InjectRequest, opts ...grpc.CallOption) (*InjectResponse, error) {
+	out := new(InjectResponse)
+	err := c.cc.Invoke(ctx, "/gatewaypb.EndpointRouter/Inject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *endpointRouterClient) DigOut(ctx context.Context, in *DigOutRequest, opts ...grpc.CallOption) (*DigOutResponse, error) {
+	out := new(DigOutResponse)
+	err := c.cc.Invoke(ctx, "/gatewaypb.EndpointRouter/DigOut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EndpointRouterServer is the server API for EndpointRouter service.
+// All implementations must embed UnimplementedEndpointRouterServer
+// for forward compatibility
+type EndpointRouterServer interface {
+	// Inject injects extension http router endpoint
+	Inject(context.Context, *InjectRequest) (*InjectResponse, error)
+	// DigOut digs out extension http router endpoint
+	DigOut(context.Context, *DigOutRequest) (*DigOutResponse, error)
+	mustEmbedUnimplementedEndpointRouterServer()
+}
+
+// UnimplementedEndpointRouterServer must be embedded to have forward compatible implementations.
+type UnimplementedEndpointRouterServer struct {
+}
+
+func (UnimplementedEndpointRouterServer) Inject(context.Context, *InjectRequest) (*InjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Inject not implemented")
+}
+func (UnimplementedEndpointRouterServer) DigOut(context.Context, *DigOutRequest) (*DigOutResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DigOut not implemented")
+}
+func (UnimplementedEndpointRouterServer) mustEmbedUnimplementedEndpointRouterServer() {}
+
+// UnsafeEndpointRouterServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to EndpointRouterServer will
+// result in compilation errors.
+type UnsafeEndpointRouterServer interface {
+	mustEmbedUnimplementedEndpointRouterServer()
+}
+
+func RegisterEndpointRouterServer(s grpc.ServiceRegistrar, srv EndpointRouterServer) {
+	s.RegisterService(&EndpointRouter_ServiceDesc, srv)
+}
+
+func _EndpointRouter_Inject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EndpointRouterServer).Inject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gatewaypb.EndpointRouter/Inject",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EndpointRouterServer).Inject(ctx, req.(*InjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EndpointRouter_DigOut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DigOutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EndpointRouterServer).DigOut(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gatewaypb.EndpointRouter/DigOut",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EndpointRouterServer).DigOut(ctx, req.(*DigOutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// EndpointRouter_ServiceDesc is the grpc.ServiceDesc for EndpointRouter service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var EndpointRouter_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "gatewaypb.EndpointRouter",
+	HandlerType: (*EndpointRouterServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Inject",
+			Handler:    _EndpointRouter_Inject_Handler,
+		},
+		{
+			MethodName: "DigOut",
+			Handler:    _EndpointRouter_DigOut_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "github.com/olive-io/olive/api/gatewaypb/rpc.proto",
+}

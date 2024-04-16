@@ -27,6 +27,7 @@ import (
 	"strconv"
 
 	json "github.com/json-iterator/go"
+	"github.com/tidwall/gjson"
 )
 
 func (m *Box) WithRef(ref string) *Box {
@@ -204,4 +205,106 @@ func (m *Box) Value() any {
 
 func (m *Box) ValueFor(target any) error {
 	return json.Unmarshal(m.Data, &target)
+}
+
+func (m *Box) DecodeJSON(data []byte) error {
+	return decodeBox(m, data, "")
+}
+
+func (m *Box) EncodeJSON() ([]byte, error) {
+	v := encodeBox(m)
+	return json.Marshal(v)
+}
+
+func decodeBox(box *Box, data []byte, paths string) error {
+	if box.Type != BoxType_object && paths == "" {
+		box.Data = data
+		return nil
+	}
+
+	switch box.Type {
+	case BoxType_object:
+		for name := range box.Parameters {
+			param := box.Parameters[name]
+			root := name
+			if len(paths) != 0 {
+				root = paths + "." + root
+			}
+			box.Data = data
+			if err := decodeBox(param, data, root); err != nil {
+				return err
+			}
+		}
+	case BoxType_map:
+		val := gjson.GetBytes(data, paths).Raw
+		box.Data = []byte(val)
+	case BoxType_array:
+		val := gjson.GetBytes(data, paths).Raw
+		box.Data = []byte(val)
+	case BoxType_integer:
+		val := gjson.GetBytes(data, paths).Int()
+		box.Data = []byte(fmt.Sprintf("%d", val))
+	case BoxType_float:
+		val := gjson.GetBytes(data, paths).Float()
+		box.Data = []byte(fmt.Sprintf("%f", val))
+	case BoxType_boolean:
+		val := "false"
+		if gjson.GetBytes(data, paths).Bool() {
+			val = "true"
+		}
+		box.Data = []byte(val)
+	case BoxType_string:
+		val := gjson.GetBytes(data, paths).String()
+		box.Data = []byte(val)
+	default:
+	}
+
+	return nil
+}
+
+func encodeBox(box *Box) any {
+	switch box.Type {
+	case BoxType_object:
+		out := map[string]any{}
+		for name, param := range box.Parameters {
+			out[name] = encodeBox(param)
+		}
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal(box.Data, &out)
+		}
+
+		return out
+	case BoxType_map:
+		var m map[string]any
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal(box.Data, &m)
+		}
+		return m
+	case BoxType_array:
+		var arr []any
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal(box.Data, &arr)
+		}
+		return arr
+	case BoxType_integer:
+		var n int64
+		if len(box.Data) != 0 {
+			n, _ = strconv.ParseInt(string(box.Data), 10, 64)
+		}
+		return n
+	case BoxType_float:
+		var f float64
+		if len(box.Data) != 0 {
+			f, _ = strconv.ParseFloat(string(box.Data), 64)
+		}
+		return f
+	case BoxType_boolean:
+		return false
+	case BoxType_string:
+		var s string
+		s = string(box.Data)
+		return s
+	default:
+		return ""
+	}
 }

@@ -1,7 +1,5 @@
-//go:build !dev
-
 /*
-   Copyright 2023 The olive Authors
+   Copyright 2024 The olive Authors
 
    This program is offered under a commercial and under the AGPL license.
    For AGPL licensing, see below.
@@ -21,12 +19,24 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package gateway
+package client
 
-func (g *Gateway) installHandler() (err error) {
-	if err = g.installInternalHandler(); err != nil {
-		return
-	}
+import (
+	"time"
 
-	return nil
+	"go.uber.org/zap"
+)
+
+type Config struct {
+	Id       string `json:"id"`
+	Address  string `json:"address"`
+	Endpoint string `json:"endpoint"`
+	// Timeout(s) the timeout of grpc calling
+	Timeout time.Duration `json:"timeout"`
+	// Interval
+	Interval time.Duration `json:"interval"`
+	// InjectTTL
+	TTL time.Duration `json:"ttl"`
+
+	Logger *zap.Logger `json:"-"`
 }

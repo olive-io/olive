@@ -34,19 +34,23 @@ import (
 	"github.com/olive-io/olive/gateway/consumer"
 )
 
-func (g *Gateway) installHandler() error {
-	if err := pb.RegisterTestServiceServerHandler(g, &TestRPC{}); err != nil {
+func (g *Gateway) installHandler() (err error) {
+	if err = pb.RegisterTestServiceServerHandler(g, &TestRPC{}); err != nil {
 		return err
 	}
 
-	if err := g.AddConsumer(&ScriptTaskConsumer{},
+	if err = g.installInternalHandler(); err != nil {
+		return
+	}
+
+	if err = g.AddConsumer(&ScriptTaskConsumer{},
 		AddWithRequest(&ScriptTaskRequest{}),
 		AddWithResponse(&ScriptTaskResponse{}),
 		AddWithActivity(dsypb.ActivityType_ScriptTask),
 	); err != nil {
 		return err
 	}
-	if err := g.AddConsumer(&SendTaskConsumer{},
+	if err = g.AddConsumer(&SendTaskConsumer{},
 		AddWithRequest(&SendTaskRequest{}),
 		AddWithResponse(&SendTaskResponse{}),
 		AddWithActivity(dsypb.ActivityType_SendTask)); err != nil {

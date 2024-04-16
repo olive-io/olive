@@ -144,7 +144,7 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 
 	cc := p.cc
 	requestBox, responseBox := ep.Request, ep.Response
-	br, err := EncodeBox(requestBox)
+	br, err := requestBox.EncodeJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		}
 	}
 
-	if err = DecodeBox(out, responseBox); err != nil {
+	if err = responseBox.DecodeJSON(out); err != nil {
 		return nil, err
 	}
 

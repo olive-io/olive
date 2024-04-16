@@ -74,3 +74,33 @@ message HelloRequest {}
 message HelloResponse {
   string reply = 1;
 }
+
+service EndpointRouter {
+  // Inject injects extension http router endpoint
+  rpc Inject(InjectRequest) returns (InjectResponse) {
+    option (google.api.http) = {
+      post: "/v1/olive/gateway/router/inject",
+      body: "*"
+    };
+  }
+  // DigOut digs out extension http router endpoint
+  rpc DigOut(DigOutRequest) returns (DigOutResponse) {
+    option (google.api.http) = {
+      post: "/v1/olive/gateway/router/dig_out",
+      body: "*"
+    };
+  }
+}
+
+message InjectRequest {
+  discoverypb.Yard yard = 1;
+  int64 ttl = 2;
+}
+
+message InjectResponse {}
+
+message DigOutRequest {
+  discoverypb.Yard yard = 1;
+}
+
+message DigOutResponse {}

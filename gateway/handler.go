@@ -24,22 +24,31 @@ package gateway
 import (
 	"context"
 	"fmt"
+	urlpkg "net/url"
 	"path"
 	"runtime/debug"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/gateway/consumer"
+	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
-func (g *Gateway) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
+type gatewayImpl struct {
+	pb.UnsafeGatewayServer
+	*Gateway
+}
+
+func (g *gatewayImpl) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
 	return &pb.PingResponse{Reply: "pong"}, nil
 }
 
-func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
+func (g *gatewayImpl) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.TransmitResponse, error) {
 	lg := g.Logger()
 	lg.Debug("transmit executed",
 		zap.Stringer("activity", req.Activity))
@@ -106,12 +115,69 @@ func (g *Gateway) Transmit(ctx context.Context, req *pb.TransmitRequest) (*pb.Tr
 	return resp, nil
 }
 
-func (g *Gateway) createTransmitContext(parent context.Context, r *pb.TransmitRequest) *consumer.Context {
+func (g *gatewayImpl) createTransmitContext(parent context.Context, r *pb.TransmitRequest) *consumer.Context {
+	headers := map[string]string{}
+	for k, v := range r.Headers {
+		headers[api.OliveHttpKey(k)] = v
+	}
+
 	ctx := &consumer.Context{
 		Context:     parent,
-		Headers:     r.Headers,
+		Headers:     headers,
 		Properties:  r.Properties,
 		DataObjects: r.DataObjects,
 	}
 	return ctx
+}
+
+type endpointRouterImpl struct {
+	pb.UnsafeEndpointRouterServer
+	*Gateway
+}
+
+func (g *endpointRouterImpl) Inject(ctx context.Context, req *pb.InjectRequest) (*pb.InjectResponse, error) {
+	resp := &pb.InjectResponse{}
+
+	yard := req.Yard
+	if yard == nil || yard.Id == "" {
+		return nil, status.Newf(codes.InvalidArgument, "invalid yard").Err()
+	}
+
+	url, err := urlpkg.Parse(yard.Address)
+	if err != nil {
+		return nil, status.Newf(codes.InvalidArgument, "invalid yard address").Err()
+	}
+
+	lg := g.Logger()
+	lg.Info("inject yard",
+		zap.String("id", yard.Id),
+		zap.String("address", url.String()))
+
+	opts := []dsy.InjectOption{dsy.InjectId(yard.Id)}
+	for _, cs := range yard.Consumers {
+		ep := extractConsumer(cs, g.cfg.Name)
+		ep.Metadata[api.HostKey] = yard.Address
+		err = g.discovery.Inject(ctx, ep, opts...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	g.hc.Inject(yard)
+
+	return resp, nil
+}
+
+func (g *endpointRouterImpl) DigOut(ctx context.Context, req *pb.DigOutRequest) (*pb.DigOutResponse, error) {
+	resp := &pb.DigOutResponse{}
+	yard := req.Yard
+	if yard == nil || yard.Id == "" {
+		return nil, status.Newf(codes.InvalidArgument, "invalid yard").Err()
+	}
+
+	lg := g.Logger()
+	lg.Info("dig out yard", zap.String("id", yard.Id))
+	g.hc.DigOut(yard.Id)
+
+	return resp, nil
 }

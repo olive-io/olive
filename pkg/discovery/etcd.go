@@ -30,11 +30,11 @@ import (
 	"sync"
 	"time"
 
+	json "github.com/json-iterator/go"
 	hash "github.com/mitchellh/hashstructure"
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
@@ -55,6 +55,7 @@ func NewDiscovery(client *clientv3.Client, opts ...Option) (IDiscovery, error) {
 		client:   client,
 		options:  options,
 		register: make(map[string]uint64),
+		endpoint: make(map[string]uint64),
 		leases:   make(map[string]clientv3.LeaseID),
 	}
 
@@ -291,8 +292,9 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 
 	// check existing lease cache
 	sname := endpoint.Metadata["service"]
+	id := options.Id
 	e.RLock()
-	leaseID, ok := e.leases[sname]
+	leaseID, ok := e.leases[sname+id]
 	e.RUnlock()
 
 	ctx, cancel := context.WithTimeout(ctx, e.options.Timeout)
@@ -310,7 +312,7 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 		// missing lease, check if the key exists
 
 		// look for the existing key
-		rsp, err := e.client.Get(ctx, endpointPath(prefix, namespace, sname), clientv3.WithSerializable())
+		rsp, err := e.client.Get(ctx, endpointPath(prefix, namespace, id, sname), clientv3.WithSerializable())
 		if err != nil {
 			return err
 		}
@@ -372,7 +374,7 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 
 	// get existing hash for the service node
 	e.Lock()
-	v, ok := e.endpoint[sname+endpoint.Name]
+	v, ok := e.endpoint[sname+id+endpoint.Name]
 	e.Unlock()
 
 	// the service is unchanged, skip registering
@@ -396,9 +398,9 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 		endpoint.Name, lgr.ID, options.TTL)
 	// create an entry for the node
 	if lgr.ID != 0 {
-		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, endpoint.Name), encodeEp(endpoint), clientv3.WithLease(lgr.ID))
+		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, id, endpoint.Name), encodeEp(endpoint), clientv3.WithLease(lgr.ID))
 	} else {
-		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, endpoint.Name), encodeEp(endpoint))
+		_, err = e.client.Put(ctx, endpointPath(prefix, namespace, id, endpoint.Name), encodeEp(endpoint))
 	}
 	if err != nil {
 		return err
@@ -406,10 +408,10 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 
 	e.Lock()
 	// save our hash of the endpoint
-	e.endpoint[sname+endpoint.Name] = h
+	e.endpoint[sname+id+endpoint.Name] = h
 	// save our leaseID of the endpoint
 	if lgr.ID != 0 {
-		e.leases[sname] = lgr.ID
+		e.leases[sname+id] = lgr.ID
 	}
 	e.Unlock()
 
@@ -429,6 +431,7 @@ func (e *etcdRegistrar) ListEndpoints(ctx context.Context, opts ...ListEndpoints
 	if options.Namespace != "" {
 		namespace = options.Namespace
 	}
+	id := options.Id
 
 	endpoints := make([]*dsypb.Endpoint, 0)
 	if len(options.Service) != 0 {
@@ -439,7 +442,7 @@ func (e *etcdRegistrar) ListEndpoints(ctx context.Context, opts ...ListEndpoints
 	}
 
 	prefix := e.options.Prefix
-	key := path.Join(prefix, namespace, "_ep_") + "/"
+	key := path.Join(prefix, namespace, id, "_ep_") + "/"
 	listOpts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
@@ -591,13 +594,13 @@ func (e *etcdRegistrar) Watch(ctx context.Context, opts ...WatchOption) (Watcher
 }
 
 func encode(s *dsypb.Service) string {
-	b, _ := proto.Marshal(s)
+	b, _ := json.Marshal(s)
 	return string(b)
 }
 
 func decode(ds []byte) *dsypb.Service {
 	s := &dsypb.Service{}
-	_ = proto.Unmarshal(ds, s)
+	_ = json.Unmarshal(ds, s)
 	return s
 }
 
@@ -612,16 +615,16 @@ func servicePath(prefix, ns, s string) string {
 }
 
 func encodeEp(ep *dsypb.Endpoint) string {
-	b, _ := proto.Marshal(ep)
+	b, _ := json.Marshal(ep)
 	return string(b)
 }
 
 func decodeEp(data []byte) *dsypb.Endpoint {
 	ep := &dsypb.Endpoint{}
-	_ = proto.Unmarshal(data, ep)
+	_ = json.Unmarshal(data, ep)
 	return ep
 }
 
-func endpointPath(prefix, ns, ep string) string {
-	return path.Join(prefix, ns, "_ep_", ep, strings.ReplaceAll(ep, "/", "-"))
+func endpointPath(prefix, ns, id, ep string) string {
+	return path.Join(prefix, ns, id, "_ep_", strings.ReplaceAll(ep, "/", "-"))
 }

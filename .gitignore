@@ -25,6 +25,7 @@ go.work
 .DS_Store
 
 _output
+testdata
 /vendor
 dist
 dist/

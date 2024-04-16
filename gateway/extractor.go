@@ -196,19 +196,24 @@ func extractSchema(so *dsypb.SchemaObject, components *dsypb.OpenAPIComponents, 
 }
 
 func extractConsumer(idt *dsypb.Consumer, service string) *dsypb.Endpoint {
-	md := map[string]string{
-		api.MethodKey:      api.DefaultTaskURL,
-		api.HandlerKey:     api.RPCHandler,
-		api.ContentTypeKey: "application/proto",
-		api.ActivityKey:    idt.Activity.String(),
-		api.TaskTypeKey:    idt.Action,
-		"service":          service,
+	md := idt.Metadata
+	if md == nil {
+		md = map[string]string{}
 	}
-	if idt.Id != "" {
-		md["id"] = idt.Id
+
+	md[api.EndpointKey] = api.DefaultTaskURL
+	md[api.HandlerKey] = api.RPCHandler
+	if _, ok := md[api.ContentTypeKey]; !ok {
+		md[api.ContentTypeKey] = "application/json"
 	}
+	md[api.URLKey] = api.DefaultTaskURL
+	md[api.ActivityKey] = idt.Activity.String()
+	md[api.TaskTypeKey] = idt.Action
+	md["service"] = service
+	md["id"] = idt.Id
+
 	ep := &dsypb.Endpoint{
-		Name:     idt.Action,
+		Name:     idt.Id,
 		Request:  idt.Request,
 		Response: idt.Response,
 		Metadata: md,

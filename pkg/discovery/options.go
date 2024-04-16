@@ -55,12 +55,14 @@ type RegisterOptions struct {
 
 type InjectOptions struct {
 	TTL       time.Duration
+	Id        string
 	Namespace string
 }
 
 type ListEndpointsOptions struct {
 	Namespace string
 	Service   string
+	Id        string
 }
 
 type WatchOptions struct {
@@ -146,6 +148,12 @@ func InjectTTL(t time.Duration) InjectOption {
 	}
 }
 
+func InjectId(id string) InjectOption {
+	return func(o *InjectOptions) {
+		o.Id = id
+	}
+}
+
 func InjectNamespace(ns string) InjectOption {
 	return func(o *InjectOptions) {
 		o.Namespace = ns
@@ -161,6 +169,12 @@ func ListEndpointsWithNamespace(ns string) ListEndpointsOption {
 func ListEndpointsWithService(s string) ListEndpointsOption {
 	return func(o *ListEndpointsOptions) {
 		o.Service = s
+	}
+}
+
+func ListEndpointsWithId(id string) ListEndpointsOption {
+	return func(o *ListEndpointsOptions) {
+		o.Id = id
 	}
 }
 

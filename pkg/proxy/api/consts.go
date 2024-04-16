@@ -28,12 +28,13 @@ import (
 const (
 	HeaderKeyPrefix = "ov:"
 	ActivityKey     = "ov:activity"
-	TaskTypeKey     = "ov:task_type"
+	TaskTypeKey     = "ov:task-type"
+	IdKey           = "ov:id"
 	EndpointKey     = "ov:endpoint"
 	ProtocolKey     = "ov:protocol"
 	MethodKey       = "ov:method"
 	SecurityKey     = "ov:security"
-	ContentTypeKey  = "ov:content_type"
+	ContentTypeKey  = "ov:content-type"
 	HostKey         = "ov:host"
 	URLKey          = "ov:url"
 	HandlerKey      = "ov:handler"
@@ -54,6 +55,8 @@ const (
 const (
 	// RequestPrefix http Request Header Key
 	RequestPrefix = "X-Olive-"
+	// HttpNativePrefix http native header key
+	HttpNativePrefix = "X-Native-"
 )
 
 const (

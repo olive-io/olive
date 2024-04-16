@@ -54,9 +54,10 @@ func (r *rpcResolver) Resolve(req *http.Request) (*Endpoint, error) {
 	name := strings.Join(names[:len(names)-1], ".")
 	// foo
 	return &Endpoint{
-		Name:   name,
-		Host:   req.Host,
-		Method: req.Method,
-		Path:   path,
+		Name:    name,
+		Host:    req.Host,
+		Method:  req.Method,
+		Path:    path,
+		Handler: api.RPCHandler,
 	}, nil
 }

@@ -25,8 +25,6 @@ package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
 
-import "github.com/olive-io/olive/api/discoverypb/openapi.proto";
-
 enum BoxType {
   string = 0;
   integer = 1;
