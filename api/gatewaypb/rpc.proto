@@ -65,15 +65,15 @@ message TransmitResponse {
   map<string, discoverypb.Box> dataObjects = 2;
 }
 
-service TestService {
-  rpc Hello(HelloRequest) returns (HelloResponse) {}
-}
-
-message HelloRequest {}
-
-message HelloResponse {
-  string reply = 1;
-}
+//service TestService {
+//  rpc Hello(HelloRequest) returns (HelloResponse) {}
+//}
+//
+//message HelloRequest {}
+//
+//message HelloResponse {
+//  string reply = 1;
+//}
 
 service EndpointRouter {
   // Inject injects extension http router endpoint

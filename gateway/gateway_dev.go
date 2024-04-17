@@ -24,20 +24,18 @@
 package gateway
 
 import (
-	"context"
 	"time"
 
 	"go.uber.org/zap"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/gateway/consumer"
 )
 
 func (g *Gateway) installHandler() (err error) {
-	if err = pb.RegisterTestServiceServerHandler(g, &TestRPC{}); err != nil {
-		return err
-	}
+	//if err = pb.RegisterTestServiceServerHandler(g, &TestRPC{}); err != nil {
+	//	return err
+	//}
 
 	if err = g.installInternalHandler(); err != nil {
 		return
@@ -65,13 +63,13 @@ func (g *Gateway) installHandler() (err error) {
 	return nil
 }
 
-type TestRPC struct {
-	pb.UnsafeTestServiceServer
-}
-
-func (t *TestRPC) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	return &pb.HelloResponse{Reply: "hello world"}, nil
-}
+//type TestRPC struct {
+//	pb.UnsafeTestServiceServer
+//}
+//
+//func (t *TestRPC) Hello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
+//	return &pb.HelloResponse{Reply: "hello world"}, nil
+//}
 
 func TestHandlerWrapper(lg *zap.Logger) consumer.HandlerWrapper {
 	return func(h consumer.HandlerFunc) consumer.HandlerFunc {
