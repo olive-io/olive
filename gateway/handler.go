@@ -81,7 +81,7 @@ func (g *gatewayImpl) Transmit(ctx context.Context, req *pb.TransmitRequest) (*p
 		defer func() {
 			if r := recover(); r != nil {
 				err = fmt.Errorf("panic recovered: %v", r)
-				lg.Sugar().Error(err.Error())
+				lg.Sugar().Error(err)
 				lg.Error(string(debug.Stack()))
 			}
 		}()

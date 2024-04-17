@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	json "github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
@@ -109,7 +110,7 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 		for i := 0; i < vt.NumField(); i++ {
 			vf := vt.Field(i)
 			tag := vf.Tag.Get("json")
-			if tag == "" || tag == "-" {
+			if tag == "" || strings.HasPrefix(tag, "-") {
 				continue
 			}
 			vfv := reflect.New(vf.Type).Interface()

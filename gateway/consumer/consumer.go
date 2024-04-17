@@ -23,8 +23,12 @@ package consumer
 
 import (
 	"context"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/cockroachdb/errors"
+	json "github.com/json-iterator/go"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
@@ -77,5 +81,95 @@ func (ctx *Context) BindDataTo(name string, target any) error {
 	if err := box.ValueFor(target); err != nil {
 		return errors.CombineErrors(ErrBind, err)
 	}
+	return nil
+}
+
+func (ctx *Context) MustBind(target any) error {
+	vt := reflect.TypeOf(target)
+	vv := reflect.ValueOf(target)
+
+	if vt.Kind() == reflect.Ptr {
+		vt = vt.Elem()
+		vv = vv.Elem()
+	}
+
+	for i := 0; i < vt.NumField(); i++ {
+		field := vt.Field(i)
+		tag := field.Tag.Get("json")
+		if tag == "" || strings.HasPrefix(tag, "-") {
+			continue
+		}
+		fname := strings.Split(tag, ",")[0]
+
+		box, ok := ctx.Properties[fname]
+		if !ok {
+			box, ok = ctx.DataObjects[fname]
+			if !ok {
+				err := errors.Wrapf(ErrNotFound, "field '%s'", fname)
+				return errors.CombineErrors(err, ErrBind)
+			}
+		}
+
+		vf := vv.Field(i)
+		err := setField(vf, box.Data)
+		if err != nil {
+			return errors.CombineErrors(ErrBind, err)
+		}
+	}
+
+	return nil
+}
+
+func setField(vField reflect.Value, value []byte) error {
+	switch vField.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v, e := strconv.ParseInt(string(value), 10, 64)
+		if e != nil {
+			return e
+		}
+		vField.SetInt(v)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		v, e := strconv.ParseUint(string(value), 10, 64)
+		if e != nil {
+			return e
+		}
+		vField.SetUint(v)
+	case reflect.String:
+		vField.SetString(string(value))
+	case reflect.Ptr:
+		v := reflect.New(vField.Type().Elem())
+		vv := v.Interface()
+
+		var e error
+		e = json.Unmarshal(value, &vv)
+		if e != nil {
+			return e
+		}
+		vField.Set(v)
+	case reflect.Slice:
+		v := reflect.New(vField.Type())
+		vv := v.Interface()
+
+		var e error
+		e = json.Unmarshal(value, vv)
+		if e != nil {
+			return e
+		}
+		vField.Set(v.Elem())
+
+	case reflect.Struct, reflect.Map:
+		v := reflect.New(vField.Type())
+		vv := v.Interface()
+
+		var e error
+		e = json.Unmarshal(value, &vv)
+		if e != nil {
+			return e
+		}
+		vField.Set(v)
+	default:
+		return nil
+	}
+
 	return nil
 }

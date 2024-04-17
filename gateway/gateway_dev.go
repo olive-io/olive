@@ -96,6 +96,13 @@ type ScriptTaskResponse struct {
 type ScriptTaskConsumer struct{}
 
 func (c *ScriptTaskConsumer) Handle(ctx *consumer.Context) (any, error) {
+	rr := &ScriptTaskRequest{}
+	if err := ctx.MustBind(rr); err != nil {
+		return nil, err
+	}
+
+	zap.NewExample().Info("expr: " + rr.Expr)
+
 	return 1, nil
 }
 
@@ -111,5 +118,14 @@ type SendTaskResponse struct {
 type SendTaskConsumer struct{}
 
 func (c *SendTaskConsumer) Handle(ctx *consumer.Context) (any, error) {
+	rr := &SendTaskRequest{}
+	if err := ctx.MustBind(rr); err != nil {
+		return nil, err
+	}
+
+	zap.NewExample().Info("send message",
+		zap.String("topic", rr.Topic),
+		zap.String("username", rr.Username))
+
 	return &SendTaskResponse{Result: "OK"}, nil
 }
