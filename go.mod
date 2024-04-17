@@ -17,8 +17,8 @@ require (
 	github.com/lni/dragonboat/v4 v4.0.0-20231222133740-1d6e2d76cd57
 	github.com/mattbaird/jsonpatch v0.0.0-20240118010651-0ba75a80ca38
 	github.com/mitchellh/hashstructure v1.1.0
-	github.com/olive-io/bpmn v1.3.3
-	github.com/olive-io/bpmn/schema v1.3.3
+	github.com/olive-io/bpmn v1.3.4
+	github.com/olive-io/bpmn/schema v1.3.4
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/prometheus/client_golang v1.19.0
 	github.com/shirou/gopsutil/v3 v3.24.3

@@ -47,13 +47,16 @@ func (g *Gateway) installHandler() (err error) {
 		AddWithRequest(&ScriptTaskRequest{}),
 		AddWithResponse(&ScriptTaskResponse{}),
 		AddWithActivity(dsypb.ActivityType_ScriptTask),
+		AddWithAction("tengo"),
 	); err != nil {
 		return err
 	}
 	if err = g.AddConsumer(&SendTaskConsumer{},
 		AddWithRequest(&SendTaskRequest{}),
 		AddWithResponse(&SendTaskResponse{}),
-		AddWithActivity(dsypb.ActivityType_SendTask)); err != nil {
+		AddWithActivity(dsypb.ActivityType_SendTask),
+		AddWithAction("rabbitmq"),
+	); err != nil {
 		return err
 	}
 

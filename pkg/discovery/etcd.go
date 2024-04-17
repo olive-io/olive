@@ -442,7 +442,7 @@ func (e *etcdRegistrar) ListEndpoints(ctx context.Context, opts ...ListEndpoints
 	}
 
 	prefix := e.options.Prefix
-	key := path.Join(prefix, namespace, id, "_ep_") + "/"
+	key := path.Join(prefix, namespace, "_ep_", id) + "/"
 	listOpts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
@@ -543,7 +543,7 @@ func (e *etcdRegistrar) ListServices(ctx context.Context, opts ...ListOption) ([
 	}
 
 	prefix := e.options.Prefix
-	key := path.Join(prefix, namespace) + "/"
+	key := path.Join(prefix, namespace, "_svc_") + "/"
 	listOpts := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
@@ -607,11 +607,11 @@ func decode(ds []byte) *dsypb.Service {
 func nodePath(prefix, ns, s, id string) string {
 	service := strings.ReplaceAll(s, "/", "-")
 	node := strings.ReplaceAll(id, "/", "-")
-	return path.Join(prefix, ns, service, node)
+	return path.Join(prefix, ns, "_svc_", service, node)
 }
 
 func servicePath(prefix, ns, s string) string {
-	return path.Join(prefix, ns, strings.ReplaceAll(s, "/", "-"))
+	return path.Join(prefix, ns, "_svc_", strings.ReplaceAll(s, "/", "-"))
 }
 
 func encodeEp(ep *dsypb.Endpoint) string {
@@ -626,5 +626,5 @@ func decodeEp(data []byte) *dsypb.Endpoint {
 }
 
 func endpointPath(prefix, ns, id, ep string) string {
-	return path.Join(prefix, ns, id, "_ep_", strings.ReplaceAll(ep, "/", "-"))
+	return path.Join(prefix, ns, "_ep_", id, strings.ReplaceAll(ep, "/", "-"))
 }
