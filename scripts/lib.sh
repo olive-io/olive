@@ -133,6 +133,8 @@ function run {
   local rpath
   local command
   rpath=$(module_subdir)
+  # remove go.work
+  rm -fr go.work go.work.sum
   # Quoting all components as the commands are fully copy-parsable:
   command=("${@}")
   command=("${command[@]@Q}")
@@ -149,6 +151,7 @@ function run {
     log_error -e "FAIL: (code:${error_code}):\\n  % ${repro}"
     return ${error_code}
   fi
+  go_work
 }
 
 # run_for_module [module] [cmd]
@@ -165,6 +168,10 @@ function run_for_module {
 
 function module_dirs() {
   echo "api pkg client meta runner gateway cmd protobuf ."
+}
+
+function go_work() {
+    go work use $(modules)
 }
 
 # maybe_run [cmd...] runs given command depending on the DRY_RUN flag.
@@ -301,7 +308,7 @@ function tool_exists {
 
 # Ensure gobin is available, as it runs majority of the tools
 if ! command -v "gobin" >/dev/null; then
-    run env go get github.com/myitcv/gobin || exit 1
+    run env GO111MODULE=off go get github.com/myitcv/gobin || exit 1
 fi
 
 # tool_get_bin [tool] - returns absolute path to a tool binary (or returns error)
