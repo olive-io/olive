@@ -164,7 +164,7 @@ function run_for_module {
 }
 
 function module_dirs() {
-  echo "api pkg client meta runner gateway cmd protobuf ."
+  echo "api pkg client meta runner gateway cmd ."
 }
 
 function go_work() {
@@ -194,8 +194,7 @@ function modules() {
     "${ROOT_MODULE}/meta"
     "${ROOT_MODULE}/runner"
     "${ROOT_MODULE}/gateway"
-    "${ROOT_MODULE}/cmd"
-    "${ROOT_MODULE}/protobuf")
+    "${ROOT_MODULE}/cmd")
   echo "${modules[@]}"
 }
 

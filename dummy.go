@@ -23,4 +23,7 @@ package olive
 
 import (
 	_ "github.com/olive-io/olive/client"
+	_ "github.com/olive-io/olive/cmd/runner/app"
+	_ "github.com/olive-io/olive/gateway"
+	_ "github.com/olive-io/olive/meta"
 )
