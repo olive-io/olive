@@ -27,6 +27,8 @@ function _cmd() {
 # update_module_version 
 #   Updates versions of cross-references in all internal references in current module.
 function update_module_version() {
+  # remove go.work
+  rm -fr go.work go.work.sum
   local v1version="${1}"
   local modules
   run go mod tidy

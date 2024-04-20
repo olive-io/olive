@@ -133,8 +133,6 @@ function run {
   local rpath
   local command
   rpath=$(module_subdir)
-  # remove go.work
-  rm -fr go.work go.work.sum
   # Quoting all components as the commands are fully copy-parsable:
   command=("${@}")
   command=("${command[@]@Q}")
@@ -151,7 +149,6 @@ function run {
     log_error -e "FAIL: (code:${error_code}):\\n  % ${repro}"
     return ${error_code}
   fi
-  go_work
 }
 
 # run_for_module [module] [cmd]
@@ -171,8 +168,12 @@ function module_dirs() {
 }
 
 function go_work() {
-  go work init
-  go work use $(modules)
+  rm -fr go.work*
+  go work init 2> /dev/null
+  for m in $(module_dirs);do
+    go work use $m
+  done
+  go mod tidy && go work vendor
 }
 
 # maybe_run [cmd...] runs given command depending on the DRY_RUN flag.

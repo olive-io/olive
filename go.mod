@@ -7,7 +7,7 @@ replace (
 	github.com/olive-io/olive/client => ./client
 )
 
-require github.com/olive-io/olive/client v0.0.2
+require github.com/olive-io/olive/client v0.0.3
 
 require (
 	github.com/cockroachdb/errors v1.11.1 // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/olive-io/bpmn/schema v1.3.4 // indirect
-	github.com/olive-io/olive/api v0.0.2 // indirect
+	github.com/olive-io/olive/api v0.0.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/tidwall/gjson v1.17.1 // indirect
