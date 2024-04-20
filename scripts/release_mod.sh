@@ -96,7 +96,7 @@ function push_mod_tags_cmd {
   main_version=$(go list -f '{{.Version}}' -m "${ROOT_MODULE}/api")
   local tags=()
 
-  keyid=$(get_gpg_key) || return 2
+  #keyid=$(get_gpg_key) || return 2
 
   for module in $(modules); do
     local version
@@ -116,7 +116,8 @@ function push_mod_tags_cmd {
     # The sleep is ugly hack that guarantees that 'git describe' will
     # consider main-module's tag as the latest.
     run sleep 2
-    run git tag --local-user "${keyid}" --sign "${tag}" --message "${version}"
+    #run git tag --local-user "${keyid}" --sign "${tag}" --message "${version}"
+    run git tag "${version}"
     tags=("${tags[@]}" "${tag}")
   done
   maybe_run git push -f "${REMOTE_REPO}" "${tags[@]}"
