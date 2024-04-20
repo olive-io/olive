@@ -83,6 +83,7 @@ function get_gpg_key {
 }
 
 function push_mod_tags_cmd {
+  rm -fr go.work*
   assert_no_git_modifications || return 2
 
   if [ -z "${REMOTE_REPO}" ]; then
@@ -121,6 +122,7 @@ function push_mod_tags_cmd {
     tags=("${tags[@]}" "${tag}")
   done
   maybe_run git push -f "${REMOTE_REPO}" "${tags[@]}"
+  go_work
 }
 
 # only release_mod when called directly, not sourced
