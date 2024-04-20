@@ -171,7 +171,8 @@ function module_dirs() {
 }
 
 function go_work() {
-    go work use $(modules)
+  go work init
+  go work use $(modules)
 }
 
 # maybe_run [cmd...] runs given command depending on the DRY_RUN flag.
