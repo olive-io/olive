@@ -164,7 +164,7 @@ function run_for_module {
 }
 
 function module_dirs() {
-  echo "api pkg client meta runner gateway cmd protobuf"
+  echo "api pkg client meta runner gateway cmd protobuf ."
 }
 
 # maybe_run [cmd...] runs given command depending on the DRY_RUN flag.
@@ -178,6 +178,7 @@ function maybe_run() {
 
 function modules() {
   modules=(
+    "${ROOT_MODULE}"
     "${ROOT_MODULE}/api"
     "${ROOT_MODULE}/pkg"
     "${ROOT_MODULE}/client"
