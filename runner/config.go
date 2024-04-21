@@ -186,6 +186,7 @@ func (cfg *Config) setupLogging() error {
 			zap.WithCaller(true),
 			zap.AddCallerSkip(2),
 			zap.Fields(zap.String("pkg", pkgName)),
+			zap.AddStacktrace(zap.FatalLevel),
 		}
 		sugarLog := cfg.GetLogger().Sugar().
 			WithOptions(options...)

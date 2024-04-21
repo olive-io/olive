@@ -312,7 +312,7 @@ func (g *grpcClient) stream(ctx context.Context, node *dsypb.Node, req client.IR
 		// close the connection
 		_ = cc.Close()
 		// now return the error
-		return fmt.Errorf("Error creating stream: %v", err)
+		return fmt.Errorf("error creating stream: %v", err)
 	}
 
 	codec := &grpcCodec{

@@ -173,7 +173,7 @@ func (cfg *LogConfig) SetupLogging() error {
 		copied = logutil.MergeOutputPaths(copied)
 		copied.Level = zap.NewAtomicLevelAt(logutil.ConvertToZapLevel(cfg.LogLevel))
 		if cfg.ZapLoggerBuilder == nil {
-			lg, err := copied.Build()
+			lg, err := copied.Build(zap.AddStacktrace(zapcore.FatalLevel))
 			if err != nil {
 				return err
 			}
