@@ -27,8 +27,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/olive-io/olive/api/version"
 	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
 )
 

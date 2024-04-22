@@ -26,7 +26,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/olive-io/olive/pkg/version"
+	"github.com/olive-io/olive/api/version"
 )
 
 var (
@@ -37,22 +37,33 @@ var (
 		Help:      "Which version is running. 1 for 'meta_version' label with current version.",
 	},
 		[]string{"meta_version"})
+	currentGITSHA = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "olive",
+		Subsystem: "meta",
+		Name:      "git_sha",
+		Help:      "Which git sha is running. 1 for 'meta_git_sha' label with current git sha.",
+	},
+		[]string{"meta_git_sha"})
 	currentGoVersion = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "olive",
 		Subsystem: "meta",
 		Name:      "go_version",
-		Help:      "Which Go version meta is running with. 1 for 'meta_go_version' label with current version.",
+		Help:      "Which Go version meta is running with. 1 for 'meta_go_version' label with current go version.",
 	},
 		[]string{"meta_go_version"})
 )
 
 func init() {
 	prometheus.MustRegister(currentVersion)
+	prometheus.MustRegister(currentGITSHA)
 	prometheus.MustRegister(currentGoVersion)
 
 	currentVersion.With(prometheus.Labels{
 		"meta_version": version.Version,
 	}).Set(1)
+	currentGITSHA.With(prometheus.Labels{
+		"meta_git_sha": version.GitSHA,
+	})
 	currentGoVersion.With(prometheus.Labels{
 		"meta_go_version": goruntime.Version(),
 	}).Set(1)

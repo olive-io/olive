@@ -48,6 +48,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
@@ -55,7 +56,6 @@ import (
 	"github.com/olive-io/olive/pkg/mnet"
 	"github.com/olive-io/olive/pkg/proxy/server"
 	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/pkg/version"
 )
 
 var (

@@ -32,3 +32,4 @@ testdata
 dist
 dist/
 release/
+bin/

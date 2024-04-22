@@ -9,7 +9,6 @@ replace (
 
 require (
 	github.com/cockroachdb/errors v1.11.1
-	github.com/coreos/go-semver v0.3.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0

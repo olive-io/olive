@@ -3,6 +3,7 @@ module github.com/olive-io/olive/api
 go 1.21
 
 require (
+	github.com/coreos/go-semver v0.3.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/json-iterator/go v1.1.12

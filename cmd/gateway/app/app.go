@@ -27,9 +27,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/gateway"
 	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/pkg/version"
 )
 
 func NewGatewayCommand(stdout, stderr io.Writer) *cobra.Command {

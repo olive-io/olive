@@ -5,7 +5,7 @@ set -euo pipefail
 source ./scripts/lib.sh
 
 GIT_SHA=$(git rev-parse --short HEAD || echo "GitNotFound")
-VERSION_SYMBOL="${ROOT_MODULE}/pkg/version.GitSHA"
+VERSION_SYMBOL="${ROOT_MODULE}/api/version.GitSHA"
 
 # use go env if noset
 GOOS=${GOOS:-$(go env GOOS)}
@@ -24,7 +24,7 @@ olive_build() {
   out="bin"
   if [[ -n "${BINDIR:-}" ]]; then out="${BINDIR}"; fi
 
-  run rm -f "${out}/olive_meta"
+  run rm -f "${out}/olive-meta"
   (
     cd ./cmd/meta
     # Static compilation is useful when olive component is run in a container. $GO_BUILD_FLAGS is OK
@@ -33,10 +33,10 @@ olive_build() {
       -trimpath \
       -installsuffix=cgo \
       "-ldflags=${GO_LDFLAGS[*]}" \
-      -o="../${out}/olive_meta" . || return 2
+      -o="../../${out}/olive-meta" . || return 2
   ) || return 2
 
-  run rm -f "${out}/olive_runner"
+  run rm -f "${out}/olive-runner"
   # shellcheck disable=SC2086
   (
     cd ./cmd/runner
@@ -44,10 +44,10 @@ olive_build() {
       -trimpath \
       -installsuffix=cgo \
       "-ldflags=${GO_LDFLAGS[*]}" \
-      -o="../${out}/olive_runner" . || return 2
+      -o="../../${out}/olive-runner" . || return 2
   ) || return 2
 
-  run rm -f "${out}/olive_gateway"
+  run rm -f "${out}/olive-gateway"
   # shellcheck disable=SC2086
   (
     cd ./cmd/gateway
@@ -55,14 +55,14 @@ olive_build() {
       -trimpath \
       -installsuffix=cgo \
       "-ldflags=${GO_LDFLAGS[*]}" \
-      -o="../${out}/olive_gateway" . || return 2
+      -o="../../${out}/olive-gateway" . || return 2
   ) || return 2
   # Verify whether symbol we overwrote exists
   # For cross-compiling we cannot run: ${out}/olive-meta --version | grep -q "Git SHA: ${GIT_SHA}"
 
   # We need symbols to do this check:
   if [[ "${GO_LDFLAGS[*]}" != *"-s"* ]]; then
-    go tool nm "${out}/olive_meta" | grep "${VERSION_SYMBOL}" > /dev/null
+    go tool nm "${out}/olive-meta" | grep "${VERSION_SYMBOL}" > /dev/null
     if [[ "${PIPESTATUS[*]}" != "0 0" ]]; then
       log_error "FAIL: Symbol ${VERSION_SYMBOL} not found in binary: ${out}/olive_meta"
       return 2

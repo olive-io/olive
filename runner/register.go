@@ -36,9 +36,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/runtime"
-	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
