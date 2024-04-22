@@ -63,7 +63,7 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.Dial(leaderEndpoints[0])
+		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
 		return err
 	}
 	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.Dial(leaderEndpoints[0])
+		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
 		if err != nil {
 			return err
 		}
@@ -199,7 +199,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.Dial(leaderEndpoints[0])
+		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.Dial(leaderEndpoints[0])
+		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
 		if err != nil {
 			return nil, err
 		}

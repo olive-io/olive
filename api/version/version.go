@@ -30,8 +30,8 @@ import (
 
 var (
 	// MinClusterVersion is the min cluster version this olive binary is compatible with.
-	MinClusterVersion = "0.0.0"
-	Version           = "0.1.0"
+	MinClusterVersion = "1.0.0"
+	Version           = "1.0.0"
 	APIVersion        = "unknown"
 
 	// GitSHA Git SHA Value will be set during build

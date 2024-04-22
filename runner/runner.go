@@ -263,7 +263,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
 		dsy.SetLogger(lg),
 	}
-	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
+	discovery, err := dsy.NewDiscovery(r.oct.ActiveEtcdClient(), dopts...)
 	if err != nil {
 		return nil, nil, err
 	}

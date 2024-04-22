@@ -83,7 +83,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	}
 
 	prefix := runtime.DefaultRunnerDiscoveryNode
-	discovery, err := dsy.NewDiscovery(oct.Client, dsy.SetLogger(lg), dsy.Prefix(prefix))
+	discovery, err := dsy.NewDiscovery(oct.ActiveEtcdClient(), dsy.SetLogger(lg), dsy.Prefix(prefix))
 	if err != nil {
 		return nil, err
 	}

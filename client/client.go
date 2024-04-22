@@ -39,7 +39,11 @@ type Client struct {
 	MetaRPC
 	BpmnRPC
 
-	*clientv3.Client
+	clientv3.KV
+	clientv3.Lease
+	clientv3.Watcher
+
+	ec *clientv3.Client
 
 	cfg  *Config
 	conn *grpc.ClientConn
@@ -62,7 +66,7 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 
 	client := &Client{
-		Client:   etcd,
+		ec:       etcd,
 		conn:     etcd.ActiveConnection(),
 		callOpts: defaultCallOpts,
 	}
@@ -88,12 +92,19 @@ func newClient(cfg *Config) (*Client, error) {
 	client.Cluster = NewCluster(client)
 	client.MetaRPC = NewMetaRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
+	client.KV = etcd.KV
+	client.Lease = etcd.Lease
+	client.Watcher = etcd.Watcher
 
 	return client, nil
 }
 
 func (c *Client) ActiveEtcdClient() *clientv3.Client {
-	return c.Client
+	return c.ec
+}
+
+func (c *Client) ActiveConnection() *grpc.ClientConn {
+	return c.conn
 }
 
 func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
