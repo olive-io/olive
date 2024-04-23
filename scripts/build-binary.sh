@@ -5,7 +5,7 @@ set -euo pipefail
 source ./scripts/lib.sh
 
 VER=${1:-}
-REPOSITORY="${REPOSITORY:-git@github.com:olive-io/olive.git}"
+REPOSITORY="${REPOSITORY:-https://github.com/olive-io/olive.git}"
 
 if [ -z "$VER" ]; then
   echo "Usage: ${0} VERSION" >> /dev/stderr
