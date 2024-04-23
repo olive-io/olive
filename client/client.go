@@ -39,10 +39,12 @@ type Client struct {
 	MetaRPC
 	BpmnRPC
 
+	// embed etcd client
 	clientv3.KV
 	clientv3.Lease
 	clientv3.Watcher
 
+	// the client of etcd server
 	ec *clientv3.Client
 
 	cfg  *Config
