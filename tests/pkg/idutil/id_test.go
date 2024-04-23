@@ -27,6 +27,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/olive-io/olive/pkg/idutil"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
@@ -57,7 +58,7 @@ func TestNewGenerator(t *testing.T) {
 
 	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
 
-	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +76,7 @@ func BenchmarkNext(b *testing.B) {
 
 	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
 
-	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
 		panic(err)
 	}

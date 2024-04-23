@@ -29,12 +29,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/discovery/testdata"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/raft"
+	"github.com/olive-io/olive/runner/testdata"
 )
 
 const (
@@ -191,7 +192,7 @@ func TestController_SyncRegion(t *testing.T) {
 
 func deepCopyRegion(region *pb.Region) *pb.Region {
 	r := new(pb.Region)
-	data, _ := region.Marshal()
-	_ = r.Unmarshal(data)
+	data, _ := proto.Marshal(region)
+	_ = proto.Unmarshal(data, r)
 	return r
 }

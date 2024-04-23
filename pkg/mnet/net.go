@@ -45,7 +45,9 @@ func HostPort(addr string, port interface{}) string {
 }
 
 // Listen takes addr:portmin-portmax and binds to the first avaiable port
-// Example: Listen("localhost:5000-6000", fn)
+// For Example:
+//
+//	Listen("localhost:5000-6000", fn)
 func Listen(addr string, fn func(string) (net.Listener, error)) (net.Listener, error) {
 
 	if strings.Count(addr, ":") == 1 && strings.Count(addr, "-") == 0 {
@@ -69,19 +71,19 @@ func Listen(addr string, fn func(string) (net.Listener, error)) (net.Listener, e
 	// we have a port range
 
 	// extract min port
-	min, err := strconv.Atoi(prange[0])
+	minPort, err := strconv.Atoi(prange[0])
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract port range")
 	}
 
 	// extract max port
-	max, err := strconv.Atoi(prange[1])
+	maxPort, err := strconv.Atoi(prange[1])
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract port prange")
 	}
 
 	// range the ports
-	for port := min; port <= max; port++ {
+	for port := minPort; port <= maxPort; port++ {
 		// try bind to host:port
 		ln, err := fn(HostPort(host, port))
 		if err == nil {
@@ -89,7 +91,7 @@ func Listen(addr string, fn func(string) (net.Listener, error)) (net.Listener, e
 		}
 
 		// hit max port
-		if port == max {
+		if port == maxPort {
 			return nil, err
 		}
 	}

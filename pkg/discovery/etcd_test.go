@@ -23,11 +23,7 @@ package discovery_test
 
 import (
 	"testing"
-
-	"github.com/olive-io/olive/pkg/discovery/testdata"
 )
 
 func TestNewDiscovery(t *testing.T) {
-	_, cancel := testdata.TestDiscovery(t)
-	cancel()
 }

@@ -28,7 +28,6 @@ import (
 	"github.com/cockroachdb/errors"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/pkg/proxy/server"
 )
 
 // Endpoint is a mapping between an RPC method and HTTP endpoint
@@ -155,18 +154,4 @@ func slice(s string) []string {
 	}
 
 	return sl
-}
-
-// WithEndpoint returns a server.HandlerOption with endpoint metadata set
-//
-// Usage:
-//
-//	proto.RegisterHandler(service.Server(), new(Handler), api.WithEndpoint(
-//		&api.Endpoint{
-//			Name: "Greeter.Hello",
-//			Path: []string{"/greeter"},
-//		},
-//	))
-func WithEndpoint(e *Endpoint) server.HandlerOption {
-	return server.EndpointMetadata(e.Name, Encode(e))
 }
