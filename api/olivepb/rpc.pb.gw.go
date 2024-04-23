@@ -569,7 +569,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v3/cluster/member/add"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v1/cluster/member/add"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -594,7 +594,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v3/cluster/member/remove"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v1/cluster/member/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -619,7 +619,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v3/cluster/member/update"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v1/cluster/member/update"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -644,7 +644,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v3/cluster/member/list"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v1/cluster/member/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -669,7 +669,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v3/cluster/member/promote"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v1/cluster/member/promote"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1060,7 +1060,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v3/cluster/member/add"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v1/cluster/member/add"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1082,7 +1082,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v3/cluster/member/remove"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v1/cluster/member/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1104,7 +1104,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v3/cluster/member/update"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v1/cluster/member/update"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1126,7 +1126,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v3/cluster/member/list"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v1/cluster/member/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1148,7 +1148,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v3/cluster/member/promote"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v1/cluster/member/promote"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1168,15 +1168,15 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Cluster_MemberAdd_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v3", "cluster", "member", "add"}, ""))
+	pattern_Cluster_MemberAdd_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "add"}, ""))
 
-	pattern_Cluster_MemberRemove_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v3", "cluster", "member", "remove"}, ""))
+	pattern_Cluster_MemberRemove_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "remove"}, ""))
 
-	pattern_Cluster_MemberUpdate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v3", "cluster", "member", "update"}, ""))
+	pattern_Cluster_MemberUpdate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "update"}, ""))
 
-	pattern_Cluster_MemberList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v3", "cluster", "member", "list"}, ""))
+	pattern_Cluster_MemberList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "list"}, ""))
 
-	pattern_Cluster_MemberPromote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v3", "cluster", "member", "promote"}, ""))
+	pattern_Cluster_MemberPromote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "promote"}, ""))
 )
 
 var (
