@@ -28,7 +28,7 @@ go.work.sum
 
 _output
 /testdata
-/vendor
+vendor
 dist
 dist/
 release/
