@@ -9,6 +9,7 @@ replace (
 	github.com/olive-io/olive/gateway => ./gateway
 	github.com/olive-io/olive/meta => ./meta
 	github.com/olive-io/olive/pkg => ./pkg
+	github.com/olive-io/olive/pkg/tonic => ./pkg/tonic
 	github.com/olive-io/olive/runner => ./runner
 )
 
