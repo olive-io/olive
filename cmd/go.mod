@@ -12,10 +12,11 @@ replace (
 )
 
 require (
-	github.com/olive-io/olive/gateway v0.0.3
-	github.com/olive-io/olive/meta v0.0.3
-	github.com/olive-io/olive/pkg v0.0.3
-	github.com/olive-io/olive/runner v0.0.3
+	github.com/olive-io/olive/api v0.1.0
+	github.com/olive-io/olive/gateway v0.1.0
+	github.com/olive-io/olive/meta v0.1.0
+	github.com/olive-io/olive/pkg v0.1.0
+	github.com/olive-io/olive/runner v0.1.0
 	github.com/spf13/cobra v1.8.0
 	go.etcd.io/etcd/server/v3 v3.5.13
 )
@@ -82,8 +83,7 @@ require (
 	github.com/muyo/sno v1.2.1 // indirect
 	github.com/olive-io/bpmn v1.3.4 // indirect
 	github.com/olive-io/bpmn/schema v1.3.4 // indirect
-	github.com/olive-io/olive/api v0.0.3 // indirect
-	github.com/olive-io/olive/client v0.0.3 // indirect
+	github.com/olive-io/olive/client v0.1.0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

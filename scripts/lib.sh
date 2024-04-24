@@ -344,6 +344,9 @@ function run_go_tool {
 
 # assert_no_git_modifications fails if there are any uncommited changes.
 function assert_no_git_modifications {
+  if [ "${NO_GIT}" == "1" ];then
+    return 0
+  fi
   log_callout "Making sure everything is committed."
   if ! git diff --cached --exit-code; then
     log_error "Found staged by uncommited changes. Do commit/stash your changes first."

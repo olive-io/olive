@@ -19,9 +19,9 @@ require (
 	github.com/lni/dragonboat/v4 v4.0.0-20231222133740-1d6e2d76cd57
 	github.com/olive-io/bpmn v1.3.4
 	github.com/olive-io/bpmn/schema v1.3.4
-	github.com/olive-io/olive/api v0.0.3
-	github.com/olive-io/olive/client v0.0.3
-	github.com/olive-io/olive/pkg v0.0.3
+	github.com/olive-io/olive/api v0.1.0
+	github.com/olive-io/olive/client v0.1.0
+	github.com/olive-io/olive/pkg v0.1.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/spf13/pflag v1.0.5
@@ -30,6 +30,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.13
 	go.etcd.io/etcd/client/v3 v3.5.13
 	go.etcd.io/etcd/pkg/v3 v3.5.13
+	go.etcd.io/etcd/server/v3 v3.5.13
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.63.2
@@ -114,7 +115,6 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
 	go.etcd.io/etcd/client/v2 v2.305.13 // indirect
 	go.etcd.io/etcd/raft/v3 v3.5.13 // indirect
-	go.etcd.io/etcd/server/v3 v3.5.13 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
