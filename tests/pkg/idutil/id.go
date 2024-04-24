@@ -19,14 +19,28 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package olive
+package idutil
 
 import (
-	_ "github.com/olive-io/olive/client"
-	_ "github.com/olive-io/olive/gateway"
-	_ "github.com/olive-io/olive/meta"
-	_ "github.com/olive-io/olive/pkg/runtime"
-	_ "github.com/olive-io/olive/runner"
+	"os"
 
-	_ "github.com/olive-io/olive/tests/pkg/idutil"
+	"go.etcd.io/etcd/server/v3/embed"
 )
+
+func newEtcd() (*embed.Etcd, func()) {
+	cfg := embed.NewConfig()
+	cfg.Dir = "testdata"
+	etcd, err := embed.StartEtcd(cfg)
+	if err != nil {
+		panic("start etcd: " + err.Error())
+	}
+	<-etcd.Server.ReadyNotify()
+
+	cancel := func() {
+		etcd.Close()
+		<-etcd.Server.StopNotify()
+		_ = os.RemoveAll(cfg.Dir)
+	}
+
+	return etcd, cancel
+}

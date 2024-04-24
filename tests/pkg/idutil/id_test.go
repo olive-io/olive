@@ -23,34 +23,14 @@ package idutil
 
 import (
 	"context"
-	"os"
 	"path"
 	"testing"
 
 	"github.com/olive-io/olive/pkg/idutil"
-	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
 	"github.com/olive-io/olive/pkg/runtime"
 )
-
-func newEtcd() (*embed.Etcd, func()) {
-	cfg := embed.NewConfig()
-	cfg.Dir = "testdata"
-	etcd, err := embed.StartEtcd(cfg)
-	if err != nil {
-		panic("start etcd: " + err.Error())
-	}
-	<-etcd.Server.ReadyNotify()
-
-	cancel := func() {
-		etcd.Close()
-		<-etcd.Server.StopNotify()
-		_ = os.RemoveAll(cfg.Dir)
-	}
-
-	return etcd, cancel
-}
 
 func TestNewGenerator(t *testing.T) {
 	etcd, cancel := newEtcd()

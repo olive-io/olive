@@ -32,7 +32,7 @@ function update_module_version() {
   local v1version="${1}"
   local modules
   run go mod tidy
-  modules=$(run go list -f '{{if not .Main}}{{if not .Indirect}}{{.Path}}{{end}}{{end}}' -m all)
+  modules=$(run go list -mod=readonly -f '{{if not .Main}}{{if not .Indirect}}{{.Path}}{{end}}{{end}}' -m all)
 
   deps=$(echo "${modules}" | grep -E "${ROOT_MODULE}/.*")
   for dep in ${deps}; do

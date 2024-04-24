@@ -13,7 +13,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/mattbaird/jsonpatch v0.0.0-20240118010651-0ba75a80ca38
 	github.com/mitchellh/hashstructure v1.1.0
-	github.com/olive-io/olive/api v0.1.0
+	github.com/olive-io/olive/api v0.1.1
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/cobra v1.8.0

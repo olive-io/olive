@@ -19,9 +19,9 @@ require (
 	github.com/lni/dragonboat/v4 v4.0.0-20231222133740-1d6e2d76cd57
 	github.com/olive-io/bpmn v1.3.4
 	github.com/olive-io/bpmn/schema v1.3.4
-	github.com/olive-io/olive/api v0.1.0
-	github.com/olive-io/olive/client v0.1.0
-	github.com/olive-io/olive/pkg v0.1.0
+	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/pkg v0.1.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/spf13/pflag v1.0.5

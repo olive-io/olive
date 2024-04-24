@@ -14,9 +14,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1
 	github.com/hashicorp/go-immutable-radix v1.3.1
 	github.com/json-iterator/go v1.1.12
-	github.com/olive-io/olive/api v0.1.0
-	github.com/olive-io/olive/client v0.1.0
-	github.com/olive-io/olive/pkg v0.1.0
+	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/pkg v0.1.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.27.0

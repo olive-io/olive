@@ -25,41 +25,6 @@ type TestData struct {
 	Name string `json:"name"`
 }
 
-//func TestBoxFromAny(t *testing.T) {
-//	type args struct {
-//		value any
-//	}
-//	arr := []int32{1, 2}
-//	t1 := TestData{Name: "t1"}
-//	t2 := map[string]any{"c": map[string]string{"name": "cc"}}
-//	tests := []struct {
-//		name string
-//		args args
-//		want *Box
-//	}{
-//		{"BoxFromAny_string", args{value: "a"}, &Box{Type: BoxType_string, Data: []byte("a")}},
-//		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &Box{Type: BoxType_string, Data: []byte("a")}},
-//		{"BoxFromAny_int", args{value: 1}, &Box{Type: BoxType_integer, Data: []byte("1")}},
-//		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &Box{Type: BoxType_integer, Data: []byte("1")}},
-//		{"BoxFromAny_float", args{value: 1.1}, &Box{Type: BoxType_float, Data: []byte("1.100000")}},
-//		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &Box{Type: BoxType_float, Data: []byte("1.100000")}},
-//		{"BoxFromAny_boolean", args{value: true}, &Box{Type: BoxType_boolean, Data: []byte("true")}},
-//		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &Box{Type: BoxType_boolean, Data: []byte("true")}},
-//		{"BoxFromAny_array", args{value: []int32{1, 2}}, &Box{Type: BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
-//		{"BoxFromAny_array_ptr", args{value: &arr}, &Box{Type: BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
-//		{"BoxFromAny_struct", args{value: t1}, &Box{Type: BoxType_object, Data: []byte(`{"name":"t1"}`)}},
-//		{"BoxFromAny_struct_ptr", args{value: &t1}, &Box{Type: BoxType_object, Data: []byte(`{"name":"t1"}`)}},
-//		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &Box{Type: BoxType_map, Data: []byte(`{"name":"t1"}`)}},
-//		{"BoxFromAny_map2", args{value: t2}, &Box{Type: BoxType_map, Data: []byte(`{"c":{"name":"cc"}}`)}},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			if got := BoxFromAny(tt.args.value); !(reflect.DeepEqual(got.Data, tt.want.Data) && reflect.DeepEqual(got.Type, tt.want.Type)) {
-//				t.Errorf("BoxFromAny() = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
 //
 //func TestBox_Value(t *testing.T) {
 //	box := &Box{

@@ -9,15 +9,17 @@ replace (
 	github.com/olive-io/olive/meta => ./meta
 	github.com/olive-io/olive/pkg => ./pkg
 	github.com/olive-io/olive/runner => ./runner
+	github.com/olive-io/olive/tests => ./tests
 )
 
 require (
-	github.com/olive-io/olive/api v0.1.0
-	github.com/olive-io/olive/client v0.1.0
-	github.com/olive-io/olive/gateway v0.1.0
-	github.com/olive-io/olive/meta v0.1.0
-	github.com/olive-io/olive/pkg v0.1.0
-	github.com/olive-io/olive/runner v0.1.0
+	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/gateway v0.1.1
+	github.com/olive-io/olive/meta v0.1.1
+	github.com/olive-io/olive/pkg v0.1.1
+	github.com/olive-io/olive/runner v0.1.1
+	github.com/olive-io/olive/tests v0.1.1
 	github.com/spf13/cobra v1.8.0
 	go.etcd.io/etcd/server/v3 v3.5.13
 )

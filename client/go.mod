@@ -7,7 +7,7 @@ replace github.com/olive-io/olive/api => ../api
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/olive-io/bpmn/schema v1.3.4
-	github.com/olive-io/olive/api v0.1.0
+	github.com/olive-io/olive/api v0.1.1
 	go.etcd.io/etcd/api/v3 v3.5.13
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13
 	go.etcd.io/etcd/client/v3 v3.5.13
