@@ -110,7 +110,7 @@ function push_mod_tags_cmd {
       tag="${main_version}"
       version="${main_version}"
     else
-      tag="${subdir///v[23]/}/${version}"
+      tag="${subdir///v[12]/}/${version}"
     fi
 
     log_info "Tags for: ${module} version:${version} tag:${tag}"
