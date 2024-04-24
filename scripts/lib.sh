@@ -164,7 +164,7 @@ function run_for_module {
 }
 
 function module_dirs() {
-  echo "api pkg pkg/tonic client meta runner gateway cmd ."
+  echo "api pkg pkg/tonic client meta runner gateway ."
 }
 
 function go_work() {
@@ -194,8 +194,7 @@ function modules() {
     "${ROOT_MODULE}/client"
     "${ROOT_MODULE}/meta"
     "${ROOT_MODULE}/runner"
-    "${ROOT_MODULE}/gateway"
-    "${ROOT_MODULE}/cmd")
+    "${ROOT_MODULE}/gateway")
   echo "${modules[@]}"
 }
 

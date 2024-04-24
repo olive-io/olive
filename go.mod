@@ -5,19 +5,21 @@ go 1.21
 replace (
 	github.com/olive-io/olive/api => ./api
 	github.com/olive-io/olive/client => ./client
-	github.com/olive-io/olive/cmd => ./cmd
 	github.com/olive-io/olive/gateway => ./gateway
 	github.com/olive-io/olive/meta => ./meta
 	github.com/olive-io/olive/pkg => ./pkg
-	github.com/olive-io/olive/pkg/tonic => ./pkg/tonic
 	github.com/olive-io/olive/runner => ./runner
 )
 
 require (
+	github.com/olive-io/olive/api v0.1.0
 	github.com/olive-io/olive/client v0.1.0
-	github.com/olive-io/olive/cmd v0.1.0
 	github.com/olive-io/olive/gateway v0.1.0
 	github.com/olive-io/olive/meta v0.1.0
+	github.com/olive-io/olive/pkg v0.1.0
+	github.com/olive-io/olive/runner v0.1.0
+	github.com/spf13/cobra v1.8.0
+	go.etcd.io/etcd/server/v3 v3.5.13
 )
 
 require (
@@ -82,9 +84,6 @@ require (
 	github.com/muyo/sno v1.2.1 // indirect
 	github.com/olive-io/bpmn v1.3.4 // indirect
 	github.com/olive-io/bpmn/schema v1.3.4 // indirect
-	github.com/olive-io/olive/api v0.1.0 // indirect
-	github.com/olive-io/olive/pkg v0.1.0 // indirect
-	github.com/olive-io/olive/runner v0.1.0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -99,7 +98,6 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
-	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -118,7 +116,6 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.13 // indirect
 	go.etcd.io/etcd/pkg/v3 v3.5.13 // indirect
 	go.etcd.io/etcd/raft/v3 v3.5.13 // indirect
-	go.etcd.io/etcd/server/v3 v3.5.13 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0 // indirect
