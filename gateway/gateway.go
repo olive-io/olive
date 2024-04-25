@@ -45,6 +45,7 @@ import (
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type Gateway struct {
@@ -68,7 +69,7 @@ type Gateway struct {
 	// internal http Consumer
 	hc *consumer.HttpConsumer
 
-	openapiDocs *dsypb.OpenAPI
+	openapiDocs *openapi.OpenAPI
 }
 
 func NewGateway(cfg *Config) (*Gateway, error) {
@@ -106,7 +107,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	}
 
 	// read openapi docs
-	var openapi *dsypb.OpenAPI
+	var oapi *openapi.OpenAPI
 	if cfg.OpenAPI != "" {
 		data, err := os.ReadFile(cfg.OpenAPI)
 		if err != nil {
@@ -122,16 +123,16 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 				return nil, fmt.Errorf("convert openapi v3 docs: %v", err)
 			}
 		}
-		if err = json.Unmarshal(data, &openapi); err != nil {
+		if err = json.Unmarshal(data, &oapi); err != nil {
 			return nil, fmt.Errorf("read openapi docs: %v", err)
 		}
 
 		// extracts endpoints of OpenAPI docs
-		for _, ep := range extractOpenAPIDocs(openapi) {
+		for _, ep := range extractOpenAPIDocs(oapi) {
 			cfg.ExtensionEndpoints = append(cfg.ExtensionEndpoints, ep)
 		}
 	}
-	gw.openapiDocs = openapi
+	gw.openapiDocs = oapi
 
 	cfg.Config.Context = ctx
 	if cfg.Config.UserHandlers == nil {

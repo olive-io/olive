@@ -25,43 +25,46 @@ import (
 	"net/http"
 	"strings"
 
+	json "github.com/json-iterator/go"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/pkg/proxy/api"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
-func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
+func extractOpenAPIDocs(svc *openapi.OpenAPI) []*dsypb.Endpoint {
 	eps := make([]*dsypb.Endpoint, 0)
 
 	for url, pt := range svc.Paths {
 		var method string
-		var ep *dsypb.OpenAPIEndpoint
-		if pt.Get != nil {
+		var ep *openapi.Operation
+		if pt.GET != nil {
 			method = http.MethodGet
-			ep = pt.Get
-		} else if pt.Post != nil {
+			ep = pt.GET
+		} else if pt.POST != nil {
 			method = http.MethodPost
-			ep = pt.Post
-		} else if pt.Put != nil {
+			ep = pt.POST
+		} else if pt.PUT != nil {
 			method = http.MethodPut
-			ep = pt.Put
-		} else if pt.Patch != nil {
+			ep = pt.PUT
+		} else if pt.Parameters != nil {
 			method = http.MethodPatch
-			ep = pt.Patch
-		} else if pt.Delete != nil {
+			ep = pt.PATCH
+		} else if pt.DELETE != nil {
 			method = http.MethodDelete
-			ep = pt.Delete
+			ep = pt.DELETE
 		} else {
 			continue
 		}
 
-		name := ep.OperationId
+		name := ep.ID
 		if name == "" {
 			name = url
 		}
 
 		hosts := make([]string, 0)
 		for _, server := range svc.Servers {
-			hosts = append(hosts, server.Url)
+			hosts = append(hosts, server.URL)
 		}
 		md := map[string]string{
 			api.EndpointKey: name,
@@ -87,51 +90,40 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 			req.Parameters = parameters
 		} else {
 			content := ep.RequestBody.Content
-			if content.ApplicationJson != nil {
-				extractSchema(content.ApplicationJson.Schema, svc.Components, req)
+			if mt, ok := content["application/json"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 				md[api.ContentTypeKey] = "application/json"
 			}
-			if content.ApplicationXml != nil {
-				extractSchema(content.ApplicationXml.Schema, svc.Components, req)
+			if mt, ok := content["application/xml"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 				md[api.ContentTypeKey] = "application/xml"
 			}
-			if content.ApplicationYaml != nil {
-				extractSchema(content.ApplicationYaml.Schema, svc.Components, req)
+			if mt, ok := content["application/yaml"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 				md[api.ContentTypeKey] = "application/yaml"
 			}
 		}
 		rsp := &dsypb.Box{Type: dsypb.BoxType_object}
 		if resp, ok := ep.Responses["200"]; ok {
 			content := resp.Content
-			if content.ApplicationJson != nil {
-				extractSchema(content.ApplicationJson.Schema, svc.Components, rsp)
+			if mt, ok := content["application/json"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 			}
-			if content.ApplicationXml != nil {
-				extractSchema(content.ApplicationXml.Schema, svc.Components, rsp)
+			if mt, ok := content["application/xml"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 			}
-			if content.ApplicationYaml != nil {
-				extractSchema(content.ApplicationYaml.Schema, svc.Components, rsp)
-			}
-		}
-
-		for _, item := range ep.Security {
-			if item.Basic != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"basic"}, strings.Join(item.Basic, ",")), "::")
-			} else if item.ApiKeys != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"api_keys"}, strings.Join(item.ApiKeys, ",")), "::")
-			} else if item.Bearer != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"bearer"}, strings.Join(item.Basic, ",")), "::")
-			} else if item.OAuth2 != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"oauth2"}, strings.Join(item.OAuth2, ",")), "::")
-			} else if item.OpenId != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"openId"}, strings.Join(item.OpenId, ",")), "::")
-			} else if item.CookieAuth != nil {
-				md[api.SecurityKey] = strings.Join(append([]string{"cookieAuth"}, strings.Join(item.CookieAuth, ",")), "::")
+			if mt, ok := content["application/yaml"]; ok {
+				extractSchema(mt.Schema, svc.Components, req)
 			}
 		}
 
-		for key, value := range ep.Metadata {
-			md[key] = value
+		if len(ep.Security) != 0 {
+			security := ep.Security[0]
+			for key, values := range *security {
+				securityItem := strings.Join(values, ",")
+				securityText := key + "::" + securityItem
+				md[api.SecurityKey] = securityText
+			}
 		}
 
 		eps = append(eps, &dsypb.Endpoint{
@@ -145,54 +137,64 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 	return eps
 }
 
-func extractSchema(so *dsypb.SchemaObject, components *dsypb.OpenAPIComponents, target *dsypb.Box) {
-	if len(so.Example) != 0 {
-		target.Data = []byte(so.Example)
-	}
+func extractSchema(so *openapi.SchemaOrRef, components *openapi.Components, target *dsypb.Box) {
+	if schema := so.Schema; schema != nil {
+		if schema.Example != nil {
+			target.Data, _ = json.Marshal(so.Example)
+		}
 
-	switch so.Type {
-	case "string":
-		target.Type = dsypb.BoxType_string
-		return
-	case "integer":
-		target.Type = dsypb.BoxType_integer
-		return
-	case "number":
-		target.Type = dsypb.BoxType_float
-		return
-	case "boolean":
-		target.Type = dsypb.BoxType_boolean
-		return
-	case "object":
-		target.Type = dsypb.BoxType_object
-		if so.AdditionalProperties != nil {
-			target.Type = dsypb.BoxType_map
-			target.Ref = so.AdditionalProperties.Ref
+		switch schema.Type {
+		case "string":
+			target.Type = dsypb.BoxType_string
+			return
+		case "integer":
+			target.Type = dsypb.BoxType_integer
+			return
+		case "number":
+			target.Type = dsypb.BoxType_float
+			return
+		case "boolean":
+			target.Type = dsypb.BoxType_boolean
+			return
+		case "object":
+			target.Type = dsypb.BoxType_object
+			if schema.AdditionalProperties != nil {
+				target.Type = dsypb.BoxType_map
+				ap := schema.AdditionalProperties
+				if ap.Schema != nil {
+					target.Ref = ap.Schema.Type
+				}
+				if ap.Reference != nil {
+					target.Ref = ap.Reference.Ref
+				}
+				return
+			}
+		case "array":
+			extractSchema(schema.Items, components, target)
+			if target.Ref == "" {
+				target.Ref = schema.Type
+			}
+			target.Type = dsypb.BoxType_array
 			return
 		}
-	case "array":
-		extractSchema(so.Items, components, target)
-		if target.Ref == "" {
-			target.Ref = so.Type
+	}
+
+	if reference := so.Reference; reference != nil {
+		ref := strings.TrimPrefix(reference.Ref, "#/components/schemas/")
+		model, ok := components.Schemas[ref]
+		if !ok {
+			return
 		}
-		target.Type = dsypb.BoxType_array
-		return
-	}
+		target.Ref = reference.Ref
 
-	ref := strings.TrimPrefix(so.Ref, "#/components/schemas/")
-	model, ok := components.Schemas[ref]
-	if !ok {
-		return
+		parameters := map[string]*dsypb.Box{}
+		for name := range model.Properties {
+			param := &dsypb.Box{}
+			extractSchema(model.Properties[name], components, param)
+			parameters[name] = param
+		}
+		target.Parameters = parameters
 	}
-	target.Ref = so.Ref
-
-	parameters := map[string]*dsypb.Box{}
-	for name := range model.Properties {
-		param := &dsypb.Box{}
-		extractSchema(model.Properties[name], components, param)
-		parameters[name] = param
-	}
-	target.Parameters = parameters
 }
 
 func extractConsumer(idt *dsypb.Consumer, service string) *dsypb.Endpoint {
