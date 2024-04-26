@@ -35,7 +35,7 @@ service Cluster {
   // MemberAdd adds a member into the cluster.
   rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
     option (google.api.http) = {
-      post: "/v1/cluster/member/add"
+      post: "/api/v1/cluster/member/add"
       body: "*"
     };
   }
@@ -43,7 +43,7 @@ service Cluster {
   // MemberRemove removes an existing member from the cluster.
   rpc MemberRemove(MemberRemoveRequest) returns (MemberRemoveResponse) {
     option (google.api.http) = {
-      post: "/v1/cluster/member/remove"
+      post: "/api/v1/cluster/member/remove"
       body: "*"
     };
   }
@@ -51,7 +51,7 @@ service Cluster {
   // MemberUpdate updates the member configuration.
   rpc MemberUpdate(MemberUpdateRequest) returns (MemberUpdateResponse) {
     option (google.api.http) = {
-      post: "/v1/cluster/member/update"
+      post: "/api/v1/cluster/member/update"
       body: "*"
     };
   }
@@ -59,7 +59,7 @@ service Cluster {
   // MemberList lists all the members in the cluster.
   rpc MemberList(MemberListRequest) returns (MemberListResponse) {
     option (google.api.http) = {
-      post: "/v1/cluster/member/list"
+      post: "/api/v1/cluster/member/list"
       body: "*"
     };
   }
@@ -67,7 +67,7 @@ service Cluster {
   // MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
   rpc MemberPromote(MemberPromoteRequest) returns (MemberPromoteResponse) {
     option (google.api.http) = {
-      post: "/v1/cluster/member/promote"
+      post: "/api/v1/cluster/member/promote"
       body: "*"
     };
   }
@@ -136,27 +136,27 @@ message MemberPromoteResponse {
 service MetaRPC {
   rpc GetMeta(GetMetaRequest) returns (GetMetaResponse) {
     option (google.api.http) = {
-      get: "/v1/meta/get"
+      get: "/api/v1/meta/info"
     };
   };
   rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
     option (google.api.http) = {
-      get: "/v1/runners"
+      get: "/api/v1/meta/runners"
     };
   };
   rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
     option (google.api.http) = {
-      get: "/v1/runner/{id}"
+      get: "/api/v1/meta/runner/{id}"
     };
   };
   rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
     option (google.api.http) = {
-      get: "/v1/regions"
+      get: "/api/v1/meta/regions"
     };
   };
   rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
     option (google.api.http) = {
-      get: "/v1/region/{id}"
+      get: "/api/v1/meta/region/{id}"
     };
   };
 }
@@ -198,35 +198,35 @@ message GetRegionResponse {
 service BpmnRPC {
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
     option (google.api.http) = {
-      post: "/v1/definition/deploy"
+      post: "/api/v1/definition/deploy"
       body: "*"
     };
   };
   rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
     option (google.api.http) = {
-      get: "/v1/definitions"
+      get: "/api/v1/definitions"
     };
   };
   rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
     option (google.api.http) = {
-      get: "/v1/definition/{id}"
+      get: "/api/v1/definitions/{id}"
     };
   };
   rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse) {
     option (google.api.http) = {
-      post: "/v1/definition/remove"
+      post: "/api/v1/definition/remove"
       body: "*"
     };
   };
   rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse) {
     option (google.api.http) = {
-      post: "/v1/definition/execute"
+      post: "/api/v1/definition/execute"
       body: "*"
     };
   };
   rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
-      post: "/v1/processInstance/get"
+      post: "/api/v1/processInstance/get"
       body: "*"
     };
   };
@@ -289,7 +289,7 @@ message ExecuteDefinitionResponse {
 service RunnerRPC {
   rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
-      post: "/v1/processInstance/get"
+      post: "/api/v1/process_instance/fetch"
       body: "*"
     };
   };

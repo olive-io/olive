@@ -42,8 +42,8 @@ type IEmbedServer interface {
 	// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
 	// The passed function should interrupt on s.StoppingNotify().
 	GoAttach(fn func())
-	// Destroy run destroy function when the server stop
-	Destroy(fn func())
+	// OnDestroy registry destroy function that running when the server stop
+	OnDestroy(fn func())
 	// Shutdown sends signal to stop channel and all goroutines stop
 	Shutdown()
 }
@@ -94,11 +94,11 @@ func (s *embedServer) GoAttach(fn func()) {
 	}()
 }
 
-func (s *embedServer) Destroy(fn func()) {
-	go s.destroy(fn)
+func (s *embedServer) OnDestroy(fn func()) {
+	go s.doDestroy(fn)
 }
 
-func (s *embedServer) destroy(fn func()) {
+func (s *embedServer) doDestroy(fn func()) {
 	defer func() {
 		s.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
 		close(s.stopping)

@@ -33,7 +33,7 @@ func TestGenericServer(t *testing.T) {
 
 	logger := zap.NewExample()
 	s1 := NewEmbedServer(logger)
-	s1.Destroy(func() {
+	s1.OnDestroy(func() {
 		queue = append(queue, 2)
 	})
 	s1.GoAttach(func() {

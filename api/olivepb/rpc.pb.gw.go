@@ -569,7 +569,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v1/cluster/member/add"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/api/v1/cluster/member/add"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -594,7 +594,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v1/cluster/member/remove"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/api/v1/cluster/member/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -619,7 +619,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v1/cluster/member/update"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/api/v1/cluster/member/update"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -644,7 +644,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v1/cluster/member/list"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/api/v1/cluster/member/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -669,7 +669,7 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v1/cluster/member/promote"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/api/v1/cluster/member/promote"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -703,7 +703,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/v1/meta/get"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/api/v1/meta/info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -728,7 +728,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/v1/runners"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -753,7 +753,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/v1/runner/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -778,7 +778,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/v1/regions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -803,7 +803,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/v1/region/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -837,7 +837,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/DeployDefinition", runtime.WithHTTPPathPattern("/v1/definition/deploy"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/DeployDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/deploy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -862,7 +862,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/ListDefinition", runtime.WithHTTPPathPattern("/v1/definitions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/ListDefinition", runtime.WithHTTPPathPattern("/api/v1/definitions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -887,7 +887,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/GetDefinition", runtime.WithHTTPPathPattern("/v1/definition/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/GetDefinition", runtime.WithHTTPPathPattern("/api/v1/definitions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -912,7 +912,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/RemoveDefinition", runtime.WithHTTPPathPattern("/v1/definition/remove"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/RemoveDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -937,7 +937,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/ExecuteDefinition", runtime.WithHTTPPathPattern("/v1/definition/execute"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/ExecuteDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -962,7 +962,7 @@ func RegisterBpmnRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/v1/processInstance/get"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.BpmnRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/processInstance/get"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -996,7 +996,7 @@ func RegisterRunnerRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/v1/processInstance/get"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/process_instance/fetch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1060,7 +1060,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/v1/cluster/member/add"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberAdd", runtime.WithHTTPPathPattern("/api/v1/cluster/member/add"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1082,7 +1082,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/v1/cluster/member/remove"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberRemove", runtime.WithHTTPPathPattern("/api/v1/cluster/member/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1104,7 +1104,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/v1/cluster/member/update"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberUpdate", runtime.WithHTTPPathPattern("/api/v1/cluster/member/update"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1126,7 +1126,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/v1/cluster/member/list"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberList", runtime.WithHTTPPathPattern("/api/v1/cluster/member/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1148,7 +1148,7 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/v1/cluster/member/promote"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.Cluster/MemberPromote", runtime.WithHTTPPathPattern("/api/v1/cluster/member/promote"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1168,15 +1168,15 @@ func RegisterClusterHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Cluster_MemberAdd_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "add"}, ""))
+	pattern_Cluster_MemberAdd_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "cluster", "member", "add"}, ""))
 
-	pattern_Cluster_MemberRemove_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "remove"}, ""))
+	pattern_Cluster_MemberRemove_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "cluster", "member", "remove"}, ""))
 
-	pattern_Cluster_MemberUpdate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "update"}, ""))
+	pattern_Cluster_MemberUpdate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "cluster", "member", "update"}, ""))
 
-	pattern_Cluster_MemberList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "list"}, ""))
+	pattern_Cluster_MemberList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "cluster", "member", "list"}, ""))
 
-	pattern_Cluster_MemberPromote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "cluster", "member", "promote"}, ""))
+	pattern_Cluster_MemberPromote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "cluster", "member", "promote"}, ""))
 )
 
 var (
@@ -1235,7 +1235,7 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/v1/meta/get"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/api/v1/meta/info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1257,7 +1257,7 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/v1/runners"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1279,7 +1279,7 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/v1/runner/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1301,7 +1301,7 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/v1/regions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1323,7 +1323,7 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/v1/region/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1343,15 +1343,15 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_MetaRPC_GetMeta_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "meta", "get"}, ""))
+	pattern_MetaRPC_GetMeta_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "info"}, ""))
 
-	pattern_MetaRPC_ListRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "runners"}, ""))
+	pattern_MetaRPC_ListRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "runners"}, ""))
 
-	pattern_MetaRPC_GetRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "runner", "id"}, ""))
+	pattern_MetaRPC_GetRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "runner", "id"}, ""))
 
-	pattern_MetaRPC_ListRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "regions"}, ""))
+	pattern_MetaRPC_ListRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "regions"}, ""))
 
-	pattern_MetaRPC_GetRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "region", "id"}, ""))
+	pattern_MetaRPC_GetRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "region", "id"}, ""))
 )
 
 var (
@@ -1410,7 +1410,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/DeployDefinition", runtime.WithHTTPPathPattern("/v1/definition/deploy"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/DeployDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/deploy"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1432,7 +1432,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/ListDefinition", runtime.WithHTTPPathPattern("/v1/definitions"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/ListDefinition", runtime.WithHTTPPathPattern("/api/v1/definitions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1454,7 +1454,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/GetDefinition", runtime.WithHTTPPathPattern("/v1/definition/{id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/GetDefinition", runtime.WithHTTPPathPattern("/api/v1/definitions/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1476,7 +1476,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/RemoveDefinition", runtime.WithHTTPPathPattern("/v1/definition/remove"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/RemoveDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/remove"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1498,7 +1498,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/ExecuteDefinition", runtime.WithHTTPPathPattern("/v1/definition/execute"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/ExecuteDefinition", runtime.WithHTTPPathPattern("/api/v1/definition/execute"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1520,7 +1520,7 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/v1/processInstance/get"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.BpmnRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/processInstance/get"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1540,17 +1540,17 @@ func RegisterBpmnRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_BpmnRPC_DeployDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "definition", "deploy"}, ""))
+	pattern_BpmnRPC_DeployDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "definition", "deploy"}, ""))
 
-	pattern_BpmnRPC_ListDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "definitions"}, ""))
+	pattern_BpmnRPC_ListDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "definitions"}, ""))
 
-	pattern_BpmnRPC_GetDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "definition", "id"}, ""))
+	pattern_BpmnRPC_GetDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "definitions", "id"}, ""))
 
-	pattern_BpmnRPC_RemoveDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "definition", "remove"}, ""))
+	pattern_BpmnRPC_RemoveDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "definition", "remove"}, ""))
 
-	pattern_BpmnRPC_ExecuteDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "definition", "execute"}, ""))
+	pattern_BpmnRPC_ExecuteDefinition_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "definition", "execute"}, ""))
 
-	pattern_BpmnRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "processInstance", "get"}, ""))
+	pattern_BpmnRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "processInstance", "get"}, ""))
 )
 
 var (
@@ -1611,7 +1611,7 @@ func RegisterRunnerRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/v1/processInstance/get"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/process_instance/fetch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1631,7 +1631,7 @@ func RegisterRunnerRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 }
 
 var (
-	pattern_RunnerRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "processInstance", "get"}, ""))
+	pattern_RunnerRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "process_instance", "fetch"}, ""))
 )
 
 var (

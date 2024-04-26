@@ -36,9 +36,10 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
+	genericserver "github.com/olive-io/olive/pkg/server"
+
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
-	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 type Server struct {
@@ -56,7 +57,7 @@ type Server struct {
 
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
-	idReq *idutil.Generator
+	idGen *idutil.Generator
 
 	notifier leader.Notifier
 
@@ -102,9 +103,14 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return errors.Wrap(err, "start embed etcd")
 	}
 
-	<-s.etcd.Server.ReadyNotify()
+	select {
+	case <-s.etcd.Server.ReadyNotify():
+	case <-stopc:
+		return errors.New("etcd server not stops")
+	}
+
 	s.v3cli = v3client.New(s.etcd.Server)
-	s.idReq = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
+	s.idGen = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
 	s.notifier = leader.NewNotify(s.etcd.Server)
 
 	sLimit := schedule.Limit{
@@ -116,7 +122,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	s.IEmbedServer.Destroy(s.destroy)
+	s.IEmbedServer.OnDestroy(s.destroy)
 
 	<-stopc
 

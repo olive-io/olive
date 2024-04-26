@@ -40,12 +40,13 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/gateway/consumer"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
+
+	"github.com/olive-io/olive/gateway/consumer"
 )
 
 type Gateway struct {
@@ -210,7 +211,7 @@ func (g *Gateway) Start(stopc <-chan struct{}) error {
 	}
 
 	g.GoAttach(g.process)
-	g.Destroy(g.destroy)
+	g.OnDestroy(g.destroy)
 
 	g.beStarted()
 

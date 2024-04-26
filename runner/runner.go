@@ -44,6 +44,7 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
+
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
@@ -115,7 +116,7 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	r.Destroy(r.destroy)
+	r.OnDestroy(r.destroy)
 	r.GoAttach(r.process)
 	r.GoAttach(r.watching)
 
@@ -401,9 +402,9 @@ func (r *Runner) setRev(rev int64) {
 	binary.LittleEndian.PutUint64(value, uint64(rev))
 	tx := r.be.BatchTx()
 	tx.Lock()
-	tx.UnsafePut(buckets.Meta, key, value)
+	_ = tx.UnsafePut(buckets.Meta, key, value)
 	tx.Unlock()
-	tx.Commit()
+	_ = tx.Commit()
 }
 
 func (r *Runner) destroy() {

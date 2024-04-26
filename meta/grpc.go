@@ -466,7 +466,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 
 	instance := &pb.ProcessInstance{
 		OliveHeader:        &pb.OliveHeader{Region: definition.Header.Region},
-		Id:                 s.idReq.Next(),
+		Id:                 s.idGen.Next(),
 		Name:               req.Name,
 		DefinitionsId:      definition.Id,
 		DefinitionsVersion: definition.Version,
