@@ -141,7 +141,7 @@ func RegisterGatewayHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.Gateway/Ping", runtime.WithHTTPPathPattern("/v1/olive/gateway/ping"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.Gateway/Ping", runtime.WithHTTPPathPattern("/api/v1/gateway/ping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -166,7 +166,7 @@ func RegisterGatewayHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.Gateway/Transmit", runtime.WithHTTPPathPattern("/v1/olive/gateway/transmit"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.Gateway/Transmit", runtime.WithHTTPPathPattern("/api/v1/gateway/transmit"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -200,7 +200,7 @@ func RegisterEndpointRouterHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.EndpointRouter/Inject", runtime.WithHTTPPathPattern("/v1/olive/gateway/router/inject"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.EndpointRouter/Inject", runtime.WithHTTPPathPattern("/api/v1/gateway/router/inject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -225,7 +225,7 @@ func RegisterEndpointRouterHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.EndpointRouter/DigOut", runtime.WithHTTPPathPattern("/v1/olive/gateway/router/dig_out"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/gatewaypb.EndpointRouter/DigOut", runtime.WithHTTPPathPattern("/api/v1/gateway/router/dig_out"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -289,7 +289,7 @@ func RegisterGatewayHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.Gateway/Ping", runtime.WithHTTPPathPattern("/v1/olive/gateway/ping"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.Gateway/Ping", runtime.WithHTTPPathPattern("/api/v1/gateway/ping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -311,7 +311,7 @@ func RegisterGatewayHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.Gateway/Transmit", runtime.WithHTTPPathPattern("/v1/olive/gateway/transmit"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.Gateway/Transmit", runtime.WithHTTPPathPattern("/api/v1/gateway/transmit"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -331,9 +331,9 @@ func RegisterGatewayHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Gateway_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "olive", "gateway", "ping"}, ""))
+	pattern_Gateway_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "gateway", "ping"}, ""))
 
-	pattern_Gateway_Transmit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "olive", "gateway", "transmit"}, ""))
+	pattern_Gateway_Transmit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "gateway", "transmit"}, ""))
 )
 
 var (
@@ -386,7 +386,7 @@ func RegisterEndpointRouterHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.EndpointRouter/Inject", runtime.WithHTTPPathPattern("/v1/olive/gateway/router/inject"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.EndpointRouter/Inject", runtime.WithHTTPPathPattern("/api/v1/gateway/router/inject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -408,7 +408,7 @@ func RegisterEndpointRouterHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.EndpointRouter/DigOut", runtime.WithHTTPPathPattern("/v1/olive/gateway/router/dig_out"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/gatewaypb.EndpointRouter/DigOut", runtime.WithHTTPPathPattern("/api/v1/gateway/router/dig_out"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -428,9 +428,9 @@ func RegisterEndpointRouterHandlerClient(ctx context.Context, mux *runtime.Serve
 }
 
 var (
-	pattern_EndpointRouter_Inject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"v1", "olive", "gateway", "router", "inject"}, ""))
+	pattern_EndpointRouter_Inject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "gateway", "router", "inject"}, ""))
 
-	pattern_EndpointRouter_DigOut_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"v1", "olive", "gateway", "router", "dig_out"}, ""))
+	pattern_EndpointRouter_DigOut_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "v1", "gateway", "router", "dig_out"}, ""))
 )
 
 var (

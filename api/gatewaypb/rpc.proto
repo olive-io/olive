@@ -34,13 +34,13 @@ import "google/api/annotations.proto";
 service Gateway {
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {
-      get: "/v1/olive/gateway/ping",
+      get: "/api/v1/gateway/ping",
     };
   };
 
   rpc Transmit(TransmitRequest) returns (TransmitResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/gateway/transmit",
+      post: "/api/v1/gateway/transmit",
       body: "*"
     };
   }
@@ -79,14 +79,14 @@ service EndpointRouter {
   // Inject injects extension http router endpoint
   rpc Inject(InjectRequest) returns (InjectResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/gateway/router/inject",
+      post: "/api/v1/gateway/router/inject",
       body: "*"
     };
   }
   // DigOut digs out extension http router endpoint
   rpc DigOut(DigOutRequest) returns (DigOutResponse) {
     option (google.api.http) = {
-      post: "/v1/olive/gateway/router/dig_out",
+      post: "/api/v1/gateway/router/dig_out",
       body: "*"
     };
   }
