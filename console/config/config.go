@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The olive Authors
+   Copyright 2024 The olive Authors
 
    This program is offered under a commercial and under the AGPL license.
    For AGPL licensing, see below.
@@ -19,63 +19,48 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package gateway
+package config
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/spf13/pflag"
+	"net/http"
+	urlpkg "net/url"
 
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
-	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
-)
-
-var (
-	DefaultId      = "gateway"
-	DefaultDataDir = "gateway"
+	"github.com/spf13/pflag"
 )
 
 const (
-	DefaultListenURL        = "http://127.0.0.1:5390"
-	DefaultRegisterInterval = time.Second * 20
-	DefaultRegisterTTL      = time.Second * 30
+	DefaultListenURL     = "http://127.0.0.1:8080"
+	DefaultEnableOpenAPI = true
+
+	DefaultMaxHeaderSize = http.DefaultMaxHeaderBytes
 )
 
 type Config struct {
 	logutil.LogConfig `json:",inline" yaml:",inline"`
-	grpcproxy.Config  `json:",inline" yaml:",inline"`
-
-	fs *pflag.FlagSet
 
 	Client client.Config
 
-	DataDir string `json:"data-dir"`
+	ListenURL string `json:"listen-url" yaml:"listen-url"`
+	// EnableOpenAPI enables openapi swagger
+	EnableOpenAPI bool `json:"enable-openapi" yaml:"enable-openapi"`
 
-	OpenAPI string `json:"openapi"`
-	// EnableGRPCGateway enables grpc gateway.
-	// The gateway translates a RESTful HTTP API into gRPC.
-	EnableGRPCGateway bool `json:"enable-grpc-gateway"`
+	fs *pflag.FlagSet
 }
 
 func NewConfig() *Config {
 
 	logging := logutil.NewLogConfig()
-	pcfg := grpcproxy.NewConfig()
-	pcfg.Id = DefaultId
-	pcfg.ListenURL = DefaultListenURL
-	pcfg.RegisterInterval = DefaultRegisterInterval
-	pcfg.RegisterTTL = DefaultRegisterTTL
-
 	clientCfg := client.NewConfig(logging.GetLogger())
 
 	cfg := &Config{
-		LogConfig: logging,
-		Config:    pcfg,
-		Client:    *clientCfg,
-		DataDir:   DefaultDataDir,
+		LogConfig:     logging,
+		ListenURL:     DefaultListenURL,
+		EnableOpenAPI: DefaultEnableOpenAPI,
+		Client:        *clientCfg,
 	}
 	cfg.fs = cfg.newFlagSet()
 
@@ -87,19 +72,12 @@ func (cfg *Config) FlagSet() *pflag.FlagSet {
 }
 
 func (cfg *Config) newFlagSet() *pflag.FlagSet {
-	fs := pflag.NewFlagSet("gateway", pflag.ExitOnError)
+	fs := pflag.NewFlagSet("console", pflag.ExitOnError)
 
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
 		"Set gRPC endpoints to connect the cluster of olive-meta")
-	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Gateway Id.")
-	fs.StringVar(&cfg.OpenAPI, "openapiv3", "", "Set Path of openapi v3 docs")
-	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
-	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for gRPC traffic.")
-	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for gRPC traffic.")
-	fs.DurationVar(&cfg.RegisterInterval, "register-interval", cfg.RegisterInterval, "Set Register interval.")
-	fs.DurationVar(&cfg.RegisterTTL, "register-ttl", cfg.RegisterTTL, "Set Register ttl.")
-
-	fs.BoolVar(&cfg.EnableGRPCGateway, "enable-grpc-gateway", cfg.EnableGRPCGateway, "EnableGRPCGateway enables grpc gateway. The gateway translates a RESTful HTTP API into gRPC.")
+	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for http traffic.")
+	fs.BoolVar(&cfg.EnableOpenAPI, "enable-openapi", cfg.EnableOpenAPI, "EnableOpenAPI enables openapi swagger.")
 
 	// logging
 	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
@@ -126,17 +104,8 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Client.Endpoints) == 0 {
 		return fmt.Errorf("no endpoints")
 	}
-	if len(cfg.Id) == 0 {
-		return fmt.Errorf("missing id")
-	}
-	if len(cfg.DataDir) == 0 {
-		return fmt.Errorf("missing data-dir")
-	}
-	if cfg.RegisterInterval == 0 {
-		cfg.RegisterInterval = DefaultRegisterInterval
-	}
-	if cfg.RegisterTTL == 0 {
-		cfg.RegisterTTL = DefaultRegisterTTL
+	if len(cfg.ListenURL) == 0 {
+		return fmt.Errorf("no listen url")
 	}
 
 	return nil
@@ -149,6 +118,14 @@ func (cfg *Config) setupLogging() error {
 
 	lg := cfg.GetLogger()
 	cfg.Client.Logger = lg
-	cfg.Config.SetLogger(lg)
 	return nil
+}
+
+func (cfg *Config) listenAddr() (string, error) {
+	url, err := urlpkg.Parse(cfg.ListenURL)
+	if err != nil {
+		return "", err
+	}
+
+	return url.Host, nil
 }

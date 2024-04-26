@@ -25,27 +25,27 @@ import (
 	"strings"
 
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/gateway"
+	"github.com/olive-io/olive/console/config"
 )
 
 var (
 	usageline = `Usage:
 
-  olive-gateway [flags]
-    Start an olive-gateway server.
+  olive-console [flags]
+    Starts olive-console server.
 
-  olive-gateway --version
-    Show the version of olive-gateway.
+  olive-console --version
+    Show the version of olive-console.
 
-  olive-gateway -h | --help
-    Show the help information about olive-gateway.
+  olive-console -h | --help
+    Show the help information about olive-console.
 
-  olive-gateway --config-file
+  olive-console --config-file
     Path to the server configuration file. Note that if a configuration file is provided, other command line flags and environment variables will be ignored.`
 
 	flagsline = `
 Gateway:
-  --id 'gateway'
+  --id 'console'
     Set Gateway Id
   --openapiv3 
     Set Path of openapi v3 docs
@@ -53,16 +53,10 @@ Gateway:
     Set the Path to the data directory.
   --endpoints [` + strings.Join(client.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
-  --listen-url '` + gateway.DefaultListenURL + `'
+  --listen-url '` + config.DefaultListenURL + `'
     Set the URL to listen on for gRPC traffic.
-  --advertise-url
-    Set advertise URL to listen on for gRPC traffic.
-  --register-interval '` + gateway.DefaultRegisterInterval.String() + `'
-    Set Register interval.
-  --register-ttl '` + gateway.DefaultRegisterTTL.String() + `'
-    Set Register ttl.
-  --enable-grpc-gateway
-    EnableGRPCGateway enables grpc gateway. The gateway translates a RESTful HTTP API into gRPC.
+  --enable-grpc-console
+    EnableGRPCGateway enables grpc console. The console translates a RESTful HTTP API into gRPC.
 
 Logging:
   --log-outputs 'default'

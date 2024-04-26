@@ -49,6 +49,7 @@ import (
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/api/version"
+
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
 	cxmd "github.com/olive-io/olive/pkg/context/metadata"
@@ -83,7 +84,7 @@ type ProxyServer struct {
 	rpc *rServer
 	wg  *sync.WaitGroup
 
-	rmu      sync.RWMutex
+	pmu      sync.RWMutex
 	handlers map[string]server.IHandler
 	// marks the serve as started
 	started bool
@@ -129,8 +130,8 @@ func (ps *ProxyServer) Handle(hdlr server.IHandler) error {
 		return err
 	}
 
-	ps.rmu.Lock()
-	defer ps.rmu.Unlock()
+	ps.pmu.Lock()
+	defer ps.pmu.Unlock()
 	ps.handlers[hdlr.Name()] = hdlr
 	return nil
 }
@@ -149,12 +150,12 @@ func (ps *ProxyServer) Logger() *zap.Logger {
 }
 
 func (ps *ProxyServer) Start(stopc <-chan struct{}) error {
-	ps.rmu.RLock()
+	ps.pmu.RLock()
 	if ps.started {
-		ps.rmu.RUnlock()
+		ps.pmu.RUnlock()
 		return nil
 	}
-	ps.rmu.RUnlock()
+	ps.pmu.RUnlock()
 
 	lg := ps.Logger()
 
@@ -165,9 +166,9 @@ func (ps *ProxyServer) Start(stopc <-chan struct{}) error {
 
 	lg.Info("Server [grpc] Listening", zap.String("addr", ts.Addr().String()))
 
-	ps.rmu.Lock()
-	ps.cfg.ListenURL = scheme + ts.Addr().String()
-	ps.rmu.Unlock()
+	ps.pmu.Lock()
+	ps.cfg.ListenURL = scheme + "//" + ts.Addr().String()
+	ps.pmu.Unlock()
 
 	// announce self to the world
 	if err = ps.register(); err != nil {
@@ -176,7 +177,7 @@ func (ps *ProxyServer) Start(stopc <-chan struct{}) error {
 
 	go func() {
 		if e1 := ps.serve.Serve(ts); e1 != nil {
-			ps.Logger().Sugar().Errorf("starting gateway server: %v", e1)
+			ps.Logger().Sugar().Errorf("starting server: %v", e1)
 		}
 	}()
 
@@ -230,17 +231,20 @@ func (ps *ProxyServer) Start(stopc <-chan struct{}) error {
 	}()
 
 	// mark the server as started
-	ps.rmu.Lock()
+	ps.pmu.Lock()
 	ps.started = true
-	ps.rmu.Unlock()
+	ps.pmu.Unlock()
 
 	return nil
 }
 
 func (ps *ProxyServer) createListener() (string, net.Listener, error) {
-	cfg := ps.cfg
 	lg := ps.Logger()
-	url, err := urlpkg.Parse(cfg.ListenURL)
+
+	ps.pmu.RLock()
+	listenURL := ps.cfg.ListenURL
+	ps.pmu.RUnlock()
+	url, err := urlpkg.Parse(listenURL)
 	if err != nil {
 		return "", nil, err
 	}
@@ -252,7 +256,7 @@ func (ps *ProxyServer) createListener() (string, net.Listener, error) {
 		return "", nil, err
 	}
 
-	return "http://", listener, nil
+	return url.Scheme, listener, nil
 }
 
 func (ps *ProxyServer) buildGRPCServer() (*grpc.Server, *gwr.ServeMux, error) {
@@ -637,10 +641,10 @@ func (ps *ProxyServer) register() error {
 
 	lg := ps.Logger()
 
-	ps.rmu.RLock()
+	ps.pmu.RLock()
 	cfg := ps.cfg
 	rsvc := ps.rsvc
-	ps.rmu.RUnlock()
+	ps.pmu.RUnlock()
 
 	regFunc := func(service *dsypb.Service) error {
 		var regErr error
@@ -725,7 +729,7 @@ func (ps *ProxyServer) register() error {
 
 	node.Metadata["protocol"] = "grpc"
 
-	ps.rmu.RLock()
+	ps.pmu.RLock()
 	// Maps are ordered randomly, sort the keys for consistency
 	var handlerList []string
 	for n, handler := range ps.handlers {
@@ -740,7 +744,7 @@ func (ps *ProxyServer) register() error {
 	for _, h := range handlerList {
 		endpoints = append(endpoints, ps.handlers[h].Endpoints()...)
 	}
-	ps.rmu.RUnlock()
+	ps.pmu.RUnlock()
 
 	for _, ep := range cfg.ExtensionEndpoints {
 		endpoints = append(endpoints, ep)
@@ -753,9 +757,9 @@ func (ps *ProxyServer) register() error {
 		Endpoints: endpoints,
 	}
 
-	ps.rmu.RLock()
+	ps.pmu.RLock()
 	registered := ps.registered
-	ps.rmu.RUnlock()
+	ps.pmu.RUnlock()
 
 	if !registered {
 		lg.Info("registering node", zap.String("id", id))
@@ -770,8 +774,8 @@ func (ps *ProxyServer) register() error {
 		return nil
 	}
 
-	ps.rmu.Lock()
-	defer ps.rmu.Unlock()
+	ps.pmu.Lock()
+	defer ps.pmu.Unlock()
 
 	ps.registered = true
 	if cacheService {
@@ -787,9 +791,9 @@ func (ps *ProxyServer) deregister() error {
 
 	lg := ps.Logger()
 
-	ps.rmu.RLock()
+	ps.pmu.RLock()
 	cfg := ps.cfg
-	ps.rmu.RUnlock()
+	ps.pmu.RUnlock()
 
 	// check the advertisement address first
 	// if it exists then use it, otherwise
@@ -835,16 +839,16 @@ func (ps *ProxyServer) deregister() error {
 		return err
 	}
 
-	ps.rmu.Lock()
+	ps.pmu.Lock()
 	ps.rsvc = nil
 
 	if !ps.registered {
-		ps.rmu.Unlock()
+		ps.pmu.Unlock()
 		return nil
 	}
 
 	ps.registered = false
-	ps.rmu.Unlock()
+	ps.pmu.Unlock()
 	return nil
 }
 

@@ -40,10 +40,6 @@ import (
 	"github.com/olive-io/olive/pkg/logutil"
 )
 
-var (
-	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
-)
-
 const (
 	DefaultDataDir   = "default"
 	DefaultCacheSize = 4 * 1024 * 1024
@@ -87,14 +83,11 @@ func NewConfig() *Config {
 
 	logging := logutil.NewLogConfig()
 
-	clientCfg := client.Config{}
-	clientCfg.Endpoints = DefaultEndpoints
-	clientCfg.Logger = logging.GetLogger()
-
+	clientCfg := client.NewConfig(logging.GetLogger())
 	cfg := Config{
 		LogConfig: logging,
 
-		Client: clientCfg,
+		Client: *clientCfg,
 
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,

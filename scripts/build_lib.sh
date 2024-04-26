@@ -60,6 +60,17 @@ olive_build() {
   # Verify whether symbol we overwrote exists
   # For cross-compiling we cannot run: ${out}/olive-meta --version | grep -q "Git SHA: ${GIT_SHA}"
 
+  run rm -f "${out}/olive-console"
+  # shellcheck disable=SC2086
+  (
+    cd ./cmd/console
+    run env GO_BUILD_FLAGS="${GO_BUILD_FLAGS}" "${GO_BUILD_ENV[@]}" go build $GO_BUILD_FLAGS \
+      -trimpath \
+      -installsuffix=cgo \
+      "-ldflags=${GO_LDFLAGS[*]}" \
+      -o="../../${out}/olive-console" . || return 2
+  ) || return 2
+
   # We need symbols to do this check:
   if [[ "${GO_LDFLAGS[*]}" != *"-s"* ]]; then
     go tool nm "${out}/olive-meta" | grep "${VERSION_SYMBOL}" > /dev/null

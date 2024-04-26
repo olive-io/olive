@@ -21,8 +21,49 @@
 
 package client
 
-import clientv3 "go.etcd.io/etcd/client/v3"
+import (
+	"context"
+	"time"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
+)
+
+var (
+	DefaultEndpoints        = []string{"http://127.0.0.1:4379"}
+	DefaultTimeout          = time.Second * 30
+	DefaultKeepAliveTime    = time.Second * 20
+	DefaultKeepAliveTimeout = time.Second * 30
+	DefaultMaxMsgSize       = 50 * 1024 * 1024 // 10MB
+)
 
 type Config struct {
 	clientv3.Config
+}
+
+func NewConfig(lg *zap.Logger) *Config {
+	return NewConfigWithContext(context.Background(), lg)
+}
+
+func NewConfigWithContext(ctx context.Context, lg *zap.Logger) *Config {
+	if lg == nil {
+		lg = zap.NewNop()
+	}
+	cc := clientv3.Config{
+		Endpoints:             DefaultEndpoints,
+		AutoSyncInterval:      0,
+		DialTimeout:           DefaultTimeout,
+		DialKeepAliveTime:     DefaultKeepAliveTime,
+		DialKeepAliveTimeout:  DefaultKeepAliveTimeout,
+		MaxCallSendMsgSize:    DefaultMaxMsgSize,
+		MaxCallRecvMsgSize:    DefaultMaxMsgSize,
+		Context:               ctx,
+		Logger:                lg,
+		PermitWithoutStream:   true,
+		MaxUnaryRetries:       3,
+		BackoffWaitBetween:    time.Millisecond * 500,
+		BackoffJitterFraction: 0.5,
+	}
+
+	return &Config{cc}
 }

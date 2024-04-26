@@ -5,6 +5,7 @@ go 1.21
 replace (
 	github.com/olive-io/olive/api => ./api
 	github.com/olive-io/olive/client => ./client
+	github.com/olive-io/olive/console => ./console
 	github.com/olive-io/olive/gateway => ./gateway
 	github.com/olive-io/olive/meta => ./meta
 	github.com/olive-io/olive/pkg => ./pkg
@@ -15,6 +16,7 @@ replace (
 require (
 	github.com/olive-io/olive/api v0.1.1
 	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/console v0.1.1
 	github.com/olive-io/olive/gateway v0.1.1
 	github.com/olive-io/olive/meta v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1

@@ -24,6 +24,7 @@ package app
 import (
 	"strings"
 
+	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/runner"
 )
 
@@ -47,7 +48,7 @@ var (
 Runner:
   --data-dir 'default'
     Path to the data directory.
-  --endpoints [` + strings.Join(runner.DefaultEndpoints, ",") + `]
+  --endpoints [` + strings.Join(client.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
   --listen-client-urls '` + runner.DefaultListenClientURL + `'
     List of URLs to listen on for client traffic.
