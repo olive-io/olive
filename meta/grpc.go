@@ -214,7 +214,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 		Header:  &pb.OliveHeader{},
 		Id:      req.Id,
 		Name:    req.Name,
-		Content: req.Content,
+		Content: string(req.Content),
 	}
 
 	if err = dm.Save(ctx, definition); err != nil {
@@ -308,7 +308,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 				break
 			}
 			lastKey = kv.Key
-			id := path.Clean(string(lastKey))
+			id := path.Base(string(lastKey))
 			dm := &pb.DefinitionMeta{}
 			if err = proto.Unmarshal(kv.Value, dm); err != nil {
 				continue

@@ -164,13 +164,13 @@ service MetaRPC {
 message GetMetaRequest {}
 
 message GetMetaResponse {
-  olivepb.Meta meta = 1;
+  Meta meta = 1;
 }
 
 message ListRunnerRequest {}
 
 message ListRunnerResponse {
-  repeated olivepb.Runner runners = 1;
+  repeated Runner runners = 1;
 }
 
 message GetRunnerRequest {
@@ -178,13 +178,13 @@ message GetRunnerRequest {
 }
 
 message GetRunnerResponse {
-  olivepb.Runner runner = 1;
+  Runner runner = 1;
 }
 
 message ListRegionRequest {}
 
 message ListRegionResponse {
-  repeated olivepb.Region regions = 1;
+  repeated Region regions = 1;
 }
 
 message GetRegionRequest {
@@ -192,24 +192,24 @@ message GetRegionRequest {
 }
 
 message GetRegionResponse {
-  olivepb.Region region = 1;
+  Region region = 1;
 }
 
 service BpmnRPC {
+  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/definitions"
+    };
+  };
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
     option (google.api.http) = {
       post: "/api/v1/definition/deploy"
       body: "*"
     };
   };
-  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/definitions"
-    };
-  };
   rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
     option (google.api.http) = {
-      get: "/api/v1/definitions/{id}"
+      post: "/api/v1/definition/get"
     };
   };
   rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse) {
@@ -239,7 +239,7 @@ message DeployDefinitionRequest {
 }
 
 message DeployDefinitionResponse {
-  olivepb.ResponseHeader header = 1;
+  ResponseHeader header = 1;
   uint64 version = 2;
   uint64 region = 3;
 }
@@ -250,8 +250,8 @@ message ListDefinitionRequest {
 }
 
 message ListDefinitionResponse {
-  olivepb.ResponseHeader header = 1;
-  repeated olivepb.Definition definitions = 2;
+  ResponseHeader header = 1;
+  repeated Definition definitions = 2;
   string continueToken = 3;
 }
 
@@ -261,8 +261,8 @@ message GetDefinitionRequest {
 }
 
 message GetDefinitionResponse {
-  olivepb.ResponseHeader header = 1;
-  olivepb.Definition definition = 2;
+  ResponseHeader header = 1;
+  Definition definition = 2;
 }
 
 message RemoveDefinitionRequest {
@@ -270,7 +270,7 @@ message RemoveDefinitionRequest {
 }
 
 message RemoveDefinitionResponse {
-  olivepb.ResponseHeader header = 1;
+  ResponseHeader header = 1;
 }
 
 message ExecuteDefinitionRequest {
@@ -282,8 +282,8 @@ message ExecuteDefinitionRequest {
 }
 
 message ExecuteDefinitionResponse {
-  olivepb.ResponseHeader header = 1;
-  olivepb.ProcessInstance instance = 2;
+  ResponseHeader header = 1;
+  ProcessInstance instance = 2;
 }
 
 service RunnerRPC {
@@ -303,5 +303,6 @@ message GetProcessInstanceRequest {
 }
 
 message GetProcessInstanceResponse {
-  olivepb.ProcessInstance instance = 1;
+  ResponseHeader header = 1;
+  ProcessInstance instance = 2;
 }

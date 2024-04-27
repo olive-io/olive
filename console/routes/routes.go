@@ -73,6 +73,9 @@ func RegisterRoutes(ctx context.Context, cfg *config.Config, root *fizz.RouterGr
 	if err = routes.registerCluster(); err != nil {
 		return nil, err
 	}
+	if err = routes.registerDefinitionsGroup(); err != nil {
+		return nil, err
+	}
 
 	return routes, nil
 }

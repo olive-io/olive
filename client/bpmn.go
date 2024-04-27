@@ -91,7 +91,7 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		},
 		Id:      id,
 		Name:    name,
-		Content: body,
+		Content: string(body),
 		Version: resp.Version,
 	}
 

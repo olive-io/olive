@@ -155,7 +155,7 @@ message Definition {
 
   string id = 1;
   string name = 2;
-  bytes content = 3;
+  string content = 3;
   uint64 version = 4;
 }
 
@@ -183,7 +183,7 @@ message ProcessInstance {
   string definitionsId = 3;
   uint64 definitionsVersion = 4;
   string definitionsProcess = 5;
-  bytes definitionsContent = 6;
+  string definitionsContent = 6;
   map<string, string> headers = 7;
   map<string, discoverypb.Box> properties = 8;
   map<string, bytes> dataObjects = 9;

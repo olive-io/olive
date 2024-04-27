@@ -159,7 +159,7 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	}
 
 	var definitions *schema.Definitions
-	err := xml.Unmarshal(process.DefinitionsContent, &definitions)
+	err := xml.Unmarshal([]byte(process.DefinitionsContent), &definitions)
 	if err != nil {
 		return
 	}
