@@ -2,8 +2,6 @@ module github.com/olive-io/olive/client
 
 go 1.21
 
-replace github.com/olive-io/olive/api => ../api
-
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/olive-io/bpmn/schema v1.3.4
@@ -42,3 +40,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415141817-7cd4c1c1f9ec // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
+
+replace github.com/olive-io/olive/api => ../api

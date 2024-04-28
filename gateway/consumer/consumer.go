@@ -111,7 +111,7 @@ func (ctx *Context) MustBind(target any) error {
 		}
 
 		vf := vv.Field(i)
-		err := setField(vf, box.Data)
+		err := setField(vf, []byte(box.Data))
 		if err != nil {
 			return errors.CombineErrors(ErrBind, err)
 		}

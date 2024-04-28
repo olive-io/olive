@@ -205,7 +205,7 @@ func (r *Runner) createListener() (string, net.Listener, error) {
 		return "", nil, err
 	}
 
-	return "http://", listener, nil
+	return url.Scheme + "://", listener, nil
 }
 
 func (r *Runner) buildGRPCServer() *grpc.Server {

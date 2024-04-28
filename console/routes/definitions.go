@@ -23,11 +23,12 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
 	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
-	"go.uber.org/zap"
 )
 
 type DefinitionsGroup struct {
@@ -39,10 +40,34 @@ func (tree *RouteTree) registerDefinitionsGroup() error {
 	dg := &DefinitionsGroup{lg: tree.lg, oct: tree.oct}
 	summary := dg.Summary()
 
-	group := tree.root.Group("/definitions", summary.Name, summary.Description, dg.HandlerChains()...)
-	group.GET("", []fizz.OperationOption{
+	group := tree.root.Group("/bpmn/definitions", summary.Name, summary.Description, dg.HandlerChains()...)
+	group.GET("/list", []fizz.OperationOption{
 		fizz.Summary("List all the definitions in olive cluster."),
 	}, tonic.Handler(dg.definitionsList, 200))
+
+	group.POST("/deploy", []fizz.OperationOption{
+		fizz.Summary("Deploy a new definition in olive cluster."),
+	}, tonic.Handler(dg.definitionDeploy, 200))
+
+	group.POST("/get", []fizz.OperationOption{
+		fizz.Summary("Get the definition in olive cluster by id and version."),
+	}, tonic.Handler(dg.definitionGet, 200))
+
+	group.POST("/remove", []fizz.OperationOption{
+		fizz.Summary("Remove the definition in olive cluster."),
+	}, tonic.Handler(dg.definitionRemove, 200))
+
+	group.POST("/execute", []fizz.OperationOption{
+		fizz.Summary("Execute bpmn definitions and starting a new process instance."),
+	}, tonic.Handler(dg.definitionExecute, 200))
+
+	group.POST("/process/list", []fizz.OperationOption{
+		fizz.Summary("list process instances in the given definition."),
+	}, tonic.Handler(dg.processList, 200))
+
+	group.POST("/process/get", []fizz.OperationOption{
+		fizz.Summary("Get the process instance information in the given definition."),
+	}, tonic.Handler(dg.processGet, 200))
 
 	return tree.Group(dg)
 }
@@ -66,21 +91,119 @@ type DefinitionsListRequest struct {
 type DefinitionsListResponse = olivepb.ListDefinitionResponse
 
 func (dg *DefinitionsGroup) definitionsList(ctx *gin.Context, in *DefinitionsListRequest) (*DefinitionsListResponse, error) {
-	options := make([]client.ListDefinitionOption, 0)
-	if in.Limit != 0 {
-		options = append(options, client.WithLimit(in.Limit))
-	}
-	if in.Continue != "" {
-		options = append(options, client.WithContinue(in.Continue))
-	}
-	definitions, token, err := dg.oct.ListDefinitions(ctx, options...)
+	resp, err := dg.oct.ListDefinitions(ctx, in.Limit, in.Continue)
 	if err != nil {
 		return nil, err
 	}
-	resp := &DefinitionsListResponse{
-		Header:        nil,
-		Definitions:   definitions,
-		ContinueToken: token,
+	return resp, nil
+}
+
+type DefinitionDeployRequest struct {
+	Id   string `json:"id" validate:"required"`
+	Name string `json:"name" validate:"required"`
+	Body string `json:"body" validate:"required"`
+}
+
+type DefinitionDeployResponse = olivepb.DeployDefinitionResponse
+
+func (dg *DefinitionsGroup) definitionDeploy(ctx *gin.Context, in *DefinitionDeployRequest) (*DefinitionDeployResponse, error) {
+	resp, err := dg.oct.DeployDefinition(ctx, in.Id, in.Name, []byte(in.Body))
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+type DefinitionGetRequest struct {
+	Id      string `json:"id" validate:"required"`
+	Version uint64 `json:"version"`
+}
+
+type DefinitionGetResponse = olivepb.GetDefinitionResponse
+
+func (dg *DefinitionsGroup) definitionGet(ctx *gin.Context, in *DefinitionGetRequest) (*DefinitionGetResponse, error) {
+	resp, err := dg.oct.GetDefinition(ctx, in.Id, in.Version)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+type DefinitionRemoveRequest struct {
+	Id      string `json:"id" validate:"required"`
+	Version uint64 `json:"version"`
+}
+
+type DefinitionRemoveResponse = olivepb.RemoveDefinitionResponse
+
+func (dg *DefinitionsGroup) definitionRemove(ctx *gin.Context, in *DefinitionRemoveRequest) (*DefinitionRemoveResponse, error) {
+	resp, err := dg.oct.RemoveDefinition(ctx, in.Id)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+type DefinitionExecuteRequest struct {
+	Id         string            `json:"id" validate:"required"`
+	Version    uint64            `json:"version"`
+	Name       string            `json:"name"`
+	Headers    map[string]string `json:"headers"`
+	Properties map[string]any    `json:"properties"`
+}
+
+type DefinitionExecuteResponse = olivepb.ExecuteDefinitionResponse
+
+func (dg *DefinitionsGroup) definitionExecute(ctx *gin.Context, in *DefinitionExecuteRequest) (*DefinitionExecuteResponse, error) {
+	options := make([]client.ExecDefinitionOption, 0)
+	if in.Version != 0 {
+		options = append(options, client.WithVersion(in.Version))
+	}
+	if in.Name != "" {
+		options = append(options, client.WithName(in.Name))
+	}
+	if in.Headers != nil {
+		options = append(options, client.WithHeaders(in.Headers))
+	}
+	if in.Properties != nil {
+		options = append(options, client.WithProperties(in.Properties))
+	}
+
+	resp, err := dg.oct.ExecuteDefinition(ctx, in.Id, options...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+type ProcessListRequest struct {
+	DefinitionId      string `json:"definitionId" validate:"required"`
+	DefinitionVersion uint64 `json:"definitionVersion"`
+	Id                string `json:"id"`
+}
+
+type ProcessListResponse = olivepb.ListProcessInstancesResponse
+
+func (dg *DefinitionsGroup) processList(ctx *gin.Context, in *ProcessListRequest) (*ProcessListResponse, error) {
+	resp, err := dg.oct.ListProcessInstances(ctx, in.DefinitionId, in.DefinitionVersion, in.Id)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+type ProcessGetRequest struct {
+	DefinitionId      string `json:"definitionId" validate:"required"`
+	DefinitionVersion uint64 `json:"definitionVersion" validate:"required"`
+	Id                string `json:"id" validate:"required"`
+}
+
+type ProcessGetResponse = olivepb.GetProcessInstanceResponse
+
+func (dg *DefinitionsGroup) processGet(ctx *gin.Context, in *ProcessGetRequest) (*ProcessGetResponse, error) {
+	resp, err := dg.oct.GetProcessInstance(ctx, in.DefinitionId, in.DefinitionVersion, in.Id)
+	if err != nil {
+		return nil, err
 	}
 	return resp, nil
 }

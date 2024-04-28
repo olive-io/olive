@@ -59,7 +59,7 @@ type definitionMeta struct {
 func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) error {
 	newVersion := dm.Version + 1
 
-	definition.Header.Region = dm.Region
+	definition.Region = dm.Region
 	definition.Version = newVersion
 	key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", newVersion))
 	data, _ := proto.Marshal(definition)
@@ -68,13 +68,15 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 		return err
 	}
 	rev := rsp.Header.Revision
-	definition.Header.Rev = rev
+
 	if dm.StartRev == 0 {
 		dm.StartRev = rev
 	}
 
 	dm.Version = newVersion
 	dm.EndRev = rev
+
+	definition.Rev = rev
 
 	data, _ = proto.Marshal(dm)
 	key = path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
@@ -83,6 +85,8 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 }
 
 func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.GetMetaResponse, err error) {
+	resp = &pb.GetMetaResponse{}
+
 	cluster := s.etcd.Server.Cluster()
 	meta := &pb.Meta{
 		ClusterId: uint64(cluster.ID()),
@@ -99,7 +103,8 @@ func (s *Server) GetMeta(ctx context.Context, req *pb.GetMetaRequest) (resp *pb.
 		meta.Members = append(meta.Members, m)
 	}
 
-	resp = &pb.GetMetaResponse{Meta: meta}
+	resp.Header = s.responseHeader()
+	resp.Meta = meta
 	return resp, nil
 }
 
@@ -121,6 +126,7 @@ func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (res
 			runners = append(runners, runner)
 		}
 	}
+	resp.Header = s.responseHeader()
 	resp.Runners = runners
 	return resp, nil
 }
@@ -128,6 +134,7 @@ func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (res
 func (s *Server) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
 	resp = &pb.GetRunnerResponse{}
 	resp.Runner, err = s.getRunner(ctx, req.Id)
+	resp.Header = s.responseHeader()
 	return
 }
 
@@ -167,6 +174,8 @@ func (s *Server) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (res
 			regions = append(regions, region)
 		}
 	}
+
+	resp.Header = s.responseHeader()
 	resp.Regions = regions
 	return resp, nil
 }
@@ -174,6 +183,7 @@ func (s *Server) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (res
 func (s *Server) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
 	resp = &pb.GetRegionResponse{}
 	resp.Region, err = s.getRegion(ctx, req.Id)
+	resp.Header = s.responseHeader()
 	return
 }
 
@@ -211,7 +221,6 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 	}
 
 	definition := &pb.Definition{
-		Header:  &pb.OliveHeader{},
 		Id:      req.Id,
 		Name:    req.Name,
 		Content: string(req.Content),
@@ -220,14 +229,15 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 	if err = dm.Save(ctx, definition); err != nil {
 		return
 	}
-	resp.Version = dm.Version
 	resp.Header = s.responseHeader()
+	resp.Definition = definition
 
 	if dm.Region == 0 {
 		go func() {
 			ok, _ := s.bindDefinition(ctx, &dm.DefinitionMeta)
 			if ok {
-				definition.Header.Region = dm.Region
+				definition.Region = dm.Region
+
 				key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
@@ -326,7 +336,8 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 			if err = proto.Unmarshal(dkv.Value, definition); err != nil {
 				continue
 			}
-			definition.Header.Rev = dkv.ModRevision
+
+			definition.Rev = dkv.ModRevision
 
 			v = append(v, definition)
 		}
@@ -398,10 +409,8 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	if err = proto.Unmarshal(kv.Value, definition); err != nil {
 		return nil, err
 	}
-	if definition.Header == nil {
-		definition.Header = &pb.OliveHeader{}
-	}
-	definition.Header.Rev = kv.ModRevision
+
+	definition.Rev = kv.ModRevision
 	resp.Header = s.responseHeader()
 	resp.Definition = definition
 
@@ -409,7 +418,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 		go func() {
 			ok, _ := s.bindDefinition(ctx, &dm.DefinitionMeta)
 			if ok {
-				definition.Header.Region = dm.Region
+				definition.Region = dm.Region
 				key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
@@ -418,8 +427,8 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 				}
 			}
 		}()
-	} else if dm.Region != definition.Header.Region {
-		definition.Header.Region = dm.Region
+	} else if dm.Region != definition.Region {
+		definition.Region = dm.Region
 		key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 		data, _ := proto.Marshal(definition)
 		_, e1 := dm.client.Put(ctx, key, string(data))
@@ -427,6 +436,8 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 			s.lg.Error("update definition", zap.String("id", definition.Id), zap.Error(e1))
 		}
 	}
+
+	resp.Header = s.responseHeader()
 
 	return
 }
@@ -460,13 +471,13 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	}
 	definition := out.Definition
 
-	if definition.Header.Region == 0 {
+	if definition.Region == 0 {
 		return nil, rpctypes.ErrGRPCDefinitionNotReady
 	}
 
+	id := fmt.Sprintf("%d", s.idGen.Next())
 	instance := &pb.ProcessInstance{
-		OliveHeader:        &pb.OliveHeader{Region: definition.Header.Region},
-		Id:                 s.idGen.Next(),
+		Id:                 id,
 		Name:               req.Name,
 		DefinitionsId:      definition.Id,
 		DefinitionsVersion: definition.Version,
@@ -476,17 +487,55 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 		FlowNodes:          make(map[string]*pb.FlowNodeStat),
 		Status:             pb.ProcessInstance_Waiting,
 	}
+	instance.Region = definition.Region
 
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
-		definition.Id, fmt.Sprintf("%d", definition.Version), fmt.Sprintf("%d", instance.Id))
+		definition.Id, fmt.Sprintf("%d", definition.Version), instance.Id)
 	data, _ := proto.Marshal(instance)
 	rsp, err := s.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
 	}
-	instance.OliveHeader.Rev = rsp.Header.Revision
+
+	instance.Rev = rsp.Header.Revision
 	resp.Header = s.responseHeader()
 	resp.Instance = instance
+
+	return
+}
+
+func (s *Server) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
+	resp = &pb.ListProcessInstancesResponse{}
+
+	lg := s.lg
+
+	key := path.Join(runtime.DefaultRunnerProcessInstance, req.DefinitionId)
+	if req.DefinitionVersion != 0 {
+		key = path.Join(key, fmt.Sprintf("%d", req.DefinitionVersion))
+	}
+	if req.Id != "" {
+		key = path.Join(key, req.Id)
+	}
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithSerializable(),
+	}
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return nil, err
+	}
+	instances := make([]*pb.ProcessInstance, 0, len(rsp.Kvs))
+	for _, kv := range rsp.Kvs {
+		instance := new(pb.ProcessInstance)
+		err = proto.Unmarshal(kv.Value, instance)
+		if err != nil {
+			lg.Error("unmarshal process instance", zap.String("key", string(kv.Key)), zap.Error(err))
+			continue
+		}
+		instances = append(instances, instance)
+	}
+	resp.Header = s.responseHeader()
+	resp.Instances = instances
 
 	return
 }
@@ -496,28 +545,21 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 
 	lg := s.lg
 
-	key := path.Join(runtime.DefaultRunnerProcessInstance,
-		req.DefinitionId, fmt.Sprintf("%d", req.DefinitionVersion), fmt.Sprintf("%d", req.Id))
-	options := []clientv3.OpOption{clientv3.WithSerializable()}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
+	listResp, err := s.ListProcessInstances(ctx, &pb.ListProcessInstancesRequest{
+		DefinitionId:      req.DefinitionId,
+		DefinitionVersion: req.DefinitionVersion,
+		Id:                req.Id,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if len(rsp.Kvs) == 0 {
+	if len(listResp.Instances) == 0 {
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
-	instance := new(pb.ProcessInstance)
-	err = proto.Unmarshal(rsp.Kvs[0].Value, instance)
-	if err != nil {
-		return nil, err
-	}
-	if instance.OliveHeader == nil {
-		return
-	}
+	instance := listResp.Instances[0]
 
-	header := instance.OliveHeader
-	if header.Region != 0 {
-		region, _ := s.getRegion(ctx, header.Region)
+	if instance.Region != 0 {
+		region, _ := s.getRegion(ctx, instance.Region)
 		if region == nil {
 			return
 		}
@@ -555,6 +597,7 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 		}
 		resp.Instance = runnerRsp.Instance
 	}
+	resp.Header = s.responseHeader()
 
 	return
 }

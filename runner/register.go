@@ -104,7 +104,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	tx.Lock()
 	defer tx.Unlock()
 	data, _ = proto.Marshal(runner)
-	tx.UnsafePut(bucket, key, data)
+	_ = tx.UnsafePut(bucket, key, data)
 
 	return runner, nil
 }

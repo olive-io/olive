@@ -2,8 +2,6 @@ module github.com/olive-io/olive/pkg
 
 go 1.21
 
-replace github.com/olive-io/olive/api => ../api
-
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/evanphx/json-patch/v5 v5.9.0
@@ -81,4 +79,9 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240415180920-8c6c420018be // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415141817-7cd4c1c1f9ec // indirect
+)
+
+replace (
+	github.com/olive-io/olive/api => ../api
+	github.com/ugorji/go/codec => github.com/ugorji/go/codec v1.2.12
 )

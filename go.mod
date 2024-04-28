@@ -2,17 +2,6 @@ module github.com/olive-io/olive
 
 go 1.21
 
-replace (
-	github.com/olive-io/olive/api => ./api
-	github.com/olive-io/olive/client => ./client
-	github.com/olive-io/olive/console => ./console
-	github.com/olive-io/olive/gateway => ./gateway
-	github.com/olive-io/olive/meta => ./meta
-	github.com/olive-io/olive/pkg => ./pkg
-	github.com/olive-io/olive/runner => ./runner
-	github.com/olive-io/olive/tests => ./tests
-)
-
 require (
 	github.com/olive-io/olive/api v0.1.1
 	github.com/olive-io/olive/client v0.1.1
@@ -161,4 +150,15 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
+)
+
+replace (
+	github.com/olive-io/olive/api => ./api
+	github.com/olive-io/olive/client => ./client
+	github.com/olive-io/olive/console => ./console
+	github.com/olive-io/olive/gateway => ./gateway
+	github.com/olive-io/olive/meta => ./meta
+	github.com/olive-io/olive/pkg => ./pkg
+	github.com/olive-io/olive/runner => ./runner
+	github.com/olive-io/olive/tests => ./tests
 )

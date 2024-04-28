@@ -33,17 +33,16 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
-	"github.com/olive-io/olive/api/version"
-	"github.com/olive-io/olive/client"
-	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/pkg/tonic/openapi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/pkg/tonic/fizz"
-
+	"github.com/olive-io/olive/api/version"
+	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/routes"
+	genericserver "github.com/olive-io/olive/pkg/server"
+	"github.com/olive-io/olive/pkg/tonic/fizz"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type Console struct {

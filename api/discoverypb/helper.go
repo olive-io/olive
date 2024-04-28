@@ -85,26 +85,28 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 	box.Type = bt
 	switch bt {
 	case BoxType_integer:
-		box.Data = []byte(strconv.FormatInt(vv.Int(), 10))
+		box.Data = strconv.FormatInt(vv.Int(), 10)
 	case BoxType_float:
-		box.Data = []byte(fmt.Sprintf("%f", vv.Float()))
+		box.Data = fmt.Sprintf("%f", vv.Float())
 	case BoxType_boolean:
-		box.Data = []byte("false")
+		box.Data = "false"
 		if vv.Bool() {
-			box.Data = []byte("true")
+			box.Data = "true"
 		}
 	case BoxType_string:
-		box.Data = []byte(vv.String())
+		box.Data = vv.String()
 	case BoxType_array:
 		rt := parseBoxType(vt.Elem())
 		box.Ref = rt.String()
-		box.Data, _ = json.Marshal(v)
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
 	case BoxType_map:
 		box.Parameters = map[string]*Box{
 			"key":   &Box{Type: parseBoxType(vt.Key())},
 			"value": &Box{Type: parseBoxType(vt.Elem())},
 		}
-		box.Data, _ = json.Marshal(v)
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
 	case BoxType_object:
 		params := make(map[string]*Box)
 		for i := 0; i < vt.NumField(); i++ {
@@ -118,9 +120,11 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 			params[tag] = fb
 		}
 		box.Parameters = params
-		box.Data, _ = json.Marshal(v)
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
 	default:
-		box.Data, _ = json.Marshal(v)
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
 	}
 	return box
 }
@@ -197,7 +201,7 @@ func (m *Box) Value() any {
 		}
 	default:
 		target := map[string]any{}
-		_ = json.Unmarshal(m.Data, &target)
+		_ = json.Unmarshal([]byte(m.Data), &target)
 		value = target
 	}
 
@@ -205,7 +209,7 @@ func (m *Box) Value() any {
 }
 
 func (m *Box) ValueFor(target any) error {
-	return json.Unmarshal(m.Data, &target)
+	return json.Unmarshal([]byte(m.Data), &target)
 }
 
 func (m *Box) DecodeJSON(data []byte) error {
@@ -219,7 +223,7 @@ func (m *Box) EncodeJSON() ([]byte, error) {
 
 func decodeBox(box *Box, data []byte, paths string) error {
 	if box.Type != BoxType_object && paths == "" {
-		box.Data = data
+		box.Data = string(data)
 		return nil
 	}
 
@@ -231,32 +235,32 @@ func decodeBox(box *Box, data []byte, paths string) error {
 			if len(paths) != 0 {
 				root = paths + "." + root
 			}
-			box.Data = data
+			box.Data = string(data)
 			if err := decodeBox(param, data, root); err != nil {
 				return err
 			}
 		}
 	case BoxType_map:
 		val := gjson.GetBytes(data, paths).Raw
-		box.Data = []byte(val)
+		box.Data = val
 	case BoxType_array:
 		val := gjson.GetBytes(data, paths).Raw
-		box.Data = []byte(val)
+		box.Data = val
 	case BoxType_integer:
 		val := gjson.GetBytes(data, paths).Int()
-		box.Data = []byte(fmt.Sprintf("%d", val))
+		box.Data = fmt.Sprintf("%d", val)
 	case BoxType_float:
 		val := gjson.GetBytes(data, paths).Float()
-		box.Data = []byte(fmt.Sprintf("%f", val))
+		box.Data = fmt.Sprintf("%f", val)
 	case BoxType_boolean:
 		val := "false"
 		if gjson.GetBytes(data, paths).Bool() {
 			val = "true"
 		}
-		box.Data = []byte(val)
+		box.Data = val
 	case BoxType_string:
 		val := gjson.GetBytes(data, paths).String()
-		box.Data = []byte(val)
+		box.Data = val
 	default:
 	}
 
@@ -271,39 +275,39 @@ func encodeBox(box *Box) any {
 			out[name] = encodeBox(param)
 		}
 		if len(box.Data) != 0 {
-			_ = json.Unmarshal(box.Data, &out)
+			_ = json.Unmarshal([]byte(box.Data), &out)
 		}
 
 		return out
 	case BoxType_map:
 		var m map[string]any
 		if len(box.Data) != 0 {
-			_ = json.Unmarshal(box.Data, &m)
+			_ = json.Unmarshal([]byte(box.Data), &m)
 		}
 		return m
 	case BoxType_array:
 		var arr []any
 		if len(box.Data) != 0 {
-			_ = json.Unmarshal(box.Data, &arr)
+			_ = json.Unmarshal([]byte(box.Data), &arr)
 		}
 		return arr
 	case BoxType_integer:
 		var n int64
 		if len(box.Data) != 0 {
-			n, _ = strconv.ParseInt(string(box.Data), 10, 64)
+			n, _ = strconv.ParseInt(box.Data, 10, 64)
 		}
 		return n
 	case BoxType_float:
 		var f float64
 		if len(box.Data) != 0 {
-			f, _ = strconv.ParseFloat(string(box.Data), 64)
+			f, _ = strconv.ParseFloat(box.Data, 64)
 		}
 		return f
 	case BoxType_boolean:
 		return false
 	case BoxType_string:
 		var s string
-		s = string(box.Data)
+		s = box.Data
 		return s
 	default:
 		return ""

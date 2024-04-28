@@ -2,12 +2,6 @@ module github.com/olive-io/olive/runner
 
 go 1.21
 
-replace (
-	github.com/olive-io/olive/api => ../api
-	github.com/olive-io/olive/client => ../client
-	github.com/olive-io/olive/pkg => ../pkg
-)
-
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/cockroachdb/pebble v0.0.0-20221207173255-0f086d933dac
@@ -137,4 +131,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+)
+
+replace (
+	github.com/olive-io/olive/api => ../api
+	github.com/olive-io/olive/client => ../client
+	github.com/olive-io/olive/pkg => ../pkg
 )

@@ -207,7 +207,7 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(process.DefinitionsId),
 		[]byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", process.Id)))
+	key := bytesutil.PathJoin(prefix, []byte(process.Id))
 
 	if kv, _ := a.r.get(key); kv != nil {
 		return nil, trace, ErrProcessExecuted

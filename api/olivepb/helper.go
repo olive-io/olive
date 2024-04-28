@@ -3,6 +3,7 @@ package olivepb
 import (
 	"crypto/md5"
 	"encoding/binary"
+	"strconv"
 )
 
 func (m *RunnerStat) ID() uint64 {
@@ -20,7 +21,8 @@ func (m *DefinitionMeta) ID() uint64 {
 }
 
 func (m *ProcessInstance) ID() uint64 {
-	return m.Id
+	id, _ := strconv.ParseUint(m.Id, 10, 64)
+	return id
 }
 
 func (m *Runner) Clone() *Runner {

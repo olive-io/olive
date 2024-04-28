@@ -2,12 +2,6 @@ module github.com/olive-io/olive/console
 
 go 1.21
 
-replace (
-	github.com/olive-io/olive/api => ../api
-	github.com/olive-io/olive/client => ../client
-	github.com/olive-io/olive/pkg => ../pkg
-)
-
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/gin-gonic/gin v1.9.1
@@ -74,4 +68,10 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+replace (
+	github.com/olive-io/olive/api => ../api
+	github.com/olive-io/olive/client => ../client
+	github.com/olive-io/olive/pkg => ../pkg
 )

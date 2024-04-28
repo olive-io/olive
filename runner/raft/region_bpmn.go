@@ -71,11 +71,11 @@ func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDef
 	return resp, nil
 }
 
-func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
+func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ProcessInstance, error) {
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(definitionId),
 		[]byte(fmt.Sprintf("%d", definitionVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", id)))
+	key := bytesutil.PathJoin(prefix, []byte(id))
 
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -171,9 +171,12 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		return
 	}
 	processElement := (*definitions.Processes())[0]
-	dataObjects := process.DataObjects
 	if id, ok := processElement.Id(); ok {
 		process.DefinitionsProcess = *id
+	}
+	var dataObjects map[string][]byte
+	for name, value := range process.DataObjects {
+		dataObjects[name] = []byte(value)
 	}
 
 	variables := make(map[string][]byte)
@@ -183,13 +186,13 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	}
 	if state := process.RunningState; state != nil {
 		for key, value := range state.Properties {
-			variables[key] = value
+			variables[key] = []byte(value)
 		}
 		for key, value := range state.DataObjects {
-			dataObjects[key] = value
+			dataObjects[key] = []byte(value)
 		}
 		for key, value := range state.Variables {
-			variables[key] = value
+			variables[key] = []byte(value)
 		}
 	}
 
@@ -212,7 +215,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionsId),
 		zap.Uint64("version", process.DefinitionsVersion),
-		zap.Uint64("process", process.Id),
+		zap.String("process", process.Id),
 	}
 
 	r.lg.Info("start process instance", fields...)
@@ -320,9 +323,9 @@ LOOP:
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
-					process.RunningState.DataObjects = toGenericMap[[]byte](inst.Locator.CloneItems(data.LocatorObject))
-					process.RunningState.Properties = toGenericMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
-					process.RunningState.Variables = toGenericMap[[]byte](inst.Locator.CloneVariables())
+					process.RunningState.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
+					process.RunningState.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
+					process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
 				}
 			case *bact.Trace:
 				act := tt.GetActivity()
@@ -333,8 +336,8 @@ LOOP:
 					flowNode.EndTime = time.Now().Unix()
 					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
 					flowNode.Headers = toGenericMap[string](headers)
-					flowNode.Properties = toGenericMap[[]byte](dataSets)
-					flowNode.DataObjects = toGenericMap[[]byte](dataObjects)
+					flowNode.Properties = toGenericMap[string](dataSets)
+					flowNode.DataObjects = toGenericMap[string](dataObjects)
 				}
 
 				_, ok = completed[*id]
@@ -386,7 +389,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	fields := []zap.Field{
 		zap.String("definition", process.DefinitionsId),
 		zap.Uint64("version", process.DefinitionsVersion),
-		zap.Uint64("process", process.Id),
+		zap.String("process", process.Id),
 		zap.String("task", dsyAct.Id),
 	}
 
@@ -430,7 +433,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
 	pkey := bytesutil.PathJoin(processPrefix,
 		[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
-		[]byte(fmt.Sprintf("%d", process.Id)))
+		[]byte(process.Id))
 
 	value, err := proto.Marshal(process)
 	if err != nil {

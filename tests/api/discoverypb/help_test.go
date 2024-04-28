@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/olive-io/bpmn/schema"
+
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 )
 
@@ -45,20 +46,20 @@ func TestBoxFromAny(t *testing.T) {
 		args args
 		want *dsypb.Box
 	}{
-		{"BoxFromAny_string", args{value: "a"}, &dsypb.Box{Type: dsypb.BoxType_string, Data: []byte("a")}},
-		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &dsypb.Box{Type: dsypb.BoxType_string, Data: []byte("a")}},
-		{"BoxFromAny_int", args{value: 1}, &dsypb.Box{Type: dsypb.BoxType_integer, Data: []byte("1")}},
-		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &dsypb.Box{Type: dsypb.BoxType_integer, Data: []byte("1")}},
-		{"BoxFromAny_float", args{value: 1.1}, &dsypb.Box{Type: dsypb.BoxType_float, Data: []byte("1.100000")}},
-		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &dsypb.Box{Type: dsypb.BoxType_float, Data: []byte("1.100000")}},
-		{"BoxFromAny_boolean", args{value: true}, &dsypb.Box{Type: dsypb.BoxType_boolean, Data: []byte("true")}},
-		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &dsypb.Box{Type: dsypb.BoxType_boolean, Data: []byte("true")}},
-		{"BoxFromAny_array", args{value: []int32{1, 2}}, &dsypb.Box{Type: dsypb.BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
-		{"BoxFromAny_array_ptr", args{value: &arr}, &dsypb.Box{Type: dsypb.BoxType_array, Ref: "integer", Data: []byte(`[1,2]`)}},
-		{"BoxFromAny_struct", args{value: t1}, &dsypb.Box{Type: dsypb.BoxType_object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_struct_ptr", args{value: &t1}, &dsypb.Box{Type: dsypb.BoxType_object, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &dsypb.Box{Type: dsypb.BoxType_map, Data: []byte(`{"name":"t1"}`)}},
-		{"BoxFromAny_map2", args{value: t2}, &dsypb.Box{Type: dsypb.BoxType_map, Data: []byte(`{"c":{"name":"cc"}}`)}},
+		{"BoxFromAny_string", args{value: "a"}, &dsypb.Box{Type: dsypb.BoxType_string, Data: "a"}},
+		{"BoxFromAny_string_ptr", args{value: schema.NewStringP("a")}, &dsypb.Box{Type: dsypb.BoxType_string, Data: "a"}},
+		{"BoxFromAny_int", args{value: 1}, &dsypb.Box{Type: dsypb.BoxType_integer, Data: "1"}},
+		{"BoxFromAny_int_ptr", args{value: schema.NewIntegerP[int](1)}, &dsypb.Box{Type: dsypb.BoxType_integer, Data: "1"}},
+		{"BoxFromAny_float", args{value: 1.1}, &dsypb.Box{Type: dsypb.BoxType_float, Data: "1.100000"}},
+		{"BoxFromAny_float_ptr", args{value: schema.NewFloatP[float32](1.1)}, &dsypb.Box{Type: dsypb.BoxType_float, Data: "1.100000"}},
+		{"BoxFromAny_boolean", args{value: true}, &dsypb.Box{Type: dsypb.BoxType_boolean, Data: "true"}},
+		{"BoxFromAny_boolean_ptr", args{value: schema.NewBoolP(true)}, &dsypb.Box{Type: dsypb.BoxType_boolean, Data: "true"}},
+		{"BoxFromAny_array", args{value: []int32{1, 2}}, &dsypb.Box{Type: dsypb.BoxType_array, Ref: "integer", Data: `[1,2]`}},
+		{"BoxFromAny_array_ptr", args{value: &arr}, &dsypb.Box{Type: dsypb.BoxType_array, Ref: "integer", Data: `[1,2]`}},
+		{"BoxFromAny_struct", args{value: t1}, &dsypb.Box{Type: dsypb.BoxType_object, Data: `{"name":"t1"}`}},
+		{"BoxFromAny_struct_ptr", args{value: &t1}, &dsypb.Box{Type: dsypb.BoxType_object, Data: `{"name":"t1"}`}},
+		{"BoxFromAny_map", args{value: map[string]string{"name": "t1"}}, &dsypb.Box{Type: dsypb.BoxType_map, Data: `{"name":"t1"}`}},
+		{"BoxFromAny_map2", args{value: t2}, &dsypb.Box{Type: dsypb.BoxType_map, Data: `{"c":{"name":"cc"}}`}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

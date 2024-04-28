@@ -27,11 +27,11 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
-	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"go.uber.org/zap"
 
+	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/console/config"
+	"github.com/olive-io/olive/pkg/tonic/fizz"
 )
 
 var (

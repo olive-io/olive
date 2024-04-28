@@ -23,10 +23,11 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
-	"go.uber.org/zap"
 )
 
 type ClusterGroup struct {
@@ -81,7 +82,7 @@ func (c *ClusterGroup) memberList(ctx *gin.Context) (*MemberListResponse, error)
 }
 
 type MemberAddRequest struct {
-	Peers    []string `json:"peers" binding:"required"`
+	Peers    []string `json:"peers" validate:"required"`
 	IsLeader bool     `json:"is_leader"`
 }
 
@@ -103,8 +104,8 @@ func (c *ClusterGroup) memberAdd(ctx *gin.Context, in *MemberAddRequest) (*Membe
 }
 
 type MemberUpdateRequest struct {
-	Id    uint64   `json:"id" binding:"required"`
-	Peers []string `json:"peers" binding:"required"`
+	Id    uint64   `json:"id" validate:"required"`
+	Peers []string `json:"peers" validate:"required"`
 }
 
 type MemberUpdateResponse = client.MemberUpdateResponse
@@ -118,7 +119,7 @@ func (c *ClusterGroup) memberUpdate(ctx *gin.Context, in *MemberUpdateRequest) (
 }
 
 type RemoveMemberRequest struct {
-	Id uint64 `json:"id" binding:"required"`
+	Id uint64 `json:"id" validate:"required"`
 }
 
 type MemberRemoveResponse = client.MemberRemoveResponse

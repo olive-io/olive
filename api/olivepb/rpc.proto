@@ -164,13 +164,15 @@ service MetaRPC {
 message GetMetaRequest {}
 
 message GetMetaResponse {
-  Meta meta = 1;
+  ResponseHeader header = 1;
+  Meta meta = 2;
 }
 
 message ListRunnerRequest {}
 
 message ListRunnerResponse {
-  repeated Runner runners = 1;
+  ResponseHeader header = 1;
+  repeated Runner runners = 2;
 }
 
 message GetRunnerRequest {
@@ -178,13 +180,15 @@ message GetRunnerRequest {
 }
 
 message GetRunnerResponse {
-  Runner runner = 1;
+  ResponseHeader header = 1;
+  Runner runner = 2;
 }
 
 message ListRegionRequest {}
 
 message ListRegionResponse {
-  repeated Region regions = 1;
+  ResponseHeader header = 1;
+  repeated Region regions = 2;
 }
 
 message GetRegionRequest {
@@ -192,7 +196,8 @@ message GetRegionRequest {
 }
 
 message GetRegionResponse {
-  Region region = 1;
+  ResponseHeader header = 1;
+  Region region = 2;
 }
 
 service BpmnRPC {
@@ -224,6 +229,12 @@ service BpmnRPC {
       body: "*"
     };
   };
+  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/processInstance/list"
+      body: "*"
+    };
+  };
   rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
       post: "/api/v1/processInstance/get"
@@ -240,8 +251,7 @@ message DeployDefinitionRequest {
 
 message DeployDefinitionResponse {
   ResponseHeader header = 1;
-  uint64 version = 2;
-  uint64 region = 3;
+  Definition definition = 2;
 }
 
 message ListDefinitionRequest {
@@ -271,6 +281,7 @@ message RemoveDefinitionRequest {
 
 message RemoveDefinitionResponse {
   ResponseHeader header = 1;
+  Definition definition = 2;
 }
 
 message ExecuteDefinitionRequest {
@@ -295,11 +306,22 @@ service RunnerRPC {
   };
 }
 
+message ListProcessInstancesRequest {
+  string definitionId = 1;
+  uint64 definitionVersion = 2;
+  string id = 3;
+}
+
+message ListProcessInstancesResponse {
+  ResponseHeader header = 1;
+  repeated ProcessInstance instances = 2;
+}
+
 message GetProcessInstanceRequest {
   uint64 region = 1;
   string definitionId = 2;
   uint64 definitionVersion = 3;
-  uint64 id = 4;
+  string id = 4;
 }
 
 message GetProcessInstanceResponse {

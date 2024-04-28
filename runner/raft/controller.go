@@ -513,14 +513,14 @@ func (c *Controller) requestLeaderTransferRegion(ctx context.Context, id, leader
 
 func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Definition) error {
 	lg := c.cfg.Logger
-	if definition.Header == nil || definition.Header.Region == 0 {
+	if definition.Region == 0 {
 		lg.Warn("definition missing region",
 			zap.String("id", definition.Id),
 			zap.Uint64("version", definition.Version))
 		return nil
 	}
 
-	regionId := definition.Header.Region
+	regionId := definition.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
 		lg.Info("region running others",
@@ -541,12 +541,12 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 
 func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
 	lg := c.cfg.Logger
-	if instance.DefinitionsId == "" || instance.OliveHeader.Region == 0 {
+	if instance.DefinitionsId == "" || instance.Region == 0 {
 		lg.Warn("invalid process instance")
 		return nil
 	}
 
-	regionId := instance.OliveHeader.Region
+	regionId := instance.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
 		lg.Info("region running others",

@@ -140,7 +140,8 @@ func extractOpenAPIDocs(svc *openapi.OpenAPI) []*dsypb.Endpoint {
 func extractSchema(so *openapi.SchemaOrRef, components *openapi.Components, target *dsypb.Box) {
 	if schema := so.Schema; schema != nil {
 		if schema.Example != nil {
-			target.Data, _ = json.Marshal(so.Example)
+			data, _ := json.Marshal(so.Example)
+			target.Data = string(data)
 		}
 
 		switch schema.Type {

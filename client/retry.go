@@ -140,6 +140,10 @@ func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.Execut
 	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
+func (rbc *retryBpmnClient) ListProcessInstances(ctx context.Context, in *pb.ListProcessInstancesRequest, opts ...grpc.CallOption) (*pb.ListProcessInstancesResponse, error) {
+	return rbc.bc.ListProcessInstances(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
 func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (*pb.GetProcessInstanceResponse, error) {
 	return rbc.bc.GetProcessInstance(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

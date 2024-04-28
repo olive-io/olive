@@ -26,9 +26,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/olive-io/olive/pkg/idutil"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
+	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/runtime"
 )
 

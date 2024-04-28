@@ -39,7 +39,7 @@ enum BoxType {
 message Box {
   BoxType type = 1;
   // Box Value by json.Marshal
-  bytes data = 2;
+  string data = 2;
   // the reference, points to OpenAPI Component when type is Object
   string ref = 3;
   map<string, Box> parameters = 4;

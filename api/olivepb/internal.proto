@@ -27,12 +27,6 @@ option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
-message OliveHeader {
-  uint64 runner = 1;
-  uint64 region = 2;
-  int64 rev = 3;
-}
-
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
   uint64 cluster_id = 1;
@@ -151,12 +145,15 @@ message RegionStat {
 }
 
 message Definition {
-  OliveHeader header = 100;
-
   string id = 1;
   string name = 2;
   string content = 3;
   uint64 version = 4;
+
+  // the id of olive region
+  uint64 region = 101;
+  // the version from etcd's storage
+  int64 rev = 102;
 }
 
 message DefinitionMeta {
@@ -177,8 +174,7 @@ message ProcessInstance {
     Fail = 5;
   }
 
-  OliveHeader oliveHeader = 100;
-  uint64 id = 1;
+  string id = 1;
   string name = 2;
   string definitionsId = 3;
   uint64 definitionsVersion = 4;
@@ -186,7 +182,7 @@ message ProcessInstance {
   string definitionsContent = 6;
   map<string, string> headers = 7;
   map<string, discoverypb.Box> properties = 8;
-  map<string, bytes> dataObjects = 9;
+  map<string, string> dataObjects = 9;
 
   ProcessRunningState runningState = 16;
   map<string, FlowNodeStat> flowNodes = 17;
@@ -196,20 +192,25 @@ message ProcessInstance {
 
   Status status = 21;
   string message = 22;
+
+  // the id of olive region
+  uint64 region = 101;
+  // the version from etcd's storage
+  int64 rev = 102;
 }
 
 message ProcessRunningState {
-  map<string, bytes> properties = 1;
-  map<string, bytes> dataObjects = 2;
-  map<string, bytes> variables = 3;
+  map<string, string> properties = 1;
+  map<string, string> dataObjects = 2;
+  map<string, string> variables = 3;
 }
 
 message FlowNodeStat {
   string id = 1;
   string name = 2;
   map<string, string> headers = 3;
-  map<string, bytes> properties = 4;
-  map<string, bytes> dataObjects = 5;
+  map<string, string> properties = 4;
+  map<string, string> dataObjects = 5;
 
   int64 startTime = 11;
   int64 endTime = 12;

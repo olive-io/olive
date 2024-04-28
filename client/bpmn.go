@@ -30,17 +30,17 @@ import (
 	"google.golang.org/grpc"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.Definition, error)
-	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*pb.Definition, string, error)
-	GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error)
-	RemoveDefinition(ctx context.Context, id string) error
-	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error)
-	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error)
+	ListDefinitions(ctx context.Context, limit int64, continueToken string) (*pb.ListDefinitionResponse, error)
+	DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.DeployDefinitionResponse, error)
+	GetDefinition(ctx context.Context, id string, version uint64) (*pb.GetDefinitionResponse, error)
+	RemoveDefinition(ctx context.Context, id string) (*pb.RemoveDefinitionResponse, error)
+	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ExecuteDefinitionResponse, error)
+	ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ListProcessInstancesResponse, error)
+	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.GetProcessInstanceResponse, error)
 }
 
 type bpmnRPC struct {
@@ -56,7 +56,21 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.Definition, error) {
+func (bc *bpmnRPC) ListDefinitions(ctx context.Context, limit int64, continueToken string) (*pb.ListDefinitionResponse, error) {
+	conn := bc.client.conn
+	in := pb.ListDefinitionRequest{
+		Limit:    limit,
+		Continue: continueToken,
+	}
+	rsp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return rsp, nil
+}
+
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.DeployDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -84,49 +98,10 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		return nil, toErr(ctx, err)
 	}
 
-	definition := &pb.Definition{
-		Header: &pb.OliveHeader{
-			Runner: 0,
-			Region: resp.Region,
-		},
-		Id:      id,
-		Name:    name,
-		Content: string(body),
-		Version: resp.Version,
-	}
-
-	return definition, nil
+	return resp, nil
 }
 
-type ListDefinitionOption func(request *pb.ListDefinitionRequest)
-
-func WithLimit(limit int64) ListDefinitionOption {
-	return func(req *pb.ListDefinitionRequest) {
-		req.Limit = limit
-	}
-}
-
-func WithContinue(token string) ListDefinitionOption {
-	return func(req *pb.ListDefinitionRequest) {
-		req.Continue = token
-	}
-}
-
-func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*pb.Definition, string, error) {
-	conn := bc.client.conn
-	in := pb.ListDefinitionRequest{}
-	for _, option := range options {
-		option(&in)
-	}
-	rsp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
-	if err != nil {
-		return nil, "", toErr(ctx, err)
-	}
-
-	return rsp.Definitions, rsp.ContinueToken, nil
-}
-
-func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error) {
+func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*pb.GetDefinitionResponse, error) {
 	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
@@ -137,28 +112,28 @@ func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp.Definition, nil
+	return rsp, nil
 }
 
-func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
+func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) (*pb.RemoveDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(leaderEndpoints) > 0 {
 		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	in := &pb.RemoveDefinitionRequest{Id: id}
-	_, err = bc.remoteClient(conn).RemoveDefinition(ctx, in, bc.callOpts...)
+	rsp, err := bc.remoteClient(conn).RemoveDefinition(ctx, in, bc.callOpts...)
 	if err != nil {
-		return toErr(ctx, err)
+		return nil, toErr(ctx, err)
 	}
-	return nil
+	return rsp, nil
 }
 
 type ExecDefinitionOption func(request *pb.ExecuteDefinitionRequest)
@@ -192,7 +167,7 @@ func WithProperties(properties map[string]any) ExecDefinitionOption {
 	}
 }
 
-func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error) {
+func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ExecuteDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -213,10 +188,35 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp.Instance, nil
+	return rsp, nil
 }
 
-func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
+func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ListProcessInstancesResponse, error) {
+	conn := bc.client.conn
+	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+	in := &pb.ListProcessInstancesRequest{
+		DefinitionId:      definitionId,
+		DefinitionVersion: definitionVersion,
+		Id:                id,
+	}
+
+	rsp, err := bc.remoteClient(conn).ListProcessInstances(ctx, in, bc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return rsp, nil
+}
+
+func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.GetProcessInstanceResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -238,7 +238,7 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp.Instance, nil
+	return rsp, nil
 }
 
 func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {
