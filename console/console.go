@@ -94,7 +94,7 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 	fiz.Use(gin.Recovery())
 
 	apiInfo := &openapi.Info{
-		Title:          "olive api v1",
+		Title:          "olive api",
 		Description:    "This is the openapi v3 documentation of olive workflow engine.",
 		TermsOfService: "The olive term",
 		Contact: &openapi.Contact{
