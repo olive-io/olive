@@ -133,12 +133,7 @@ message MemberPromoteResponse {
   repeated Member members = 2;
 }
 
-service MetaRPC {
-  rpc GetMeta(GetMetaRequest) returns (GetMetaResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/info"
-    };
-  };
+service MetaRunnerRPC {
   rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
     option (google.api.http) = {
       get: "/api/v1/meta/runners"
@@ -149,23 +144,6 @@ service MetaRPC {
       get: "/api/v1/meta/runner/{id}"
     };
   };
-  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/regions"
-    };
-  };
-  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/region/{id}"
-    };
-  };
-}
-
-message GetMetaRequest {}
-
-message GetMetaResponse {
-  ResponseHeader header = 1;
-  Meta meta = 2;
 }
 
 message ListRunnerRequest {}
@@ -182,6 +160,19 @@ message GetRunnerRequest {
 message GetRunnerResponse {
   ResponseHeader header = 1;
   Runner runner = 2;
+}
+
+service MetaRegionRPC {
+  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/regions"
+    };
+  };
+  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/region/{id}"
+    };
+  };
 }
 
 message ListRegionRequest {}

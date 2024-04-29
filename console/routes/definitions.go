@@ -42,19 +42,19 @@ func (tree *RouteTree) registerDefinitionsGroup() error {
 
 	group := tree.root.Group("/bpmn/definitions", summary.Name, summary.Description, dg.HandlerChains()...)
 	group.GET("/list", []fizz.OperationOption{
-		fizz.Summary("List all the definitions in olive cluster."),
+		fizz.Summary("List all definitions in olive system."),
 	}, tonic.Handler(dg.definitionsList, 200))
 
 	group.POST("/deploy", []fizz.OperationOption{
-		fizz.Summary("Deploy a new definition in olive cluster."),
+		fizz.Summary("Deploy a new definition in olive system."),
 	}, tonic.Handler(dg.definitionDeploy, 200))
 
 	group.POST("/get", []fizz.OperationOption{
-		fizz.Summary("Get the definition in olive cluster by id and version."),
+		fizz.Summary("Get the definition in olive system by id and version."),
 	}, tonic.Handler(dg.definitionGet, 200))
 
 	group.POST("/remove", []fizz.OperationOption{
-		fizz.Summary("Remove the definition in olive cluster."),
+		fizz.Summary("Remove the definition in olive system."),
 	}, tonic.Handler(dg.definitionRemove, 200))
 
 	group.POST("/execute", []fizz.OperationOption{
@@ -62,7 +62,7 @@ func (tree *RouteTree) registerDefinitionsGroup() error {
 	}, tonic.Handler(dg.definitionExecute, 200))
 
 	group.POST("/process/list", []fizz.OperationOption{
-		fizz.Summary("list process instances in the given definition."),
+		fizz.Summary("List process instances in the given definition."),
 	}, tonic.Handler(dg.processList, 200))
 
 	group.POST("/process/get", []fizz.OperationOption{

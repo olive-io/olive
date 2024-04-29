@@ -223,7 +223,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	var err error
 	if process.Status == pb.ProcessInstance_Prepare {
 		process.Status = pb.ProcessInstance_Running
-		process.StartTime = time.Now().Unix()
+		process.StartTime = time.Now().UnixNano()
 		err = saveProcess(ctx, r, process)
 		if err != nil {
 			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
@@ -236,7 +236,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 			return
 		}
 
-		process.EndTime = time.Now().Unix()
+		process.EndTime = time.Now().UnixNano()
 		process.Status = pb.ProcessInstance_Ok
 		if err != nil {
 			process.Status = pb.ProcessInstance_Fail
@@ -297,7 +297,7 @@ LOOP:
 				} else {
 					flowNode = &pb.FlowNodeStat{
 						Id:        *id,
-						StartTime: time.Now().Unix(),
+						StartTime: time.Now().UnixNano(),
 					}
 					if name, has := tt.Node.Name(); has {
 						flowNode.Name = *name
@@ -310,7 +310,7 @@ LOOP:
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
-					flowNode.EndTime = time.Now().Unix()
+					flowNode.EndTime = time.Now().UnixNano()
 				}
 
 				switch tt.Node.(type) {
@@ -333,7 +333,7 @@ LOOP:
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
-					flowNode.EndTime = time.Now().Unix()
+					flowNode.EndTime = time.Now().UnixNano()
 					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
 					flowNode.Headers = toGenericMap[string](headers)
 					flowNode.Properties = toGenericMap[string](dataSets)

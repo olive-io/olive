@@ -45,7 +45,8 @@ import (
 type Server struct {
 	genericserver.IEmbedServer
 	pb.UnsafeClusterServer
-	pb.UnsafeMetaRPCServer
+	pb.UnsafeMetaRunnerRPCServer
+	pb.UnsafeMetaRegionRPCServer
 	pb.UnsafeBpmnRPCServer
 
 	cfg Config
@@ -93,7 +94,8 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 
 	ec.ServiceRegister = func(gs *grpc.Server) {
 		pb.RegisterClusterServer(gs, s)
-		pb.RegisterMetaRPCServer(gs, s)
+		pb.RegisterMetaRunnerRPCServer(gs, s)
+		pb.RegisterMetaRegionRPCServer(gs, s)
 		pb.RegisterBpmnRPCServer(gs, s)
 	}
 

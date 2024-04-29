@@ -238,12 +238,14 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 		if len(replicas) == 0 {
 			continue
 		}
-		if replica := replicas[lead]; replica.Runner == c.pr.Id {
-			sv := semver.Version{
-				Major: int64(region.id),
-				Minor: int64(replica.Id),
+		for _, replica := range replicas {
+			if lead == replica.Id && replica.Runner == c.pr.Id {
+				sv := semver.Version{
+					Major: int64(region.id),
+					Minor: int64(replica.Id),
+				}
+				leaders = append(leaders, sv.String())
 			}
-			leaders = append(leaders, sv.String())
 		}
 	}
 	RegionCounter.Set(float64(len(regions)))
@@ -366,9 +368,11 @@ func (c *Controller) prepareRegions() error {
 
 func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
 	replicaId := uint64(0)
-	for id, replica := range ri.Replicas {
+	var join bool
+	for _, replica := range ri.Replicas {
 		if replica.Runner == c.pr.Id {
-			replicaId = id
+			replicaId = replica.Id
+			join = replica.IsJoin
 		}
 	}
 
@@ -377,8 +381,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	}
 
 	members := map[uint64]string{}
-	join := ri.Replicas[replicaId].IsJoin
-	for id, urlText := range ri.Replicas[replicaId].Initial {
+	for id, urlText := range ri.InitialURL() {
 		url, err := urlpkg.Parse(urlText)
 		if err != nil {
 			return nil, errors.Wrap(ErrRaftAddress, err.Error())
@@ -549,8 +552,7 @@ func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.Process
 	regionId := instance.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
-		lg.Info("region running others",
-			zap.Uint64("id", regionId))
+		lg.Info("region running others", zap.Uint64("id", regionId))
 		return nil
 	}
 

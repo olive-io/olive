@@ -262,7 +262,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	region := &pb.Region{
 		Id:           rid,
 		Name:         rname,
-		Replicas:     map[uint64]*pb.RegionReplica{},
+		Replicas:     []*pb.RegionReplica{},
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
 
@@ -271,21 +271,18 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		State:     pb.State_NotReady,
 		Timestamp: time.Now().Unix(),
 	}
-	initial := map[uint64]string{}
 	for i, runner := range runners {
 		mid := uint64(i + 1)
 		if i == 0 {
 			region.Leader = mid
 		}
-		initial[mid] = runner.ListenPeerURL
-		region.Replicas[mid] = &pb.RegionReplica{
+		region.Replicas = append(region.Replicas, &pb.RegionReplica{
 			Id:          mid,
 			Runner:      runner.Id,
 			Region:      rid,
 			RaftAddress: runner.ListenPeerURL,
 			IsJoin:      false,
-			Initial:     initial,
-		}
+		})
 	}
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
@@ -340,9 +337,8 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 			Region:      region.Id,
 			RaftAddress: runner.ListenPeerURL,
 			IsJoin:      true,
-			Initial:     map[uint64]string{},
 		}
-		region.Replicas[region.Id] = replica
+		region.Replicas = append(region.Replicas, replica)
 		next += 1
 	}
 

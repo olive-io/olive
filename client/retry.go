@@ -78,34 +78,41 @@ func (rcc *retryClusterClient) MemberPromote(ctx context.Context, in *pb.MemberP
 	return rcc.cc.MemberPromote(ctx, in, opts...)
 }
 
-type retryMetaClient struct {
-	mc pb.MetaRPCClient
+type retryMetaRunnerClient struct {
+	mc pb.MetaRunnerRPCClient
 }
 
-// RetryMetaClient implements a MetaRPCClient.
-func RetryMetaClient(conn *grpc.ClientConn) pb.MetaRPCClient {
-	return &retryMetaClient{
-		mc: pb.NewMetaRPCClient(conn),
+// RetryMetaRunnerClient implements a MetaRunnerRPCClient.
+func RetryMetaRunnerClient(conn *grpc.ClientConn) pb.MetaRunnerRPCClient {
+	return &retryMetaRunnerClient{
+		mc: pb.NewMetaRunnerRPCClient(conn),
 	}
 }
 
-func (rmc *retryMetaClient) GetMeta(ctx context.Context, in *pb.GetMetaRequest, opts ...grpc.CallOption) (resp *pb.GetMetaResponse, err error) {
-	return rmc.mc.GetMeta(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-}
-
-func (rmc *retryMetaClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
+func (rmc *retryMetaRunnerClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
 	return rmc.mc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
+func (rmc *retryMetaRunnerClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
 	return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
+type retryMetaRegionClient struct {
+	mc pb.MetaRegionRPCClient
+}
+
+// RetryMetaRegionClient implements a MetaRegionRPCClient
+func RetryMetaRegionClient(conn *grpc.ClientConn) pb.MetaRegionRPCClient {
+	return &retryMetaRegionClient{
+		mc: pb.NewMetaRegionRPCClient(conn),
+	}
+}
+
+func (rmc *retryMetaRegionClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
 	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
+func (rmc *retryMetaRegionClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
 	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 

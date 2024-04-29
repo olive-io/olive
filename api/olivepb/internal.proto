@@ -49,18 +49,6 @@ message Member {
   bool isLearner = 5;
 }
 
-message Meta {
-  uint64 clusterId = 1;
-  uint64 leader = 2;
-  repeated MetaMember members = 3;
-}
-
-message MetaMember {
-  uint64 id = 1;
-  repeated string clientURLs = 2;
-  repeated string peerURLs = 3;
-}
-
 message Runner {
   uint64 id = 1;
   string listenPeerURL = 2;
@@ -101,7 +89,7 @@ message Region {
   string name = 2;
   uint64 deploymentId = 3;
 
-  map<uint64, RegionReplica> replicas = 5;
+  repeated RegionReplica replicas = 5;
 
   uint64 electionRTT = 6;
   uint64 heartbeatRTT = 7;
@@ -124,7 +112,6 @@ message RegionReplica {
   bool isNonVoting = 5;
   bool isWitness = 6;
   bool isJoin = 7;
-  map<uint64, string> initial = 8;
 }
 
 message RegionStat {
@@ -184,14 +171,15 @@ message ProcessInstance {
   map<string, discoverypb.Box> properties = 8;
   map<string, string> dataObjects = 9;
 
-  ProcessRunningState runningState = 16;
-  map<string, FlowNodeStat> flowNodes = 17;
-  uint64 attempts = 18;
-  int64 startTime = 19;
-  int64 endTime = 20;
+  ProcessRunningState runningState = 21;
+  map<string, FlowNodeStat> flowNodes = 22;
+  uint64 attempts = 23;
+  int64 creationTime = 24;
+  int64 startTime = 25;
+  int64 endTime = 26;
 
-  Status status = 21;
-  string message = 22;
+  Status status = 27;
+  string message = 28;
 
   // the id of olive region
   uint64 region = 101;

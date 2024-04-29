@@ -161,25 +161,7 @@ func local_request_Cluster_MemberPromote_0(ctx context.Context, marshaler runtim
 
 }
 
-func request_MetaRPC_GetMeta_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetMetaRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := client.GetMeta(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_MetaRPC_GetMeta_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetMetaRequest
-	var metadata runtime.ServerMetadata
-
-	msg, err := server.GetMeta(ctx, &protoReq)
-	return msg, metadata, err
-
-}
-
-func request_MetaRPC_ListRunner_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_MetaRunnerRPC_ListRunner_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRunnerRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListRunnerRequest
 	var metadata runtime.ServerMetadata
 
@@ -188,7 +170,7 @@ func request_MetaRPC_ListRunner_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func local_request_MetaRPC_ListRunner_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_MetaRunnerRPC_ListRunner_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRunnerRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListRunnerRequest
 	var metadata runtime.ServerMetadata
 
@@ -197,7 +179,7 @@ func local_request_MetaRPC_ListRunner_0(ctx context.Context, marshaler runtime.M
 
 }
 
-func request_MetaRPC_GetRunner_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_MetaRunnerRPC_GetRunner_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRunnerRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRunnerRequest
 	var metadata runtime.ServerMetadata
 
@@ -223,7 +205,7 @@ func request_MetaRPC_GetRunner_0(ctx context.Context, marshaler runtime.Marshale
 
 }
 
-func local_request_MetaRPC_GetRunner_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_MetaRunnerRPC_GetRunner_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRunnerRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRunnerRequest
 	var metadata runtime.ServerMetadata
 
@@ -249,7 +231,7 @@ func local_request_MetaRPC_GetRunner_0(ctx context.Context, marshaler runtime.Ma
 
 }
 
-func request_MetaRPC_ListRegion_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_MetaRegionRPC_ListRegion_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRegionRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListRegionRequest
 	var metadata runtime.ServerMetadata
 
@@ -258,7 +240,7 @@ func request_MetaRPC_ListRegion_0(ctx context.Context, marshaler runtime.Marshal
 
 }
 
-func local_request_MetaRPC_ListRegion_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_MetaRegionRPC_ListRegion_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRegionRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListRegionRequest
 	var metadata runtime.ServerMetadata
 
@@ -267,7 +249,7 @@ func local_request_MetaRPC_ListRegion_0(ctx context.Context, marshaler runtime.M
 
 }
 
-func request_MetaRPC_GetRegion_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_MetaRegionRPC_GetRegion_0(ctx context.Context, marshaler runtime.Marshaler, client MetaRegionRPCClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRegionRequest
 	var metadata runtime.ServerMetadata
 
@@ -293,7 +275,7 @@ func request_MetaRPC_GetRegion_0(ctx context.Context, marshaler runtime.Marshale
 
 }
 
-func local_request_MetaRPC_GetRegion_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_MetaRegionRPC_GetRegion_0(ctx context.Context, marshaler runtime.Marshaler, server MetaRegionRPCServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetRegionRequest
 	var metadata runtime.ServerMetadata
 
@@ -681,13 +663,13 @@ func RegisterClusterHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 	return nil
 }
 
-// RegisterMetaRPCHandlerServer registers the http handlers for service MetaRPC to "mux".
-// UnaryRPC     :call MetaRPCServer directly.
+// RegisterMetaRunnerRPCHandlerServer registers the http handlers for service MetaRunnerRPC to "mux".
+// UnaryRPC     :call MetaRunnerRPCServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterMetaRPCHandlerFromEndpoint instead.
-func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, server MetaRPCServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterMetaRunnerRPCHandlerFromEndpoint instead.
+func RegisterMetaRunnerRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, server MetaRunnerRPCServer) error {
 
-	mux.Handle("GET", pattern_MetaRPC_GetMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_MetaRunnerRPC_ListRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -695,12 +677,12 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/api/v1/meta/info"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRunnerRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_MetaRPC_GetMeta_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_MetaRunnerRPC_ListRunner_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -708,11 +690,11 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_MetaRPC_GetMeta_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRunnerRPC_ListRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_MetaRPC_ListRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_MetaRunnerRPC_GetRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -720,12 +702,12 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRunnerRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_MetaRPC_ListRunner_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_MetaRunnerRPC_GetRunner_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -733,11 +715,20 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_MetaRPC_ListRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRunnerRPC_GetRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_MetaRPC_GetRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	return nil
+}
+
+// RegisterMetaRegionRPCHandlerServer registers the http handlers for service MetaRegionRPC to "mux".
+// UnaryRPC     :call MetaRegionRPCServer directly.
+// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterMetaRegionRPCHandlerFromEndpoint instead.
+func RegisterMetaRegionRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, server MetaRegionRPCServer) error {
+
+	mux.Handle("GET", pattern_MetaRegionRPC_ListRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -745,12 +736,12 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRegionRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_MetaRPC_GetRunner_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_MetaRegionRPC_ListRegion_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -758,11 +749,11 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_MetaRPC_GetRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRegionRPC_ListRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_MetaRPC_ListRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_MetaRegionRPC_GetRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -770,12 +761,12 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRegionRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_MetaRPC_ListRegion_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_MetaRegionRPC_GetRegion_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -783,32 +774,7 @@ func RegisterMetaRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			return
 		}
 
-		forward_MetaRPC_ListRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_MetaRPC_GetRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_MetaRPC_GetRegion_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_MetaRPC_GetRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRegionRPC_GetRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1208,9 +1174,9 @@ var (
 	forward_Cluster_MemberPromote_0 = runtime.ForwardResponseMessage
 )
 
-// RegisterMetaRPCHandlerFromEndpoint is same as RegisterMetaRPCHandler but
+// RegisterMetaRunnerRPCHandlerFromEndpoint is same as RegisterMetaRunnerRPCHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterMetaRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterMetaRunnerRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
@@ -1230,129 +1196,63 @@ func RegisterMetaRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeM
 		}()
 	}()
 
-	return RegisterMetaRPCHandler(ctx, mux, conn)
+	return RegisterMetaRunnerRPCHandler(ctx, mux, conn)
 }
 
-// RegisterMetaRPCHandler registers the http handlers for service MetaRPC to "mux".
+// RegisterMetaRunnerRPCHandler registers the http handlers for service MetaRunnerRPC to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterMetaRPCHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterMetaRPCHandlerClient(ctx, mux, NewMetaRPCClient(conn))
+func RegisterMetaRunnerRPCHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterMetaRunnerRPCHandlerClient(ctx, mux, NewMetaRunnerRPCClient(conn))
 }
 
-// RegisterMetaRPCHandlerClient registers the http handlers for service MetaRPC
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "MetaRPCClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "MetaRPCClient"
+// RegisterMetaRunnerRPCHandlerClient registers the http handlers for service MetaRunnerRPC
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "MetaRunnerRPCClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "MetaRunnerRPCClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "MetaRPCClient" to call the correct interceptors.
-func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, client MetaRPCClient) error {
+// "MetaRunnerRPCClient" to call the correct interceptors.
+func RegisterMetaRunnerRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, client MetaRunnerRPCClient) error {
 
-	mux.Handle("GET", pattern_MetaRPC_GetMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_MetaRunnerRPC_ListRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetMeta", runtime.WithHTTPPathPattern("/api/v1/meta/info"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRunnerRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_MetaRPC_GetMeta_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_MetaRunnerRPC_ListRunner_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_MetaRPC_GetMeta_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRunnerRPC_ListRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_MetaRPC_ListRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_MetaRunnerRPC_GetRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runners"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRunnerRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_MetaRPC_ListRunner_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_MetaRunnerRPC_GetRunner_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_MetaRPC_ListRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_MetaRPC_GetRunner_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRunner", runtime.WithHTTPPathPattern("/api/v1/meta/runner/{id}"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_MetaRPC_GetRunner_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_MetaRPC_GetRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_MetaRPC_ListRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_MetaRPC_ListRegion_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_MetaRPC_ListRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
-	})
-
-	mux.Handle("GET", pattern_MetaRPC_GetRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_MetaRPC_GetRegion_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-
-		forward_MetaRPC_GetRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_MetaRunnerRPC_GetRunner_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1360,27 +1260,112 @@ func RegisterMetaRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_MetaRPC_GetMeta_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "info"}, ""))
+	pattern_MetaRunnerRPC_ListRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "runners"}, ""))
 
-	pattern_MetaRPC_ListRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "runners"}, ""))
-
-	pattern_MetaRPC_GetRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "runner", "id"}, ""))
-
-	pattern_MetaRPC_ListRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "regions"}, ""))
-
-	pattern_MetaRPC_GetRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "region", "id"}, ""))
+	pattern_MetaRunnerRPC_GetRunner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "runner", "id"}, ""))
 )
 
 var (
-	forward_MetaRPC_GetMeta_0 = runtime.ForwardResponseMessage
+	forward_MetaRunnerRPC_ListRunner_0 = runtime.ForwardResponseMessage
 
-	forward_MetaRPC_ListRunner_0 = runtime.ForwardResponseMessage
+	forward_MetaRunnerRPC_GetRunner_0 = runtime.ForwardResponseMessage
+)
 
-	forward_MetaRPC_GetRunner_0 = runtime.ForwardResponseMessage
+// RegisterMetaRegionRPCHandlerFromEndpoint is same as RegisterMetaRegionRPCHandler but
+// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
+func RegisterMetaRegionRPCHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+			return
+		}
+		go func() {
+			<-ctx.Done()
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+		}()
+	}()
 
-	forward_MetaRPC_ListRegion_0 = runtime.ForwardResponseMessage
+	return RegisterMetaRegionRPCHandler(ctx, mux, conn)
+}
 
-	forward_MetaRPC_GetRegion_0 = runtime.ForwardResponseMessage
+// RegisterMetaRegionRPCHandler registers the http handlers for service MetaRegionRPC to "mux".
+// The handlers forward requests to the grpc endpoint over "conn".
+func RegisterMetaRegionRPCHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterMetaRegionRPCHandlerClient(ctx, mux, NewMetaRegionRPCClient(conn))
+}
+
+// RegisterMetaRegionRPCHandlerClient registers the http handlers for service MetaRegionRPC
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "MetaRegionRPCClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "MetaRegionRPCClient"
+// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
+// "MetaRegionRPCClient" to call the correct interceptors.
+func RegisterMetaRegionRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, client MetaRegionRPCClient) error {
+
+	mux.Handle("GET", pattern_MetaRegionRPC_ListRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRegionRPC/ListRegion", runtime.WithHTTPPathPattern("/api/v1/meta/regions"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_MetaRegionRPC_ListRegion_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_MetaRegionRPC_ListRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_MetaRegionRPC_GetRegion_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.MetaRegionRPC/GetRegion", runtime.WithHTTPPathPattern("/api/v1/meta/region/{id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_MetaRegionRPC_GetRegion_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_MetaRegionRPC_GetRegion_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	return nil
+}
+
+var (
+	pattern_MetaRegionRPC_ListRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "meta", "regions"}, ""))
+
+	pattern_MetaRegionRPC_GetRegion_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "meta", "region", "id"}, ""))
+)
+
+var (
+	forward_MetaRegionRPC_ListRegion_0 = runtime.ForwardResponseMessage
+
+	forward_MetaRegionRPC_GetRegion_0 = runtime.ForwardResponseMessage
 )
 
 // RegisterBpmnRPCHandlerFromEndpoint is same as RegisterBpmnRPCHandler but

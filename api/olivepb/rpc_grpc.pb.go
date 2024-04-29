@@ -259,230 +259,244 @@ var Cluster_ServiceDesc = grpc.ServiceDesc{
 	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
 }
 
-// MetaRPCClient is the client API for MetaRPC service.
+// MetaRunnerRPCClient is the client API for MetaRunnerRPC service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type MetaRPCClient interface {
-	GetMeta(ctx context.Context, in *GetMetaRequest, opts ...grpc.CallOption) (*GetMetaResponse, error)
+type MetaRunnerRPCClient interface {
 	ListRunner(ctx context.Context, in *ListRunnerRequest, opts ...grpc.CallOption) (*ListRunnerResponse, error)
 	GetRunner(ctx context.Context, in *GetRunnerRequest, opts ...grpc.CallOption) (*GetRunnerResponse, error)
-	ListRegion(ctx context.Context, in *ListRegionRequest, opts ...grpc.CallOption) (*ListRegionResponse, error)
-	GetRegion(ctx context.Context, in *GetRegionRequest, opts ...grpc.CallOption) (*GetRegionResponse, error)
 }
 
-type metaRPCClient struct {
+type metaRunnerRPCClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewMetaRPCClient(cc grpc.ClientConnInterface) MetaRPCClient {
-	return &metaRPCClient{cc}
+func NewMetaRunnerRPCClient(cc grpc.ClientConnInterface) MetaRunnerRPCClient {
+	return &metaRunnerRPCClient{cc}
 }
 
-func (c *metaRPCClient) GetMeta(ctx context.Context, in *GetMetaRequest, opts ...grpc.CallOption) (*GetMetaResponse, error) {
-	out := new(GetMetaResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.MetaRPC/GetMeta", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metaRPCClient) ListRunner(ctx context.Context, in *ListRunnerRequest, opts ...grpc.CallOption) (*ListRunnerResponse, error) {
+func (c *metaRunnerRPCClient) ListRunner(ctx context.Context, in *ListRunnerRequest, opts ...grpc.CallOption) (*ListRunnerResponse, error) {
 	out := new(ListRunnerResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.MetaRPC/ListRunner", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaRunnerRPC/ListRunner", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metaRPCClient) GetRunner(ctx context.Context, in *GetRunnerRequest, opts ...grpc.CallOption) (*GetRunnerResponse, error) {
+func (c *metaRunnerRPCClient) GetRunner(ctx context.Context, in *GetRunnerRequest, opts ...grpc.CallOption) (*GetRunnerResponse, error) {
 	out := new(GetRunnerResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.MetaRPC/GetRunner", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaRunnerRPC/GetRunner", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metaRPCClient) ListRegion(ctx context.Context, in *ListRegionRequest, opts ...grpc.CallOption) (*ListRegionResponse, error) {
-	out := new(ListRegionResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.MetaRPC/ListRegion", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *metaRPCClient) GetRegion(ctx context.Context, in *GetRegionRequest, opts ...grpc.CallOption) (*GetRegionResponse, error) {
-	out := new(GetRegionResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.MetaRPC/GetRegion", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// MetaRPCServer is the server API for MetaRPC service.
-// All implementations must embed UnimplementedMetaRPCServer
+// MetaRunnerRPCServer is the server API for MetaRunnerRPC service.
+// All implementations must embed UnimplementedMetaRunnerRPCServer
 // for forward compatibility
-type MetaRPCServer interface {
-	GetMeta(context.Context, *GetMetaRequest) (*GetMetaResponse, error)
+type MetaRunnerRPCServer interface {
 	ListRunner(context.Context, *ListRunnerRequest) (*ListRunnerResponse, error)
 	GetRunner(context.Context, *GetRunnerRequest) (*GetRunnerResponse, error)
-	ListRegion(context.Context, *ListRegionRequest) (*ListRegionResponse, error)
-	GetRegion(context.Context, *GetRegionRequest) (*GetRegionResponse, error)
-	mustEmbedUnimplementedMetaRPCServer()
+	mustEmbedUnimplementedMetaRunnerRPCServer()
 }
 
-// UnimplementedMetaRPCServer must be embedded to have forward compatible implementations.
-type UnimplementedMetaRPCServer struct {
+// UnimplementedMetaRunnerRPCServer must be embedded to have forward compatible implementations.
+type UnimplementedMetaRunnerRPCServer struct {
 }
 
-func (UnimplementedMetaRPCServer) GetMeta(context.Context, *GetMetaRequest) (*GetMetaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMeta not implemented")
-}
-func (UnimplementedMetaRPCServer) ListRunner(context.Context, *ListRunnerRequest) (*ListRunnerResponse, error) {
+func (UnimplementedMetaRunnerRPCServer) ListRunner(context.Context, *ListRunnerRequest) (*ListRunnerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRunner not implemented")
 }
-func (UnimplementedMetaRPCServer) GetRunner(context.Context, *GetRunnerRequest) (*GetRunnerResponse, error) {
+func (UnimplementedMetaRunnerRPCServer) GetRunner(context.Context, *GetRunnerRequest) (*GetRunnerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRunner not implemented")
 }
-func (UnimplementedMetaRPCServer) ListRegion(context.Context, *ListRegionRequest) (*ListRegionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListRegion not implemented")
-}
-func (UnimplementedMetaRPCServer) GetRegion(context.Context, *GetRegionRequest) (*GetRegionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRegion not implemented")
-}
-func (UnimplementedMetaRPCServer) mustEmbedUnimplementedMetaRPCServer() {}
+func (UnimplementedMetaRunnerRPCServer) mustEmbedUnimplementedMetaRunnerRPCServer() {}
 
-// UnsafeMetaRPCServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to MetaRPCServer will
+// UnsafeMetaRunnerRPCServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MetaRunnerRPCServer will
 // result in compilation errors.
-type UnsafeMetaRPCServer interface {
-	mustEmbedUnimplementedMetaRPCServer()
+type UnsafeMetaRunnerRPCServer interface {
+	mustEmbedUnimplementedMetaRunnerRPCServer()
 }
 
-func RegisterMetaRPCServer(s grpc.ServiceRegistrar, srv MetaRPCServer) {
-	s.RegisterService(&MetaRPC_ServiceDesc, srv)
+func RegisterMetaRunnerRPCServer(s grpc.ServiceRegistrar, srv MetaRunnerRPCServer) {
+	s.RegisterService(&MetaRunnerRPC_ServiceDesc, srv)
 }
 
-func _MetaRPC_GetMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMetaRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MetaRPCServer).GetMeta(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/olivepb.MetaRPC/GetMeta",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetaRPCServer).GetMeta(ctx, req.(*GetMetaRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MetaRPC_ListRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaRunnerRPC_ListRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRunnerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetaRPCServer).ListRunner(ctx, in)
+		return srv.(MetaRunnerRPCServer).ListRunner(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.MetaRPC/ListRunner",
+		FullMethod: "/olivepb.MetaRunnerRPC/ListRunner",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetaRPCServer).ListRunner(ctx, req.(*ListRunnerRequest))
+		return srv.(MetaRunnerRPCServer).ListRunner(ctx, req.(*ListRunnerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetaRPC_GetRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaRunnerRPC_GetRunner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRunnerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetaRPCServer).GetRunner(ctx, in)
+		return srv.(MetaRunnerRPCServer).GetRunner(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.MetaRPC/GetRunner",
+		FullMethod: "/olivepb.MetaRunnerRPC/GetRunner",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetaRPCServer).GetRunner(ctx, req.(*GetRunnerRequest))
+		return srv.(MetaRunnerRPCServer).GetRunner(ctx, req.(*GetRunnerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetaRPC_ListRegion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+// MetaRunnerRPC_ServiceDesc is the grpc.ServiceDesc for MetaRunnerRPC service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MetaRunnerRPC_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.MetaRunnerRPC",
+	HandlerType: (*MetaRunnerRPCServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListRunner",
+			Handler:    _MetaRunnerRPC_ListRunner_Handler,
+		},
+		{
+			MethodName: "GetRunner",
+			Handler:    _MetaRunnerRPC_GetRunner_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+}
+
+// MetaRegionRPCClient is the client API for MetaRegionRPC service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MetaRegionRPCClient interface {
+	ListRegion(ctx context.Context, in *ListRegionRequest, opts ...grpc.CallOption) (*ListRegionResponse, error)
+	GetRegion(ctx context.Context, in *GetRegionRequest, opts ...grpc.CallOption) (*GetRegionResponse, error)
+}
+
+type metaRegionRPCClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMetaRegionRPCClient(cc grpc.ClientConnInterface) MetaRegionRPCClient {
+	return &metaRegionRPCClient{cc}
+}
+
+func (c *metaRegionRPCClient) ListRegion(ctx context.Context, in *ListRegionRequest, opts ...grpc.CallOption) (*ListRegionResponse, error) {
+	out := new(ListRegionResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaRegionRPC/ListRegion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaRegionRPCClient) GetRegion(ctx context.Context, in *GetRegionRequest, opts ...grpc.CallOption) (*GetRegionResponse, error) {
+	out := new(GetRegionResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaRegionRPC/GetRegion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MetaRegionRPCServer is the server API for MetaRegionRPC service.
+// All implementations must embed UnimplementedMetaRegionRPCServer
+// for forward compatibility
+type MetaRegionRPCServer interface {
+	ListRegion(context.Context, *ListRegionRequest) (*ListRegionResponse, error)
+	GetRegion(context.Context, *GetRegionRequest) (*GetRegionResponse, error)
+	mustEmbedUnimplementedMetaRegionRPCServer()
+}
+
+// UnimplementedMetaRegionRPCServer must be embedded to have forward compatible implementations.
+type UnimplementedMetaRegionRPCServer struct {
+}
+
+func (UnimplementedMetaRegionRPCServer) ListRegion(context.Context, *ListRegionRequest) (*ListRegionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRegion not implemented")
+}
+func (UnimplementedMetaRegionRPCServer) GetRegion(context.Context, *GetRegionRequest) (*GetRegionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRegion not implemented")
+}
+func (UnimplementedMetaRegionRPCServer) mustEmbedUnimplementedMetaRegionRPCServer() {}
+
+// UnsafeMetaRegionRPCServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MetaRegionRPCServer will
+// result in compilation errors.
+type UnsafeMetaRegionRPCServer interface {
+	mustEmbedUnimplementedMetaRegionRPCServer()
+}
+
+func RegisterMetaRegionRPCServer(s grpc.ServiceRegistrar, srv MetaRegionRPCServer) {
+	s.RegisterService(&MetaRegionRPC_ServiceDesc, srv)
+}
+
+func _MetaRegionRPC_ListRegion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRegionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetaRPCServer).ListRegion(ctx, in)
+		return srv.(MetaRegionRPCServer).ListRegion(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.MetaRPC/ListRegion",
+		FullMethod: "/olivepb.MetaRegionRPC/ListRegion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetaRPCServer).ListRegion(ctx, req.(*ListRegionRequest))
+		return srv.(MetaRegionRPCServer).ListRegion(ctx, req.(*ListRegionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MetaRPC_GetRegion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaRegionRPC_GetRegion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRegionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MetaRPCServer).GetRegion(ctx, in)
+		return srv.(MetaRegionRPCServer).GetRegion(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.MetaRPC/GetRegion",
+		FullMethod: "/olivepb.MetaRegionRPC/GetRegion",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetaRPCServer).GetRegion(ctx, req.(*GetRegionRequest))
+		return srv.(MetaRegionRPCServer).GetRegion(ctx, req.(*GetRegionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// MetaRPC_ServiceDesc is the grpc.ServiceDesc for MetaRPC service.
+// MetaRegionRPC_ServiceDesc is the grpc.ServiceDesc for MetaRegionRPC service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var MetaRPC_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "olivepb.MetaRPC",
-	HandlerType: (*MetaRPCServer)(nil),
+var MetaRegionRPC_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.MetaRegionRPC",
+	HandlerType: (*MetaRegionRPCServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetMeta",
-			Handler:    _MetaRPC_GetMeta_Handler,
-		},
-		{
-			MethodName: "ListRunner",
-			Handler:    _MetaRPC_ListRunner_Handler,
-		},
-		{
-			MethodName: "GetRunner",
-			Handler:    _MetaRPC_GetRunner_Handler,
-		},
-		{
 			MethodName: "ListRegion",
-			Handler:    _MetaRPC_ListRegion_Handler,
+			Handler:    _MetaRegionRPC_ListRegion_Handler,
 		},
 		{
 			MethodName: "GetRegion",
-			Handler:    _MetaRPC_GetRegion_Handler,
+			Handler:    _MetaRegionRPC_GetRegion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

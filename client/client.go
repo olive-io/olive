@@ -36,7 +36,8 @@ import (
 // Client provides and manages an olive-meta client session.
 type Client struct {
 	Cluster
-	MetaRPC
+	MetaRunnerRPC
+	MetaRegionRPC
 	BpmnRPC
 
 	// embed etcd client
@@ -92,7 +93,8 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 
 	client.Cluster = NewCluster(client)
-	client.MetaRPC = NewMetaRPC(client)
+	client.MetaRunnerRPC = NewRunnerRPC(client)
+	client.MetaRegionRPC = NewRegionRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
 	client.KV = etcd.KV
 	client.Lease = etcd.Lease
@@ -110,13 +112,13 @@ func (c *Client) ActiveConnection() *grpc.ClientConn {
 }
 
 func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
-	meta, err := c.GetMeta(ctx)
+	resp, err := c.MemberList(ctx)
 	if err != nil {
 		return nil, err
 	}
 	endpoints := make([]string, 0)
-	for _, member := range meta.Members {
-		if member.Id == meta.Leader {
+	for _, member := range resp.Members {
+		if member.ID == resp.Header.ClusterId {
 			endpoints = member.ClientURLs
 			break
 		}
