@@ -557,8 +557,8 @@ func (sc *Scheduler) run() {
 					sc.processEvent(event)
 				}
 
-			case message := <-sc.messageCh:
-				sc.processMessage(message)
+			case msg := <-sc.messageCh:
+				sc.processMsg(msg)
 
 			case <-ticker.C:
 				ticker.Reset(tickDuration)
@@ -638,8 +638,8 @@ func (sc *Scheduler) handleRunner(runner *pb.Runner) {
 	sc.runners[runner.Id] = runner
 }
 
-func (sc *Scheduler) processMessage(m imessage) {
-	switch vv := m.(type) {
+func (sc *Scheduler) processMsg(msg imessage) {
+	switch vv := msg.(type) {
 	case *regionAllocMessage:
 		sc.processAllocRegion(sc.ctx)
 	case *regionExpendMessage:
