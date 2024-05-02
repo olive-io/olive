@@ -26,10 +26,11 @@ import (
 	"net/http"
 	urlpkg "net/url"
 
+	"github.com/spf13/pflag"
+
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
-	"github.com/spf13/pflag"
 )
 
 const (
