@@ -109,3 +109,12 @@ message Service {
 
   int64 ttl = 7;
 }
+
+message Hook {
+  string name = 1;
+  string url = 2;
+}
+
+message GlobalConfig {
+
+}

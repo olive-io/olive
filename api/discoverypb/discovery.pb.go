@@ -564,6 +564,99 @@ func (x *Service) GetTtl() int64 {
 	return 0
 }
 
+type Hook struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Url  string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+}
+
+func (x *Hook) Reset() {
+	*x = Hook{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Hook) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Hook) ProtoMessage() {}
+
+func (x *Hook) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Hook.ProtoReflect.Descriptor instead.
+func (*Hook) Descriptor() ([]byte, []int) {
+	return file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Hook) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Hook) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type GlobalConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *GlobalConfig) Reset() {
+	*x = GlobalConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GlobalConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GlobalConfig) ProtoMessage() {}
+
+func (x *GlobalConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GlobalConfig.ProtoReflect.Descriptor instead.
+func (*GlobalConfig) Descriptor() ([]byte, []int) {
+	return file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDescGZIP(), []int{7}
+}
+
 var File_github_com_olive_io_olive_api_discoverypb_discovery_proto protoreflect.FileDescriptor
 
 var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDesc = []byte{
@@ -652,16 +745,20 @@ var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDesc = []b
 	0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38,
-	0x01, 0x2a, 0x5a, 0x0a, 0x07, 0x42, 0x6f, 0x78, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0a, 0x0a, 0x06,
-	0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x69, 0x6e, 0x74, 0x65,
-	0x67, 0x65, 0x72, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x61, 0x74, 0x10, 0x02,
-	0x12, 0x0b, 0x0a, 0x07, 0x62, 0x6f, 0x6f, 0x6c, 0x65, 0x61, 0x6e, 0x10, 0x03, 0x12, 0x09, 0x0a,
-	0x05, 0x61, 0x72, 0x72, 0x61, 0x79, 0x10, 0x04, 0x12, 0x0a, 0x0a, 0x06, 0x6f, 0x62, 0x6a, 0x65,
-	0x63, 0x74, 0x10, 0x05, 0x12, 0x07, 0x0a, 0x03, 0x6d, 0x61, 0x70, 0x10, 0x06, 0x42, 0x37, 0x5a,
-	0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x69, 0x76,
-	0x65, 0x2d, 0x69, 0x6f, 0x2f, 0x6f, 0x6c, 0x69, 0x76, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64,
-	0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x70, 0x62, 0x3b, 0x64, 0x69, 0x73, 0x63, 0x6f,
-	0x76, 0x65, 0x72, 0x79, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x01, 0x22, 0x2c, 0x0a, 0x04, 0x48, 0x6f, 0x6f, 0x6b, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x10, 0x0a,
+	0x03, 0x75, 0x72, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x72, 0x6c, 0x22,
+	0x0e, 0x0a, 0x0c, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2a,
+	0x5a, 0x0a, 0x07, 0x42, 0x6f, 0x78, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0a, 0x0a, 0x06, 0x73, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x69, 0x6e, 0x74, 0x65, 0x67, 0x65,
+	0x72, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x61, 0x74, 0x10, 0x02, 0x12, 0x0b,
+	0x0a, 0x07, 0x62, 0x6f, 0x6f, 0x6c, 0x65, 0x61, 0x6e, 0x10, 0x03, 0x12, 0x09, 0x0a, 0x05, 0x61,
+	0x72, 0x72, 0x61, 0x79, 0x10, 0x04, 0x12, 0x0a, 0x0a, 0x06, 0x6f, 0x62, 0x6a, 0x65, 0x63, 0x74,
+	0x10, 0x05, 0x12, 0x07, 0x0a, 0x03, 0x6d, 0x61, 0x70, 0x10, 0x06, 0x42, 0x37, 0x5a, 0x35, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6c, 0x69, 0x76, 0x65, 0x2d,
+	0x69, 0x6f, 0x2f, 0x6f, 0x6c, 0x69, 0x76, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64, 0x69, 0x73,
+	0x63, 0x6f, 0x76, 0x65, 0x72, 0x79, 0x70, 0x62, 0x3b, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65,
+	0x72, 0x79, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -677,31 +774,33 @@ func file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDescGZIP(
 }
 
 var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_goTypes = []interface{}{
-	(BoxType)(0),     // 0: discoverypb.BoxType
-	(*Box)(nil),      // 1: discoverypb.Box
-	(*Endpoint)(nil), // 2: discoverypb.Endpoint
-	(*Event)(nil),    // 3: discoverypb.Event
-	(*Node)(nil),     // 4: discoverypb.Node
-	(*Result)(nil),   // 5: discoverypb.Result
-	(*Service)(nil),  // 6: discoverypb.Service
-	nil,              // 7: discoverypb.Box.ParametersEntry
-	nil,              // 8: discoverypb.Endpoint.MetadataEntry
-	nil,              // 9: discoverypb.Node.MetadataEntry
-	nil,              // 10: discoverypb.Service.MetadataEntry
+	(BoxType)(0),         // 0: discoverypb.BoxType
+	(*Box)(nil),          // 1: discoverypb.Box
+	(*Endpoint)(nil),     // 2: discoverypb.Endpoint
+	(*Event)(nil),        // 3: discoverypb.Event
+	(*Node)(nil),         // 4: discoverypb.Node
+	(*Result)(nil),       // 5: discoverypb.Result
+	(*Service)(nil),      // 6: discoverypb.Service
+	(*Hook)(nil),         // 7: discoverypb.Hook
+	(*GlobalConfig)(nil), // 8: discoverypb.GlobalConfig
+	nil,                  // 9: discoverypb.Box.ParametersEntry
+	nil,                  // 10: discoverypb.Endpoint.MetadataEntry
+	nil,                  // 11: discoverypb.Node.MetadataEntry
+	nil,                  // 12: discoverypb.Service.MetadataEntry
 }
 var file_github_com_olive_io_olive_api_discoverypb_discovery_proto_depIdxs = []int32{
 	0,  // 0: discoverypb.Box.type:type_name -> discoverypb.BoxType
-	7,  // 1: discoverypb.Box.parameters:type_name -> discoverypb.Box.ParametersEntry
+	9,  // 1: discoverypb.Box.parameters:type_name -> discoverypb.Box.ParametersEntry
 	1,  // 2: discoverypb.Endpoint.request:type_name -> discoverypb.Box
 	1,  // 3: discoverypb.Endpoint.response:type_name -> discoverypb.Box
-	8,  // 4: discoverypb.Endpoint.metadata:type_name -> discoverypb.Endpoint.MetadataEntry
+	10, // 4: discoverypb.Endpoint.metadata:type_name -> discoverypb.Endpoint.MetadataEntry
 	6,  // 5: discoverypb.Event.service:type_name -> discoverypb.Service
-	9,  // 6: discoverypb.Node.metadata:type_name -> discoverypb.Node.MetadataEntry
+	11, // 6: discoverypb.Node.metadata:type_name -> discoverypb.Node.MetadataEntry
 	6,  // 7: discoverypb.Result.service:type_name -> discoverypb.Service
 	2,  // 8: discoverypb.Result.endpoint:type_name -> discoverypb.Endpoint
-	10, // 9: discoverypb.Service.metadata:type_name -> discoverypb.Service.MetadataEntry
+	12, // 9: discoverypb.Service.metadata:type_name -> discoverypb.Service.MetadataEntry
 	2,  // 10: discoverypb.Service.endpoints:type_name -> discoverypb.Endpoint
 	4,  // 11: discoverypb.Service.nodes:type_name -> discoverypb.Node
 	1,  // 12: discoverypb.Box.ParametersEntry.value:type_name -> discoverypb.Box
@@ -790,6 +889,30 @@ func file_github_com_olive_io_olive_api_discoverypb_discovery_proto_init() {
 				return nil
 			}
 		}
+		file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Hook); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_olive_io_olive_api_discoverypb_discovery_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GlobalConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -797,7 +920,7 @@ func file_github_com_olive_io_olive_api_discoverypb_discovery_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_olive_io_olive_api_discoverypb_discovery_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
