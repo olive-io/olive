@@ -30,7 +30,13 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
-func (s *Server) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.MemberAddResponse, error) {
+type clusterServer struct {
+	pb.UnsafeClusterServer
+
+	*Server
+}
+
+func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.MemberAddResponse, error) {
 	var rsp *clientv3.MemberAddResponse
 	var err error
 	if req.IsLearner {
@@ -54,7 +60,7 @@ func (s *Server) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.M
 	return resp, nil
 }
 
-func (s *Server) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (*pb.MemberRemoveResponse, error) {
+func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (*pb.MemberRemoveResponse, error) {
 	rsp, err := s.v3cli.MemberRemove(ctx, req.ID)
 	if err != nil {
 		return nil, err
@@ -69,7 +75,7 @@ func (s *Server) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) 
 	return resp, nil
 }
 
-func (s *Server) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (*pb.MemberUpdateResponse, error) {
+func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (*pb.MemberUpdateResponse, error) {
 	rsp, err := s.v3cli.MemberUpdate(ctx, req.ID, req.PeerURLs)
 	if err != nil {
 		return nil, err
@@ -85,7 +91,7 @@ func (s *Server) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) 
 	return resp, nil
 }
 
-func (s *Server) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb.MemberListResponse, error) {
+func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb.MemberListResponse, error) {
 	rsp, err := s.v3cli.MemberList(ctx)
 	if err != nil {
 		return nil, err
@@ -100,7 +106,7 @@ func (s *Server) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb
 	return resp, nil
 }
 
-func (s *Server) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (*pb.MemberPromoteResponse, error) {
+func (s *clusterServer) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (*pb.MemberPromoteResponse, error) {
 	rsp, err := s.v3cli.MemberPromote(ctx, req.ID)
 	if err != nil {
 		return nil, err

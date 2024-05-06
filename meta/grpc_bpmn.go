@@ -25,14 +25,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	urlpkg "net/url"
 	"path"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
@@ -84,104 +82,13 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 	return err
 }
 
-func (s *Server) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
-	resp = &pb.ListRunnerResponse{}
-	key := runtime.DefaultMetaRunnerRegistrar
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	runners := make([]*pb.Runner, 0, rsp.Count)
-	for _, kv := range rsp.Kvs {
-		runner := new(pb.Runner)
-		if e1 := proto.Unmarshal(kv.Value, runner); e1 == nil {
-			runners = append(runners, runner)
-		}
-	}
-	resp.Header = s.responseHeader()
-	resp.Runners = runners
-	return resp, nil
+type bpmnServer struct {
+	pb.UnsafeBpmnRPCServer
+
+	*Server
 }
 
-func (s *Server) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
-	resp = &pb.GetRunnerResponse{}
-	resp.Runner, err = s.getRunner(ctx, req.Id)
-	resp.Header = s.responseHeader()
-	return
-}
-
-func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
-	key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrKeyNotFound
-	}
-	runner = new(pb.Runner)
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, runner)
-	return
-}
-
-func (s *Server) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
-	resp = &pb.ListRegionResponse{}
-	key := runtime.DefaultRunnerRegion
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	regions := make([]*pb.Region, 0, rsp.Count)
-	for _, kv := range rsp.Kvs {
-		region := new(pb.Region)
-		if e1 := proto.Unmarshal(kv.Value, region); e1 == nil {
-			regions = append(regions, region)
-		}
-	}
-
-	resp.Header = s.responseHeader()
-	resp.Regions = regions
-	return resp, nil
-}
-
-func (s *Server) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
-	resp = &pb.GetRegionResponse{}
-	resp.Region, err = s.getRegion(ctx, req.Id)
-	resp.Header = s.responseHeader()
-	return
-}
-
-func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", id))
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrKeyNotFound
-	}
-	region = new(pb.Region)
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, region)
-	return
-}
-
-func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
+func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
 	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
@@ -227,7 +134,7 @@ func (s *Server) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionR
 	return
 }
 
-func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
+func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
 	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
@@ -359,7 +266,7 @@ func (s *Server) ListDefinition(ctx context.Context, req *pb.ListDefinitionReque
 	return
 }
 
-func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
+func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
 	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
@@ -418,7 +325,7 @@ func (s *Server) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest
 	return
 }
 
-func (s *Server) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
+func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
 	if !s.notifier.IsLeader() {
 		return
 	}
@@ -434,7 +341,7 @@ func (s *Server) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionR
 	return
 }
 
-func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
+func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
 	resp = &pb.ExecuteDefinitionResponse{}
 
 	in := &pb.GetDefinitionRequest{
@@ -481,7 +388,7 @@ func (s *Server) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitio
 	return
 }
 
-func (s *Server) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
+func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
 	resp = &pb.ListProcessInstancesResponse{}
 
 	lg := s.lg
@@ -517,7 +424,7 @@ func (s *Server) ListProcessInstances(ctx context.Context, req *pb.ListProcessIn
 	return
 }
 
-func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
 	resp = &pb.GetProcessInstanceResponse{}
 
 	lg := s.lg
@@ -579,7 +486,7 @@ func (s *Server) GetProcessInstance(ctx context.Context, req *pb.GetProcessInsta
 	return
 }
 
-func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta, error) {
+func (s *bpmnServer) definitionMeta(ctx context.Context, id string) (*definitionMeta, error) {
 	dm := &definitionMeta{
 		client: s.v3cli,
 	}
@@ -598,7 +505,7 @@ func (s *Server) definitionMeta(ctx context.Context, id string) (*definitionMeta
 	return dm, nil
 }
 
-func (s *Server) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (bool, error) {
+func (s *bpmnServer) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (bool, error) {
 	_, ok, err := s.scheduler.BindRegion(ctx, dm)
 	if err != nil {
 		s.lg.Error("binding region",
@@ -613,44 +520,4 @@ func (s *Server) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (boo
 	}
 
 	return ok, err
-}
-
-func (s *Server) reqPrepare(ctx context.Context) error {
-	if !s.notifier.IsLeader() {
-		return rpctypes.ErrGRPCNotLeader
-	}
-	if s.etcd.Server.Leader() == 0 {
-		return rpctypes.ErrGRPCNoLeader
-	}
-
-	return nil
-}
-
-func (s *Server) responseHeader() *pb.ResponseHeader {
-	es := s.etcd.Server
-	header := &pb.ResponseHeader{
-		ClusterId: uint64(es.Cluster().ID()),
-		MemberId:  uint64(es.ID()),
-		RaftTerm:  es.Term(),
-	}
-	return header
-}
-
-func (s *Server) buildGRPCConn(ctx context.Context, targetURL string) (*grpc.ClientConn, error) {
-	url, err := urlpkg.Parse(targetURL)
-	if err != nil {
-		return nil, err
-	}
-	host := url.Host
-
-	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, defaultTimeout)
-		defer cancel()
-	}
-
-	options := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	}
-	return grpc.DialContext(ctx, host, options...)
 }

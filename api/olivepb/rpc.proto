@@ -291,7 +291,7 @@ message ExecuteDefinitionResponse {
 service RunnerRPC {
   rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
     option (google.api.http) = {
-      post: "/api/v1/process_instance/fetch"
+      post: "/api/runner/v1/processInstance/fetch"
       body: "*"
     };
   };

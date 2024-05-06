@@ -979,7 +979,7 @@ func RegisterRunnerRPCHandlerServer(ctx context.Context, mux *runtime.ServeMux, 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/process_instance/fetch"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/runner/v1/processInstance/fetch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1639,7 +1639,7 @@ func RegisterRunnerRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/v1/process_instance/fetch"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/olivepb.RunnerRPC/GetProcessInstance", runtime.WithHTTPPathPattern("/api/runner/v1/processInstance/fetch"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1659,7 +1659,7 @@ func RegisterRunnerRPCHandlerClient(ctx context.Context, mux *runtime.ServeMux, 
 }
 
 var (
-	pattern_RunnerRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "process_instance", "fetch"}, ""))
+	pattern_RunnerRPC_GetProcessInstance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"api", "runner", "v1", "processInstance", "fetch"}, ""))
 )
 
 var (

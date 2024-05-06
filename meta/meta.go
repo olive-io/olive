@@ -44,10 +44,6 @@ import (
 
 type Server struct {
 	genericserver.IEmbedServer
-	pb.UnsafeClusterServer
-	pb.UnsafeMetaRunnerRPCServer
-	pb.UnsafeMetaRegionRPCServer
-	pb.UnsafeBpmnRPCServer
 
 	cfg Config
 
@@ -92,11 +88,14 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		"/metrics": promhttp.Handler(),
 	}
 
+	clusterRPC := &clusterServer{Server: s}
+	runnerRPC := &runnerServer{Server: s}
+	bpmnRPC := &bpmnServer{Server: s}
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		pb.RegisterClusterServer(gs, s)
-		pb.RegisterMetaRunnerRPCServer(gs, s)
-		pb.RegisterMetaRegionRPCServer(gs, s)
-		pb.RegisterBpmnRPCServer(gs, s)
+		pb.RegisterClusterServer(gs, clusterRPC)
+		pb.RegisterMetaRunnerRPCServer(gs, runnerRPC)
+		pb.RegisterMetaRegionRPCServer(gs, runnerRPC)
+		pb.RegisterBpmnRPCServer(gs, bpmnRPC)
 	}
 
 	var err error
