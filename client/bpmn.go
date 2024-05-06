@@ -39,7 +39,7 @@ type BpmnRPC interface {
 	GetDefinition(ctx context.Context, id string, version uint64) (*pb.GetDefinitionResponse, error)
 	RemoveDefinition(ctx context.Context, id string) (*pb.RemoveDefinitionResponse, error)
 	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ExecuteDefinitionResponse, error)
-	ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ListProcessInstancesResponse, error)
+	ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, limit int64, continueToken string) (*pb.ListProcessInstancesResponse, error)
 	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.GetProcessInstanceResponse, error)
 }
 
@@ -191,7 +191,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	return rsp, nil
 }
 
-func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ListProcessInstancesResponse, error) {
+func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, limit int64, continueToken string) (*pb.ListProcessInstancesResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -206,7 +206,8 @@ func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string
 	in := &pb.ListProcessInstancesRequest{
 		DefinitionId:      definitionId,
 		DefinitionVersion: definitionVersion,
-		Id:                id,
+		Limit:             limit,
+		Continue:          continueToken,
 	}
 
 	rsp, err := bc.remoteClient(conn).ListProcessInstances(ctx, in, bc.callOpts...)

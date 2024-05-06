@@ -31,14 +31,17 @@ import (
 )
 
 type clusterServer struct {
-	pb.UnsafeClusterServer
+	pb.UnsafeMetaClusterRPCServer
 
 	*Server
 }
 
-func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.MemberAddResponse, error) {
+func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (resp *pb.MemberAddResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	var rsp *clientv3.MemberAddResponse
-	var err error
 	if req.IsLearner {
 		rsp, err = s.v3cli.MemberAddAsLearner(ctx, req.PeerURLs)
 	} else {
@@ -48,7 +51,7 @@ func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest)
 		return nil, err
 	}
 
-	resp := &pb.MemberAddResponse{
+	resp = &pb.MemberAddResponse{
 		Header:  toHeader(rsp.Header),
 		Member:  toMember(rsp.Member),
 		Members: []*pb.Member{},
@@ -60,12 +63,16 @@ func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest)
 	return resp, nil
 }
 
-func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (*pb.MemberRemoveResponse, error) {
+func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (resp *pb.MemberRemoveResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	rsp, err := s.v3cli.MemberRemove(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.MemberRemoveResponse{
+	resp = &pb.MemberRemoveResponse{
 		Header:  toHeader(rsp.Header),
 		Members: []*pb.Member{},
 	}
@@ -75,13 +82,17 @@ func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRe
 	return resp, nil
 }
 
-func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (*pb.MemberUpdateResponse, error) {
+func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (resp *pb.MemberUpdateResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	rsp, err := s.v3cli.MemberUpdate(ctx, req.ID, req.PeerURLs)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &pb.MemberUpdateResponse{
+	resp = &pb.MemberUpdateResponse{
 		Header:  toHeader(rsp.Header),
 		Members: []*pb.Member{},
 	}
@@ -91,12 +102,16 @@ func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRe
 	return resp, nil
 }
 
-func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb.MemberListResponse, error) {
+func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListRequest) (resp *pb.MemberListResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	rsp, err := s.v3cli.MemberList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.MemberListResponse{
+	resp = &pb.MemberListResponse{
 		Header:  toHeader(rsp.Header),
 		Members: []*pb.Member{},
 	}
@@ -106,12 +121,16 @@ func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListReques
 	return resp, nil
 }
 
-func (s *clusterServer) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (*pb.MemberPromoteResponse, error) {
+func (s *clusterServer) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (resp *pb.MemberPromoteResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	rsp, err := s.v3cli.MemberPromote(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.MemberPromoteResponse{
+	resp = &pb.MemberPromoteResponse{
 		Header:  toHeader(rsp.Header),
 		Members: []*pb.Member{},
 	}

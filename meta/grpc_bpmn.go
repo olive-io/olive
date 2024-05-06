@@ -28,6 +28,7 @@ import (
 	"path"
 	"time"
 
+	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -35,7 +36,6 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
-	"github.com/olive-io/olive/meta/pagation"
 	"github.com/olive-io/olive/pkg/runtime"
 )
 
@@ -141,127 +141,48 @@ func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionR
 
 	resp = &pb.ListDefinitionResponse{}
 	preparedKey := runtime.DefaultMetaDefinitionMeta
-	keyPrefix := preparedKey
+
 	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-	}
-
-	var paging bool
-	// set the appropriate clientv3 options to filter the returned data set
-	var limitOption *clientv3.OpOption
-	limit := req.Limit
-	if limit > 0 {
-		paging = true
-		options = append(options, clientv3.WithLimit(limit))
-		limitOption = &options[len(options)-1]
-	}
-
-	var returnedRV, continueRV, withRev int64
-	var continueKey string
-	if len(req.Continue) > 0 {
-		continueKey, continueRV, err = pagation.DecodeContinue(req.Continue, keyPrefix)
-		if err != nil {
-			return nil, fmt.Errorf("invalid continue token: %v", err)
-		}
-
-		rangeEnd := clientv3.GetPrefixRangeEnd(keyPrefix)
-		options = append(options, clientv3.WithRange(rangeEnd))
-		preparedKey = continueKey
-
-		// If continueRV > 0, the LIST req needs a specific resource version.
-		// continueRV==0 is invalid.
-		// If continueRV < 0, the req is for the latest resource version.
-		if continueRV > 0 {
-			withRev = continueRV
-			returnedRV = continueRV
-		}
-	}
-
-	if withRev != 0 {
-		options = append(options, clientv3.WithRev(withRev))
+		clientv3.WithSerializable(),
 	}
 
 	var lastKey []byte
-	var hasMore bool
 	v := make([]*pb.Definition, 0)
-	for {
-		getResp, err := s.v3cli.Get(ctx, preparedKey, options...)
-		if err != nil {
-			return nil, err
+	var continueToken string
+	continueToken, err = s.pageList(ctx, preparedKey, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
+		lastKey = kv.Key
+		id := path.Base(string(lastKey))
+		dm := &pb.DefinitionMeta{}
+		if e1 := proto.Unmarshal(kv.Value, dm); e1 != nil {
+			return e1
 		}
-		hasMore = getResp.More
+		version := dm.Version
 
-		if len(getResp.Kvs) == 0 && getResp.More {
-			return nil, fmt.Errorf("no results were found, but olive indicated there were more values remaining")
-		}
-
-		for _, kv := range getResp.Kvs {
-			if paging && int64(len(v)) >= req.Limit {
-				hasMore = true
-				break
-			}
-			lastKey = kv.Key
-			id := path.Base(string(lastKey))
-			dm := &pb.DefinitionMeta{}
-			if err = proto.Unmarshal(kv.Value, dm); err != nil {
-				continue
-			}
-			version := dm.Version
-
-			key := path.Join(runtime.DefaultRunnerDefinitions, id, fmt.Sprintf("%d", version))
-			rsp, err := s.v3cli.Get(ctx, key, options...)
-			if err != nil || len(rsp.Kvs) == 0 {
-				continue
-			}
-
-			dkv := rsp.Kvs[0]
-			definition := &pb.Definition{}
-			if err = proto.Unmarshal(dkv.Value, definition); err != nil {
-				continue
-			}
-
-			definition.Rev = dkv.ModRevision
-
-			v = append(v, definition)
+		key := path.Join(runtime.DefaultRunnerDefinitions, id, fmt.Sprintf("%d", version))
+		rsp, e1 := s.v3cli.Get(ctx, key, options...)
+		if e1 != nil || len(rsp.Kvs) == 0 {
+			return nil
 		}
 
-		if !hasMore || paging {
-			break
+		dkv := rsp.Kvs[0]
+		definition := &pb.Definition{}
+		if e1 = proto.Unmarshal(dkv.Value, definition); e1 != nil {
+			return e1
 		}
 
-		// indicate to the client which resource version was returned
-		if returnedRV == 0 {
-			returnedRV = getResp.Header.Revision
-		}
+		definition.Rev = dkv.ModRevision
 
-		if int64(len(v)) >= req.Limit {
-			break
-		}
+		v = append(v, definition)
 
-		if limit < maxLimit {
-			limit *= 2
-			if limit > maxLimit {
-				limit = maxLimit
-			}
-			*limitOption = clientv3.WithLimit(limit)
-		}
-		preparedKey = string(lastKey) + "\x00"
-		if withRev == 0 {
-			withRev = returnedRV
-			options = append(options, clientv3.WithRev(withRev))
-		}
+		return nil
+	})
+	if err != nil {
+		return
 	}
 
 	resp.Header = s.responseHeader()
 	resp.Definitions = v
-	if hasMore {
-		// we want to start immediately after the last key
-		next, err := pagation.EncodeContinue(string(lastKey)+"\x00", keyPrefix, returnedRV)
-		if err != nil {
-			return nil, err
-		}
-		resp.ContinueToken = next
-	}
+	resp.ContinueToken = continueToken
 
 	return
 }
@@ -326,9 +247,10 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 }
 
 func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
-	if !s.notifier.IsLeader() {
+	if err = s.reqPrepare(ctx); err != nil {
 		return
 	}
+
 	resp = &pb.RemoveDefinitionResponse{}
 
 	dm, err := s.definitionMeta(ctx, req.Id)
@@ -342,6 +264,10 @@ func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinit
 }
 
 func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.ExecuteDefinitionResponse{}
 
 	in := &pb.GetDefinitionRequest{
@@ -389,58 +315,67 @@ func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefin
 }
 
 func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
-	resp = &pb.ListProcessInstancesResponse{}
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
 
 	lg := s.lg
-
+	resp = &pb.ListProcessInstancesResponse{}
 	key := path.Join(runtime.DefaultRunnerProcessInstance, req.DefinitionId)
 	if req.DefinitionVersion != 0 {
 		key = path.Join(key, fmt.Sprintf("%d", req.DefinitionVersion))
 	}
-	if req.Id != "" {
-		key = path.Join(key, req.Id)
-	}
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	instances := make([]*pb.ProcessInstance, 0, len(rsp.Kvs))
-	for _, kv := range rsp.Kvs {
+
+	instances := make([]*pb.ProcessInstance, 0)
+	var continueToken string
+	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
 		instance := new(pb.ProcessInstance)
-		err = proto.Unmarshal(kv.Value, instance)
-		if err != nil {
+		if e1 := proto.Unmarshal(kv.Value, instance); e1 != nil {
 			lg.Error("unmarshal process instance", zap.String("key", string(kv.Key)), zap.Error(err))
-			continue
+			return e1
 		}
 		instances = append(instances, instance)
+
+		return nil
+	})
+	if err != nil {
+		return
 	}
+
 	resp.Header = s.responseHeader()
 	resp.Instances = instances
+	resp.ContinueToken = continueToken
 
 	return
 }
 
 func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.GetProcessInstanceResponse{}
 
 	lg := s.lg
 
-	listResp, err := s.ListProcessInstances(ctx, &pb.ListProcessInstancesRequest{
-		DefinitionId:      req.DefinitionId,
-		DefinitionVersion: req.DefinitionVersion,
-		Id:                req.Id,
-	})
+	options := []clientv3.OpOption{clientv3.WithSerializable()}
+
+	key := path.Join(runtime.DefaultRunnerProcessInstance, req.DefinitionId,
+		fmt.Sprintf("%d", req.DefinitionVersion),
+		req.Id)
+
+	rsp, err := s.v3cli.Get(ctx, key, options...)
 	if err != nil {
 		return nil, err
 	}
-	if len(listResp.Instances) == 0 {
+	if len(rsp.Kvs) == 0 {
 		return nil, rpctypes.ErrGRPCKeyNotFound
 	}
-	instance := listResp.Instances[0]
+	kv := rsp.Kvs[0]
+	instance := new(pb.ProcessInstance)
+	if err = proto.Unmarshal(kv.Value, instance); err != nil {
+		return nil, err
+	}
 
 	if instance.Region != 0 {
 		region, _ := s.getRegion(ctx, instance.Region)

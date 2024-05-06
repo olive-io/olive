@@ -89,10 +89,13 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 	}
 
 	clusterRPC := &clusterServer{Server: s}
+	authRPC := &authServer{Server: s}
 	runnerRPC := &runnerServer{Server: s}
 	bpmnRPC := &bpmnServer{Server: s}
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		pb.RegisterClusterServer(gs, clusterRPC)
+		pb.RegisterMetaClusterRPCServer(gs, clusterRPC)
+		pb.RegisterAuthRPCServer(gs, authRPC)
+		pb.RegisterRbacRPCServer(gs, authRPC)
 		pb.RegisterMetaRunnerRPCServer(gs, runnerRPC)
 		pb.RegisterMetaRegionRPCServer(gs, runnerRPC)
 		pb.RegisterBpmnRPCServer(gs, bpmnRPC)

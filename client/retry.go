@@ -48,13 +48,13 @@ func (rp retryPolicy) String() string {
 }
 
 type retryClusterClient struct {
-	cc pb.ClusterClient
+	cc pb.MetaClusterRPCClient
 }
 
 // RetryClusterClient implements a ClusterClient.
-func RetryClusterClient(c *Client) pb.ClusterClient {
+func RetryClusterClient(c *Client) pb.MetaClusterRPCClient {
 	return &retryClusterClient{
-		cc: pb.NewClusterClient(c.conn),
+		cc: pb.NewMetaClusterRPCClient(c.conn),
 	}
 }
 

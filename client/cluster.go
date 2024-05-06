@@ -60,7 +60,7 @@ type Cluster interface {
 }
 
 type cluster struct {
-	remote   pb.ClusterClient
+	remote   pb.MetaClusterRPCClient
 	callOpts []grpc.CallOption
 }
 
@@ -72,7 +72,7 @@ func NewCluster(c *Client) Cluster {
 	return api
 }
 
-func NewClusterFromClusterClient(remote pb.ClusterClient, c *Client) Cluster {
+func NewClusterFromClusterClient(remote pb.MetaClusterRPCClient, c *Client) Cluster {
 	api := &cluster{remote: remote}
 	if c != nil {
 		api.callOpts = c.callOpts

@@ -19,10 +19,10 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// ClusterClient is the client API for Cluster service.
+// MetaClusterRPCClient is the client API for MetaClusterRPC service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ClusterClient interface {
+type MetaClusterRPCClient interface {
 	// MemberAdd adds a member into the cluster.
 	MemberAdd(ctx context.Context, in *MemberAddRequest, opts ...grpc.CallOption) (*MemberAddResponse, error)
 	// MemberRemove removes an existing member from the cluster.
@@ -35,63 +35,63 @@ type ClusterClient interface {
 	MemberPromote(ctx context.Context, in *MemberPromoteRequest, opts ...grpc.CallOption) (*MemberPromoteResponse, error)
 }
 
-type clusterClient struct {
+type metaClusterRPCClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewClusterClient(cc grpc.ClientConnInterface) ClusterClient {
-	return &clusterClient{cc}
+func NewMetaClusterRPCClient(cc grpc.ClientConnInterface) MetaClusterRPCClient {
+	return &metaClusterRPCClient{cc}
 }
 
-func (c *clusterClient) MemberAdd(ctx context.Context, in *MemberAddRequest, opts ...grpc.CallOption) (*MemberAddResponse, error) {
+func (c *metaClusterRPCClient) MemberAdd(ctx context.Context, in *MemberAddRequest, opts ...grpc.CallOption) (*MemberAddResponse, error) {
 	out := new(MemberAddResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.Cluster/MemberAdd", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaClusterRPC/MemberAdd", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *clusterClient) MemberRemove(ctx context.Context, in *MemberRemoveRequest, opts ...grpc.CallOption) (*MemberRemoveResponse, error) {
+func (c *metaClusterRPCClient) MemberRemove(ctx context.Context, in *MemberRemoveRequest, opts ...grpc.CallOption) (*MemberRemoveResponse, error) {
 	out := new(MemberRemoveResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.Cluster/MemberRemove", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaClusterRPC/MemberRemove", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *clusterClient) MemberUpdate(ctx context.Context, in *MemberUpdateRequest, opts ...grpc.CallOption) (*MemberUpdateResponse, error) {
+func (c *metaClusterRPCClient) MemberUpdate(ctx context.Context, in *MemberUpdateRequest, opts ...grpc.CallOption) (*MemberUpdateResponse, error) {
 	out := new(MemberUpdateResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.Cluster/MemberUpdate", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaClusterRPC/MemberUpdate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *clusterClient) MemberList(ctx context.Context, in *MemberListRequest, opts ...grpc.CallOption) (*MemberListResponse, error) {
+func (c *metaClusterRPCClient) MemberList(ctx context.Context, in *MemberListRequest, opts ...grpc.CallOption) (*MemberListResponse, error) {
 	out := new(MemberListResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.Cluster/MemberList", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaClusterRPC/MemberList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *clusterClient) MemberPromote(ctx context.Context, in *MemberPromoteRequest, opts ...grpc.CallOption) (*MemberPromoteResponse, error) {
+func (c *metaClusterRPCClient) MemberPromote(ctx context.Context, in *MemberPromoteRequest, opts ...grpc.CallOption) (*MemberPromoteResponse, error) {
 	out := new(MemberPromoteResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.Cluster/MemberPromote", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/olivepb.MetaClusterRPC/MemberPromote", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ClusterServer is the server API for Cluster service.
-// All implementations must embed UnimplementedClusterServer
+// MetaClusterRPCServer is the server API for MetaClusterRPC service.
+// All implementations must embed UnimplementedMetaClusterRPCServer
 // for forward compatibility
-type ClusterServer interface {
+type MetaClusterRPCServer interface {
 	// MemberAdd adds a member into the cluster.
 	MemberAdd(context.Context, *MemberAddRequest) (*MemberAddResponse, error)
 	// MemberRemove removes an existing member from the cluster.
@@ -102,157 +102,157 @@ type ClusterServer interface {
 	MemberList(context.Context, *MemberListRequest) (*MemberListResponse, error)
 	// MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
 	MemberPromote(context.Context, *MemberPromoteRequest) (*MemberPromoteResponse, error)
-	mustEmbedUnimplementedClusterServer()
+	mustEmbedUnimplementedMetaClusterRPCServer()
 }
 
-// UnimplementedClusterServer must be embedded to have forward compatible implementations.
-type UnimplementedClusterServer struct {
+// UnimplementedMetaClusterRPCServer must be embedded to have forward compatible implementations.
+type UnimplementedMetaClusterRPCServer struct {
 }
 
-func (UnimplementedClusterServer) MemberAdd(context.Context, *MemberAddRequest) (*MemberAddResponse, error) {
+func (UnimplementedMetaClusterRPCServer) MemberAdd(context.Context, *MemberAddRequest) (*MemberAddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MemberAdd not implemented")
 }
-func (UnimplementedClusterServer) MemberRemove(context.Context, *MemberRemoveRequest) (*MemberRemoveResponse, error) {
+func (UnimplementedMetaClusterRPCServer) MemberRemove(context.Context, *MemberRemoveRequest) (*MemberRemoveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MemberRemove not implemented")
 }
-func (UnimplementedClusterServer) MemberUpdate(context.Context, *MemberUpdateRequest) (*MemberUpdateResponse, error) {
+func (UnimplementedMetaClusterRPCServer) MemberUpdate(context.Context, *MemberUpdateRequest) (*MemberUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MemberUpdate not implemented")
 }
-func (UnimplementedClusterServer) MemberList(context.Context, *MemberListRequest) (*MemberListResponse, error) {
+func (UnimplementedMetaClusterRPCServer) MemberList(context.Context, *MemberListRequest) (*MemberListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MemberList not implemented")
 }
-func (UnimplementedClusterServer) MemberPromote(context.Context, *MemberPromoteRequest) (*MemberPromoteResponse, error) {
+func (UnimplementedMetaClusterRPCServer) MemberPromote(context.Context, *MemberPromoteRequest) (*MemberPromoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MemberPromote not implemented")
 }
-func (UnimplementedClusterServer) mustEmbedUnimplementedClusterServer() {}
+func (UnimplementedMetaClusterRPCServer) mustEmbedUnimplementedMetaClusterRPCServer() {}
 
-// UnsafeClusterServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ClusterServer will
+// UnsafeMetaClusterRPCServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MetaClusterRPCServer will
 // result in compilation errors.
-type UnsafeClusterServer interface {
-	mustEmbedUnimplementedClusterServer()
+type UnsafeMetaClusterRPCServer interface {
+	mustEmbedUnimplementedMetaClusterRPCServer()
 }
 
-func RegisterClusterServer(s grpc.ServiceRegistrar, srv ClusterServer) {
-	s.RegisterService(&Cluster_ServiceDesc, srv)
+func RegisterMetaClusterRPCServer(s grpc.ServiceRegistrar, srv MetaClusterRPCServer) {
+	s.RegisterService(&MetaClusterRPC_ServiceDesc, srv)
 }
 
-func _Cluster_MemberAdd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaClusterRPC_MemberAdd_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemberAddRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).MemberAdd(ctx, in)
+		return srv.(MetaClusterRPCServer).MemberAdd(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.Cluster/MemberAdd",
+		FullMethod: "/olivepb.MetaClusterRPC/MemberAdd",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).MemberAdd(ctx, req.(*MemberAddRequest))
+		return srv.(MetaClusterRPCServer).MemberAdd(ctx, req.(*MemberAddRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cluster_MemberRemove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaClusterRPC_MemberRemove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemberRemoveRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).MemberRemove(ctx, in)
+		return srv.(MetaClusterRPCServer).MemberRemove(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.Cluster/MemberRemove",
+		FullMethod: "/olivepb.MetaClusterRPC/MemberRemove",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).MemberRemove(ctx, req.(*MemberRemoveRequest))
+		return srv.(MetaClusterRPCServer).MemberRemove(ctx, req.(*MemberRemoveRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cluster_MemberUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaClusterRPC_MemberUpdate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemberUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).MemberUpdate(ctx, in)
+		return srv.(MetaClusterRPCServer).MemberUpdate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.Cluster/MemberUpdate",
+		FullMethod: "/olivepb.MetaClusterRPC/MemberUpdate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).MemberUpdate(ctx, req.(*MemberUpdateRequest))
+		return srv.(MetaClusterRPCServer).MemberUpdate(ctx, req.(*MemberUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cluster_MemberList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaClusterRPC_MemberList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemberListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).MemberList(ctx, in)
+		return srv.(MetaClusterRPCServer).MemberList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.Cluster/MemberList",
+		FullMethod: "/olivepb.MetaClusterRPC/MemberList",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).MemberList(ctx, req.(*MemberListRequest))
+		return srv.(MetaClusterRPCServer).MemberList(ctx, req.(*MemberListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cluster_MemberPromote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _MetaClusterRPC_MemberPromote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MemberPromoteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).MemberPromote(ctx, in)
+		return srv.(MetaClusterRPCServer).MemberPromote(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.Cluster/MemberPromote",
+		FullMethod: "/olivepb.MetaClusterRPC/MemberPromote",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).MemberPromote(ctx, req.(*MemberPromoteRequest))
+		return srv.(MetaClusterRPCServer).MemberPromote(ctx, req.(*MemberPromoteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Cluster_ServiceDesc is the grpc.ServiceDesc for Cluster service.
+// MetaClusterRPC_ServiceDesc is the grpc.ServiceDesc for MetaClusterRPC service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Cluster_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "olivepb.Cluster",
-	HandlerType: (*ClusterServer)(nil),
+var MetaClusterRPC_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.MetaClusterRPC",
+	HandlerType: (*MetaClusterRPCServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "MemberAdd",
-			Handler:    _Cluster_MemberAdd_Handler,
+			Handler:    _MetaClusterRPC_MemberAdd_Handler,
 		},
 		{
 			MethodName: "MemberRemove",
-			Handler:    _Cluster_MemberRemove_Handler,
+			Handler:    _MetaClusterRPC_MemberRemove_Handler,
 		},
 		{
 			MethodName: "MemberUpdate",
-			Handler:    _Cluster_MemberUpdate_Handler,
+			Handler:    _MetaClusterRPC_MemberUpdate_Handler,
 		},
 		{
 			MethodName: "MemberList",
-			Handler:    _Cluster_MemberList_Handler,
+			Handler:    _MetaClusterRPC_MemberList_Handler,
 		},
 		{
 			MethodName: "MemberPromote",
-			Handler:    _Cluster_MemberPromote_Handler,
+			Handler:    _MetaClusterRPC_MemberPromote_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -497,6 +497,718 @@ var MetaRegionRPC_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRegion",
 			Handler:    _MetaRegionRPC_GetRegion_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+}
+
+// AuthRPCClient is the client API for AuthRPC service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type AuthRPCClient interface {
+	ListRole(ctx context.Context, in *ListRoleRequest, opts ...grpc.CallOption) (*ListRoleResponse, error)
+	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*GetRoleResponse, error)
+	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*CreateRoleResponse, error)
+	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*UpdateRoleResponse, error)
+	RemoveRole(ctx context.Context, in *RemoveRoleRequest, opts ...grpc.CallOption) (*RemoveRoleResponse, error)
+	ListUser(ctx context.Context, in *ListUserRequest, opts ...grpc.CallOption) (*ListUserResponse, error)
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
+	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error)
+	RemoveUser(ctx context.Context, in *RemoveUserRequest, opts ...grpc.CallOption) (*RemoveUserResponse, error)
+	Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error)
+}
+
+type authRPCClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewAuthRPCClient(cc grpc.ClientConnInterface) AuthRPCClient {
+	return &authRPCClient{cc}
+}
+
+func (c *authRPCClient) ListRole(ctx context.Context, in *ListRoleRequest, opts ...grpc.CallOption) (*ListRoleResponse, error) {
+	out := new(ListRoleResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/ListRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*GetRoleResponse, error) {
+	out := new(GetRoleResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/GetRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*CreateRoleResponse, error) {
+	out := new(CreateRoleResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/CreateRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*UpdateRoleResponse, error) {
+	out := new(UpdateRoleResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/UpdateRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) RemoveRole(ctx context.Context, in *RemoveRoleRequest, opts ...grpc.CallOption) (*RemoveRoleResponse, error) {
+	out := new(RemoveRoleResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/RemoveRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) ListUser(ctx context.Context, in *ListUserRequest, opts ...grpc.CallOption) (*ListUserResponse, error) {
+	out := new(ListUserResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/ListUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
+	out := new(GetUserResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/GetUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error) {
+	out := new(CreateUserResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/CreateUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*UpdateUserResponse, error) {
+	out := new(UpdateUserResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/UpdateUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) RemoveUser(ctx context.Context, in *RemoveUserRequest, opts ...grpc.CallOption) (*RemoveUserResponse, error) {
+	out := new(RemoveUserResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/RemoveUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authRPCClient) Authenticate(ctx context.Context, in *AuthenticateRequest, opts ...grpc.CallOption) (*AuthenticateResponse, error) {
+	out := new(AuthenticateResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.AuthRPC/Authenticate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AuthRPCServer is the server API for AuthRPC service.
+// All implementations must embed UnimplementedAuthRPCServer
+// for forward compatibility
+type AuthRPCServer interface {
+	ListRole(context.Context, *ListRoleRequest) (*ListRoleResponse, error)
+	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
+	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
+	UpdateRole(context.Context, *UpdateRoleRequest) (*UpdateRoleResponse, error)
+	RemoveRole(context.Context, *RemoveRoleRequest) (*RemoveRoleResponse, error)
+	ListUser(context.Context, *ListUserRequest) (*ListUserResponse, error)
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
+	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
+	RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error)
+	Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error)
+	mustEmbedUnimplementedAuthRPCServer()
+}
+
+// UnimplementedAuthRPCServer must be embedded to have forward compatible implementations.
+type UnimplementedAuthRPCServer struct {
+}
+
+func (UnimplementedAuthRPCServer) ListRole(context.Context, *ListRoleRequest) (*ListRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRole not implemented")
+}
+func (UnimplementedAuthRPCServer) GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRole not implemented")
+}
+func (UnimplementedAuthRPCServer) CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRole not implemented")
+}
+func (UnimplementedAuthRPCServer) UpdateRole(context.Context, *UpdateRoleRequest) (*UpdateRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRole not implemented")
+}
+func (UnimplementedAuthRPCServer) RemoveRole(context.Context, *RemoveRoleRequest) (*RemoveRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveRole not implemented")
+}
+func (UnimplementedAuthRPCServer) ListUser(context.Context, *ListUserRequest) (*ListUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUser not implemented")
+}
+func (UnimplementedAuthRPCServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
+func (UnimplementedAuthRPCServer) CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedAuthRPCServer) UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
+}
+func (UnimplementedAuthRPCServer) RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveUser not implemented")
+}
+func (UnimplementedAuthRPCServer) Authenticate(context.Context, *AuthenticateRequest) (*AuthenticateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
+}
+func (UnimplementedAuthRPCServer) mustEmbedUnimplementedAuthRPCServer() {}
+
+// UnsafeAuthRPCServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AuthRPCServer will
+// result in compilation errors.
+type UnsafeAuthRPCServer interface {
+	mustEmbedUnimplementedAuthRPCServer()
+}
+
+func RegisterAuthRPCServer(s grpc.ServiceRegistrar, srv AuthRPCServer) {
+	s.RegisterService(&AuthRPC_ServiceDesc, srv)
+}
+
+func _AuthRPC_ListRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).ListRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/ListRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).ListRole(ctx, req.(*ListRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_GetRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).GetRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/GetRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).GetRole(ctx, req.(*GetRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_CreateRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).CreateRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/CreateRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).CreateRole(ctx, req.(*CreateRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_UpdateRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).UpdateRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/UpdateRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).UpdateRole(ctx, req.(*UpdateRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_RemoveRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).RemoveRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/RemoveRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).RemoveRole(ctx, req.(*RemoveRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_ListUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).ListUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/ListUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).ListUser(ctx, req.(*ListUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/GetUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/CreateUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).CreateUser(ctx, req.(*CreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/UpdateUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).UpdateUser(ctx, req.(*UpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_RemoveUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).RemoveUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/RemoveUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).RemoveUser(ctx, req.(*RemoveUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthRPC_Authenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthenticateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthRPCServer).Authenticate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.AuthRPC/Authenticate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthRPCServer).Authenticate(ctx, req.(*AuthenticateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// AuthRPC_ServiceDesc is the grpc.ServiceDesc for AuthRPC service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AuthRPC_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.AuthRPC",
+	HandlerType: (*AuthRPCServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListRole",
+			Handler:    _AuthRPC_ListRole_Handler,
+		},
+		{
+			MethodName: "GetRole",
+			Handler:    _AuthRPC_GetRole_Handler,
+		},
+		{
+			MethodName: "CreateRole",
+			Handler:    _AuthRPC_CreateRole_Handler,
+		},
+		{
+			MethodName: "UpdateRole",
+			Handler:    _AuthRPC_UpdateRole_Handler,
+		},
+		{
+			MethodName: "RemoveRole",
+			Handler:    _AuthRPC_RemoveRole_Handler,
+		},
+		{
+			MethodName: "ListUser",
+			Handler:    _AuthRPC_ListUser_Handler,
+		},
+		{
+			MethodName: "GetUser",
+			Handler:    _AuthRPC_GetUser_Handler,
+		},
+		{
+			MethodName: "CreateUser",
+			Handler:    _AuthRPC_CreateUser_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _AuthRPC_UpdateUser_Handler,
+		},
+		{
+			MethodName: "RemoveUser",
+			Handler:    _AuthRPC_RemoveUser_Handler,
+		},
+		{
+			MethodName: "Authenticate",
+			Handler:    _AuthRPC_Authenticate_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+}
+
+// RbacRPCClient is the client API for RbacRPC service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RbacRPCClient interface {
+	ListPolicy(ctx context.Context, in *ListPolicyRequest, opts ...grpc.CallOption) (*ListPolicyResponse, error)
+	AddPolicy(ctx context.Context, in *AddPolicyRequest, opts ...grpc.CallOption) (*AddPolicyResponse, error)
+	RemovePolicy(ctx context.Context, in *RemovePolicyRequest, opts ...grpc.CallOption) (*RemovePolicyResponse, error)
+	AddGroupPolicy(ctx context.Context, in *AddGroupPolicyRequest, opts ...grpc.CallOption) (*AddGroupPolicyResponse, error)
+	RemoveGroupPolicy(ctx context.Context, in *RemoveGroupPolicyRequest, opts ...grpc.CallOption) (*RemoveGroupPolicyResponse, error)
+	Admit(ctx context.Context, in *AdmitRequest, opts ...grpc.CallOption) (*AdmitResponse, error)
+}
+
+type rbacRPCClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRbacRPCClient(cc grpc.ClientConnInterface) RbacRPCClient {
+	return &rbacRPCClient{cc}
+}
+
+func (c *rbacRPCClient) ListPolicy(ctx context.Context, in *ListPolicyRequest, opts ...grpc.CallOption) (*ListPolicyResponse, error) {
+	out := new(ListPolicyResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/ListPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rbacRPCClient) AddPolicy(ctx context.Context, in *AddPolicyRequest, opts ...grpc.CallOption) (*AddPolicyResponse, error) {
+	out := new(AddPolicyResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/AddPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rbacRPCClient) RemovePolicy(ctx context.Context, in *RemovePolicyRequest, opts ...grpc.CallOption) (*RemovePolicyResponse, error) {
+	out := new(RemovePolicyResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/RemovePolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rbacRPCClient) AddGroupPolicy(ctx context.Context, in *AddGroupPolicyRequest, opts ...grpc.CallOption) (*AddGroupPolicyResponse, error) {
+	out := new(AddGroupPolicyResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/AddGroupPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rbacRPCClient) RemoveGroupPolicy(ctx context.Context, in *RemoveGroupPolicyRequest, opts ...grpc.CallOption) (*RemoveGroupPolicyResponse, error) {
+	out := new(RemoveGroupPolicyResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/RemoveGroupPolicy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rbacRPCClient) Admit(ctx context.Context, in *AdmitRequest, opts ...grpc.CallOption) (*AdmitResponse, error) {
+	out := new(AdmitResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RbacRPC/Admit", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RbacRPCServer is the server API for RbacRPC service.
+// All implementations must embed UnimplementedRbacRPCServer
+// for forward compatibility
+type RbacRPCServer interface {
+	ListPolicy(context.Context, *ListPolicyRequest) (*ListPolicyResponse, error)
+	AddPolicy(context.Context, *AddPolicyRequest) (*AddPolicyResponse, error)
+	RemovePolicy(context.Context, *RemovePolicyRequest) (*RemovePolicyResponse, error)
+	AddGroupPolicy(context.Context, *AddGroupPolicyRequest) (*AddGroupPolicyResponse, error)
+	RemoveGroupPolicy(context.Context, *RemoveGroupPolicyRequest) (*RemoveGroupPolicyResponse, error)
+	Admit(context.Context, *AdmitRequest) (*AdmitResponse, error)
+	mustEmbedUnimplementedRbacRPCServer()
+}
+
+// UnimplementedRbacRPCServer must be embedded to have forward compatible implementations.
+type UnimplementedRbacRPCServer struct {
+}
+
+func (UnimplementedRbacRPCServer) ListPolicy(context.Context, *ListPolicyRequest) (*ListPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPolicy not implemented")
+}
+func (UnimplementedRbacRPCServer) AddPolicy(context.Context, *AddPolicyRequest) (*AddPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPolicy not implemented")
+}
+func (UnimplementedRbacRPCServer) RemovePolicy(context.Context, *RemovePolicyRequest) (*RemovePolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemovePolicy not implemented")
+}
+func (UnimplementedRbacRPCServer) AddGroupPolicy(context.Context, *AddGroupPolicyRequest) (*AddGroupPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddGroupPolicy not implemented")
+}
+func (UnimplementedRbacRPCServer) RemoveGroupPolicy(context.Context, *RemoveGroupPolicyRequest) (*RemoveGroupPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveGroupPolicy not implemented")
+}
+func (UnimplementedRbacRPCServer) Admit(context.Context, *AdmitRequest) (*AdmitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Admit not implemented")
+}
+func (UnimplementedRbacRPCServer) mustEmbedUnimplementedRbacRPCServer() {}
+
+// UnsafeRbacRPCServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RbacRPCServer will
+// result in compilation errors.
+type UnsafeRbacRPCServer interface {
+	mustEmbedUnimplementedRbacRPCServer()
+}
+
+func RegisterRbacRPCServer(s grpc.ServiceRegistrar, srv RbacRPCServer) {
+	s.RegisterService(&RbacRPC_ServiceDesc, srv)
+}
+
+func _RbacRPC_ListPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).ListPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/ListPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).ListPolicy(ctx, req.(*ListPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RbacRPC_AddPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).AddPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/AddPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).AddPolicy(ctx, req.(*AddPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RbacRPC_RemovePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemovePolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).RemovePolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/RemovePolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).RemovePolicy(ctx, req.(*RemovePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RbacRPC_AddGroupPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddGroupPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).AddGroupPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/AddGroupPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).AddGroupPolicy(ctx, req.(*AddGroupPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RbacRPC_RemoveGroupPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveGroupPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).RemoveGroupPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/RemoveGroupPolicy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).RemoveGroupPolicy(ctx, req.(*RemoveGroupPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RbacRPC_Admit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdmitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RbacRPCServer).Admit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RbacRPC/Admit",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RbacRPCServer).Admit(ctx, req.(*AdmitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RbacRPC_ServiceDesc is the grpc.ServiceDesc for RbacRPC service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RbacRPC_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "olivepb.RbacRPC",
+	HandlerType: (*RbacRPCServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListPolicy",
+			Handler:    _RbacRPC_ListPolicy_Handler,
+		},
+		{
+			MethodName: "AddPolicy",
+			Handler:    _RbacRPC_AddPolicy_Handler,
+		},
+		{
+			MethodName: "RemovePolicy",
+			Handler:    _RbacRPC_RemovePolicy_Handler,
+		},
+		{
+			MethodName: "AddGroupPolicy",
+			Handler:    _RbacRPC_AddGroupPolicy_Handler,
+		},
+		{
+			MethodName: "RemoveGroupPolicy",
+			Handler:    _RbacRPC_RemoveGroupPolicy_Handler,
+		},
+		{
+			MethodName: "Admit",
+			Handler:    _RbacRPC_Admit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

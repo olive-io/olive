@@ -27,11 +27,12 @@ option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 
 import "github.com/olive-io/olive/api/olivepb/internal.proto";
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
+import "github.com/olive-io/olive/api/authpb/auth.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";
 
-service Cluster {
+service MetaClusterRPC {
   // MemberAdd adds a member into the cluster.
   rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
     option (google.api.http) = {
@@ -191,6 +192,270 @@ message GetRegionResponse {
   Region region = 2;
 }
 
+service AuthRPC {
+  rpc ListRole(ListRoleRequest) returns (ListRoleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/roles"
+    };
+  }
+
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/role/{name}"
+    };
+  }
+
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/roles/create"
+      body: "*"
+    };
+  }
+
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/roles/update"
+      body: "*"
+    };
+  }
+
+  rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/roles/remove"
+      body: "*"
+    };
+  }
+
+  rpc ListUser(ListUserRequest) returns (ListUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/users"
+    };
+  }
+
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/user/{name}"
+    };
+  }
+
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/users/create"
+      body: "*"
+    };
+  }
+
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/users/update"
+      body: "*"
+    };
+  }
+
+  rpc RemoveUser(RemoveUserRequest) returns (RemoveUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/users/remove"
+      body: "*"
+    };
+  }
+
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/authenticate"
+      body: "*"
+    };
+  }
+}
+
+message ListRoleRequest {
+  int64 limit = 1;
+  string continue = 21;
+}
+
+message ListRoleResponse {
+  ResponseHeader header = 1;
+  repeated authpbv1.Role roles = 2;
+  string continueToken = 3;
+}
+
+message GetRoleRequest {
+  string name = 1;
+}
+
+message GetRoleResponse {
+  authpbv1.Role role = 1;
+}
+
+message CreateRoleRequest {
+  authpbv1.Role role = 1;
+}
+
+message CreateRoleResponse {
+  ResponseHeader header = 1;
+  authpbv1.Role role = 2;
+}
+
+message UpdateRoleRequest {
+  string name = 1;
+  string desc = 2;
+  map<string, string> metadata = 3;
+  string namespace = 4;
+}
+
+message UpdateRoleResponse {
+  ResponseHeader header = 1;
+  authpbv1.Role role = 2;
+}
+
+message RemoveRoleRequest {
+  string name = 1;
+}
+
+message RemoveRoleResponse {
+  ResponseHeader header = 1;
+  authpbv1.Role role = 2;
+}
+
+message ListUserRequest {
+  int64 limit = 1;
+  string continue = 21;
+}
+
+message ListUserResponse {
+  ResponseHeader header = 1;
+  repeated authpbv1.User users = 2;
+  string continueToken = 3;
+}
+
+message GetUserRequest {
+  string name = 1;
+}
+
+message GetUserResponse {
+  authpbv1.User user = 1;
+}
+
+message CreateUserRequest {
+  authpbv1.User user = 1;
+}
+
+message CreateUserResponse {
+  ResponseHeader header = 1;
+  authpbv1.User user = 2;
+}
+
+message UpdateUserRequest {
+  string name = 1;
+  string desc = 2;
+  map<string, string> metadata = 3;
+  string namespace = 4;
+  string password = 5;
+}
+
+message UpdateUserResponse {
+  ResponseHeader header = 1;
+  authpbv1.User user = 2;
+}
+
+message RemoveUserRequest {
+  string name = 1;
+}
+
+message RemoveUserResponse {
+  ResponseHeader header = 1;
+  authpbv1.User user = 2;
+}
+
+message AuthenticateRequest {
+  string name = 1;
+  string password = 2;
+}
+
+message AuthenticateResponse {
+  ResponseHeader header = 1;
+  authpbv1.Token token = 2;
+}
+
+service RbacRPC {
+  rpc ListPolicy(ListPolicyRequest) returns (ListPolicyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/rbac/policy"
+    };
+  }
+  rpc AddPolicy(AddPolicyRequest) returns (AddPolicyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/rbac/policy/add"
+      body: "*"
+    };
+  }
+  rpc RemovePolicy(RemovePolicyRequest) returns (RemovePolicyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/rbac/policy/remove"
+      body: "*"
+    };
+  }
+  rpc AddGroupPolicy(AddGroupPolicyRequest) returns (AddGroupPolicyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/rbac/group/add"
+      body: "*"
+    };
+  }
+  rpc RemoveGroupPolicy(RemoveGroupPolicyRequest) returns (RemoveGroupPolicyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/rbac/group/remove"
+      body: "*"
+    };
+  }
+  rpc Admit(AdmitRequest) returns (AdmitResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/rbac/admit"
+      body: "*"
+    };
+  }
+}
+
+message ListPolicyRequest {
+  authpbv1.PType ptyle = 1;
+  string sub = 2;
+}
+
+message ListPolicyResponse {
+  repeated authpbv1.Policy policies = 1;
+  repeated authpbv1.Subject subjects = 2;
+}
+
+message AddPolicyRequest {
+  authpbv1.Policy policy = 1;
+}
+
+message AddPolicyResponse {}
+
+message RemovePolicyRequest {
+  authpbv1.Policy policy = 1;
+}
+
+message RemovePolicyResponse {}
+
+message AddGroupPolicyRequest {
+  authpbv1.Subject subject = 1;
+}
+
+message AddGroupPolicyResponse {}
+
+message RemoveGroupPolicyRequest {
+  authpbv1.Subject subject = 1;
+}
+
+message RemoveGroupPolicyResponse {}
+
+message AdmitRequest {
+  authpbv1.Policy policy = 1;
+}
+
+message AdmitResponse {
+  bool result = 1;
+}
+
 service BpmnRPC {
   rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
     option (google.api.http) = {
@@ -300,12 +565,15 @@ service RunnerRPC {
 message ListProcessInstancesRequest {
   string definitionId = 1;
   uint64 definitionVersion = 2;
-  string id = 3;
+
+  int64 limit = 21;
+  string continue = 22;
 }
 
 message ListProcessInstancesResponse {
   ResponseHeader header = 1;
   repeated ProcessInstance instances = 2;
+  string continueToken = 3;
 }
 
 message GetProcessInstanceRequest {

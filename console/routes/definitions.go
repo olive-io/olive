@@ -179,13 +179,14 @@ func (dg *DefinitionsGroup) definitionExecute(ctx *gin.Context, in *DefinitionEx
 type ProcessListRequest struct {
 	DefinitionId      string `json:"definitionId" validate:"required"`
 	DefinitionVersion uint64 `json:"definitionVersion"`
-	Id                string `json:"id"`
+	Limit             int64  `json:"limit"`
+	ContinueToken     string `json:"continueToken"`
 }
 
 type ProcessListResponse = olivepb.ListProcessInstancesResponse
 
 func (dg *DefinitionsGroup) processList(ctx *gin.Context, in *ProcessListRequest) (*ProcessListResponse, error) {
-	resp, err := dg.oct.ListProcessInstances(ctx, in.DefinitionId, in.DefinitionVersion, in.Id)
+	resp, err := dg.oct.ListProcessInstances(ctx, in.DefinitionId, in.DefinitionVersion, in.Limit, in.ContinueToken)
 	if err != nil {
 		return nil, err
 	}

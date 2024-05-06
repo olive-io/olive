@@ -1,0 +1,96 @@
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package authpbv1;
+
+option go_package = "github.com/olive-io/olive/api/authpb;authpbv1";
+
+message Role {
+  string name = 1;
+  string desc = 2;
+  map<string, string> metadata = 3;
+  string namespace = 4;
+
+  int64 creationTimestamp = 11;
+  int64 updateTimestamp = 12;
+}
+
+message User {
+  string name = 1;
+  string desc = 2;
+  map<string, string> metadata = 3;
+  string role = 4;
+  string namespace = 5;
+  string password = 6;
+
+  int64 creationTimestamp = 11;
+  int64 updateTimestamp = 12;
+}
+
+message Token {
+  string tokenText = 1;
+  string role = 2;
+  string user = 3;
+
+  int64 startTimestamp = 11;
+  int64 endTimestamp = 12;
+}
+
+enum PType {
+  UNKNOWN = 0;
+  POLICY = 1; // p
+  ROLE = 2; // g
+}
+
+message Policy {
+  PType ptype = 1;
+  string sub = 2;
+  string domain = 3;
+  Resource data = 4;
+  Action action = 5;
+}
+
+message Subject {
+  PType ptype = 1;
+  string sub = 2;
+  string role = 3;
+  string domain = 4;
+}
+
+enum Resource {
+  UNKNOWN_Resource = 0;
+  MetaMember = 1;
+  AuthRole = 2;
+  AuthUser = 3;
+  Authentication = 4; // login, rbac policy
+  Runner = 5;
+  Region = 6;
+  BpmnDefinition = 7;
+  BpmnProcess = 8;
+}
+
+enum Action {
+  UNKNOWN_Action = 0;
+  Read = 1;
+  Write = 2;
+}

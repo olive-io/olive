@@ -39,6 +39,10 @@ type runnerServer struct {
 }
 
 func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.ListRunnerResponse{}
 	key := runtime.DefaultMetaRunnerRegistrar
 	options := []clientv3.OpOption{
@@ -62,6 +66,10 @@ func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest
 }
 
 func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.GetRunnerResponse{}
 	resp.Runner, err = s.getRunner(ctx, req.Id)
 	resp.Header = s.responseHeader()
@@ -69,6 +77,10 @@ func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) 
 }
 
 func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.ListRegionResponse{}
 	key := runtime.DefaultRunnerRegion
 	options := []clientv3.OpOption{
@@ -93,6 +105,10 @@ func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest
 }
 
 func (s *runnerServer) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
+	if err = s.reqPrepare(ctx); err != nil {
+		return
+	}
+
 	resp = &pb.GetRegionResponse{}
 	resp.Region, err = s.getRegion(ctx, req.Id)
 	resp.Header = s.responseHeader()
