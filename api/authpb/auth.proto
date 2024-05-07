@@ -65,16 +65,10 @@ enum PType {
 message Policy {
   PType ptype = 1;
   string sub = 2;
-  string domain = 3;
-  Resource data = 4;
-  Action action = 5;
-}
-
-message Subject {
-  PType ptype = 1;
-  string sub = 2;
-  string role = 3;
-  string domain = 4;
+  string role = 11;
+  string domain = 12;
+  Resource data = 21;
+  Action action = 22;
 }
 
 enum Resource {

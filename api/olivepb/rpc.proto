@@ -420,40 +420,49 @@ message ListPolicyRequest {
 }
 
 message ListPolicyResponse {
-  repeated authpbv1.Policy policies = 1;
-  repeated authpbv1.Subject subjects = 2;
+  ResponseHeader header = 1;
+  repeated authpbv1.Policy policies = 2;
 }
 
 message AddPolicyRequest {
   authpbv1.Policy policy = 1;
 }
 
-message AddPolicyResponse {}
+message AddPolicyResponse {
+  ResponseHeader header = 1;
+}
 
 message RemovePolicyRequest {
   authpbv1.Policy policy = 1;
 }
 
-message RemovePolicyResponse {}
+message RemovePolicyResponse {
+  ResponseHeader header = 1;
+}
 
 message AddGroupPolicyRequest {
-  authpbv1.Subject subject = 1;
+  authpbv1.Policy policy = 1;
 }
 
-message AddGroupPolicyResponse {}
+message AddGroupPolicyResponse {
+  ResponseHeader header = 1;
+}
 
 message RemoveGroupPolicyRequest {
-  authpbv1.Subject subject = 1;
+  authpbv1.Policy policy = 1;
 }
 
-message RemoveGroupPolicyResponse {}
+message RemoveGroupPolicyResponse {
+  ResponseHeader header = 1;
+}
 
 message AdmitRequest {
   authpbv1.Policy policy = 1;
 }
 
 message AdmitResponse {
-  bool result = 1;
+  ResponseHeader header = 1;
+  bool result = 2;
 }
 
 service BpmnRPC {

@@ -31,6 +31,7 @@ var (
 	DefaultMetaPrefix            = path.Join(DefaultOlivePrefix, "meta")
 	DefaultUserPrefix            = path.Join(DefaultOlivePrefix, "user")
 	DefaultRolePrefix            = path.Join(DefaultOlivePrefix, "role")
+	DefaultPolicyPrefix          = path.Join(DefaultOlivePrefix, "policy")
 	DefaultMetaRunnerRegistrarId = path.Join(DefaultMetaPrefix, "runnerIds")
 	DefaultMetaRegionRegistrarId = path.Join(DefaultMetaPrefix, "regionsIds")
 	DefaultMetaRunnerPrefix      = path.Join(DefaultMetaPrefix, "runner")
