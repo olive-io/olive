@@ -1,47 +1,57 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 syntax = "proto3";
 
 package discoverypb;
 
 option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.sizer_all) = true;
-option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_getters_all) = false;
 
-import "gogoproto/gogo.proto";
+enum BoxType {
+  string = 0;
+  integer = 1;
+  float = 2;
+  boolean = 3;
+  array = 4;
+  object = 5;
+  map = 6;
+}
 
-enum Activity {
-  Unknown = 0;
-  Task = 1;
-  ServiceTask = 2;
-  ScriptTask = 3;
-  UserTask = 4;
-  SendTask = 5;
-  ReceiveTask = 6;
-  CallActivity = 7;
+// Box is an opaque value for a request or response
+message Box {
+  BoxType type = 1;
+  // Box Value by json.Marshal
+  string data = 2;
+  // the reference, points to OpenAPI Component when type is Object
+  string ref = 3;
+  map<string, Box> parameters = 4;
 }
 
 // Endpoint is a endpoint provided by a service
 message Endpoint {
   string name = 1;
 
-  Value request = 2;
+  Box request = 2;
 
-  Value response = 3;
+  Box response = 3;
 
   map<string, string> metadata = 4;
 }
@@ -70,8 +80,6 @@ message Node {
   int64 port = 3;
 
   map<string, string> metadata = 4;
-
-  repeated Activity activities = 5;
 }
 
 // Result is returns by the watcher
@@ -80,7 +88,9 @@ message Result {
 
   Service service = 2;
 
-  int64 timestamp = 3;
+  Endpoint endpoint = 3;
+
+  int64 timestamp = 4;
 }
 
 // Service represents a olive service
@@ -100,31 +110,11 @@ message Service {
   int64 ttl = 7;
 }
 
-// Value is an opaque value for a request or response
-message Value {
+message Hook {
   string name = 1;
-
-  string type = 2;
-
-  repeated Value values = 3;
+  string url = 2;
 }
 
-// Response save the data from gateway Handle function
-message Response {
-  map<string, Box> properties = 1;
-  map<string, Box> dataObjects = 2;
-}
+message GlobalConfig {
 
-message Box {
-  enum BoxType {
-    Unknown = 0;
-    Boolean = 1;
-    Integer = 2;
-    Float = 3;
-    String = 4;
-    Array = 5;
-    Object = 6;
-  }
-  BoxType type = 1;
-  bytes data = 2;
 }

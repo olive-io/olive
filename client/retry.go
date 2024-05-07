@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package client
 
@@ -41,13 +48,13 @@ func (rp retryPolicy) String() string {
 }
 
 type retryClusterClient struct {
-	cc pb.ClusterClient
+	cc pb.MetaClusterRPCClient
 }
 
 // RetryClusterClient implements a ClusterClient.
-func RetryClusterClient(c *Client) pb.ClusterClient {
+func RetryClusterClient(c *Client) pb.MetaClusterRPCClient {
 	return &retryClusterClient{
-		cc: pb.NewClusterClient(c.conn),
+		cc: pb.NewMetaClusterRPCClient(c.conn),
 	}
 }
 
@@ -71,34 +78,41 @@ func (rcc *retryClusterClient) MemberPromote(ctx context.Context, in *pb.MemberP
 	return rcc.cc.MemberPromote(ctx, in, opts...)
 }
 
-type retryMetaClient struct {
-	mc pb.MetaRPCClient
+type retryMetaRunnerClient struct {
+	mc pb.MetaRunnerRPCClient
 }
 
-// RetryMetaClient implements a MetaRPCClient.
-func RetryMetaClient(conn *grpc.ClientConn) pb.MetaRPCClient {
-	return &retryMetaClient{
-		mc: pb.NewMetaRPCClient(conn),
+// RetryMetaRunnerClient implements a MetaRunnerRPCClient.
+func RetryMetaRunnerClient(conn *grpc.ClientConn) pb.MetaRunnerRPCClient {
+	return &retryMetaRunnerClient{
+		mc: pb.NewMetaRunnerRPCClient(conn),
 	}
 }
 
-func (rmc *retryMetaClient) GetMeta(ctx context.Context, in *pb.GetMetaRequest, opts ...grpc.CallOption) (resp *pb.GetMetaResponse, err error) {
-	return rmc.mc.GetMeta(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-}
-
-func (rmc *retryMetaClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
+func (rmc *retryMetaRunnerClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
 	return rmc.mc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
+func (rmc *retryMetaRunnerClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
 	return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
+type retryMetaRegionClient struct {
+	mc pb.MetaRegionRPCClient
+}
+
+// RetryMetaRegionClient implements a MetaRegionRPCClient
+func RetryMetaRegionClient(conn *grpc.ClientConn) pb.MetaRegionRPCClient {
+	return &retryMetaRegionClient{
+		mc: pb.NewMetaRegionRPCClient(conn),
+	}
+}
+
+func (rmc *retryMetaRegionClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
 	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
+func (rmc *retryMetaRegionClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
 	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
@@ -131,6 +145,10 @@ func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveD
 
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
 	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rbc *retryBpmnClient) ListProcessInstances(ctx context.Context, in *pb.ListProcessInstancesRequest, opts ...grpc.CallOption) (*pb.ListProcessInstancesResponse, error) {
+	return rbc.bc.ListProcessInstances(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (*pb.GetProcessInstanceResponse, error) {

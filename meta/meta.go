@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package meta
 
@@ -28,14 +35,15 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/olivepb"
+	genericserver "github.com/olive-io/olive/pkg/server"
+
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
-	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 type Server struct {
-	genericserver.Inner
+	genericserver.IEmbedServer
 
 	cfg Config
 
@@ -46,7 +54,7 @@ type Server struct {
 
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
-	idReq *idutil.Generator
+	idGen *idutil.Generator
 
 	notifier leader.Notifier
 
@@ -56,12 +64,12 @@ type Server struct {
 func NewServer(cfg Config) (*Server, error) {
 
 	lg := cfg.Config.GetLogger()
-	inner := genericserver.NewInnerServer(lg)
+	embedServer := genericserver.NewEmbedServer(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{
-		Inner: inner,
-		cfg:   cfg,
+		IEmbedServer: embedServer,
+		cfg:          cfg,
 
 		ctx:    ctx,
 		cancel: cancel,
@@ -80,10 +88,17 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		"/metrics": promhttp.Handler(),
 	}
 
+	clusterRPC := &clusterServer{Server: s}
+	authRPC := &authServer{Server: s}
+	runnerRPC := &runnerServer{Server: s}
+	bpmnRPC := &bpmnServer{Server: s}
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		olivepb.RegisterClusterServer(gs, s)
-		olivepb.RegisterMetaRPCServer(gs, s)
-		olivepb.RegisterBpmnRPCServer(gs, s)
+		pb.RegisterMetaClusterRPCServer(gs, clusterRPC)
+		pb.RegisterAuthRPCServer(gs, authRPC)
+		pb.RegisterRbacRPCServer(gs, authRPC)
+		pb.RegisterMetaRunnerRPCServer(gs, runnerRPC)
+		pb.RegisterMetaRegionRPCServer(gs, runnerRPC)
+		pb.RegisterBpmnRPCServer(gs, bpmnRPC)
 	}
 
 	var err error
@@ -92,9 +107,14 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return errors.Wrap(err, "start embed etcd")
 	}
 
-	<-s.etcd.Server.ReadyNotify()
+	select {
+	case <-s.etcd.Server.ReadyNotify():
+	case <-stopc:
+		return errors.New("etcd server not stops")
+	}
+
 	s.v3cli = v3client.New(s.etcd.Server)
-	s.idReq = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
+	s.idGen = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
 	s.notifier = leader.NewNotify(s.etcd.Server)
 
 	sLimit := schedule.Limit{
@@ -106,7 +126,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	s.Inner.Destroy(s.destroy)
+	s.IEmbedServer.OnDestroy(s.destroy)
 
 	<-stopc
 
@@ -114,7 +134,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 }
 
 func (s *Server) stop() error {
-	s.Inner.Shutdown()
+	s.IEmbedServer.Shutdown()
 	return nil
 }
 

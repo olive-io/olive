@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package raft
 
@@ -20,8 +27,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -117,7 +124,7 @@ func (a *applier) Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPu
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "key", Value: string(r.Key)},
-			traceutil.Field{Key: "req_size", Value: r.XSize()},
+			traceutil.Field{Key: "req_size", Value: proto.Size(r)},
 		)
 	}
 
@@ -172,7 +179,7 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefini
 	}
 
 	trace.Step("save definition", traceutil.Field{Key: "key", Value: key})
-	data, _ := definition.Marshal()
+	data, _ := proto.Marshal(definition)
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
@@ -192,15 +199,15 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "process_instance", Value: process.Id},
-			traceutil.Field{Key: "definition_id", Value: process.DefinitionId},
-			traceutil.Field{Key: "definition_version", Value: process.DefinitionVersion},
+			traceutil.Field{Key: "definition_id", Value: process.DefinitionsId},
+			traceutil.Field{Key: "definition_version", Value: process.DefinitionsVersion},
 		)
 	}
 
 	prefix := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId),
-		[]byte(fmt.Sprintf("%d", process.DefinitionVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", process.Id)))
+		[]byte(process.DefinitionsId),
+		[]byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
+	key := bytesutil.PathJoin(prefix, []byte(process.Id))
 
 	if kv, _ := a.r.get(key); kv != nil {
 		return nil, trace, ErrProcessExecuted
@@ -208,7 +215,7 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 
 	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
 	process.Status = pb.ProcessInstance_Prepare
-	data, _ := process.Marshal()
+	data, _ := proto.Marshal(process)
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}

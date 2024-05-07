@@ -1,20 +1,28 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package discovery
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"path"
@@ -41,7 +49,7 @@ type etcdWatcher struct {
 	client *clientv3.Client
 }
 
-func newEtcdWatcher(ctx context.Context, r *etcdRegistry, opts ...WatchOption) (Watcher, error) {
+func newEtcdWatcher(ctx context.Context, r *etcdRegistrar, opts ...WatchOption) (Watcher, error) {
 	var wo WatchOptions
 	for _, o := range opts {
 		o(&wo)
@@ -98,9 +106,9 @@ func (ew *etcdWatcher) Next() (*dsypb.Result, error) {
 			return nil, errors.New("could not get next, watch is canceled")
 		}
 		for _, ev := range wresp.Events {
-			service := decode(ev.Kv.Value)
 			var action string
 
+			value := ev.Kv.Value
 			switch ev.Type {
 			case clientv3.EventTypePut:
 				if ev.IsCreate() {
@@ -111,16 +119,27 @@ func (ew *etcdWatcher) Next() (*dsypb.Result, error) {
 			case clientv3.EventTypeDelete:
 				action = "delete"
 
-				// get service from prevKv
-				service = decode(ev.PrevKv.Value)
+				value = ev.PrevKv.Value
+
 			}
 
-			if service == nil {
+			var service *dsypb.Service
+			var endpoint *dsypb.Endpoint
+			// get service from prevKv
+			if bytes.Contains(ev.Kv.Key, []byte("_ep_")) {
+				endpoint = decodeEp(value)
+			} else {
+				service = decode(value)
+			}
+
+			if service == nil && endpoint == nil {
 				continue
 			}
+
 			return &dsypb.Result{
 				Action:    action,
 				Service:   service,
+				Endpoint:  endpoint,
 				Timestamp: time.Now().Unix(),
 			}, nil
 		}

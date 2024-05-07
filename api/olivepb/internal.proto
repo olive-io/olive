@@ -1,34 +1,31 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 syntax = "proto3";
 
 package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.sizer_all) = true;
-option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.goproto_getters_all) = false;
 
-import "gogoproto/gogo.proto";
-
-message OliveHeader {
-  uint64 runner = 1;
-  uint64 region = 2;
-  int64 rev = 3;
-}
+import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.
@@ -50,18 +47,6 @@ message Member {
   repeated string clientURLs = 4;
   // isLearner indicates if the member is raft learner.
   bool isLearner = 5;
-}
-
-message Meta {
-  uint64 clusterId = 1;
-  uint64 leader = 2;
-  repeated MetaMember members = 3;
-}
-
-message MetaMember {
-  uint64 id = 1;
-  repeated string clientURLs = 2;
-  repeated string peerURLs = 3;
 }
 
 message Runner {
@@ -104,7 +89,7 @@ message Region {
   string name = 2;
   uint64 deploymentId = 3;
 
-  map<uint64, RegionReplica> replicas = 5;
+  repeated RegionReplica replicas = 5;
 
   uint64 electionRTT = 6;
   uint64 heartbeatRTT = 7;
@@ -127,7 +112,6 @@ message RegionReplica {
   bool isNonVoting = 5;
   bool isWitness = 6;
   bool isJoin = 7;
-  map<uint64, string> initial = 8;
 }
 
 message RegionStat {
@@ -148,12 +132,15 @@ message RegionStat {
 }
 
 message Definition {
-  OliveHeader header = 100;
-
   string id = 1;
   string name = 2;
-  bytes content = 3;
+  string content = 3;
   uint64 version = 4;
+
+  // the id of olive region
+  uint64 region = 101;
+  // the version from etcd's storage
+  int64 rev = 102;
 }
 
 message DefinitionMeta {
@@ -174,38 +161,44 @@ message ProcessInstance {
     Fail = 5;
   }
 
-  OliveHeader oliveHeader = 100;
-  uint64 id = 1;
+  string id = 1;
   string name = 2;
-  string definitionId = 3;
-  uint64 definitionVersion = 4;
-  bytes definitionContent = 5;
-  map<string, string> headers = 6;
-  map<string, bytes> properties = 7;
-  map<string, bytes> dataObjects = 8;
+  string definitionsId = 3;
+  uint64 definitionsVersion = 4;
+  string definitionsProcess = 5;
+  string definitionsContent = 6;
+  map<string, string> headers = 7;
+  map<string, discoverypb.Box> properties = 8;
+  map<string, string> dataObjects = 9;
 
-  ProcessRunningState runningState = 16;
-  map<string, FlowNodeStat> flowNodes = 17;
-  uint64 attempts = 18;
-  int64 startTime = 19;
-  int64 endTime = 20;
+  ProcessRunningState runningState = 21;
+  map<string, FlowNodeStat> flowNodes = 22;
+  uint64 attempts = 23;
+  int64 creationTime = 24;
+  int64 startTime = 25;
+  int64 endTime = 26;
 
-  Status status = 21;
-  string message = 22;
+  Status status = 27;
+  string message = 28;
+
+  // the id of olive region
+  uint64 region = 101;
+  // the version from etcd's storage
+  int64 rev = 102;
 }
 
 message ProcessRunningState {
-  map<string, bytes> properties = 1;
-  map<string, bytes> dataObjects = 2;
-  map<string, bytes> variables = 3;
+  map<string, string> properties = 1;
+  map<string, string> dataObjects = 2;
+  map<string, string> variables = 3;
 }
 
 message FlowNodeStat {
   string id = 1;
   string name = 2;
   map<string, string> headers = 3;
-  map<string, bytes> properties = 4;
-  map<string, bytes> dataObjects = 5;
+  map<string, string> properties = 4;
+  map<string, string> dataObjects = 5;
 
   int64 startTime = 11;
   int64 endTime = 12;

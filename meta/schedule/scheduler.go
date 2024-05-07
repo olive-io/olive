@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package schedule
 
@@ -25,6 +32,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
@@ -147,14 +155,14 @@ func (sc *Scheduler) sync() error {
 		clientv3.WithSerializable(),
 	}
 
-	key := runtime.DefaultMetaRunnerRegistry
+	key := runtime.DefaultMetaRunnerRegistrar
 	resp, err := client.Get(ctx, key, options...)
 	if err != nil {
 		return err
 	}
 	for _, kv := range resp.Kvs {
 		runner := new(pb.Runner)
-		err = runner.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, runner)
 		if err != nil {
 			continue
 		}
@@ -172,7 +180,7 @@ func (sc *Scheduler) sync() error {
 	}
 	for _, kv := range resp.Kvs {
 		region := new(pb.Region)
-		err = region.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, region)
 		if err != nil {
 			continue
 		}
@@ -189,7 +197,7 @@ func (sc *Scheduler) sync() error {
 	}
 	for _, kv := range resp.Kvs {
 		dm := new(pb.DefinitionMeta)
-		err = dm.Unmarshal(kv.Value)
+		err = proto.Unmarshal(kv.Value, dm)
 		if err != nil {
 			continue
 		}
@@ -254,7 +262,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 	region := &pb.Region{
 		Id:           rid,
 		Name:         rname,
-		Replicas:     map[uint64]*pb.RegionReplica{},
+		Replicas:     []*pb.RegionReplica{},
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
 
@@ -263,25 +271,22 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		State:     pb.State_NotReady,
 		Timestamp: time.Now().Unix(),
 	}
-	initial := map[uint64]string{}
 	for i, runner := range runners {
 		mid := uint64(i + 1)
 		if i == 0 {
 			region.Leader = mid
 		}
-		initial[mid] = runner.ListenPeerURL
-		region.Replicas[mid] = &pb.RegionReplica{
+		region.Replicas = append(region.Replicas, &pb.RegionReplica{
 			Id:          mid,
 			Runner:      runner.Id,
 			Region:      rid,
 			RaftAddress: runner.ListenPeerURL,
 			IsJoin:      false,
-			Initial:     initial,
-		}
+		})
 	}
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	resp, err := sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
@@ -296,7 +301,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 }
 
 func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
-	idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRegionRegistryId, sc.v3cli)
+	idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRegionRegistrarId, sc.v3cli)
 	if err != nil {
 		return 0, err
 	}
@@ -332,14 +337,13 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 			Region:      region.Id,
 			RaftAddress: runner.ListenPeerURL,
 			IsJoin:      true,
-			Initial:     map[uint64]string{},
 		}
-		region.Replicas[region.Id] = replica
+		region.Replicas = append(region.Replicas, replica)
 		next += 1
 	}
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	resp, err := sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
@@ -384,7 +388,7 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 
 	dm.Region = region.Id
 	key := path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
-	data, _ := dm.Marshal()
+	data, _ := proto.Marshal(dm)
 	_, err = sc.v3cli.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, false, err
@@ -485,7 +489,7 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 	region.Definitions += 1
 
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	if _, err := sc.v3cli.Put(ctx, key, string(data)); err != nil {
 		return nil, false, err
 	}
@@ -553,8 +557,8 @@ func (sc *Scheduler) run() {
 					sc.processEvent(event)
 				}
 
-			case message := <-sc.messageCh:
-				sc.processMessage(message)
+			case msg := <-sc.messageCh:
+				sc.processMsg(msg)
 
 			case <-ticker.C:
 				ticker.Reset(tickDuration)
@@ -591,7 +595,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 	switch {
 	case strings.HasPrefix(key, runtime.DefaultMetaRunnerStat):
 		rs := new(pb.RunnerStat)
-		if err := rs.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RunnerState", zap.Error(err))
 			return
 		}
@@ -599,15 +603,15 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		sc.handleRunnerStat(rs)
 	case strings.HasPrefix(key, runtime.DefaultMetaRegionStat):
 		rs := new(pb.RegionStat)
-		if err := rs.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RegionState", zap.Error(err))
 			return
 		}
 
 		sc.handleRegionStat(rs)
-	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistry):
+	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistrar):
 		runner := new(pb.Runner)
-		if err := runner.Unmarshal(kv.Value); err != nil {
+		if err := proto.Unmarshal(kv.Value, runner); err != nil {
 			lg.Error("unmarshal Runner", zap.Error(err))
 			return
 		}
@@ -634,8 +638,8 @@ func (sc *Scheduler) handleRunner(runner *pb.Runner) {
 	sc.runners[runner.Id] = runner
 }
 
-func (sc *Scheduler) processMessage(m imessage) {
-	switch vv := m.(type) {
+func (sc *Scheduler) processMsg(msg imessage) {
+	switch vv := msg.(type) {
 	case *regionAllocMessage:
 		sc.processAllocRegion(sc.ctx)
 	case *regionExpendMessage:

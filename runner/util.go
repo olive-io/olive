@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package runner
 
@@ -21,6 +28,7 @@ import (
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
@@ -29,7 +37,7 @@ import (
 
 func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
 	region := new(pb.Region)
-	err := region.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, region)
 	if err != nil {
 		return nil, false, err
 	}
@@ -45,33 +53,32 @@ func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, erro
 
 func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
 	definition := new(pb.Definition)
-	err := definition.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, definition)
 	if err != nil {
 		return nil, false, err
 	}
-	if definition.Header == nil || definition.Header.Region == 0 {
+	if definition.Region == 0 {
 		return definition, false, nil
 	}
-	if definition.Header.Rev == 0 {
-		definition.Header.Rev = kv.ModRevision
+	if definition.Rev == 0 {
+		definition.Rev = kv.ModRevision
 	}
 	return definition, true, nil
 }
 
 func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
 	process := new(pb.ProcessInstance)
-	err := process.Unmarshal(kv.Value)
+	err := proto.Unmarshal(kv.Value, process)
 	if err != nil {
 		return nil, false, err
 	}
 	if process.Status != pb.ProcessInstance_Waiting ||
-		process.DefinitionId == "" ||
-		process.OliveHeader == nil ||
-		process.OliveHeader.Region == 0 {
+		process.DefinitionsId == "" ||
+		process.Region == 0 {
 		return process, false, nil
 	}
-	if process.OliveHeader.Rev == 0 {
-		process.OliveHeader.Rev = kv.ModRevision
+	if process.Rev == 0 {
+		process.Rev = kv.ModRevision
 	}
 	return process, true, nil
 }
@@ -85,15 +92,15 @@ func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.C
 		process.Status = pb.ProcessInstance_Prepare
 	}
 	key := path.Join(runtime.DefaultRunnerProcessInstance,
-		process.DefinitionId, fmt.Sprintf("%d", process.DefinitionVersion),
-		fmt.Sprintf("%d", process.Id))
-	data, _ := process.Marshal()
+		process.DefinitionsId, fmt.Sprintf("%d", process.DefinitionsVersion),
+		process.Id)
+	data, _ := proto.Marshal(process)
 	_, err := client.Put(ctx, key, string(data))
 	if err != nil {
 		lg.Error("update process instance",
-			zap.String("definition", process.DefinitionId),
-			zap.Uint64("version", process.DefinitionVersion),
-			zap.Uint64("id", process.Id),
+			zap.String("definition", process.DefinitionsId),
+			zap.Uint64("version", process.DefinitionsVersion),
+			zap.String("id", process.Id),
 			zap.Error(err))
 		return
 	}

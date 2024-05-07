@@ -1,45 +1,48 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package raft
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
 	json "github.com/json-iterator/go"
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
-	"github.com/olive-io/bpmn/flow_node/activity"
+	bact "github.com/olive-io/bpmn/flow_node/activity"
 	bp "github.com/olive-io/bpmn/process"
 	bpi "github.com/olive-io/bpmn/process/instance"
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/api/gatewaypb"
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/gateway"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
@@ -50,7 +53,7 @@ var (
 
 func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, error) {
 	resp := &pb.RegionDeployDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{DeployDefinition: req})
+	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +63,7 @@ func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefin
 
 func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, error) {
 	resp := &pb.RegionExecuteDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, pb.RaftInternalRequest{ExecuteDefinition: req})
+	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{ExecuteDefinition: req})
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +71,11 @@ func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDef
 	return resp, nil
 }
 
-func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
+func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ProcessInstance, error) {
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(definitionId),
 		[]byte(fmt.Sprintf("%d", definitionVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", id)))
+	key := bytesutil.PathJoin(prefix, []byte(id))
 
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -94,7 +97,7 @@ func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, de
 		return nil, ErrNotFound
 	}
 	instance := new(pb.ProcessInstance)
-	_ = instance.Unmarshal(rsp.Kvs[0].Value)
+	_ = proto.Unmarshal(rsp.Kvs[0].Value, instance)
 
 	return instance, nil
 }
@@ -139,9 +142,9 @@ func (r *Region) scheduleCycle() {
 }
 
 func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
-	if len(process.DefinitionContent) == 0 {
+	if len(process.DefinitionsContent) == 0 {
 		definitionKey := bytesutil.PathJoin(definitionPrefix,
-			[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)))
+			[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
 
 		kv, err := r.get(definitionKey)
 		if err != nil {
@@ -151,12 +154,12 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 			return
 		}
 		definition := new(pb.Definition)
-		_ = definition.Unmarshal(kv.Value)
-		process.DefinitionContent = definition.Content
+		_ = proto.Unmarshal(kv.Value, definition)
+		process.DefinitionsContent = definition.Content
 	}
 
 	var definitions *schema.Definitions
-	err := xml.Unmarshal(process.DefinitionContent, &definitions)
+	err := xml.Unmarshal([]byte(process.DefinitionsContent), &definitions)
 	if err != nil {
 		return
 	}
@@ -168,23 +171,34 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		return
 	}
 	processElement := (*definitions.Processes())[0]
-	properties := process.Properties
-	dataObjects := process.DataObjects
-	var variables map[string][]byte
+	if id, ok := processElement.Id(); ok {
+		process.DefinitionsProcess = *id
+	}
+	var dataObjects map[string][]byte
+	for name, value := range process.DataObjects {
+		dataObjects[name] = []byte(value)
+	}
+
+	variables := make(map[string][]byte)
+	for name, value := range process.Properties {
+		box, _ := json.Marshal(value)
+		variables[name] = box
+	}
 	if state := process.RunningState; state != nil {
 		for key, value := range state.Properties {
-			properties[key] = value
+			variables[key] = []byte(value)
 		}
 		for key, value := range state.DataObjects {
-			dataObjects[key] = value
+			dataObjects[key] = []byte(value)
 		}
-		variables = state.Variables
+		for key, value := range state.Variables {
+			variables[key] = []byte(value)
+		}
 	}
 
 	ctx := context.Background()
 	options := []bpi.Option{
 		bpi.WithLocator(locator),
-		bpi.WithVariables(toAnyMap[[]byte](properties)),
 		bpi.WithDataObjects(toAnyMap[[]byte](dataObjects)),
 		bpi.WithVariables(toAnyMap[[]byte](variables)),
 	}
@@ -199,9 +213,9 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	defer r.metric.process.Dec()
 
 	fields := []zap.Field{
-		zap.String("definition", process.DefinitionId),
-		zap.Uint64("version", process.DefinitionVersion),
-		zap.Uint64("process", process.Id),
+		zap.String("definition", process.DefinitionsId),
+		zap.Uint64("version", process.DefinitionsVersion),
+		zap.String("process", process.Id),
 	}
 
 	r.lg.Info("start process instance", fields...)
@@ -209,7 +223,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	var err error
 	if process.Status == pb.ProcessInstance_Prepare {
 		process.Status = pb.ProcessInstance_Running
-		process.StartTime = time.Now().Unix()
+		process.StartTime = time.Now().UnixNano()
 		err = saveProcess(ctx, r, process)
 		if err != nil {
 			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
@@ -222,7 +236,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 			return
 		}
 
-		process.EndTime = time.Now().Unix()
+		process.EndTime = time.Now().UnixNano()
 		process.Status = pb.ProcessInstance_Ok
 		if err != nil {
 			process.Status = pb.ProcessInstance_Fail
@@ -263,6 +277,7 @@ LOOP:
 			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)
+			r.lg.Sugar().Debugf("%#v", trace)
 			switch tt := trace.(type) {
 			case flow.VisitTrace:
 				id, _ := tt.Node.Id()
@@ -282,7 +297,7 @@ LOOP:
 				} else {
 					flowNode = &pb.FlowNodeStat{
 						Id:        *id,
-						StartTime: time.Now().Unix(),
+						StartTime: time.Now().UnixNano(),
 					}
 					if name, has := tt.Node.Name(); has {
 						flowNode.Name = *name
@@ -295,7 +310,7 @@ LOOP:
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
-					flowNode.EndTime = time.Now().Unix()
+					flowNode.EndTime = time.Now().UnixNano()
 				}
 
 				switch tt.Node.(type) {
@@ -303,33 +318,33 @@ LOOP:
 					r.metric.event.Dec()
 				}
 
-			case activity.ActiveBoundaryTrace:
+			case bact.ActiveBoundaryTrace:
 				if tt.Start {
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
-					process.RunningState.DataObjects = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorObject))
-					process.RunningState.Properties = toTMap[[]byte](inst.Locator.CloneItems(data.LocatorProperty))
-					process.RunningState.Variables = toTMap[[]byte](inst.Locator.CloneVariables())
+					process.RunningState.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
+					process.RunningState.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
+					process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
 				}
-			case *activity.Trace:
+			case *bact.Trace:
 				act := tt.GetActivity()
 				id, _ := act.Element().Id()
 
 				flowNode, ok := process.FlowNodes[*id]
 				if ok {
-					flowNode.EndTime = time.Now().Unix()
-					headers, dataSets, dataObjects := activity.FetchTaskDataInput(inst.Locator, act.Element())
-					flowNode.Headers = toTMap[string](headers)
-					flowNode.Properties = toTMap[[]byte](dataSets)
-					flowNode.DataObjects = toTMap[[]byte](dataObjects)
+					flowNode.EndTime = time.Now().UnixNano()
+					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
+					flowNode.Headers = toGenericMap[string](headers)
+					flowNode.Properties = toGenericMap[string](dataSets)
+					flowNode.DataObjects = toGenericMap[string](dataObjects)
 				}
 
 				_, ok = completed[*id]
 				if ok {
 					tt.Do()
 				} else {
-					r.handle(ctx, tt, inst, process)
+					r.handleActivity(ctx, tt, inst, process)
 				}
 			case tracing.ErrorTrace:
 				finish = true
@@ -347,98 +362,60 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handle(ctx context.Context, trace *activity.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	taskAct := trace.GetActivity()
-	id, _ := taskAct.Element().Id()
-	fields := []zap.Field{
-		zap.String("definition", process.DefinitionId),
-		zap.Uint64("version", process.DefinitionVersion),
-		zap.Uint64("process", process.Id),
-		zap.String("task", *id),
+	actType := taskAct.Type()
+	dsyAct := &dsypb.Activity{
+		Type:               actCov(actType),
+		Definitions:        process.DefinitionsId,
+		DefinitionsVersion: process.DefinitionsVersion,
+	}
+	if id, ok := taskAct.Element().Id(); ok {
+		dsyAct.Id = *id
+	}
+	if name, ok := taskAct.Element().Name(); ok {
+		dsyAct.Name = *name
+	}
+	if id, ok := inst.Process().Id(); ok {
+		dsyAct.Process = *id
+	}
+	if extension, ok := taskAct.Element().ExtensionElements(); ok {
+		if td := extension.TaskDefinitionField; td != nil {
+			dsyAct.TaskType = td.Type
+		}
 	}
 
-	actType := taskAct.Type()
-	headers := toTMap[string](trace.GetHeaders())
+	fields := []zap.Field{
+		zap.String("definition", process.DefinitionsId),
+		zap.Uint64("version", process.DefinitionsVersion),
+		zap.String("process", process.Id),
+		zap.String("task", dsyAct.Id),
+	}
+
+	headers := toGenericMap[string](trace.GetHeaders())
 	properties := trace.GetProperties()
 	dataObjects := trace.GetDataObjects()
 
-	var act discoverypb.Activity
-	switch actType {
-	case activity.TaskType:
-		act = discoverypb.Activity_Task
-	case activity.ServiceType:
-		act = discoverypb.Activity_ServiceTask
-	case activity.ScriptType:
-		act = discoverypb.Activity_ScriptTask
-	case activity.UserType:
-		act = discoverypb.Activity_UserTask
-	case activity.SendType:
-		act = discoverypb.Activity_SendTask
-	case activity.ReceiveType:
-		act = discoverypb.Activity_ReceiveTask
-	case activity.CallType:
-		act = discoverypb.Activity_CallActivity
-	}
-
-	urlText := headers[gateway.URLKey]
-	if urlText == "" {
-		urlText = gateway.DefaultTaskURL
-	}
-	method := headers[gateway.MethodKey]
-	if method == "" {
-		method = "POST"
-	}
-	protocol := headers[gateway.ProtocolKey]
-
-	hurl, err := url.Parse(urlText)
-	if err != nil {
-		r.lg.Error("parse task url", append(fields, zap.Error(err))...)
-		trace.Do(activity.WithErr(err))
-		return
-	}
-
-	in := &discoverypb.TransmitRequest{
-		Activity:    act,
+	req := &gatewaypb.TransmitRequest{
+		Activity:    dsyAct,
 		Headers:     headers,
-		Properties:  map[string]*discoverypb.Box{},
-		DataObjects: map[string]*discoverypb.Box{},
+		Properties:  map[string]*dsypb.Box{},
+		DataObjects: map[string]*dsypb.Box{},
 	}
 	for key, value := range properties {
-		in.Properties[key] = discoverypb.BoxFromT(value)
+		req.Properties[key] = dsypb.BoxFromAny(value)
 	}
 	for key, value := range dataObjects {
-		in.DataObjects[key] = discoverypb.BoxFromT(value)
+		req.DataObjects[key] = dsypb.BoxFromAny(value)
 	}
 
-	buf, _ := json.Marshal(in)
-
-	header := http.Header{}
-	for key, value := range headers {
-		if strings.HasPrefix(key, gateway.HeaderKeyPrefix) {
-			continue
-		}
-		header.Set(key, value)
-	}
-	if header.Get("Content-Type") == "" {
-		header.Set("Content-Type", "application/json")
-	}
-	header.Set(gateway.RequestActivityKey, act.String())
-
-	hreq := &http.Request{
-		Method: method,
-		URL:    hurl,
-		Proto:  protocol,
-		Header: header,
-		Body:   io.NopCloser(bytes.NewBuffer(buf)),
-	}
-	hreq = hreq.WithContext(ctx)
-
-	doOpts := make([]activity.DoOption, 0)
-	resp, err := r.proxy.Handle(hreq)
+	doOpts := make([]bact.DoOption, 0)
+	resp, err := r.proxy.Handle(ctx, req)
 	if err != nil {
+		err = fmt.Errorf("%s", err.Error())
 		r.lg.Error("handle task", append(fields, zap.Error(err))...)
-		doOpts = append(doOpts, activity.WithErr(err))
+		doOpts = append(doOpts, bact.WithErr(err))
 	} else {
 		dp := map[string]any{}
 		ddo := map[string]any{}
@@ -448,20 +425,44 @@ func (r *Region) handle(ctx context.Context, trace *activity.Trace, inst *bpi.In
 		for key, value := range resp.DataObjects {
 			ddo[key] = value.Value()
 		}
-		doOpts = append(doOpts, activity.WithProperties(dp), activity.WithObjects(ddo))
+		doOpts = append(doOpts, bact.WithProperties(dp), bact.WithObjects(ddo))
 	}
 	trace.Do(doOpts...)
 }
 
 func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
 	pkey := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionId), []byte(fmt.Sprintf("%d", process.DefinitionVersion)),
-		[]byte(fmt.Sprintf("%d", process.Id)))
+		[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
+		[]byte(process.Id))
 
-	value, err := process.Marshal()
+	value, err := proto.Marshal(process)
 	if err != nil {
 		return err
 	}
 	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
 	return err
+}
+
+// actCov converts bact.Type to discoverypb.ActivityType
+func actCov(actType bact.Type) dsypb.ActivityType {
+	var act dsypb.ActivityType
+	switch actType {
+	case bact.TaskType:
+		act = dsypb.ActivityType_Task
+	case bact.ServiceType:
+		act = dsypb.ActivityType_ServiceTask
+	case bact.ScriptType:
+		act = dsypb.ActivityType_ScriptTask
+	case bact.UserType:
+		act = dsypb.ActivityType_UserTask
+	case bact.SendType:
+		act = dsypb.ActivityType_SendTask
+	case bact.ReceiveType:
+		act = dsypb.ActivityType_ReceiveTask
+	case bact.CallType:
+		act = dsypb.ActivityType_CallActivity
+	default:
+		act = dsypb.ActivityType_Task
+	}
+	return act
 }

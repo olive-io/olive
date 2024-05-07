@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package discoverypb
 
@@ -18,86 +25,183 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	json "github.com/json-iterator/go"
+	"github.com/tidwall/gjson"
 )
 
-// SupportActivity returns true if the given value in Activities
-func (m *Node) SupportActivity(act Activity) bool {
-	for _, item := range m.Activities {
-		if item == act {
-			return true
-		}
+func (m *Box) WithRef(ref string) *Box {
+	m.Ref = ref
+	return m
+}
+
+func (m *Box) Split() map[string]*Box {
+	params := make(map[string]*Box)
+	for name, param := range m.Parameters {
+		params[name] = param
 	}
-	return false
+	return params
 }
 
-func BoxFromT(value any) *Box {
-	return boxFromT(reflect.ValueOf(value), value)
+func JoinBoxes(boxes map[string]*Box) *Box {
+	b := &Box{
+		Type:       BoxType_object,
+		Parameters: boxes,
+	}
+	return b
 }
 
-func boxFromT(vf reflect.Value, v any) *Box {
-	if vf.Type().Kind() == reflect.Pointer {
-		return boxFromT(vf.Elem(), v)
+func BoxFromAny(value any) *Box {
+	return boxFromAny(reflect.TypeOf(value), value)
+}
+
+func boxFromAny(vt reflect.Type, v any) *Box {
+	if box, ok := v.(*Box); ok {
+		return box
 	}
 
 	box := &Box{}
-	switch vf.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		box.Type = Box_Integer
-		box.Data = []byte(fmt.Sprintf("%d", vf.Int()))
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		box.Type = Box_Integer
-		box.Data = []byte(fmt.Sprintf("%d", vf.Uint()))
-	case reflect.Float32, reflect.Float64:
-		box.Type = Box_Float
-		box.Data = []byte(fmt.Sprintf("%f", vf.Float()))
-	case reflect.Bool:
-		box.Type = Box_Boolean
-		box.Data = []byte("false")
-		if vf.Bool() {
-			box.Data = []byte("true")
+	switch vv := v.(type) {
+	case []byte:
+		if err := json.Unmarshal(vv, &box); err == nil {
+			return box
 		}
-	case reflect.String:
-		box.Type = Box_String
-		box.Data = []byte(vf.String())
-	case reflect.Slice:
-		box.Type = Box_Array
-		box.Data, _ = json.Marshal(v)
-
-	case reflect.Struct:
-		box.Type = Box_Object
-		box.Data, _ = json.Marshal(v)
-
+	case *Box:
+		return vv
 	default:
 	}
 
+	if vt.Kind() == reflect.Pointer {
+		return boxFromAny(vt.Elem(), v)
+	}
+
+	vv := reflect.ValueOf(v)
+	if vv.Type().Kind() == reflect.Pointer {
+		vv = vv.Elem()
+	}
+
+	bt := parseBoxType(vt)
+	box.Type = bt
+	switch bt {
+	case BoxType_integer:
+		box.Data = strconv.FormatInt(vv.Int(), 10)
+	case BoxType_float:
+		box.Data = fmt.Sprintf("%f", vv.Float())
+	case BoxType_boolean:
+		box.Data = "false"
+		if vv.Bool() {
+			box.Data = "true"
+		}
+	case BoxType_string:
+		box.Data = vv.String()
+	case BoxType_array:
+		rt := parseBoxType(vt.Elem())
+		box.Ref = rt.String()
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
+	case BoxType_map:
+		box.Parameters = map[string]*Box{
+			"key":   &Box{Type: parseBoxType(vt.Key())},
+			"value": &Box{Type: parseBoxType(vt.Elem())},
+		}
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
+	case BoxType_object:
+		params := make(map[string]*Box)
+		for i := 0; i < vt.NumField(); i++ {
+			vf := vt.Field(i)
+			tag := vf.Tag.Get("json")
+			if tag == "" || strings.HasPrefix(tag, "-") {
+				continue
+			}
+			vfv := reflect.New(vf.Type).Interface()
+			fb := boxFromAny(vf.Type, vfv)
+			params[tag] = fb
+		}
+		box.Parameters = params
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
+	default:
+		b, _ := json.Marshal(v)
+		box.Data = string(b)
+	}
 	return box
+}
+
+func parseBoxType(vf reflect.Type) BoxType {
+	if vf.Kind() == reflect.Pointer {
+		return parseBoxType(vf.Elem())
+	}
+
+	switch vf.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return BoxType_integer
+	case reflect.Float32, reflect.Float64:
+		return BoxType_float
+	case reflect.Bool:
+		return BoxType_boolean
+	case reflect.String:
+		return BoxType_string
+	case reflect.Slice:
+		return BoxType_array
+	case reflect.Struct:
+		return BoxType_object
+	case reflect.Map:
+		return BoxType_map
+	default:
+		return BoxType_object
+	}
 }
 
 func (m *Box) Value() any {
 	var value any
+
 	switch m.Type {
-	case Box_Boolean:
+	case BoxType_boolean:
 		value = false
 		if string(m.Data) == "true" {
 			value = true
 		}
-	case Box_Integer:
+	case BoxType_integer:
 		n, _ := strconv.ParseInt(string(m.Data), 10, 64)
 		value = n
-	case Box_Float:
+	case BoxType_float:
 		f, _ := strconv.ParseFloat(string(m.Data), 64)
 		value = f
-	case Box_String:
+	case BoxType_string:
 		value = string(m.Data)
-	case Box_Array:
-		target := make([]any, 0)
-		_ = json.Unmarshal(m.Data, &target)
-		value = target
-	case Box_Object:
+	case BoxType_array:
+		switch BoxType(BoxType_value[m.Ref]) {
+		case BoxType_boolean:
+			target := make([]bool, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		case BoxType_integer:
+			target := make([]int64, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		case BoxType_float:
+			target := make([]float64, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		case BoxType_string:
+			target := make([]string, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		case BoxType_object, BoxType_map:
+			target := make([]map[string]any, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		default:
+			target := make([]any, 0)
+			_ = m.ValueFor(&target)
+			value = target
+		}
+	default:
 		target := map[string]any{}
-		_ = json.Unmarshal(m.Data, &target)
+		_ = json.Unmarshal([]byte(m.Data), &target)
 		value = target
 	}
 
@@ -105,5 +209,107 @@ func (m *Box) Value() any {
 }
 
 func (m *Box) ValueFor(target any) error {
-	return json.Unmarshal(m.Data, &target)
+	return json.Unmarshal([]byte(m.Data), &target)
+}
+
+func (m *Box) DecodeJSON(data []byte) error {
+	return decodeBox(m, data, "")
+}
+
+func (m *Box) EncodeJSON() ([]byte, error) {
+	v := encodeBox(m)
+	return json.Marshal(v)
+}
+
+func decodeBox(box *Box, data []byte, paths string) error {
+	if box.Type != BoxType_object && paths == "" {
+		box.Data = string(data)
+		return nil
+	}
+
+	switch box.Type {
+	case BoxType_object:
+		for name := range box.Parameters {
+			param := box.Parameters[name]
+			root := name
+			if len(paths) != 0 {
+				root = paths + "." + root
+			}
+			box.Data = string(data)
+			if err := decodeBox(param, data, root); err != nil {
+				return err
+			}
+		}
+	case BoxType_map:
+		val := gjson.GetBytes(data, paths).Raw
+		box.Data = val
+	case BoxType_array:
+		val := gjson.GetBytes(data, paths).Raw
+		box.Data = val
+	case BoxType_integer:
+		val := gjson.GetBytes(data, paths).Int()
+		box.Data = fmt.Sprintf("%d", val)
+	case BoxType_float:
+		val := gjson.GetBytes(data, paths).Float()
+		box.Data = fmt.Sprintf("%f", val)
+	case BoxType_boolean:
+		val := "false"
+		if gjson.GetBytes(data, paths).Bool() {
+			val = "true"
+		}
+		box.Data = val
+	case BoxType_string:
+		val := gjson.GetBytes(data, paths).String()
+		box.Data = val
+	default:
+	}
+
+	return nil
+}
+
+func encodeBox(box *Box) any {
+	switch box.Type {
+	case BoxType_object:
+		out := map[string]any{}
+		for name, param := range box.Parameters {
+			out[name] = encodeBox(param)
+		}
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal([]byte(box.Data), &out)
+		}
+
+		return out
+	case BoxType_map:
+		var m map[string]any
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal([]byte(box.Data), &m)
+		}
+		return m
+	case BoxType_array:
+		var arr []any
+		if len(box.Data) != 0 {
+			_ = json.Unmarshal([]byte(box.Data), &arr)
+		}
+		return arr
+	case BoxType_integer:
+		var n int64
+		if len(box.Data) != 0 {
+			n, _ = strconv.ParseInt(box.Data, 10, 64)
+		}
+		return n
+	case BoxType_float:
+		var f float64
+		if len(box.Data) != 0 {
+			f, _ = strconv.ParseFloat(box.Data, 64)
+		}
+		return f
+	case BoxType_boolean:
+		return false
+	case BoxType_string:
+		var s string
+		s = box.Data
+		return s
+	default:
+		return ""
+	}
 }

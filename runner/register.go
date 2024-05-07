@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package runner
 
@@ -26,11 +33,12 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/runtime"
-	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
@@ -46,7 +54,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	data, _ := readTx.UnsafeGet(bucket, key)
 	readTx.RUnlock()
 	if len(data) != 0 {
-		_ = runner.Unmarshal(data)
+		_ = proto.Unmarshal(data, runner)
 	}
 
 	cpuTotal := uint64(0)
@@ -85,7 +93,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	defer cancel()
 
 	if runner.Id == 0 {
-		idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRunnerRegistryId, r.oct.ActiveEtcdClient())
+		idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRunnerRegistrarId, r.oct.ActiveEtcdClient())
 		if err != nil {
 			return nil, errors.Wrap(err, "create new id generator")
 		}
@@ -95,8 +103,8 @@ func (r *Runner) register() (*pb.Runner, error) {
 	tx := r.be.BatchTx()
 	tx.Lock()
 	defer tx.Unlock()
-	data, _ = runner.Marshal()
-	tx.UnsafePut(bucket, key, data)
+	data, _ = proto.Marshal(runner)
+	_ = tx.UnsafePut(bucket, key, data)
 
 	return runner, nil
 }
@@ -108,8 +116,8 @@ func (r *Runner) process() {
 	lg := r.Logger()
 	cfg := r.cfg
 
-	rKey := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", runner.Id))
-	data, _ := runner.Marshal()
+	rKey := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Id))
+	data, _ := proto.Marshal(runner)
 	_, err := r.oct.Put(ctx, rKey, string(data))
 	if err != nil {
 		lg.Panic("olive-runner register", zap.Error(err))
@@ -131,12 +139,12 @@ func (r *Runner) process() {
 			return
 		case trace := <-r.traces:
 			switch tt := trace.(type) {
-			case raft.RegionStatTrace:
-				stat := pb.RegionStat(tt)
-				lg.Debug("update region stat", zap.Stringer("stat", &stat))
+			case *raft.RegionStatTrace:
+				stat := tt.Stat
+				lg.Debug("update region stat", zap.Stringer("stat", stat))
 
 				key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
-				data, _ = stat.Marshal()
+				data, _ = proto.Marshal(stat)
 				_, err = r.oct.Put(ctx, key, string(data))
 				if err != nil {
 					lg.Error("olive-runner update region stat", zap.Error(err))
@@ -148,7 +156,7 @@ func (r *Runner) process() {
 
 			lg.Debug("update runner stat", zap.Stringer("stat", stat))
 			key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
-			data, _ = stat.Marshal()
+			data, _ = proto.Marshal(stat)
 			_, err = r.oct.Put(ctx, key, string(data))
 			if err != nil {
 				lg.Error("olive-runner update runner stat", zap.Error(err))

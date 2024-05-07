@@ -34,7 +34,7 @@ func NewOptions(opts ...Option) Options {
 	}
 
 	if options.Timeout == 0 {
-		options.Timeout = DefaultRegistryTimeout
+		options.Timeout = DefaultRegistrarTimeout
 	}
 
 	if options.Namespace == "" {
@@ -51,6 +51,18 @@ func NewOptions(opts ...Option) Options {
 type RegisterOptions struct {
 	TTL       time.Duration
 	Namespace string
+}
+
+type InjectOptions struct {
+	TTL       time.Duration
+	Id        string
+	Namespace string
+}
+
+type ListEndpointsOptions struct {
+	Namespace string
+	Service   string
+	Id        string
 }
 
 type WatchOptions struct {
@@ -82,6 +94,10 @@ type RegisterOption func(*RegisterOptions)
 type WatchOption func(*WatchOptions)
 
 type DeregisterOption func(*DeregisterOptions)
+
+type InjectOption func(*InjectOptions)
+
+type ListEndpointsOption func(*ListEndpointsOptions)
 
 type GetOption func(*GetOptions)
 
@@ -123,6 +139,42 @@ func RegisterTTL(t time.Duration) RegisterOption {
 func RegisterNamespace(ns string) RegisterOption {
 	return func(o *RegisterOptions) {
 		o.Namespace = ns
+	}
+}
+
+func InjectTTL(t time.Duration) InjectOption {
+	return func(o *InjectOptions) {
+		o.TTL = t
+	}
+}
+
+func InjectId(id string) InjectOption {
+	return func(o *InjectOptions) {
+		o.Id = id
+	}
+}
+
+func InjectNamespace(ns string) InjectOption {
+	return func(o *InjectOptions) {
+		o.Namespace = ns
+	}
+}
+
+func ListEndpointsWithNamespace(ns string) ListEndpointsOption {
+	return func(o *ListEndpointsOptions) {
+		o.Namespace = ns
+	}
+}
+
+func ListEndpointsWithService(s string) ListEndpointsOption {
+	return func(o *ListEndpointsOptions) {
+		o.Service = s
+	}
+}
+
+func ListEndpointsWithId(id string) ListEndpointsOption {
+	return func(o *ListEndpointsOptions) {
+		o.Id = id
 	}
 }
 

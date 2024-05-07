@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package client
 
@@ -29,10 +36,17 @@ import (
 // Client provides and manages an olive-meta client session.
 type Client struct {
 	Cluster
-	MetaRPC
+	MetaRunnerRPC
+	MetaRegionRPC
 	BpmnRPC
 
-	*clientv3.Client
+	// embed etcd client
+	clientv3.KV
+	clientv3.Lease
+	clientv3.Watcher
+
+	// the client of etcd server
+	ec *clientv3.Client
 
 	cfg  *Config
 	conn *grpc.ClientConn
@@ -55,7 +69,7 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 
 	client := &Client{
-		Client:   etcd,
+		ec:       etcd,
 		conn:     etcd.ActiveConnection(),
 		callOpts: defaultCallOpts,
 	}
@@ -79,24 +93,32 @@ func newClient(cfg *Config) (*Client, error) {
 	}
 
 	client.Cluster = NewCluster(client)
-	client.MetaRPC = NewMetaRPC(client)
+	client.MetaRunnerRPC = NewRunnerRPC(client)
+	client.MetaRegionRPC = NewRegionRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
+	client.KV = etcd.KV
+	client.Lease = etcd.Lease
+	client.Watcher = etcd.Watcher
 
 	return client, nil
 }
 
 func (c *Client) ActiveEtcdClient() *clientv3.Client {
-	return c.Client
+	return c.ec
+}
+
+func (c *Client) ActiveConnection() *grpc.ClientConn {
+	return c.conn
 }
 
 func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
-	meta, err := c.GetMeta(ctx)
+	resp, err := c.MemberList(ctx)
 	if err != nil {
 		return nil, err
 	}
 	endpoints := make([]string, 0)
-	for _, member := range meta.Members {
-		if member.Id == meta.Leader {
+	for _, member := range resp.Members {
+		if member.ID == resp.Header.ClusterId {
 			endpoints = member.ClientURLs
 			break
 		}

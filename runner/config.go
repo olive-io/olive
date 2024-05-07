@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package runner
 
@@ -24,17 +31,13 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/lni/dragonboat/v4/logger"
-	"github.com/olive-io/olive/pkg/cliutil/flags"
-	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/olive-io/olive/client"
-)
-
-var (
-	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
+	"github.com/olive-io/olive/pkg/cliutil/flags"
+	"github.com/olive-io/olive/pkg/logutil"
 )
 
 const (
@@ -80,14 +83,11 @@ func NewConfig() *Config {
 
 	logging := logutil.NewLogConfig()
 
-	clientCfg := client.Config{}
-	clientCfg.Endpoints = DefaultEndpoints
-	clientCfg.Logger = logging.GetLogger()
-
+	clientCfg := client.NewConfig(logging.GetLogger())
 	cfg := Config{
 		LogConfig: logging,
 
-		Client: clientCfg,
+		Client: *clientCfg,
 
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
@@ -112,7 +112,7 @@ func (cfg *Config) FlagSet() *pflag.FlagSet {
 func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("runner", pflag.ExitOnError)
 
-	// Node
+	// Runner
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
 	fs.StringVar(&cfg.ListenClientURL, "listen-client-url", cfg.ListenClientURL, "Set the URL to listen on for client traffic.")
@@ -179,6 +179,7 @@ func (cfg *Config) setupLogging() error {
 			zap.WithCaller(true),
 			zap.AddCallerSkip(2),
 			zap.Fields(zap.String("pkg", pkgName)),
+			zap.AddStacktrace(zap.FatalLevel),
 		}
 		sugarLog := cfg.GetLogger().Sugar().
 			WithOptions(options...)

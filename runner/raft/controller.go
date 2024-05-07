@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package raft
 
@@ -32,13 +39,14 @@ import (
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/jsonpatch"
+	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/proxy"
 )
 
 type Controller struct {
@@ -230,12 +238,14 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 		if len(replicas) == 0 {
 			continue
 		}
-		if replica := replicas[lead]; replica.Runner == c.pr.Id {
-			sv := semver.Version{
-				Major: int64(region.id),
-				Minor: int64(replica.Id),
+		for _, replica := range replicas {
+			if lead == replica.Id && replica.Runner == c.pr.Id {
+				sv := semver.Version{
+					Major: int64(region.id),
+					Minor: int64(replica.Id),
+				}
+				leaders = append(leaders, sv.String())
 			}
-			leaders = append(leaders, sv.String())
 		}
 	}
 	RegionCounter.Set(float64(len(regions)))
@@ -255,7 +265,7 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	}
 
 	key := fmt.Sprintf("%d", region.Id)
-	data, _ := region.Marshal()
+	data, _ := proto.Marshal(region)
 	tx := c.be.BatchTx()
 	tx.Lock()
 	_ = tx.UnsafePut(buckets.Region, []byte(key), data)
@@ -320,7 +330,7 @@ func (c *Controller) prepareRegions() error {
 	readTx.RLock()
 	err := readTx.UnsafeForEach(buckets.Region, func(k, v []byte) error {
 		region := &pb.Region{}
-		err := region.Unmarshal(v)
+		err := proto.Unmarshal(v, region)
 		if err != nil {
 			return err
 		}
@@ -358,9 +368,11 @@ func (c *Controller) prepareRegions() error {
 
 func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
 	replicaId := uint64(0)
-	for id, replica := range ri.Replicas {
+	var join bool
+	for _, replica := range ri.Replicas {
 		if replica.Runner == c.pr.Id {
-			replicaId = id
+			replicaId = replica.Id
+			join = replica.IsJoin
 		}
 	}
 
@@ -369,8 +381,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	}
 
 	members := map[uint64]string{}
-	join := ri.Replicas[replicaId].IsJoin
-	for id, urlText := range ri.Replicas[replicaId].Initial {
+	for id, urlText := range ri.InitialURL() {
 		url, err := urlpkg.Parse(urlText)
 		if err != nil {
 			return nil, errors.Wrap(ErrRaftAddress, err.Error())
@@ -505,14 +516,14 @@ func (c *Controller) requestLeaderTransferRegion(ctx context.Context, id, leader
 
 func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Definition) error {
 	lg := c.cfg.Logger
-	if definition.Header == nil || definition.Header.Region == 0 {
+	if definition.Region == 0 {
 		lg.Warn("definition missing region",
 			zap.String("id", definition.Id),
 			zap.Uint64("version", definition.Version))
 		return nil
 	}
 
-	regionId := definition.Header.Region
+	regionId := definition.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
 		lg.Info("region running others",
@@ -533,22 +544,21 @@ func (c *Controller) DeployDefinition(ctx context.Context, definition *pb.Defini
 
 func (c *Controller) ExecuteDefinition(ctx context.Context, instance *pb.ProcessInstance) error {
 	lg := c.cfg.Logger
-	if instance.DefinitionId == "" || instance.OliveHeader.Region == 0 {
+	if instance.DefinitionsId == "" || instance.Region == 0 {
 		lg.Warn("invalid process instance")
 		return nil
 	}
 
-	regionId := instance.OliveHeader.Region
+	regionId := instance.Region
 	region, ok := c.getRegion(regionId)
 	if !ok {
-		lg.Info("region running others",
-			zap.Uint64("id", regionId))
+		lg.Info("region running others", zap.Uint64("id", regionId))
 		return nil
 	}
 
 	lg.Info("definition executed",
-		zap.String("id", instance.DefinitionId),
-		zap.Uint64("version", instance.DefinitionVersion))
+		zap.String("id", instance.DefinitionsId),
+		zap.Uint64("version", instance.DefinitionsVersion))
 
 	req := &pb.RegionExecuteDefinitionRequest{ProcessInstance: instance}
 	resp, err := region.ExecuteDefinition(ctx, req)

@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 // Package memory provides an in-memory registry
 package memory
@@ -46,7 +53,7 @@ type record struct {
 	Endpoints []*dsypb.Endpoint
 }
 
-type Registry struct {
+type Registrar struct {
 	options dsy.Options
 
 	sync.RWMutex
@@ -54,7 +61,7 @@ type Registry struct {
 	watchers map[string]*Watcher
 }
 
-func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
+func NewRegistrar(opts ...dsy.Option) dsy.IDiscovery {
 	options := dsy.Options{}
 
 	for _, o := range opts {
@@ -71,7 +78,7 @@ func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
 		records = make(map[string]map[string]*record)
 	}
 
-	reg := &Registry{
+	reg := &Registrar{
 		options:  options,
 		records:  records,
 		watchers: make(map[string]*Watcher),
@@ -82,7 +89,7 @@ func NewRegistry(opts ...dsy.Option) dsy.IDiscovery {
 	return reg
 }
 
-func (m *Registry) ttlPrune() {
+func (m *Registrar) ttlPrune() {
 	prune := time.NewTicker(ttlPruneTime)
 	defer prune.Stop()
 
@@ -96,7 +103,7 @@ func (m *Registry) ttlPrune() {
 				for version, record := range records {
 					for id, n := range record.Nodes {
 						if n.TTL != 0 && time.Since(n.LastSeen) > n.TTL {
-							lg.Debugf("Registry TTL expired for node %s of service %s", n.Id, name)
+							lg.Debugf("Registrar TTL expired for node %s of service %s", n.Id, name)
 						}
 						delete(m.records[name][version].Nodes, id)
 					}
@@ -107,7 +114,7 @@ func (m *Registry) ttlPrune() {
 	}
 }
 
-func (m *Registry) sendEvent(r *dsypb.Result) {
+func (m *Registrar) sendEvent(r *dsypb.Result) {
 	m.RLock()
 	watchers := make([]*Watcher, 0, len(m.watchers))
 	for i := range m.watchers {
@@ -131,7 +138,7 @@ func (m *Registry) sendEvent(r *dsypb.Result) {
 	}
 }
 
-func (m *Registry) Init(opts ...dsy.Option) error {
+func (m *Registrar) Init(opts ...dsy.Option) error {
 	for _, o := range opts {
 		o(&m.options)
 	}
@@ -160,11 +167,11 @@ func (m *Registry) Init(opts ...dsy.Option) error {
 	return nil
 }
 
-func (m *Registry) Options() dsy.Options {
+func (m *Registrar) Options() dsy.Options {
 	return m.options
 }
 
-func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.RegisterOption) error {
+func (m *Registrar) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.RegisterOption) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -183,7 +190,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 
 	if _, ok := m.records[s.Name][s.Version]; !ok {
 		m.records[s.Name][s.Version] = r
-		lg.Debugf("Registry added new service: %s, version: %s", s.Name, s.Version)
+		lg.Debugf("Registrar added new service: %s, version: %s", s.Name, s.Version)
 		go m.sendEvent(&dsypb.Result{Action: "update", Service: s})
 		return nil
 	}
@@ -209,7 +216,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 	}
 
 	if addedNodes {
-		lg.Debugf("Registry added new node to service: %s, version: %s", s.Name, s.Version)
+		lg.Debugf("Registrar added new node to service: %s, version: %s", s.Name, s.Version)
 		go m.sendEvent(&dsypb.Result{Action: "update", Service: s})
 		return nil
 	}
@@ -224,7 +231,7 @@ func (m *Registry) Register(ctx context.Context, s *dsypb.Service, opts ...dsy.R
 	return nil
 }
 
-func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy.DeregisterOption) error {
+func (m *Registrar) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy.DeregisterOption) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -234,18 +241,18 @@ func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy
 		if _, ok := m.records[s.Name][s.Version]; ok {
 			for _, n := range s.Nodes {
 				if _, ok := m.records[s.Name][s.Version].Nodes[n.Id]; ok {
-					lg.Debugf("Registry removed node from service: %s, version: %s", s.Name, s.Version)
+					lg.Debugf("Registrar removed node from service: %s, version: %s", s.Name, s.Version)
 					delete(m.records[s.Name][s.Version].Nodes, n.Id)
 				}
 			}
 			if len(m.records[s.Name][s.Version].Nodes) == 0 {
 				delete(m.records[s.Name], s.Version)
-				lg.Debugf("Registry removed service: %s, version: %s", s.Name, s.Version)
+				lg.Debugf("Registrar removed service: %s, version: %s", s.Name, s.Version)
 			}
 		}
 		if len(m.records[s.Name]) == 0 {
 			delete(m.records, s.Name)
-			lg.Debugf("Registry removed service: %s", s.Name)
+			lg.Debugf("Registrar removed service: %s", s.Name)
 		}
 		go m.sendEvent(&dsypb.Result{Action: "delete", Service: s})
 	}
@@ -253,7 +260,15 @@ func (m *Registry) Deregister(ctx context.Context, s *dsypb.Service, opts ...dsy
 	return nil
 }
 
-func (m *Registry) GetService(ctx context.Context, name string, opts ...dsy.GetOption) ([]*dsypb.Service, error) {
+func (m *Registrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, option ...dsy.InjectOption) error {
+	return nil
+}
+
+func (m *Registrar) ListEndpoints(ctx context.Context, option ...dsy.ListEndpointsOption) ([]*dsypb.Endpoint, error) {
+	return make([]*dsypb.Endpoint, 0), nil
+}
+
+func (m *Registrar) GetService(ctx context.Context, name string, opts ...dsy.GetOption) ([]*dsypb.Service, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -272,7 +287,7 @@ func (m *Registry) GetService(ctx context.Context, name string, opts ...dsy.GetO
 	return services, nil
 }
 
-func (m *Registry) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]*dsypb.Service, error) {
+func (m *Registrar) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]*dsypb.Service, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -286,7 +301,7 @@ func (m *Registry) ListServices(ctx context.Context, opts ...dsy.ListOption) ([]
 	return services, nil
 }
 
-func (m *Registry) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watcher, error) {
+func (m *Registrar) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watcher, error) {
 	var wo dsy.WatchOptions
 	for _, o := range opts {
 		o(&wo)
@@ -306,6 +321,6 @@ func (m *Registry) Watch(ctx context.Context, opts ...dsy.WatchOption) (dsy.Watc
 	return w, nil
 }
 
-func (m *Registry) String() string {
+func (m *Registrar) String() string {
 	return "memory"
 }

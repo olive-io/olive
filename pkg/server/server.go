@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package server
 
@@ -25,7 +32,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Inner interface {
+type IEmbedServer interface {
 	// StopNotify returns a channel that receives an empty struct
 	// when the server is stopped.
 	StopNotify() <-chan struct{}
@@ -35,13 +42,13 @@ type Inner interface {
 	// GoAttach creates a goroutine on a given function and tracks it using the waitgroup.
 	// The passed function should interrupt on s.StoppingNotify().
 	GoAttach(fn func())
-	// Destroy run destroy function when the server stop
-	Destroy(fn func())
+	// OnDestroy registry destroy function that running when the server stop
+	OnDestroy(fn func())
 	// Shutdown sends signal to stop channel and all goroutines stop
 	Shutdown()
 }
 
-type innerServer struct {
+type embedServer struct {
 	lg *zap.Logger
 
 	stopping chan struct{}
@@ -52,8 +59,8 @@ type innerServer struct {
 	wg   sync.WaitGroup
 }
 
-func NewInnerServer(lg *zap.Logger) Inner {
-	s := &innerServer{
+func NewEmbedServer(lg *zap.Logger) IEmbedServer {
+	s := &embedServer{
 		lg:       lg,
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -65,11 +72,11 @@ func NewInnerServer(lg *zap.Logger) Inner {
 	return s
 }
 
-func (s *innerServer) StopNotify() <-chan struct{} { return s.done }
+func (s *embedServer) StopNotify() <-chan struct{} { return s.done }
 
-func (s *innerServer) StoppingNotify() <-chan struct{} { return s.stopping }
+func (s *embedServer) StoppingNotify() <-chan struct{} { return s.stopping }
 
-func (s *innerServer) GoAttach(fn func()) {
+func (s *embedServer) GoAttach(fn func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
 	defer s.wgMu.RUnlock()
 	select {
@@ -87,11 +94,11 @@ func (s *innerServer) GoAttach(fn func()) {
 	}()
 }
 
-func (s *innerServer) Destroy(fn func()) {
-	go s.destroy(fn)
+func (s *embedServer) OnDestroy(fn func()) {
+	go s.doDestroy(fn)
 }
 
-func (s *innerServer) destroy(fn func()) {
+func (s *embedServer) doDestroy(fn func()) {
 	defer func() {
 		s.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
 		close(s.stopping)
@@ -109,7 +116,7 @@ func (s *innerServer) destroy(fn func()) {
 	<-s.stop
 }
 
-func (s *innerServer) Shutdown() {
+func (s *embedServer) Shutdown() {
 	select {
 	case s.stop <- struct{}{}:
 	case <-s.done:

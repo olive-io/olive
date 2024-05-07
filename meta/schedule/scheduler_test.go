@@ -28,6 +28,7 @@ import (
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
@@ -110,8 +111,8 @@ func newScheduler(t *testing.T) (*Scheduler, *clientv3.Client, func()) {
 func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	ctx := context.TODO()
 	if n > 0 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r1.Id))
-		data, _ := r1.Marshal()
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r1.Id))
+		data, _ := proto.Marshal(r1)
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {
 			return
@@ -119,8 +120,8 @@ func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	}
 
 	if n > 1 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r2.Id))
-		data, _ := r2.Marshal()
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r2.Id))
+		data, _ := proto.Marshal(r2)
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {
 			return
@@ -128,8 +129,8 @@ func injectRunners(t *testing.T, client *clientv3.Client, n int) {
 	}
 
 	if n > 2 {
-		key := path.Join(runtime.DefaultMetaRunnerRegistry, fmt.Sprintf("%d", r3.Id))
-		data, _ := r3.Marshal()
+		key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", r3.Id))
+		data, _ := proto.Marshal(r3)
 		_, err := client.Put(ctx, key, string(data))
 		if !assert.NoError(t, err) {
 			return
@@ -146,7 +147,7 @@ func runnerHeartbeat(t *testing.T, client *clientv3.Client, runner *pb.Runner) {
 	}
 
 	ctx := context.Background()
-	data, _ := stat.Marshal()
+	data, _ := proto.Marshal(stat)
 	key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
 	_, err := client.Put(ctx, key, string(data))
 	if !assert.NoError(t, err) {
@@ -164,7 +165,7 @@ func regionHeartbeat(t *testing.T, client *clientv3.Client, region *pb.Region) {
 	}
 
 	ctx := context.Background()
-	data, _ := stat.Marshal()
+	data, _ := proto.Marshal(stat)
 	key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
 	_, err := client.Put(ctx, key, string(data))
 	if !assert.NoError(t, err) {

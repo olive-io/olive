@@ -1,16 +1,23 @@
-// Copyright 2023 The olive Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 package runner
 
@@ -24,7 +31,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
-	gw "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olive-io/bpmn/tracing"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
@@ -37,13 +44,15 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
+
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
 
 type Runner struct {
-	genericserver.Inner
+	genericserver.IEmbedServer
+	pb.UnsafeRunnerRPCServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -80,13 +89,13 @@ func NewRunner(cfg Config) (*Runner, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	be := newBackend(&cfg)
 
-	inner := genericserver.NewInnerServer(lg)
+	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
-		Inner:  inner,
-		ctx:    ctx,
-		cancel: cancel,
-		cfg:    cfg,
-		gLock:  gLock,
+		IEmbedServer: embedServer,
+		ctx:          ctx,
+		cancel:       cancel,
+		cfg:          cfg,
+		gLock:        gLock,
 
 		oct: oct,
 		be:  be,
@@ -107,7 +116,7 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	r.Destroy(r.destroy)
+	r.OnDestroy(r.destroy)
 	r.GoAttach(r.process)
 	r.GoAttach(r.watching)
 
@@ -144,7 +153,7 @@ func (r *Runner) start() error {
 }
 
 func (r *Runner) stop() error {
-	r.Inner.Shutdown()
+	r.IEmbedServer.Shutdown()
 	return nil
 }
 
@@ -196,7 +205,7 @@ func (r *Runner) createListener() (string, net.Listener, error) {
 		return "", nil, err
 	}
 
-	return "http://", listener, nil
+	return url.Scheme + "://", listener, nil
 }
 
 func (r *Runner) buildGRPCServer() *grpc.Server {
@@ -255,7 +264,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
 		dsy.SetLogger(lg),
 	}
-	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
+	discovery, err := dsy.NewDiscovery(r.oct.ActiveEtcdClient(), dopts...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -393,9 +402,9 @@ func (r *Runner) setRev(rev int64) {
 	binary.LittleEndian.PutUint64(value, uint64(rev))
 	tx := r.be.BatchTx()
 	tx.Lock()
-	tx.UnsafePut(buckets.Meta, key, value)
+	_ = tx.UnsafePut(buckets.Meta, key, value)
 	tx.Unlock()
-	tx.Commit()
+	_ = tx.Commit()
 }
 
 func (r *Runner) destroy() {
@@ -505,8 +514,8 @@ func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) 
 
 	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
 		lg.Error("execute definition",
-			zap.String("id", process.DefinitionId),
-			zap.Uint64("version", process.DefinitionVersion),
+			zap.String("id", process.DefinitionsId),
+			zap.Uint64("version", process.DefinitionsVersion),
 			zap.Error(err))
 		return
 	}
