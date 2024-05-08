@@ -79,6 +79,9 @@ func RegisterRoutes(ctx context.Context, cfg *config.Config, root *fizz.RouterGr
 	if err = routes.registerRegionGroup(); err != nil {
 		return nil, err
 	}
+	if err = routes.registerAuthGroup(); err != nil {
+		return nil, err
+	}
 	if err = routes.registerDefinitionsGroup(); err != nil {
 		return nil, err
 	}

@@ -23,8 +23,9 @@ package client
 
 import (
 	"context"
-	gerrs "errors"
+	"errors"
 	"fmt"
+	"sync"
 
 	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -38,6 +39,7 @@ type Client struct {
 	Cluster
 	MetaRunnerRPC
 	MetaRegionRPC
+	AuthRPC
 	BpmnRPC
 
 	// embed etcd client
@@ -47,6 +49,12 @@ type Client struct {
 
 	// the client of etcd server
 	ec *clientv3.Client
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	mrw sync.RWMutex
+	mds map[string]string
 
 	cfg  *Config
 	conn *grpc.ClientConn
@@ -63,14 +71,24 @@ func New(cfg Config) (*Client, error) {
 }
 
 func newClient(cfg *Config) (*Client, error) {
+	if cfg.DialOptions == nil {
+		cfg.DialOptions = []grpc.DialOption{}
+	}
+
+	if ipt := cfg.Interceptor; ipt != nil {
+		cfg.DialOptions = append(cfg.DialOptions, grpc.WithUnaryInterceptor(ipt.Unary()))
+	}
 	etcd, err := clientv3.New(cfg.Config)
 	if err != nil {
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(etcd.Ctx())
 	client := &Client{
 		ec:       etcd,
 		conn:     etcd.ActiveConnection(),
+		ctx:      ctx,
+		cancel:   cancel,
 		callOpts: defaultCallOpts,
 	}
 
@@ -95,6 +113,7 @@ func newClient(cfg *Config) (*Client, error) {
 	client.Cluster = NewCluster(client)
 	client.MetaRunnerRPC = NewRunnerRPC(client)
 	client.MetaRegionRPC = NewRegionRPC(client)
+	client.AuthRPC = NewAuthRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
 	client.KV = etcd.KV
 	client.Lease = etcd.Lease
@@ -132,7 +151,7 @@ func toErr(ctx context.Context, err error) error {
 	}
 	err = rpctypes.Error(err)
 	var etcdError rpctypes.EtcdError
-	if gerrs.As(err, &etcdError) {
+	if errors.As(err, &etcdError) {
 		return err
 	}
 	if ev, ok := status.FromError(err); ok {
@@ -147,4 +166,8 @@ func toErr(ctx context.Context, err error) error {
 		}
 	}
 	return err
+}
+
+func (c *Client) Close() error {
+	return c.ec.Close()
 }

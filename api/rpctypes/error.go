@@ -33,6 +33,22 @@ var (
 	ErrGRPCInvalidRunner      = status.New(codes.InvalidArgument, "olive: runner is invalid").Err()
 	ErrGRPCDefinitionNotReady = status.New(codes.FailedPrecondition, "olive: definition not ready").Err()
 
+	ErrGRPCRequestTooLarge        = status.Error(codes.InvalidArgument, "olive: request is too large")
+	ErrGRPCRequestTooManyRequests = status.Error(codes.ResourceExhausted, "olive: too many requests")
+
+	ErrGRPCRootUserNotExist = status.Error(codes.FailedPrecondition, "olive: root user does not exist")
+	ErrGRPCRootRoleNotExist = status.Error(codes.FailedPrecondition, "olive: root user does not have root role")
+	ErrGRPCUserAlreadyExist = status.Error(codes.FailedPrecondition, "olive: user name already exists")
+	ErrGRPCUserEmpty        = status.Error(codes.InvalidArgument, "olive: user name is empty")
+	ErrGRPCUserNotFound     = status.Error(codes.FailedPrecondition, "olive: user name not found")
+	ErrGRPCRoleAlreadyExist = status.Error(codes.FailedPrecondition, "olive: role name already exists")
+	ErrGRPCRoleNotFound     = status.Error(codes.FailedPrecondition, "olive: role name not found")
+	ErrGRPCRoleEmpty        = status.Error(codes.InvalidArgument, "olive: role name is empty")
+	ErrGRPCAuthFailed       = status.Error(codes.InvalidArgument, "olive: authentication failed, invalid user ID or password")
+
+	ErrGRPCInvalidAuthToken = status.Error(codes.Unauthenticated, "olive: invalid auth token")
+	ErrGRPCInvalidAuthMgmt  = status.Error(codes.InvalidArgument, "olive: invalid auth management")
+
 	ErrGRPCNoLeader  = status.New(codes.Unavailable, "olive: no leader").Err()
 	ErrGRPCNotLeader = status.New(codes.FailedPrecondition, "olive: not leader").Err()
 
@@ -41,6 +57,22 @@ var (
 		ErrorDesc(ErrGRPCKeyNotFound):        ErrGRPCKeyNotFound,
 		ErrorDesc(ErrGRPCInvalidRunner):      ErrGRPCInvalidRunner,
 		ErrorDesc(ErrGRPCDefinitionNotReady): ErrGRPCDefinitionNotReady,
+
+		ErrorDesc(ErrGRPCRequestTooLarge):        ErrGRPCRequestTooLarge,
+		ErrorDesc(ErrGRPCRequestTooManyRequests): ErrGRPCRequestTooManyRequests,
+
+		ErrorDesc(ErrGRPCRootUserNotExist): ErrGRPCRootUserNotExist,
+		ErrorDesc(ErrGRPCRootRoleNotExist): ErrGRPCRootRoleNotExist,
+		ErrorDesc(ErrGRPCUserAlreadyExist): ErrGRPCUserAlreadyExist,
+		ErrorDesc(ErrGRPCUserEmpty):        ErrGRPCUserEmpty,
+		ErrorDesc(ErrGRPCUserNotFound):     ErrGRPCUserNotFound,
+		ErrorDesc(ErrGRPCRoleAlreadyExist): ErrGRPCRoleAlreadyExist,
+		ErrorDesc(ErrGRPCRoleNotFound):     ErrGRPCRoleNotFound,
+		ErrorDesc(ErrGRPCRoleEmpty):        ErrGRPCRoleEmpty,
+		ErrorDesc(ErrGRPCAuthFailed):       ErrGRPCAuthFailed,
+
+		ErrorDesc(ErrGRPCInvalidAuthToken): ErrGRPCInvalidAuthToken,
+		ErrorDesc(ErrGRPCInvalidAuthMgmt):  ErrGRPCInvalidAuthMgmt,
 
 		ErrorDesc(ErrGRPCNoLeader):  ErrGRPCNoLeader,
 		ErrorDesc(ErrGRPCNotLeader): ErrGRPCNotLeader,
@@ -54,6 +86,22 @@ var (
 	ErrInvalidRunner      = Error(ErrGRPCInvalidRunner)
 	ErrDefinitionNotReady = Error(ErrGRPCDefinitionNotReady)
 
+	ErrRequestTooLarge = Error(ErrGRPCRequestTooLarge)
+	ErrTooManyRequests = Error(ErrGRPCRequestTooManyRequests)
+
+	ErrRootUserNotExist = Error(ErrGRPCRootUserNotExist)
+	ErrRootRoleNotExist = Error(ErrGRPCRootRoleNotExist)
+	ErrUserAlreadyExist = Error(ErrGRPCUserAlreadyExist)
+	ErrUserEmpty        = Error(ErrGRPCUserEmpty)
+	ErrUserNotFound     = Error(ErrGRPCUserNotFound)
+	ErrRoleAlreadyExist = Error(ErrGRPCRoleAlreadyExist)
+	ErrRoleNotFound     = Error(ErrGRPCRoleNotFound)
+	ErrRoleEmpty        = Error(ErrGRPCRoleEmpty)
+	ErrAuthFailed       = Error(ErrGRPCAuthFailed)
+
+	ErrInvalidAuthToken = Error(ErrGRPCInvalidAuthToken)
+	ErrInvalidAuthMgmt  = Error(ErrGRPCInvalidAuthMgmt)
+
 	ErrNoLeader  = Error(ErrGRPCNoLeader)
 	ErrNotLeader = Error(ErrGRPCNotLeader)
 )
@@ -64,11 +112,11 @@ type OliveError struct {
 }
 
 // Code returns grpc/codes.Code.
-func (e OliveError) Code() codes.Code {
+func (e *OliveError) Code() codes.Code {
 	return e.code
 }
 
-func (e OliveError) Error() string {
+func (e *OliveError) Error() string {
 	return e.desc
 }
 
@@ -87,7 +135,7 @@ func Error(err error) error {
 	} else {
 		desc = verr.Error()
 	}
-	return OliveError{code: ev.Code(), desc: desc}
+	return &OliveError{code: ev.Code(), desc: desc}
 }
 
 func ErrorDesc(err error) string {

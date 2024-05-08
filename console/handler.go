@@ -19,49 +19,27 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package authpbv1
+package console
 
-func (m PType) Short() string {
-	switch m {
-	case PType_POLICY:
-		return "p"
-	case PType_ROLE:
-		return "g"
-	default:
-		return "null"
-	}
+import (
+	"github.com/gin-gonic/gin"
+
+	"github.com/olive-io/olive/client"
+)
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-func (m Resource) Short() string {
-	switch m {
-	case Resource_MetaMember:
-		return "member"
-	case Resource_Runner:
-		return "runner"
-	case Resource_Region:
-		return "region"
-	case Resource_AuthRole:
-		return "role"
-	case Resource_AuthUser:
-		return "user"
-	case Resource_Authentication:
-		return "authentication"
-	case Resource_BpmnDefinition:
-		return "bpmn_definition"
-	case Resource_BpmnProcess:
-		return "bpmn_process"
-	default:
-		return "null"
-	}
-}
+type LoginResponse = client.AuthenticateResponse
 
-func (m Action) Short() string {
-	switch m {
-	case Action_Read:
-		return "read"
-	case Action_Write:
-		return "write"
-	default:
-		return "null"
+func login(oct *client.Client) func(ctx *gin.Context, in *LoginRequest) (*LoginResponse, error) {
+	return func(ctx *gin.Context, in *LoginRequest) (*LoginResponse, error) {
+		resp, err := oct.Authenticate(ctx, in.Username, in.Password)
+		if err != nil {
+			return nil, err
+		}
+		return resp, nil
 	}
 }

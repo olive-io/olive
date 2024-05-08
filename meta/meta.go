@@ -88,20 +88,31 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		"/metrics": promhttp.Handler(),
 	}
 
-	clusterRPC := &clusterServer{Server: s}
-	authRPC := &authServer{Server: s}
-	runnerRPC := &runnerServer{Server: s}
-	bpmnRPC := &bpmnServer{Server: s}
+	clusterRPC, err := newClusterServer(s)
+	if err != nil {
+		return err
+	}
+	runnerRPC, err := newRunnerServer(s)
+	if err != nil {
+		return err
+	}
+	authRPC, err := newAuthServer(s)
+	if err != nil {
+		return err
+	}
+	bpmnRPC, err := newBpmnServer(s)
+	if err != nil {
+		return err
+	}
 	ec.ServiceRegister = func(gs *grpc.Server) {
 		pb.RegisterMetaClusterRPCServer(gs, clusterRPC)
-		pb.RegisterAuthRPCServer(gs, authRPC)
-		pb.RegisterRbacRPCServer(gs, authRPC)
 		pb.RegisterMetaRunnerRPCServer(gs, runnerRPC)
 		pb.RegisterMetaRegionRPCServer(gs, runnerRPC)
+		pb.RegisterAuthRPCServer(gs, authRPC)
+		pb.RegisterRbacRPCServer(gs, authRPC)
 		pb.RegisterBpmnRPCServer(gs, bpmnRPC)
 	}
 
-	var err error
 	s.etcd, err = embed.StartEtcd(ec)
 	if err != nil {
 		return errors.Wrap(err, "start embed etcd")
@@ -123,6 +134,10 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 	}
 	s.scheduler = schedule.New(s.ctx, s.lg, s.v3cli, s.notifier, sLimit, s.StoppingNotify())
 	if err = s.scheduler.Start(); err != nil {
+		return err
+	}
+
+	if err = authRPC.Prepare(s.ctx); err != nil {
 		return err
 	}
 

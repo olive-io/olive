@@ -27,6 +27,7 @@ import (
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
@@ -36,8 +37,13 @@ type clusterServer struct {
 	*Server
 }
 
+func newClusterServer(s *Server) (*clusterServer, error) {
+	cs := &clusterServer{Server: s}
+	return cs, nil
+}
+
 func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (resp *pb.MemberAddResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.ClusterWriteScope); err != nil {
 		return
 	}
 
@@ -64,7 +70,7 @@ func (s *clusterServer) MemberAdd(ctx context.Context, req *pb.MemberAddRequest)
 }
 
 func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (resp *pb.MemberRemoveResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.ClusterWriteScope); err != nil {
 		return
 	}
 
@@ -83,7 +89,7 @@ func (s *clusterServer) MemberRemove(ctx context.Context, req *pb.MemberRemoveRe
 }
 
 func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (resp *pb.MemberUpdateResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.ClusterWriteScope); err != nil {
 		return
 	}
 
@@ -103,7 +109,7 @@ func (s *clusterServer) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRe
 }
 
 func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListRequest) (resp *pb.MemberListResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.ClusterReadScope); err != nil {
 		return
 	}
 
@@ -122,7 +128,7 @@ func (s *clusterServer) MemberList(ctx context.Context, req *pb.MemberListReques
 }
 
 func (s *clusterServer) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (resp *pb.MemberPromoteResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.ClusterWriteScope); err != nil {
 		return
 	}
 

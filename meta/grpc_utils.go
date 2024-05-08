@@ -28,14 +28,19 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cockroachdb/errors"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
+	"github.com/olive-io/olive/meta/jwt"
 	"github.com/olive-io/olive/meta/pagation"
 	"github.com/olive-io/olive/pkg/runtime"
 )
@@ -47,6 +52,45 @@ func withKeyEnd(key string) string {
 }
 
 type pageDecodeFunc func(kv *mvccpb.KeyValue) error
+
+func (s *Server) get(ctx context.Context, key string, target proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, *mvccpb.KeyValue, error) {
+	rsp, err := s.v3cli.Get(ctx, key, opts...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(rsp.Kvs) == 0 {
+		return nil, nil, rpctypes.ErrKeyNotFound
+	}
+	kv := rsp.Kvs[0]
+
+	if target != nil {
+		err = proto.Unmarshal(kv.Value, target)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return rsp.Header, kv, nil
+}
+
+func (s *Server) put(ctx context.Context, key string, value proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
+	data, _ := proto.Marshal(value)
+	rsp, err := s.v3cli.Put(ctx, key, string(data), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Header, nil
+}
+
+func (s *Server) del(ctx context.Context, key string, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
+	rsp, err := s.v3cli.Delete(ctx, key, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Header, nil
+}
 
 func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int64, continueToken string, fn pageDecodeFunc) (next string, err error) {
 	keyPrefix := preparedKey
@@ -161,25 +205,16 @@ func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int6
 func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
 	key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrKeyNotFound
-	}
-	runner = new(pb.Runner)
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, runner)
+	runner = &pb.Runner{}
+	_, _, err = s.get(ctx, key, runner, options...)
 	return
 }
 
 func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
 	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
 	rsp, err := s.v3cli.Get(ctx, key, options...)
@@ -190,11 +225,11 @@ func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, e
 		return nil, rpctypes.ErrKeyNotFound
 	}
 	region = new(pb.Region)
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, region)
+	_, _, err = s.get(ctx, key, region, options...)
 	return
 }
 
-func (s *Server) reqPrepare(ctx context.Context) error {
+func (s *Server) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error {
 	if !s.notifier.IsLeader() {
 		return rpctypes.ErrGRPCNotLeader
 	}
@@ -202,6 +237,28 @@ func (s *Server) reqPrepare(ctx context.Context) error {
 		return rpctypes.ErrGRPCNoLeader
 	}
 
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		vals := md.Get(rpctypes.TokenFieldNameGRPC)
+		if len(vals) == 0 {
+			return errors.Wrap(rpctypes.ErrGRPCInvalidAuthToken, "token not found")
+		}
+		token, err := jwt.ParseToken(vals[0])
+		if err != nil {
+			return err
+		}
+
+		for _, scope := range scopes {
+			if err = s.admit(ctx, token.User.Role, token.User.Name, scope); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) admit(ctx context.Context, role, user string, scope *authv1.Scope) error {
 	return nil
 }
 

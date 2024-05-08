@@ -121,6 +121,10 @@ Regions:
   --region-definitions-limit '` + fmt.Sprintf("%d", meta.DefaultRegionDefinitionsLimit) + `'
     Sets the maximum number of bpmn definitions in one runner-region
 
+Auth:
+  --auth-token-ttl 600
+    Time (in seconds) of the auth-token-ttl.
+
 Logging:
   --log-outputs 'default'
     Specify 'stdout' or 'stderr' to skip journald logging even when running under systemd, or list of comma separated output targets.

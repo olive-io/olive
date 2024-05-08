@@ -38,6 +38,7 @@ const (
 	DefaultListenerPeerAddress    = "http://localhost:4380"
 	DefaultRegionLimit            = 100
 	DefaultRegionDefinitionsLimit = 500
+	DefaultTokenTTL               = uint(600)
 )
 
 type Config struct {
@@ -59,6 +60,7 @@ func NewConfig() *Config {
 	ec.ListenPeerUrls, _ = types.NewURLs(strings.Split(DefaultListenerPeerAddress, ","))
 	ec.AdvertisePeerUrls = ec.ListenPeerUrls
 	ec.InitialCluster = DefaultName + "=" + DefaultListenerPeerAddress
+	ec.AuthTokenTTL = DefaultTokenTTL
 
 	cfg := Config{
 		Config: ec,
@@ -134,6 +136,9 @@ func (cfg *Config) newFlags() *pflag.FlagSet {
 	// region
 	fs.IntVar(&cfg.RegionLimit, "region-limit", cfg.RegionLimit, "Sets the maximum number of regions in a runner")
 	fs.IntVar(&cfg.RegionDefinitionsLimit, "region-definitions-limit", cfg.RegionDefinitionsLimit, "Sets the maximum number of bpmn definitions in a region")
+
+	// auth
+	fs.UintVar(&cfg.AuthTokenTTL, "auth-token-ttl", cfg.AuthTokenTTL, "Time (in seconds) of the auth-token-ttl.")
 
 	// logging
 	fs.StringVar(&cfg.Config.Logger, "logger", "zap",

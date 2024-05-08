@@ -74,17 +74,24 @@ message Policy {
 enum Resource {
   UNKNOWN_Resource = 0;
   MetaMember = 1;
-  AuthRole = 2;
-  AuthUser = 3;
-  Authentication = 4; // login, rbac policy
-  Runner = 5;
-  Region = 6;
-  BpmnDefinition = 7;
-  BpmnProcess = 8;
+  Runner = 11;
+  Region = 12;
+
+  AuthRole = 21;
+  AuthUser = 22;
+  Authentication = 23; // login, rbac policy
+
+  BpmnDefinition = 31;
+  BpmnProcess = 32;
 }
 
 enum Action {
   UNKNOWN_Action = 0;
   Read = 1;
   Write = 2;
+}
+
+message Scope {
+  Resource resource = 1;
+  Action action = 2;
 }

@@ -24,9 +24,11 @@ package meta
 import (
 	"context"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/runtime"
 )
@@ -38,79 +40,93 @@ type runnerServer struct {
 	*Server
 }
 
+func newRunnerServer(s *Server) (*runnerServer, error) {
+	rs := &runnerServer{Server: s}
+	return rs, nil
+}
+
 func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.RunnerReadScope); err != nil {
 		return
 	}
 
+	lg := s.lg
 	resp = &pb.ListRunnerResponse{}
 	key := runtime.DefaultMetaRunnerRegistrar
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	runners := make([]*pb.Runner, 0, rsp.Count)
-	for _, kv := range rsp.Kvs {
+
+	runners := make([]*pb.Runner, 0)
+	var continueToken string
+	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
 		runner := new(pb.Runner)
-		if e1 := proto.Unmarshal(kv.Value, runner); e1 == nil {
-			runners = append(runners, runner)
+		if e1 := proto.Unmarshal(kv.Value, runner); e1 != nil {
+			lg.Error("unmarshal runner", zap.String("key", string(kv.Key)), zap.Error(err))
+			return e1
 		}
+		runners = append(runners, runner)
+
+		return nil
+	})
+	if err != nil {
+		return
 	}
+
 	resp.Header = s.responseHeader()
 	resp.Runners = runners
+	resp.ContinueToken = continueToken
+
 	return resp, nil
 }
 
 func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.RunnerReadScope); err != nil {
 		return
 	}
 
 	resp = &pb.GetRunnerResponse{}
-	resp.Runner, err = s.getRunner(ctx, req.Id)
 	resp.Header = s.responseHeader()
+	resp.Runner, err = s.getRunner(ctx, req.Id)
 	return
 }
 
 func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.RegionReadScope); err != nil {
 		return
 	}
 
+	lg := s.lg
 	resp = &pb.ListRegionResponse{}
 	key := runtime.DefaultRunnerRegion
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-	}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	regions := make([]*pb.Region, 0, rsp.Count)
-	for _, kv := range rsp.Kvs {
+
+	regions := make([]*pb.Region, 0)
+	var continueToken string
+	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
 		region := new(pb.Region)
-		if e1 := proto.Unmarshal(kv.Value, region); e1 == nil {
-			regions = append(regions, region)
+		if e1 := proto.Unmarshal(kv.Value, region); e1 != nil {
+			lg.Error("unmarshal region", zap.String("key", string(kv.Key)), zap.Error(err))
+			return e1
 		}
+		regions = append(regions, region)
+
+		return nil
+	})
+	if err != nil {
+		return
 	}
 
 	resp.Header = s.responseHeader()
 	resp.Regions = regions
+	resp.ContinueToken = continueToken
+
 	return resp, nil
 }
 
 func (s *runnerServer) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.RegionReadScope); err != nil {
 		return
 	}
 
 	resp = &pb.GetRegionResponse{}
-	resp.Region, err = s.getRegion(ctx, req.Id)
 	resp.Header = s.responseHeader()
+	resp.Region, err = s.getRegion(ctx, req.Id)
 	return
 }

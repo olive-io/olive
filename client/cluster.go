@@ -60,20 +60,12 @@ type Cluster interface {
 }
 
 type cluster struct {
-	remote   pb.MetaClusterRPCClient
+	client   *Client
 	callOpts []grpc.CallOption
 }
 
 func NewCluster(c *Client) Cluster {
-	api := &cluster{remote: RetryClusterClient(c)}
-	if c != nil {
-		api.callOpts = c.callOpts
-	}
-	return api
-}
-
-func NewClusterFromClusterClient(remote pb.MetaClusterRPCClient, c *Client) Cluster {
-	api := &cluster{remote: remote}
+	api := &cluster{client: c}
 	if c != nil {
 		api.callOpts = c.callOpts
 	}
@@ -98,7 +90,8 @@ func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner b
 		PeerURLs:  peerAddrs,
 		IsLearner: isLearner,
 	}
-	resp, err := c.remote.MemberAdd(ctx, r, c.callOpts...)
+	conn := c.client.conn
+	resp, err := c.remoteClient(conn).MemberAdd(ctx, r, c.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
@@ -106,8 +99,9 @@ func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner b
 }
 
 func (c *cluster) MemberRemove(ctx context.Context, id uint64) (*MemberRemoveResponse, error) {
+	conn := c.client.conn
 	r := &pb.MemberRemoveRequest{ID: id}
-	resp, err := c.remote.MemberRemove(ctx, r, c.callOpts...)
+	resp, err := c.remoteClient(conn).MemberRemove(ctx, r, c.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
@@ -120,9 +114,10 @@ func (c *cluster) MemberUpdate(ctx context.Context, id uint64, peerAddrs []strin
 		return nil, err
 	}
 
+	conn := c.client.conn
 	// it is safe to retry on update.
 	r := &pb.MemberUpdateRequest{ID: id, PeerURLs: peerAddrs}
-	resp, err := c.remote.MemberUpdate(ctx, r, c.callOpts...)
+	resp, err := c.remoteClient(conn).MemberUpdate(ctx, r, c.callOpts...)
 	if err == nil {
 		return (*MemberUpdateResponse)(resp), nil
 	}
@@ -130,8 +125,9 @@ func (c *cluster) MemberUpdate(ctx context.Context, id uint64, peerAddrs []strin
 }
 
 func (c *cluster) MemberList(ctx context.Context) (*MemberListResponse, error) {
+	conn := c.client.conn
 	// it is safe to retry on list.
-	resp, err := c.remote.MemberList(ctx, &pb.MemberListRequest{Linearizable: true}, c.callOpts...)
+	resp, err := c.remoteClient(conn).MemberList(ctx, &pb.MemberListRequest{Linearizable: true}, c.callOpts...)
 	if err == nil {
 		return (*MemberListResponse)(resp), nil
 	}
@@ -139,10 +135,15 @@ func (c *cluster) MemberList(ctx context.Context) (*MemberListResponse, error) {
 }
 
 func (c *cluster) MemberPromote(ctx context.Context, id uint64) (*MemberPromoteResponse, error) {
+	conn := c.client.conn
 	r := &pb.MemberPromoteRequest{ID: id}
-	resp, err := c.remote.MemberPromote(ctx, r, c.callOpts...)
+	resp, err := c.remoteClient(conn).MemberPromote(ctx, r, c.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
 	return (*MemberPromoteResponse)(resp), nil
+}
+
+func (c *cluster) remoteClient(conn *grpc.ClientConn) pb.MetaClusterRPCClient {
+	return RetryClusterClient(conn)
 }

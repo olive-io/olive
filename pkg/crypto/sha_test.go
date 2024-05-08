@@ -19,49 +19,22 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package authpbv1
+package crypto
 
-func (m PType) Short() string {
-	switch m {
-	case PType_POLICY:
-		return "p"
-	case PType_ROLE:
-		return "g"
-	default:
-		return "null"
-	}
-}
+import (
+	"testing"
 
-func (m Resource) Short() string {
-	switch m {
-	case Resource_MetaMember:
-		return "member"
-	case Resource_Runner:
-		return "runner"
-	case Resource_Region:
-		return "region"
-	case Resource_AuthRole:
-		return "role"
-	case Resource_AuthUser:
-		return "user"
-	case Resource_Authentication:
-		return "authentication"
-	case Resource_BpmnDefinition:
-		return "bpmn_definition"
-	case Resource_BpmnProcess:
-		return "bpmn_process"
-	default:
-		return "null"
-	}
-}
+	"github.com/stretchr/testify/assert"
+)
 
-func (m Action) Short() string {
-	switch m {
-	case Action_Read:
-		return "read"
-	case Action_Write:
-		return "write"
-	default:
-		return "null"
-	}
+func TestHashSha256(t *testing.T) {
+	h1 := NewSha256().Hash([]byte("test"))
+	h2 := NewSha256().Hash([]byte("test"))
+
+	assert.Equal(t, h1, h2)
+
+	saltH1 := NewSaltSha256("xxxxxxxx").Hash([]byte("test"))
+	saltH2 := NewSaltSha256("xxxxxxxx").Hash([]byte("test"))
+
+	assert.Equal(t, saltH1, saltH2)
 }

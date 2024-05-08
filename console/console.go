@@ -39,8 +39,10 @@ import (
 	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/console/config"
+	"github.com/olive-io/olive/console/interceptor"
 	"github.com/olive-io/olive/console/routes"
 	genericserver "github.com/olive-io/olive/pkg/server"
+	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
@@ -70,10 +72,6 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 
 	lg.Debug("connect to olive-meta",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
-	oct, err := client.New(cfg.Client)
-	if err != nil {
-		return nil, err
-	}
 
 	mode := gin.ReleaseMode
 	if lg.Level() == zap.DebugLevel {
@@ -94,7 +92,7 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 	fiz.Use(gin.Recovery())
 
 	apiInfo := &openapi.Info{
-		Title:          "olive api",
+		Title:          "olive document",
 		Description:    "This is the openapi v3 documentation of olive workflow engine.",
 		TermsOfService: "The olive term",
 		Contact: &openapi.Contact{
@@ -110,6 +108,14 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 	}
 	fiz.GET("/openapi.json", nil, fiz.OpenAPI(apiInfo, "json"))
 
+	bearer := interceptor.NewBearerAuth()
+	cfg.Client.Interceptor = bearer
+
+	oct, err := client.New(cfg.Client)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	console := &Console{
 		IEmbedServer: embedServer,
@@ -121,11 +127,27 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 		started:      make(chan struct{}, 1),
 	}
 
-	routeV1 := fiz.Group("/api/v1", "", "")
+	root := fiz.Group("/api", "Olive.Default", "")
+	root.POST("/v1/login", []fizz.OperationOption{
+		fizz.Summary("User logins olive system and get token."),
+	}, tonic.Handler(login(oct), 200))
+	routeV1 := root.Group("/v1", "", "", bearer.Handler)
 	console.routeTree, err = routes.RegisterRoutes(ctx, cfg, routeV1, oct)
 	if err != nil {
 		return nil, fmt.Errorf("register routes: %w", err)
 	}
+
+	fiz.Generator().SetSecuritySchemes(map[string]*openapi.SecuritySchemeOrRef{
+		"Bearer": {
+			SecurityScheme: &openapi.SecurityScheme{
+				Type:   "http",
+				Scheme: "bearer",
+				Name:   "Authorization",
+				In:     "header",
+			},
+		},
+	})
+
 	if len(fiz.Errors()) != 0 {
 		return nil, fmt.Errorf("engine errors: %v", errors.Join(fiz.Errors()...))
 	}

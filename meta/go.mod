@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/cockroachdb/errors v1.11.1
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/json-iterator/go v1.1.12
 	github.com/olive-io/olive/api v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1

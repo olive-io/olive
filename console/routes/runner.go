@@ -25,10 +25,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type RunnerGroup struct {
@@ -43,10 +43,12 @@ func (tree *RouteTree) registerRunnerGroup() error {
 	group := tree.root.Group("/meta/runner", summary.Name, summary.Description, rg.HandlerChains()...)
 	group.GET("/list", []fizz.OperationOption{
 		fizz.Summary("List all runners in the olive system."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(rg.runnerList, 200))
 
 	group.POST("/get", []fizz.OperationOption{
 		fizz.Summary("Get the olive runner in olive system by id and version."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(rg.runnerGet, 200))
 
 	return tree.Group(rg)
@@ -63,10 +65,23 @@ func (rg *RunnerGroup) HandlerChains() []gin.HandlerFunc {
 	return []gin.HandlerFunc{}
 }
 
-type RunnerListResponse = olivepb.ListRunnerResponse
+type RunnerListRequest struct {
+	Limit    int64  `query:"limit"`
+	Continue string `query:"continue"`
+}
 
-func (rg *RunnerGroup) runnerList(ctx *gin.Context) (*RunnerListResponse, error) {
-	resp, err := rg.oct.ListRunner(ctx)
+type RunnerListResponse = client.ListRunnerResponse
+
+func (rg *RunnerGroup) runnerList(ctx *gin.Context, in *RunnerListRequest) (*RunnerListResponse, error) {
+	var opts []client.PageOption
+	if in.Limit > 0 {
+		opts = append(opts, client.WithLimit(in.Limit))
+	}
+	if in.Continue != "" {
+		opts = append(opts, client.WithToken(in.Continue))
+	}
+
+	resp, err := rg.oct.ListRunner(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +92,7 @@ type RunnerGetRequest struct {
 	Id uint64 `json:"id" validate:"required"`
 }
 
-type RunnerGetResponse = olivepb.GetRunnerResponse
+type RunnerGetResponse = client.GetRunnerResponse
 
 func (rg *RunnerGroup) runnerGet(ctx *gin.Context, in *RunnerGetRequest) (*RunnerGetResponse, error) {
 	resp, err := rg.oct.GetRunner(ctx, in.Id)

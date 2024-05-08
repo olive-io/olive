@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/pkg/runtime"
@@ -88,8 +89,13 @@ type bpmnServer struct {
 	*Server
 }
 
+func newBpmnServer(s *Server) (*bpmnServer, error) {
+	bs := &bpmnServer{Server: s}
+	return bs, nil
+}
+
 func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnDefinitionWriteScope); err != nil {
 		return
 	}
 
@@ -135,7 +141,7 @@ func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinit
 }
 
 func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnDefinitionReadScope); err != nil {
 		return
 	}
 
@@ -159,18 +165,13 @@ func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionR
 		version := dm.Version
 
 		key := path.Join(runtime.DefaultRunnerDefinitions, id, fmt.Sprintf("%d", version))
-		rsp, e1 := s.v3cli.Get(ctx, key, options...)
-		if e1 != nil || len(rsp.Kvs) == 0 {
-			return nil
-		}
-
-		dkv := rsp.Kvs[0]
 		definition := &pb.Definition{}
-		if e1 = proto.Unmarshal(dkv.Value, definition); e1 != nil {
-			return e1
-		}
 
-		definition.Rev = dkv.ModRevision
+		_, kv, err := s.get(ctx, key, definition, options...)
+		if err != nil {
+			return err
+		}
+		definition.Rev = kv.ModRevision
 
 		v = append(v, definition)
 
@@ -188,7 +189,7 @@ func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionR
 }
 
 func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnDefinitionReadScope); err != nil {
 		return
 	}
 	resp = &pb.GetDefinitionResponse{}
@@ -204,13 +205,9 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 
 	options := []clientv3.OpOption{clientv3.WithSerializable()}
 	key := path.Join(runtime.DefaultRunnerDefinitions, req.Id, fmt.Sprintf("%d", version))
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil || len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrGRPCKeyNotFound
-	}
 	definition := &pb.Definition{}
-	kv := rsp.Kvs[0]
-	if err = proto.Unmarshal(kv.Value, definition); err != nil {
+	_, kv, err := s.get(ctx, key, definition, options...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -247,7 +244,7 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 }
 
 func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnDefinitionWriteScope); err != nil {
 		return
 	}
 
@@ -264,7 +261,7 @@ func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinit
 }
 
 func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnProcessWriteScope); err != nil {
 		return
 	}
 
@@ -315,7 +312,7 @@ func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefin
 }
 
 func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnProcessReadScope); err != nil {
 		return
 	}
 
@@ -350,7 +347,7 @@ func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProce
 }
 
 func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
-	if err = s.reqPrepare(ctx); err != nil {
+	if err = s.prepareReq(ctx, authv1.BpmnProcessReadScope); err != nil {
 		return
 	}
 
@@ -364,16 +361,9 @@ func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessI
 		fmt.Sprintf("%d", req.DefinitionVersion),
 		req.Id)
 
-	rsp, err := s.v3cli.Get(ctx, key, options...)
-	if err != nil {
-		return nil, err
-	}
-	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrGRPCKeyNotFound
-	}
-	kv := rsp.Kvs[0]
 	instance := new(pb.ProcessInstance)
-	if err = proto.Unmarshal(kv.Value, instance); err != nil {
+	_, _, err = s.get(ctx, key, instance, options...)
+	if err != nil {
 		return nil, err
 	}
 
@@ -428,15 +418,10 @@ func (s *bpmnServer) definitionMeta(ctx context.Context, id string) (*definition
 
 	key := path.Join(runtime.DefaultMetaDefinitionMeta, id)
 	options := []clientv3.OpOption{clientv3.WithSerializable()}
-	rsp, err := s.v3cli.Get(ctx, key, options...)
+	_, _, err := s.get(ctx, key, &dm.DefinitionMeta, options...)
 	if err != nil {
 		return nil, err
 	}
-	if len(rsp.Kvs) == 0 {
-		return nil, rpctypes.ErrGRPCKeyNotFound
-	}
-
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, &dm.DefinitionMeta)
 	return dm, nil
 }
 

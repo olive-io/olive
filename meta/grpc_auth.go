@@ -23,8 +23,17 @@ package meta
 
 import (
 	"context"
+	"path"
+	"time"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
+
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/rpctypes"
+	"github.com/olive-io/olive/meta/jwt"
+	"github.com/olive-io/olive/pkg/crypto"
+	"github.com/olive-io/olive/pkg/runtime"
 )
 
 type authServer struct {
@@ -32,6 +41,54 @@ type authServer struct {
 	pb.UnsafeRbacRPCServer
 
 	*Server
+}
+
+func newAuthServer(s *Server) (*authServer, error) {
+	as := &authServer{Server: s}
+
+	return as, nil
+}
+
+func (s *authServer) Prepare(ctx context.Context) error {
+	getOpts := []clientv3.OpOption{
+		clientv3.WithSerializable(),
+		clientv3.WithKeysOnly(),
+	}
+	// initialize, check or create role and user
+	rootRoleKey := path.Join(runtime.DefaultRolePrefix, runtime.DefaultRootRole)
+	_, _, err := s.get(ctx, rootRoleKey, new(authv1.Role), getOpts...)
+	if err != nil {
+		rootRole := &authv1.Role{
+			Name:              runtime.DefaultRootRole,
+			Metadata:          map[string]string{},
+			Namespace:         runtime.DefaultNamespace,
+			CreationTimestamp: time.Now().Unix(),
+		}
+		_, err := s.put(ctx, rootRoleKey, rootRole)
+		if err != nil {
+			return err
+		}
+	}
+
+	rootUserKey := path.Join(runtime.DefaultUserPrefix, runtime.DefaultRootUser)
+	_, _, err = s.get(ctx, rootUserKey, new(authv1.User), getOpts...)
+	if err != nil {
+		passwd := crypto.NewSha256().Hash([]byte(runtime.DefaultPassword))
+		rootUser := &authv1.User{
+			Name:              runtime.DefaultRootUser,
+			Metadata:          map[string]string{},
+			Role:              runtime.DefaultRootRole,
+			Namespace:         runtime.DefaultNamespace,
+			Password:          passwd,
+			CreationTimestamp: time.Now().Unix(),
+		}
+		_, err := s.put(ctx, rootUserKey, rootUser)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *authServer) ListRole(ctx context.Context, req *pb.ListRoleRequest) (resp *pb.ListRoleResponse, err error) {
@@ -85,8 +142,32 @@ func (s *authServer) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) 
 }
 
 func (s *authServer) Authenticate(ctx context.Context, req *pb.AuthenticateRequest) (resp *pb.AuthenticateResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	options := []clientv3.OpOption{
+		clientv3.WithSerializable(),
+	}
+	key := path.Join(runtime.DefaultUserPrefix, req.Name)
+	user := &authv1.User{}
+	rh, _, err := s.get(ctx, key, user, options...)
+	if err != nil {
+		return nil, rpctypes.ErrGRPCAuthFailed
+	}
+
+	passwd := crypto.NewSha256().Hash([]byte(req.Password))
+	if passwd != user.Password {
+		return nil, rpctypes.ErrGRPCAuthFailed
+	}
+
+	expire := time.Second * time.Duration(s.cfg.AuthTokenTTL)
+	token, err := jwt.NewClaims(user).GenerateToken(expire)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = &pb.AuthenticateResponse{
+		Header: toHeader(rh),
+		Token:  token,
+	}
+	return
 }
 
 func (s *authServer) ListPolicy(ctx context.Context, req *pb.ListPolicyRequest) (resp *pb.ListPolicyResponse, err error) {

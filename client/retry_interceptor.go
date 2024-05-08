@@ -22,9 +22,11 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type options struct {
@@ -53,4 +55,12 @@ func withRetryPolicy(rp retryPolicy) retryOption {
 	return retryOption{applyFunc: func(o *options) {
 		o.retryPolicy = rp
 	}}
+}
+
+func withOutgoing(ctx context.Context, mds map[string]string) context.Context {
+	pairs := make([]string, 0)
+	for k, v := range mds {
+		pairs = append(pairs, k, v)
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs(pairs...))
 }

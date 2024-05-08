@@ -25,10 +25,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type RegionGroup struct {
@@ -43,10 +43,12 @@ func (tree *RouteTree) registerRegionGroup() error {
 	group := tree.root.Group("/meta/region", summary.Name, summary.Description, rg.HandlerChains()...)
 	group.GET("/list", []fizz.OperationOption{
 		fizz.Summary("List all runners in the olive system."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(rg.regionList, 200))
 
 	group.POST("/get", []fizz.OperationOption{
 		fizz.Summary("Get the olive runner in olive system by id and version."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(rg.regionGet, 200))
 
 	return tree.Group(rg)
@@ -63,10 +65,23 @@ func (rg *RegionGroup) HandlerChains() []gin.HandlerFunc {
 	return []gin.HandlerFunc{}
 }
 
-type RegionListResponse = olivepb.ListRegionResponse
+type RegionListRequest struct {
+	Limit    int64  `query:"limit"`
+	Continue string `query:"continue"`
+}
 
-func (rg *RegionGroup) regionList(ctx *gin.Context) (*RegionListResponse, error) {
-	resp, err := rg.oct.ListRegion(ctx)
+type RegionListResponse = client.ListRegionResponse
+
+func (rg *RegionGroup) regionList(ctx *gin.Context, in *RegionListRequest) (*RegionListResponse, error) {
+	var opts []client.PageOption
+	if in.Limit > 0 {
+		opts = append(opts, client.WithLimit(in.Limit))
+	}
+	if in.Continue != "" {
+		opts = append(opts, client.WithToken(in.Continue))
+	}
+
+	resp, err := rg.oct.ListRegion(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +92,7 @@ type RegionGetRequest struct {
 	Id uint64 `json:"id" validate:"required"`
 }
 
-type RegionGetResponse = olivepb.GetRegionResponse
+type RegionGetResponse = client.GetRegionResponse
 
 func (rg *RegionGroup) regionGet(ctx *gin.Context, in *RegionGetRequest) (*RegionGetResponse, error) {
 	resp, err := rg.oct.GetRegion(ctx, in.Id)

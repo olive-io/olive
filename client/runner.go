@@ -29,41 +29,57 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
+type (
+	ListRunnerResponse pb.ListRunnerResponse
+	GetRunnerResponse  pb.GetRunnerResponse
+)
+
 type MetaRunnerRPC interface {
-	ListRunner(ctx context.Context) (*pb.ListRunnerResponse, error)
-	GetRunner(ctx context.Context, id uint64) (*pb.GetRunnerResponse, error)
+	ListRunner(ctx context.Context, opts ...PageOption) (*ListRunnerResponse, error)
+	GetRunner(ctx context.Context, id uint64) (*GetRunnerResponse, error)
 }
 
 type runnerRPC struct {
-	remote   pb.MetaRunnerRPCClient
+	client   *Client
 	callOpts []grpc.CallOption
 }
 
 func NewRunnerRPC(c *Client) MetaRunnerRPC {
-	conn := c.ActiveConnection()
-	api := &runnerRPC{
-		remote: RetryMetaRunnerClient(conn),
-	}
+	api := &runnerRPC{client: c}
 	if c != nil {
 		api.callOpts = c.callOpts
 	}
 	return api
 }
 
-func (rr *runnerRPC) ListRunner(ctx context.Context) (*pb.ListRunnerResponse, error) {
-	in := &pb.ListRunnerRequest{}
-	resp, err := rr.remote.ListRunner(ctx, in, rr.callOpts...)
+func (rr *runnerRPC) ListRunner(ctx context.Context, opts ...PageOption) (*ListRunnerResponse, error) {
+	var page PageOptions
+	for _, opt := range opts {
+		opt(&page)
+	}
+
+	conn := rr.client.conn
+	in := &pb.ListRunnerRequest{
+		Limit:    page.Limit,
+		Continue: page.Token,
+	}
+	resp, err := rr.remoteClient(conn).ListRunner(ctx, in, rr.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return resp, nil
+	return (*ListRunnerResponse)(resp), nil
 }
 
-func (rr *runnerRPC) GetRunner(ctx context.Context, id uint64) (*pb.GetRunnerResponse, error) {
+func (rr *runnerRPC) GetRunner(ctx context.Context, id uint64) (*GetRunnerResponse, error) {
+	conn := rr.client.conn
 	in := &pb.GetRunnerRequest{Id: id}
-	resp, err := rr.remote.GetRunner(ctx, in, rr.callOpts...)
+	resp, err := rr.remoteClient(conn).GetRunner(ctx, in, rr.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return resp, nil
+	return (*GetRunnerResponse)(resp), nil
+}
+
+func (rr *runnerRPC) remoteClient(conn *grpc.ClientConn) pb.MetaRunnerRPCClient {
+	return RetryMetaRunnerClient(conn)
 }

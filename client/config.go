@@ -27,6 +27,8 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/client/interceptor"
 )
 
 var (
@@ -38,7 +40,9 @@ var (
 )
 
 type Config struct {
-	clientv3.Config
+	clientv3.Config `json:",inline"`
+
+	Interceptor interceptor.Interceptor `json:"interceptor,omitempty"`
 }
 
 func NewConfig(lg *zap.Logger) *Config {
@@ -65,5 +69,5 @@ func NewConfigWithContext(ctx context.Context, lg *zap.Logger) *Config {
 		BackoffJitterFraction: 0.5,
 	}
 
-	return &Config{cc}
+	return &Config{Config: cc}
 }

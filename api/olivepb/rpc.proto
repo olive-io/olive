@@ -134,63 +134,6 @@ message MemberPromoteResponse {
   repeated Member members = 2;
 }
 
-service MetaRunnerRPC {
-  rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/runners"
-    };
-  };
-  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/runner/{id}"
-    };
-  };
-}
-
-message ListRunnerRequest {}
-
-message ListRunnerResponse {
-  ResponseHeader header = 1;
-  repeated Runner runners = 2;
-}
-
-message GetRunnerRequest {
-  uint64 id = 1;
-}
-
-message GetRunnerResponse {
-  ResponseHeader header = 1;
-  Runner runner = 2;
-}
-
-service MetaRegionRPC {
-  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/regions"
-    };
-  };
-  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/meta/region/{id}"
-    };
-  };
-}
-
-message ListRegionRequest {}
-
-message ListRegionResponse {
-  ResponseHeader header = 1;
-  repeated Region regions = 2;
-}
-
-message GetRegionRequest {
-  uint64 id = 1;
-}
-
-message GetRegionResponse {
-  ResponseHeader header = 1;
-  Region region = 2;
-}
 
 service AuthRPC {
   rpc ListRole(ListRoleRequest) returns (ListRoleResponse) {
@@ -463,6 +406,72 @@ message AdmitRequest {
 message AdmitResponse {
   ResponseHeader header = 1;
   bool result = 2;
+}
+
+service MetaRunnerRPC {
+  rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/runners"
+    };
+  };
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/runner/{id}"
+    };
+  };
+}
+
+message ListRunnerRequest {
+  int64 limit = 1;
+  string continue = 21;
+}
+
+message ListRunnerResponse {
+  ResponseHeader header = 1;
+  repeated Runner runners = 2;
+  string continueToken = 3;
+}
+
+message GetRunnerRequest {
+  uint64 id = 1;
+}
+
+message GetRunnerResponse {
+  ResponseHeader header = 1;
+  Runner runner = 2;
+}
+
+service MetaRegionRPC {
+  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/regions"
+    };
+  };
+  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/meta/region/{id}"
+    };
+  };
+}
+
+message ListRegionRequest {
+  int64 limit = 1;
+  string continue = 21;
+}
+
+message ListRegionResponse {
+  ResponseHeader header = 1;
+  repeated Region regions = 2;
+  string continueToken = 3;
+}
+
+message GetRegionRequest {
+  uint64 id = 1;
+}
+
+message GetRegionResponse {
+  ResponseHeader header = 1;
+  Region region = 2;
 }
 
 service BpmnRPC {

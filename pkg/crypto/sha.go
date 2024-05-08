@@ -19,49 +19,31 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package authpbv1
+package crypto
 
-func (m PType) Short() string {
-	switch m {
-	case PType_POLICY:
-		return "p"
-	case PType_ROLE:
-		return "g"
-	default:
-		return "null"
-	}
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"hash"
+)
+
+var defaultSalt = "oliveOo."
+
+type Sha256 struct {
+	h hash.Hash
 }
 
-func (m Resource) Short() string {
-	switch m {
-	case Resource_MetaMember:
-		return "member"
-	case Resource_Runner:
-		return "runner"
-	case Resource_Region:
-		return "region"
-	case Resource_AuthRole:
-		return "role"
-	case Resource_AuthUser:
-		return "user"
-	case Resource_Authentication:
-		return "authentication"
-	case Resource_BpmnDefinition:
-		return "bpmn_definition"
-	case Resource_BpmnProcess:
-		return "bpmn_process"
-	default:
-		return "null"
-	}
+func NewSaltSha256(salt string) *Sha256 {
+	h := sha256.New()
+	h.Write([]byte(salt))
+	return &Sha256{h: h}
 }
 
-func (m Action) Short() string {
-	switch m {
-	case Action_Read:
-		return "read"
-	case Action_Write:
-		return "write"
-	default:
-		return "null"
-	}
+func NewSha256() *Sha256 {
+	return NewSaltSha256(defaultSalt)
+}
+
+func (s *Sha256) Hash(data []byte) string {
+	hashed := s.h.Sum(data)
+	return hex.EncodeToString(hashed)
 }

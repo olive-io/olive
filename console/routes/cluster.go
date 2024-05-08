@@ -28,6 +28,7 @@ import (
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type ClusterGroup struct {
@@ -43,18 +44,22 @@ func (tree *RouteTree) registerCluster() error {
 
 	group.GET("/members", []fizz.OperationOption{
 		fizz.Summary("List the members of the olive cluster meta components."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberList, 200))
 
 	group.POST("/member/add", []fizz.OperationOption{
 		fizz.Summary("adds a new member into the olive-meta cluster."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberAdd, 200))
 
 	group.PATCH("/member/update", []fizz.OperationOption{
 		fizz.Summary("updates the peer addresses of the olive-meta member."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberUpdate, 200))
 
 	group.POST("/member/remove", []fizz.OperationOption{
 		fizz.Summary("removes a member from olive-meta cluster."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberRemove, 200))
 
 	return tree.Group(cg)

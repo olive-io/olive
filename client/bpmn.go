@@ -33,14 +33,24 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
+type (
+	ListDefinitionResponse       pb.ListDefinitionResponse
+	DeployDefinitionResponse     pb.DeployDefinitionResponse
+	GetDefinitionResponse        pb.GetDefinitionResponse
+	RemoveDefinitionResponse     pb.RemoveDefinitionResponse
+	ExecuteDefinitionResponse    pb.ExecuteDefinitionResponse
+	ListProcessInstancesResponse pb.ListProcessInstancesResponse
+	GetProcessInstanceResponse   pb.GetProcessInstanceResponse
+)
+
 type BpmnRPC interface {
-	ListDefinitions(ctx context.Context, limit int64, continueToken string) (*pb.ListDefinitionResponse, error)
-	DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.DeployDefinitionResponse, error)
-	GetDefinition(ctx context.Context, id string, version uint64) (*pb.GetDefinitionResponse, error)
-	RemoveDefinition(ctx context.Context, id string) (*pb.RemoveDefinitionResponse, error)
-	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ExecuteDefinitionResponse, error)
-	ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, limit int64, continueToken string) (*pb.ListProcessInstancesResponse, error)
-	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.GetProcessInstanceResponse, error)
+	ListDefinitions(ctx context.Context, opts ...PageOption) (*ListDefinitionResponse, error)
+	DeployDefinition(ctx context.Context, id, name string, body []byte) (*DeployDefinitionResponse, error)
+	GetDefinition(ctx context.Context, id string, version uint64) (*GetDefinitionResponse, error)
+	RemoveDefinition(ctx context.Context, id string) (*RemoveDefinitionResponse, error)
+	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*ExecuteDefinitionResponse, error)
+	ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, opts ...PageOption) (*ListProcessInstancesResponse, error)
+	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*GetProcessInstanceResponse, error)
 }
 
 type bpmnRPC struct {
@@ -56,21 +66,26 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) ListDefinitions(ctx context.Context, limit int64, continueToken string) (*pb.ListDefinitionResponse, error) {
+func (bc *bpmnRPC) ListDefinitions(ctx context.Context, opts ...PageOption) (*ListDefinitionResponse, error) {
+	var page PageOptions
+	for _, opt := range opts {
+		opt(&page)
+	}
+
 	conn := bc.client.conn
 	in := pb.ListDefinitionRequest{
-		Limit:    limit,
-		Continue: continueToken,
+		Limit:    page.Limit,
+		Continue: page.Token,
 	}
 	rsp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
 
-	return rsp, nil
+	return (*ListDefinitionResponse)(rsp), nil
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.DeployDefinitionResponse, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*DeployDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -98,10 +113,10 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		return nil, toErr(ctx, err)
 	}
 
-	return resp, nil
+	return (*DeployDefinitionResponse)(resp), nil
 }
 
-func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*pb.GetDefinitionResponse, error) {
+func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*GetDefinitionResponse, error) {
 	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
@@ -112,10 +127,10 @@ func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp, nil
+	return (*GetDefinitionResponse)(rsp), nil
 }
 
-func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) (*pb.RemoveDefinitionResponse, error) {
+func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) (*RemoveDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -133,7 +148,7 @@ func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) (*pb.RemoveD
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp, nil
+	return (*RemoveDefinitionResponse)(rsp), nil
 }
 
 type ExecDefinitionOption func(request *pb.ExecuteDefinitionRequest)
@@ -167,7 +182,7 @@ func WithProperties(properties map[string]any) ExecDefinitionOption {
 	}
 }
 
-func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ExecuteDefinitionResponse, error) {
+func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*ExecuteDefinitionResponse, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -188,47 +203,32 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp, nil
+	return (*ExecuteDefinitionResponse)(rsp), nil
 }
 
-func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, limit int64, continueToken string) (*pb.ListProcessInstancesResponse, error) {
+func (bc *bpmnRPC) ListProcessInstances(ctx context.Context, definitionId string, definitionVersion uint64, opts ...PageOption) (*ListProcessInstancesResponse, error) {
+	var page PageOptions
+	for _, opt := range opts {
+		opt(&page)
+	}
+
 	conn := bc.client.conn
-	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
-		if err != nil {
-			return nil, err
-		}
-	}
 	in := &pb.ListProcessInstancesRequest{
 		DefinitionId:      definitionId,
 		DefinitionVersion: definitionVersion,
-		Limit:             limit,
-		Continue:          continueToken,
+		Limit:             page.Limit,
+		Continue:          page.Token,
 	}
 
 	rsp, err := bc.remoteClient(conn).ListProcessInstances(ctx, in, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp, nil
+	return (*ListProcessInstancesResponse)(rsp), nil
 }
 
-func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.GetProcessInstanceResponse, error) {
+func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*GetProcessInstanceResponse, error) {
 	conn := bc.client.conn
-	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(leaderEndpoints) > 0 {
-		conn, err = bc.client.ec.Dial(leaderEndpoints[0])
-		if err != nil {
-			return nil, err
-		}
-	}
 	in := &pb.GetProcessInstanceRequest{
 		DefinitionId:      definitionId,
 		DefinitionVersion: definitionVersion,
@@ -239,7 +239,7 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return rsp, nil
+	return (*GetProcessInstanceResponse)(rsp), nil
 }
 
 func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {

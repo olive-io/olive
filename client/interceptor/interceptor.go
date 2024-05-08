@@ -19,49 +19,10 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package authpbv1
+package interceptor
 
-func (m PType) Short() string {
-	switch m {
-	case PType_POLICY:
-		return "p"
-	case PType_ROLE:
-		return "g"
-	default:
-		return "null"
-	}
-}
+import "google.golang.org/grpc"
 
-func (m Resource) Short() string {
-	switch m {
-	case Resource_MetaMember:
-		return "member"
-	case Resource_Runner:
-		return "runner"
-	case Resource_Region:
-		return "region"
-	case Resource_AuthRole:
-		return "role"
-	case Resource_AuthUser:
-		return "user"
-	case Resource_Authentication:
-		return "authentication"
-	case Resource_BpmnDefinition:
-		return "bpmn_definition"
-	case Resource_BpmnProcess:
-		return "bpmn_process"
-	default:
-		return "null"
-	}
-}
-
-func (m Action) Short() string {
-	switch m {
-	case Action_Read:
-		return "read"
-	case Action_Write:
-		return "write"
-	default:
-		return "null"
-	}
+type Interceptor interface {
+	Unary() grpc.UnaryClientInterceptor
 }

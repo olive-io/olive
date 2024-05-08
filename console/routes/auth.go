@@ -19,49 +19,37 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package authpbv1
+package routes
 
-func (m PType) Short() string {
-	switch m {
-	case PType_POLICY:
-		return "p"
-	case PType_ROLE:
-		return "g"
-	default:
-		return "null"
+import (
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/client"
+)
+
+type AuthGroup struct {
+	lg  *zap.Logger
+	oct *client.Client
+}
+
+func (tree *RouteTree) registerAuthGroup() error {
+	ag := &AuthGroup{lg: tree.lg, oct: tree.oct}
+	summary := ag.Summary()
+
+	group := tree.root.Group("/auth", summary.Name, summary.Description, ag.HandlerChains()...)
+	_ = group
+
+	return tree.Group(ag)
+}
+
+func (ag *AuthGroup) Summary() RouteGroupSummary {
+	return RouteGroupSummary{
+		Name:        "olive.Auth",
+		Description: "the documents of olive authentication.",
 	}
 }
 
-func (m Resource) Short() string {
-	switch m {
-	case Resource_MetaMember:
-		return "member"
-	case Resource_Runner:
-		return "runner"
-	case Resource_Region:
-		return "region"
-	case Resource_AuthRole:
-		return "role"
-	case Resource_AuthUser:
-		return "user"
-	case Resource_Authentication:
-		return "authentication"
-	case Resource_BpmnDefinition:
-		return "bpmn_definition"
-	case Resource_BpmnProcess:
-		return "bpmn_process"
-	default:
-		return "null"
-	}
-}
-
-func (m Action) Short() string {
-	switch m {
-	case Action_Read:
-		return "read"
-	case Action_Write:
-		return "write"
-	default:
-		return "null"
-	}
+func (ag *AuthGroup) HandlerChains() []gin.HandlerFunc {
+	return []gin.HandlerFunc{}
 }

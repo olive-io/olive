@@ -35,6 +35,7 @@ import (
 	"github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
+	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type ServiceGroup struct {
@@ -49,10 +50,12 @@ func (tree *RouteTree) registerServiceGroup() error {
 	group := tree.root.Group("/discovery", summary.Name, summary.Description, sg.HandlerChains()...)
 	group.GET("/service/list", []fizz.OperationOption{
 		fizz.Summary("List all gateway service in olive system."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(sg.serviceList, 200))
 
 	group.GET("/endpoint/list", []fizz.OperationOption{
 		fizz.Summary("List all proxy endpoint in olive system."),
+		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(sg.endpointList, 200))
 
 	return tree.Group(sg)

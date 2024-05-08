@@ -50,3 +50,11 @@ var (
 	DefaultRunnerDiscoveryPrefix = path.Join(DefaultOlivePrefix, "discovery")
 	DefaultRunnerDiscoveryNode   = path.Join(DefaultRunnerDiscoveryPrefix, "nodes")
 )
+
+var (
+	DefaultRootRole = "root"
+	DefaultRootUser = "root"
+	DefaultPassword = "p@ssw0rd"
+
+	DefaultNamespace = "default"
+)
