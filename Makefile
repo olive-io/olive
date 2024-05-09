@@ -34,7 +34,7 @@ generate:
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/rpc.proto
 
 	goimports -w api/*/**.go
-	rm -fr api/*/**swagger.json api/*/**.bak
+	rm -fr api/*/**swagger.json api/*/**.bak api/*/**_olive.pb.go
 
 docker:
 

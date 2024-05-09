@@ -42,6 +42,7 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/meta/pagation"
+	mdutil "github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/pkg/crypto"
 	"github.com/olive-io/olive/pkg/jwt"
 	"github.com/olive-io/olive/pkg/runtime"
@@ -253,49 +254,70 @@ func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, e
 	return
 }
 
-func (s *Server) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error {
-	if !s.notifier.IsLeader() {
-		return rpctypes.ErrGRPCNotLeader
-	}
-	if s.etcd.Server.Leader() == 0 {
-		return rpctypes.ErrGRPCNoLeader
-	}
-
-	md, _ := metadata.FromIncomingContext(ctx)
-	if md == nil {
-		md = metadata.New(map[string]string{})
-	}
-
-	vals := md.Get(rpctypes.TokenNameGRPC)
-	if len(vals) == 0 {
-		return errors.Wrap(rpctypes.ErrGRPCInvalidAuthToken, "token not found")
-	}
-	token := vals[0]
-
-	var user *authv1.User
-	var err error
-	authKind, token, ok := strings.Cut(token, " ")
-	if !ok {
-		authKind = rpctypes.TokenBearer
-	}
-
-	switch authKind {
-	case rpctypes.TokenBearer:
-		user, err = s.bearerAuth(ctx, token)
-	case rpctypes.TokenBasic:
-		user, err = s.basicAuth(ctx, token)
-	default:
-		user, err = s.bearerAuth(ctx, token)
-	}
+func (s *Server) currentUser(ctx context.Context) (*authv1.User, error) {
+	user := &authv1.User{}
+	ok, err := mdutil.GetMsg(ctx, rpctypes.UserNameGRPC, user)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthMgmt, err.Error())
 	}
+	if !ok {
+		return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthMgmt, "user not found")
+	}
+	return user, nil
+}
 
-	for _, scope := range scopes {
-		if err = s.admit(ctx, user.Role, user.Name, scope); err != nil {
-			return err
+func (s *Server) unaryInterceptor() func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+
+		if !s.notifier.IsLeader() {
+			return nil, rpctypes.ErrGRPCNotLeader
 		}
+		if s.etcd.Server.Leader() == 0 {
+			return nil, rpctypes.ErrGRPCNoLeader
+		}
+
+		method := info.FullMethod
+		if !strings.HasPrefix(method, "/olivepb.") ||
+			method == "/olivepb.AuthRPC/Authenticate" {
+			return handler(ctx, req)
+		}
+
+		md, _ := metadata.FromIncomingContext(ctx)
+		if md == nil {
+			md = metadata.New(map[string]string{})
+		}
+
+		vals := md.Get(rpctypes.TokenNameGRPC)
+		if len(vals) == 0 {
+			return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthToken, "token not found")
+		}
+		token := vals[0]
+
+		var user *authv1.User
+		authKind, token, ok := strings.Cut(token, " ")
+		if !ok {
+			authKind = rpctypes.TokenBearer
+		}
+
+		switch authKind {
+		case rpctypes.TokenBearer:
+			user, err = s.bearerAuth(ctx, token)
+		case rpctypes.TokenBasic:
+			user, err = s.basicAuth(ctx, token)
+		default:
+			user, err = s.bearerAuth(ctx, token)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		ctx = mdutil.SetMsg(ctx, rpctypes.UserNameGRPC, user)
+		resp, err = handler(ctx, req)
+		return resp, err
 	}
+}
+
+func (s *Server) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error {
 
 	return nil
 }

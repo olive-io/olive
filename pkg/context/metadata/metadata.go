@@ -25,6 +25,8 @@ package metadata
 import (
 	"context"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type metadataKey struct{}
@@ -86,6 +88,12 @@ func Set(ctx context.Context, k, v string) context.Context {
 	return context.WithValue(ctx, metadataKey{}, md)
 }
 
+// SetMsg add key with val to metadata, value is proto.Message
+func SetMsg(ctx context.Context, k string, v proto.Message) context.Context {
+	data, _ := proto.Marshal(v)
+	return Set(ctx, k, string(data))
+}
+
 // Get returns a single value from metadata in the context
 func Get(ctx context.Context, key string) (string, bool) {
 	md, ok := FromContext(ctx)
@@ -102,6 +110,16 @@ func Get(ctx context.Context, key string) (string, bool) {
 	val, ok = md[strings.ToLower(key)]
 
 	return val, ok
+}
+
+// GetMsg returns a proto.Message from metadata in the context
+func GetMsg(ctx context.Context, key string, target proto.Message) (bool, error) {
+	val, ok := Get(ctx, key)
+	if !ok {
+		return false, nil
+	}
+	err := proto.Unmarshal([]byte(val), target)
+	return ok, err
 }
 
 // FromContext returns metadata from the given context

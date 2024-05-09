@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/pkg/runtime"
 )
@@ -46,9 +45,6 @@ func newRunnerServer(s *Server) (*runnerServer, error) {
 }
 
 func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RunnerReadScope); err != nil {
-		return
-	}
 
 	lg := s.lg
 	resp = &pb.ListRunnerResponse{}
@@ -78,9 +74,6 @@ func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest
 }
 
 func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RunnerReadScope); err != nil {
-		return
-	}
 
 	resp = &pb.GetRunnerResponse{}
 	resp.Header = s.responseHeader()
@@ -89,9 +82,6 @@ func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) 
 }
 
 func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RegionReadScope); err != nil {
-		return
-	}
 
 	lg := s.lg
 	resp = &pb.ListRegionResponse{}
@@ -121,9 +111,6 @@ func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest
 }
 
 func (s *runnerServer) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RegionReadScope); err != nil {
-		return
-	}
 
 	resp = &pb.GetRegionResponse{}
 	resp.Header = s.responseHeader()

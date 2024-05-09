@@ -30,12 +30,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
-	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/meta/embed"
 	genericserver "github.com/olive-io/olive/pkg/server"
 
 	"github.com/olive-io/olive/meta/leader"
@@ -113,6 +113,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		pb.RegisterBpmnRPCServer(gs, bpmnRPC)
 	}
 
+	ec.UnaryInterceptor = s.unaryInterceptor()
 	s.etcd, err = embed.StartEtcd(ec)
 	if err != nil {
 		return errors.Wrap(err, "start embed etcd")

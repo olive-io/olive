@@ -23,14 +23,12 @@ package interceptor
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/olive-io/olive/api/rpctypes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-
-	"github.com/olive-io/olive/api/rpctypes"
 )
 
 type BearerAuth struct{}
@@ -58,14 +56,10 @@ func (ai *BearerAuth) Unary() grpc.UnaryClientInterceptor {
 
 func (ai *BearerAuth) Handler(c *gin.Context) {
 	authorization := c.GetHeader(rpctypes.TokenNameSwagger)
-	if authorization == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"msg": "no found token"})
-		c.Abort()
-		return
+	if authorization != "" {
+		ctx := metadata.NewOutgoingContext(c.Request.Context(), metadata.Pairs(rpctypes.TokenNameGRPC, authorization))
+		c.Request = c.Request.WithContext(ctx)
 	}
-
-	ctx := metadata.NewOutgoingContext(c.Request.Context(), metadata.Pairs(rpctypes.TokenNameGRPC, authorization))
-	c.Request = c.Request.WithContext(ctx)
 
 	c.Next()
 

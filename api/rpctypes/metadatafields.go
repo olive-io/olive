@@ -24,6 +24,7 @@ package rpctypes
 var (
 	TokenNameGRPC    = "Token"
 	TokenNameSwagger = "Authorization"
+	UserNameGRPC     = "User"
 
 	TokenBearer = "Bearer"
 	TokenBasic  = "Basic"

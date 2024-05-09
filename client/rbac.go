@@ -20,3 +20,165 @@
 */
 
 package client
+
+import (
+	"context"
+
+	authv1 "github.com/olive-io/olive/api/authpb"
+	pb "github.com/olive-io/olive/api/olivepb"
+	"google.golang.org/grpc"
+)
+
+type (
+	ListPolicyResponse        pb.ListPolicyResponse
+	AddPolicyResponse         pb.AddPolicyResponse
+	RemovePolicyResponse      pb.RemovePolicyResponse
+	AddGroupPolicyResponse    pb.AddGroupPolicyResponse
+	RemoveGroupPolicyResponse pb.RemoveGroupPolicyResponse
+	AdmitResponse             pb.AdmitResponse
+)
+
+type RbacRPC interface {
+	ListPolicy(ctx context.Context, ptype authv1.PType, sub string) (*ListPolicyResponse, error)
+	AddPolicy(ctx context.Context, policy *authv1.Policy) (*AddPolicyResponse, error)
+	RemovePolicy(ctx context.Context, policy *authv1.Policy) (*RemovePolicyResponse, error)
+	AddGroupPolicy(ctx context.Context, policy *authv1.Policy) (*AddGroupPolicyResponse, error)
+	RemoveGroupPolicy(ctx context.Context, policy *authv1.Policy) (*RemoveGroupPolicyResponse, error)
+	Admit(ctx context.Context, policy *authv1.Policy) (*AdmitResponse, error)
+}
+
+type rbacRPC struct {
+	client   *Client
+	callOpts []grpc.CallOption
+}
+
+func NewRbacRPC(c *Client) RbacRPC {
+	api := &rbacRPC{client: c}
+	if c != nil {
+		api.callOpts = c.callOpts
+	}
+	return api
+}
+
+func (rc *rbacRPC) ListPolicy(ctx context.Context, ptype authv1.PType, sub string) (*ListPolicyResponse, error) {
+	conn := rc.client.conn
+	in := pb.ListPolicyRequest{
+		Ptyle: ptype,
+		Sub:   sub,
+	}
+	rsp, err := rc.remoteClient(conn).ListPolicy(ctx, &in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*ListPolicyResponse)(rsp), nil
+}
+
+func (rc *rbacRPC) AddPolicy(ctx context.Context, policy *authv1.Policy) (*AddPolicyResponse, error) {
+	conn := rc.client.conn
+	leaderEndpoints, err := rc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = rc.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+	in := pb.AddPolicyRequest{
+		Policy: policy,
+	}
+	rsp, err := rc.remoteClient(conn).AddPolicy(ctx, &in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*AddPolicyResponse)(rsp), nil
+}
+
+func (rc *rbacRPC) RemovePolicy(ctx context.Context, policy *authv1.Policy) (*RemovePolicyResponse, error) {
+	conn := rc.client.conn
+	leaderEndpoints, err := rc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = rc.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.RemovePolicyRequest{
+		Policy: policy,
+	}
+	resp, err := rc.remoteClient(conn).RemovePolicy(ctx, in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*RemovePolicyResponse)(resp), nil
+}
+
+func (rc *rbacRPC) AddGroupPolicy(ctx context.Context, policy *authv1.Policy) (*AddGroupPolicyResponse, error) {
+	conn := rc.client.conn
+	leaderEndpoints, err := rc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = rc.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := pb.AddGroupPolicyRequest{
+		Policy: policy,
+	}
+	rsp, err := rc.remoteClient(conn).AddGroupPolicy(ctx, &in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*AddGroupPolicyResponse)(rsp), nil
+}
+
+func (rc *rbacRPC) RemoveGroupPolicy(ctx context.Context, policy *authv1.Policy) (*RemoveGroupPolicyResponse, error) {
+	conn := rc.client.conn
+	leaderEndpoints, err := rc.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = rc.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.RemoveGroupPolicyRequest{Policy: policy}
+	resp, err := rc.remoteClient(conn).RemoveGroupPolicy(ctx, in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*RemoveGroupPolicyResponse)(resp), nil
+}
+
+func (rc *rbacRPC) Admit(ctx context.Context, policy *authv1.Policy) (*AdmitResponse, error) {
+	conn := rc.client.conn
+	in := &pb.AdmitRequest{
+		Policy: policy,
+	}
+	rsp, err := rc.remoteClient(conn).Admit(ctx, in, rc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return (*AdmitResponse)(rsp), nil
+}
+
+func (rc *rbacRPC) remoteClient(conn *grpc.ClientConn) pb.RbacRPCClient {
+	return RetryRbacClient(conn)
+}

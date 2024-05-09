@@ -49,6 +49,7 @@ type AuthRPC interface {
 	GetRole(ctx context.Context, name string) (*GetRoleResponse, error)
 	CreateRole(ctx context.Context, role *authv1.Role) (*CreateRoleResponse, error)
 	UpdateRole(ctx context.Context, name string, patcher *authv1.RolePatcher) (*UpdateRoleResponse, error)
+	RemoveRole(ctx context.Context, name string) (*RemoveRoleResponse, error)
 	ListUser(ctx context.Context, opts ...PageOption) (*ListUserResponse, error)
 	GetUser(ctx context.Context, name string) (*GetUserResponse, error)
 	CreateUser(ctx context.Context, user *authv1.User) (*CreateUserResponse, error)

@@ -40,6 +40,7 @@ type Client struct {
 	MetaRunnerRPC
 	MetaRegionRPC
 	AuthRPC
+	RbacRPC
 	BpmnRPC
 
 	// embed etcd client
@@ -115,6 +116,7 @@ func newClient(cfg *Config) (*Client, error) {
 	client.MetaRegionRPC = NewRegionRPC(client)
 	client.AuthRPC = NewAuthRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
+	client.RbacRPC = NewRbacRPC(client)
 	client.KV = etcd.KV
 	client.Lease = etcd.Lease
 	client.Watcher = etcd.Watcher

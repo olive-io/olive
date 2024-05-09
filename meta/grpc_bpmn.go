@@ -34,7 +34,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/pkg/runtime"
@@ -95,9 +94,6 @@ func newBpmnServer(s *Server) (*bpmnServer, error) {
 }
 
 func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (resp *pb.DeployDefinitionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnDefinitionWriteScope); err != nil {
-		return
-	}
 
 	resp = &pb.DeployDefinitionResponse{}
 	dm, err := s.definitionMeta(ctx, req.Id)
@@ -141,9 +137,6 @@ func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinit
 }
 
 func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnDefinitionReadScope); err != nil {
-		return
-	}
 
 	resp = &pb.ListDefinitionResponse{}
 	preparedKey := runtime.DefaultMetaDefinitionMeta
@@ -189,9 +182,7 @@ func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionR
 }
 
 func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnDefinitionReadScope); err != nil {
-		return
-	}
+
 	resp = &pb.GetDefinitionResponse{}
 
 	version := req.Version
@@ -244,9 +235,6 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 }
 
 func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (resp *pb.RemoveDefinitionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnDefinitionWriteScope); err != nil {
-		return
-	}
 
 	resp = &pb.RemoveDefinitionResponse{}
 
@@ -261,9 +249,6 @@ func (s *bpmnServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinit
 }
 
 func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (resp *pb.ExecuteDefinitionResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnProcessWriteScope); err != nil {
-		return
-	}
 
 	resp = &pb.ExecuteDefinitionResponse{}
 
@@ -312,9 +297,6 @@ func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefin
 }
 
 func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnProcessReadScope); err != nil {
-		return
-	}
 
 	lg := s.lg
 	resp = &pb.ListProcessInstancesResponse{}
@@ -347,9 +329,6 @@ func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProce
 }
 
 func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.BpmnProcessReadScope); err != nil {
-		return
-	}
 
 	resp = &pb.GetProcessInstanceResponse{}
 

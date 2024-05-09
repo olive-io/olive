@@ -42,7 +42,7 @@ func (tree *RouteTree) registerRunnerGroup() error {
 
 	group := tree.root.Group("/meta/runner", summary.Name, summary.Description, rg.HandlerChains()...)
 	group.GET("/list", []fizz.OperationOption{
-		fizz.Summary("List all runners in the olive system."),
+		fizz.Summary("List all runners in olive system."),
 		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(rg.runnerList, 200))
 

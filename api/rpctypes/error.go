@@ -30,6 +30,7 @@ import (
 var (
 	ErrGRPCEmptyKey           = status.New(codes.InvalidArgument, "olive: key is not provided").Err()
 	ErrGRPCKeyNotFound        = status.New(codes.InvalidArgument, "olive: key not found").Err()
+	ErrGRPCEmptyValue         = status.New(codes.InvalidArgument, "olive: value is not provided").Err()
 	ErrGRPCInvalidRunner      = status.New(codes.InvalidArgument, "olive: runner is invalid").Err()
 	ErrGRPCDefinitionNotReady = status.New(codes.FailedPrecondition, "olive: definition not ready").Err()
 
@@ -55,6 +56,7 @@ var (
 	errStringToError = map[string]error{
 		ErrorDesc(ErrGRPCEmptyKey):           ErrGRPCEmptyKey,
 		ErrorDesc(ErrGRPCKeyNotFound):        ErrGRPCKeyNotFound,
+		ErrorDesc(ErrGRPCEmptyValue):         ErrGRPCEmptyValue,
 		ErrorDesc(ErrGRPCInvalidRunner):      ErrGRPCInvalidRunner,
 		ErrorDesc(ErrGRPCDefinitionNotReady): ErrGRPCDefinitionNotReady,
 
@@ -83,6 +85,7 @@ var (
 var (
 	ErrEmptyKey           = Error(ErrGRPCEmptyKey)
 	ErrKeyNotFound        = Error(ErrGRPCKeyNotFound)
+	ErrEmptyValue         = Error(ErrGRPCEmptyValue)
 	ErrInvalidRunner      = Error(ErrGRPCInvalidRunner)
 	ErrDefinitionNotReady = Error(ErrGRPCDefinitionNotReady)
 

@@ -24,9 +24,9 @@ package meta
 import (
 	"strings"
 
+	"github.com/olive-io/olive/meta/embed"
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
-	"go.etcd.io/etcd/server/v3/embed"
 
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"

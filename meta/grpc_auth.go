@@ -26,6 +26,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
@@ -113,9 +114,6 @@ func (s *authServer) Prepare(ctx context.Context) error {
 }
 
 func (s *authServer) ListRole(ctx context.Context, req *pb.ListRoleRequest) (resp *pb.ListRoleResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RoleReadScope); err != nil {
-		return
-	}
 
 	lg := s.lg
 	resp = &pb.ListRoleResponse{}
@@ -144,38 +142,115 @@ func (s *authServer) ListRole(ctx context.Context, req *pb.ListRoleRequest) (res
 }
 
 func (s *authServer) GetRole(ctx context.Context, req *pb.GetRoleRequest) (resp *pb.GetRoleResponse, err error) {
-	key := path.Join(runtime.DefaultRolePrefix, req.Name)
-	role := &authv1.Role{}
-	header, _, err := s.get(ctx, key, role, clientv3.WithSerializable())
+	header, role, err := s.getRole(ctx, req.Name)
 	if err != nil {
 		return nil, err
 	}
 	resp = &pb.GetRoleResponse{
+		Header: header,
+		Role:   role,
+	}
+	return
+}
+
+func (s *authServer) getRole(ctx context.Context, name string) (*pb.ResponseHeader, *authv1.Role, error) {
+	key := path.Join(runtime.DefaultRolePrefix, name)
+	role := &authv1.Role{}
+	header, _, err := s.get(ctx, key, role, clientv3.WithSerializable())
+	if err != nil {
+		if errors.Is(err, rpctypes.ErrKeyNotFound) {
+			err = rpctypes.ErrRoleNotFound
+		}
+		return nil, nil, err
+	}
+	return toHeader(header), role, nil
+}
+
+func (s *authServer) CreateRole(ctx context.Context, req *pb.CreateRoleRequest) (resp *pb.CreateRoleResponse, err error) {
+	currentUser, err := s.currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentUser.Role != runtime.DefaultRootRole {
+		return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthMgmt, "must be root role")
+	}
+
+	role := req.Role
+	if role == nil {
+		return nil, rpctypes.ErrEmptyValue
+	}
+	_, exists, err := s.getRole(ctx, role.Name)
+	if !errors.Is(err, rpctypes.ErrRoleNotFound) {
+		return nil, err
+	}
+	if exists != nil {
+		return nil, rpctypes.ErrGRPCRoleAlreadyExist
+	}
+
+	role.CreationTimestamp = time.Now().Unix()
+	role.UpdateTimestamp = role.CreationTimestamp
+	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	header, err := s.put(ctx, key, role)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.CreateRoleResponse{
 		Header: toHeader(header),
 		Role:   role,
 	}
 	return
 }
 
-func (s *authServer) CreateRole(ctx context.Context, req *pb.CreateRoleRequest) (resp *pb.CreateRoleResponse, err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *authServer) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest) (resp *pb.UpdateRoleResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	patcher := req.Patcher
+	if patcher == nil {
+		return nil, rpctypes.ErrEmptyValue
+	}
+	_, role, err := s.getRole(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if patcher.Desc != "" {
+		role.Desc = patcher.Desc
+	}
+	if patcher.Namespace != "" {
+		role.Namespace = patcher.Namespace
+	}
+	if patcher.Metadata != nil {
+		role.Metadata = patcher.Metadata
+	}
+	role.UpdateTimestamp = time.Now().Unix()
+	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	header, err := s.put(ctx, key, role)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.UpdateRoleResponse{
+		Header: toHeader(header),
+		Role:   role,
+	}
+	return
 }
 
 func (s *authServer) RemoveRole(ctx context.Context, req *pb.RemoveRoleRequest) (resp *pb.RemoveRoleResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	_, role, err := s.getRole(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	header, err := s.del(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.RemoveRoleResponse{
+		Header: toHeader(header),
+		Role:   role,
+	}
+	return
 }
 
 func (s *authServer) ListUser(ctx context.Context, req *pb.ListUserRequest) (resp *pb.ListUserResponse, err error) {
-	if err = s.prepareReq(ctx, authv1.RoleReadScope); err != nil {
-		return
-	}
 
 	lg := s.lg
 	resp = &pb.ListUserResponse{}
@@ -203,32 +278,104 @@ func (s *authServer) ListUser(ctx context.Context, req *pb.ListUserRequest) (res
 }
 
 func (s *authServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (resp *pb.GetUserResponse, err error) {
-	key := path.Join(runtime.DefaultUserPrefix, req.Name)
-	user := &authv1.User{}
-	header, _, err := s.get(ctx, key, user, clientv3.WithSerializable())
+	header, user, err := s.getUser(ctx, req.Name)
 	if err != nil {
 		return nil, err
 	}
 	resp = &pb.GetUserResponse{
+		Header: header,
+		User:   user,
+	}
+	return
+}
+
+func (s *authServer) getUser(ctx context.Context, name string) (*pb.ResponseHeader, *authv1.User, error) {
+	key := path.Join(runtime.DefaultUserPrefix, name)
+	user := &authv1.User{}
+	header, _, err := s.get(ctx, key, user, clientv3.WithSerializable())
+	if err != nil {
+		return nil, nil, err
+	}
+	return toHeader(header), user, nil
+}
+
+func (s *authServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (resp *pb.CreateUserResponse, err error) {
+	user := req.User
+	if user == nil {
+		return nil, rpctypes.ErrEmptyValue
+	}
+	_, exists, err := s.getUser(ctx, user.Name)
+	if !errors.Is(err, rpctypes.ErrRoleNotFound) {
+		return nil, err
+	}
+	if exists != nil {
+		return nil, rpctypes.ErrGRPCRoleAlreadyExist
+	}
+
+	user.CreationTimestamp = time.Now().Unix()
+	user.UpdateTimestamp = user.CreationTimestamp
+	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+	header, err := s.put(ctx, key, user)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.CreateUserResponse{
 		Header: toHeader(header),
 		User:   user,
 	}
 	return
 }
 
-func (s *authServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (resp *pb.CreateUserResponse, err error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s *authServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (resp *pb.UpdateUserResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	patcher := req.Patcher
+	if patcher == nil {
+		return nil, rpctypes.ErrEmptyValue
+	}
+	_, user, err := s.getUser(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	if patcher.Desc != "" {
+		user.Desc = patcher.Desc
+	}
+	if patcher.Namespace != "" {
+		user.Namespace = patcher.Namespace
+	}
+	if patcher.Metadata != nil {
+		user.Metadata = patcher.Metadata
+	}
+	if patcher.Password != "" {
+		passwd := crypto.NewSha256().Hash([]byte(patcher.Password))
+		user.Password = passwd
+	}
+	user.UpdateTimestamp = time.Now().Unix()
+	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+	header, err := s.put(ctx, key, user)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.UpdateUserResponse{
+		Header: toHeader(header),
+		User:   user,
+	}
+	return
 }
 
 func (s *authServer) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (resp *pb.RemoveUserResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	_, user, err := s.getUser(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+	header, err := s.del(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	resp = &pb.RemoveUserResponse{
+		Header: toHeader(header),
+		User:   user,
+	}
+	return
 }
 
 func (s *authServer) Authenticate(ctx context.Context, req *pb.AuthenticateRequest) (resp *pb.AuthenticateResponse, err error) {
