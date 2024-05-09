@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
 
 	authv1 "github.com/olive-io/olive/api/authpb"
 	"github.com/olive-io/olive/api/rpctypes"
@@ -65,7 +65,7 @@ func (c *Claims) GenerateToken(duration time.Duration) (*authv1.Token, error) {
 	return token, nil
 }
 
-func ParseToken(tokenText string) (*Claims, error) {
+func ParseToken(tokenText string) (*authv1.User, error) {
 	keyFn := func(token *jwt.Token) (interface{}, error) {
 		return []byte(DefaultSalt), nil
 	}
@@ -81,5 +81,5 @@ func ParseToken(tokenText string) (*Claims, error) {
 	if !token.Valid {
 		return nil, rpctypes.ErrGRPCInvalidAuthToken
 	}
-	return claims, nil
+	return claims.User, nil
 }

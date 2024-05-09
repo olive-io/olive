@@ -35,6 +35,12 @@ message Role {
   int64 updateTimestamp = 12;
 }
 
+message RolePatcher {
+  string desc = 1;
+  map<string, string> metadata = 2;
+  string namespace = 3;
+}
+
 message User {
   string name = 1;
   string desc = 2;
@@ -45,6 +51,14 @@ message User {
 
   int64 creationTimestamp = 11;
   int64 updateTimestamp = 12;
+}
+
+message UserPatcher {
+  string desc = 1;
+  map<string, string> metadata = 2;
+  string role = 3;
+  string namespace = 4;
+  string password = 5;
 }
 
 message Token {

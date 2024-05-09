@@ -21,8 +21,48 @@
 
 package interceptor
 
-import "google.golang.org/grpc"
+import (
+	"context"
+	"encoding/base64"
+	"strings"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/olive-io/olive/api/rpctypes"
+)
 
 type Interceptor interface {
 	Unary() grpc.UnaryClientInterceptor
+}
+
+type BasicAuth struct {
+	Username string
+	Password string
+}
+
+func NewBasicAuth(username, password string) *BasicAuth {
+	return &BasicAuth{Username: username, Password: password}
+}
+
+func (auth *BasicAuth) generate() string {
+	text := auth.Username + ":" + auth.Password
+	return base64.StdEncoding.EncodeToString([]byte(text))
+}
+
+func (auth *BasicAuth) Unary() grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		endpoint := method
+		if strings.HasPrefix(endpoint, "/etcdserverpb") {
+			return invoker(ctx, method, req, reply, cc, opts...)
+		}
+
+		if auth.Username != "" && auth.Password != "" {
+			token := auth.generate()
+			ctx = metadata.AppendToOutgoingContext(ctx, rpctypes.TokenNameGRPC, rpctypes.TokenBasic+" "+token)
+		}
+
+		err := invoker(ctx, method, req, reply, cc, opts...)
+		return err
+	}
 }

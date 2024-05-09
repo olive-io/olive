@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/cockroachdb/errors v1.11.1
-	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/json-iterator/go v1.1.12
 	github.com/olive-io/olive/api v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
@@ -36,6 +35,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect

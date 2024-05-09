@@ -26,14 +26,34 @@ import (
 
 	"google.golang.org/grpc"
 
+	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 )
 
 type (
+	ListRoleResponse     pb.ListRoleResponse
+	GetRoleResponse      pb.GetRoleResponse
+	CreateRoleResponse   pb.CreateRoleResponse
+	UpdateRoleResponse   pb.UpdateRoleResponse
+	RemoveRoleResponse   pb.RemoveRoleResponse
+	ListUserResponse     pb.ListUserResponse
+	GetUserResponse      pb.GetUserResponse
+	CreateUserResponse   pb.CreateUserResponse
+	UpdateUserResponse   pb.UpdateUserResponse
+	RemoveUserResponse   pb.RemoveUserResponse
 	AuthenticateResponse pb.AuthenticateResponse
 )
 
 type AuthRPC interface {
+	ListRole(ctx context.Context, opts ...PageOption) (*ListRoleResponse, error)
+	GetRole(ctx context.Context, name string) (*GetRoleResponse, error)
+	CreateRole(ctx context.Context, role *authv1.Role) (*CreateRoleResponse, error)
+	UpdateRole(ctx context.Context, name string, patcher *authv1.RolePatcher) (*UpdateRoleResponse, error)
+	ListUser(ctx context.Context, opts ...PageOption) (*ListUserResponse, error)
+	GetUser(ctx context.Context, name string) (*GetUserResponse, error)
+	CreateUser(ctx context.Context, user *authv1.User) (*CreateUserResponse, error)
+	UpdateUser(ctx context.Context, name string, patcher *authv1.UserPatcher) (*UpdateUserResponse, error)
+	RemoveUser(ctx context.Context, name string) (*RemoveUserResponse, error)
 	Authenticate(ctx context.Context, username, password string) (*AuthenticateResponse, error)
 }
 
@@ -50,54 +70,206 @@ func NewAuthRPC(c *Client) AuthRPC {
 	return api
 }
 
-func (ac *authRPC) ListRole(ctx context.Context, in *pb.ListRoleRequest, opts ...grpc.CallOption) (*pb.ListRoleResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) ListRole(ctx context.Context, opts ...PageOption) (*ListRoleResponse, error) {
+	var page PageOptions
+	for _, opt := range opts {
+		opt(&page)
+	}
+
+	conn := ac.client.conn
+	in := pb.ListRoleRequest{
+		Limit:    page.Limit,
+		Continue: page.Token,
+	}
+	rsp, err := ac.remoteClient(conn).ListRole(ctx, &in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*ListRoleResponse)(rsp), nil
 }
 
-func (ac *authRPC) GetRole(ctx context.Context, in *pb.GetRoleRequest, opts ...grpc.CallOption) (*pb.GetRoleResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) GetRole(ctx context.Context, name string) (*GetRoleResponse, error) {
+	conn := ac.client.conn
+	in := pb.GetRoleRequest{
+		Name: name,
+	}
+	rsp, err := ac.remoteClient(conn).GetRole(ctx, &in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*GetRoleResponse)(rsp), nil
 }
 
-func (ac *authRPC) CreateRole(ctx context.Context, in *pb.CreateRoleRequest, opts ...grpc.CallOption) (*pb.CreateRoleResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) CreateRole(ctx context.Context, role *authv1.Role) (*CreateRoleResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.CreateRoleRequest{Role: role}
+	resp, err := ac.remoteClient(conn).CreateRole(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*CreateRoleResponse)(resp), nil
 }
 
-func (ac *authRPC) UpdateRole(ctx context.Context, in *pb.UpdateRoleRequest, opts ...grpc.CallOption) (*pb.UpdateRoleResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) UpdateRole(ctx context.Context, name string, patcher *authv1.RolePatcher) (*UpdateRoleResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.UpdateRoleRequest{
+		Name:    name,
+		Patcher: patcher,
+	}
+	resp, err := ac.remoteClient(conn).UpdateRole(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*UpdateRoleResponse)(resp), nil
 }
 
-func (ac *authRPC) RemoveRole(ctx context.Context, in *pb.RemoveRoleRequest, opts ...grpc.CallOption) (*pb.RemoveRoleResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) RemoveRole(ctx context.Context, name string) (*RemoveRoleResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.RemoveRoleRequest{Name: name}
+	resp, err := ac.remoteClient(conn).RemoveRole(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*RemoveRoleResponse)(resp), nil
 }
 
-func (ac *authRPC) ListUser(ctx context.Context, in *pb.ListUserRequest, opts ...grpc.CallOption) (*pb.ListUserResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) ListUser(ctx context.Context, opts ...PageOption) (*ListUserResponse, error) {
+	var page PageOptions
+	for _, opt := range opts {
+		opt(&page)
+	}
+
+	conn := ac.client.conn
+	in := pb.ListUserRequest{
+		Limit:    page.Limit,
+		Continue: page.Token,
+	}
+	rsp, err := ac.remoteClient(conn).ListUser(ctx, &in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*ListUserResponse)(rsp), nil
 }
 
-func (ac *authRPC) GetUser(ctx context.Context, in *pb.GetUserRequest, opts ...grpc.CallOption) (*pb.GetUserResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) GetUser(ctx context.Context, name string) (*GetUserResponse, error) {
+	conn := ac.client.conn
+	in := pb.GetUserRequest{
+		Name: name,
+	}
+	rsp, err := ac.remoteClient(conn).GetUser(ctx, &in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*GetUserResponse)(rsp), nil
 }
 
-func (ac *authRPC) CreateUser(ctx context.Context, in *pb.CreateUserRequest, opts ...grpc.CallOption) (*pb.CreateUserResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) CreateUser(ctx context.Context, user *authv1.User) (*CreateUserResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.CreateUserRequest{User: user}
+	resp, err := ac.remoteClient(conn).CreateUser(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*CreateUserResponse)(resp), nil
 }
 
-func (ac *authRPC) UpdateUser(ctx context.Context, in *pb.UpdateUserRequest, opts ...grpc.CallOption) (*pb.UpdateUserResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) UpdateUser(ctx context.Context, name string, patcher *authv1.UserPatcher) (*UpdateUserResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.UpdateUserRequest{
+		Name:    name,
+		Patcher: patcher,
+	}
+	resp, err := ac.remoteClient(conn).UpdateUser(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*UpdateUserResponse)(resp), nil
 }
 
-func (ac *authRPC) RemoveUser(ctx context.Context, in *pb.RemoveUserRequest, opts ...grpc.CallOption) (*pb.RemoveUserResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (ac *authRPC) RemoveUser(ctx context.Context, name string) (*RemoveUserResponse, error) {
+	conn := ac.client.conn
+	leaderEndpoints, err := ac.client.leaderEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(leaderEndpoints) > 0 {
+		conn, err = ac.client.ec.Dial(leaderEndpoints[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	in := &pb.RemoveUserRequest{Name: name}
+	resp, err := ac.remoteClient(conn).RemoveUser(ctx, in, ac.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+
+	return (*RemoveUserResponse)(resp), nil
 }
 
 func (ac *authRPC) Authenticate(ctx context.Context, username, password string) (*AuthenticateResponse, error) {

@@ -43,3 +43,26 @@ var (
 func (m *Scope) Readable() string {
 	return m.Resource.Short() + "_" + m.Action.Short()
 }
+
+type RoleAuthority []*Scope
+
+var (
+	RootAuthority = RoleAuthority{
+		ClusterReadScope,
+		ClusterWriteScope,
+		RunnerReadScope,
+		RunnerWriteScope,
+		RegionReadScope,
+		RegionWriteScope,
+		RoleReadScope,
+		RoleWriteScope,
+		UserReadScope,
+		UserWriteScope,
+		AuthReadScope,
+		AuthWriteScope,
+		BpmnDefinitionReadScope,
+		BpmnDefinitionWriteScope,
+		BpmnProcessReadScope,
+		BpmnProcessWriteScope,
+	}
+)

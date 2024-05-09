@@ -23,6 +23,7 @@ package meta
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	urlpkg "net/url"
 	"path"
@@ -40,8 +41,9 @@ import (
 	authv1 "github.com/olive-io/olive/api/authpb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
-	"github.com/olive-io/olive/meta/jwt"
 	"github.com/olive-io/olive/meta/pagation"
+	"github.com/olive-io/olive/pkg/crypto"
+	"github.com/olive-io/olive/pkg/jwt"
 	"github.com/olive-io/olive/pkg/runtime"
 )
 
@@ -51,7 +53,7 @@ func withKeyEnd(key string) string {
 	return key + reqEnd
 }
 
-type pageDecodeFunc func(kv *mvccpb.KeyValue) error
+type decodeFunc func(kv *mvccpb.KeyValue) error
 
 func (s *Server) get(ctx context.Context, key string, target proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, *mvccpb.KeyValue, error) {
 	rsp, err := s.v3cli.Get(ctx, key, opts...)
@@ -92,7 +94,29 @@ func (s *Server) del(ctx context.Context, key string, opts ...clientv3.OpOption)
 	return rsp.Header, nil
 }
 
-func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int64, continueToken string, fn pageDecodeFunc) (next string, err error) {
+func (s *Server) list(ctx context.Context, key string, fn decodeFunc) error {
+	if fn == nil {
+		return nil
+	}
+
+	options := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+	}
+
+	rsp, err := s.v3cli.Get(ctx, key, options...)
+	if err != nil {
+		return err
+	}
+
+	for _, kv := range rsp.Kvs {
+		if err = fn(kv); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int64, continueToken string, fn decodeFunc) (next string, err error) {
 	keyPrefix := preparedKey
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
@@ -237,25 +261,75 @@ func (s *Server) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error 
 		return rpctypes.ErrGRPCNoLeader
 	}
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		vals := md.Get(rpctypes.TokenFieldNameGRPC)
-		if len(vals) == 0 {
-			return errors.Wrap(rpctypes.ErrGRPCInvalidAuthToken, "token not found")
-		}
-		token, err := jwt.ParseToken(vals[0])
-		if err != nil {
-			return err
-		}
+	md, _ := metadata.FromIncomingContext(ctx)
+	if md == nil {
+		md = metadata.New(map[string]string{})
+	}
 
-		for _, scope := range scopes {
-			if err = s.admit(ctx, token.User.Role, token.User.Name, scope); err != nil {
-				return err
-			}
+	vals := md.Get(rpctypes.TokenNameGRPC)
+	if len(vals) == 0 {
+		return errors.Wrap(rpctypes.ErrGRPCInvalidAuthToken, "token not found")
+	}
+	token := vals[0]
+
+	var user *authv1.User
+	var err error
+	authKind, token, ok := strings.Cut(token, " ")
+	if !ok {
+		authKind = rpctypes.TokenBearer
+	}
+
+	switch authKind {
+	case rpctypes.TokenBearer:
+		user, err = s.bearerAuth(ctx, token)
+	case rpctypes.TokenBasic:
+		user, err = s.basicAuth(ctx, token)
+	default:
+		user, err = s.bearerAuth(ctx, token)
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, scope := range scopes {
+		if err = s.admit(ctx, user.Role, user.Name, scope); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func (s *Server) bearerAuth(ctx context.Context, token string) (*authv1.User, error) {
+	user, err := jwt.ParseToken(token)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *Server) basicAuth(ctx context.Context, token string) (*authv1.User, error) {
+	encodeText, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return nil, rpctypes.ErrGRPCInvalidAuthToken
+	}
+	username, password, ok := strings.Cut(string(encodeText), ":")
+	if !ok {
+		return nil, rpctypes.ErrGRPCAuthFailed
+	}
+
+	key := path.Join(runtime.DefaultUserPrefix, username)
+	user := &authv1.User{}
+	_, _, err = s.get(ctx, key, user, clientv3.WithSerializable())
+	if err != nil {
+		return nil, err
+	}
+
+	decodedPasswd := crypto.NewSha256().Hash([]byte(password))
+	if decodedPasswd != user.Password {
+		return nil, rpctypes.ErrGRPCAuthFailed
+	}
+	return user, nil
 }
 
 func (s *Server) admit(ctx context.Context, role, user string, scope *authv1.Scope) error {

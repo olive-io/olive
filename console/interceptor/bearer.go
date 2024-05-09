@@ -25,7 +25,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
@@ -34,10 +33,7 @@ import (
 	"github.com/olive-io/olive/api/rpctypes"
 )
 
-type BearerAuth struct {
-	rtw   sync.RWMutex
-	token string
-}
+type BearerAuth struct{}
 
 func NewBearerAuth() *BearerAuth {
 	auth := &BearerAuth{}
@@ -52,31 +48,26 @@ func (ai *BearerAuth) Unary() grpc.UnaryClientInterceptor {
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		ai.rtw.RLock()
-		token := ai.token
-		ai.rtw.RUnlock()
-
-		ctx = metadata.AppendToOutgoingContext(ctx, rpctypes.TokenFieldNameGRPC, token)
+		if gc, ok := ctx.(*gin.Context); ok {
+			ctx = gc.Request.Context()
+		}
 		err := invoker(ctx, method, req, reply, cc, opts...)
 		return err
 	}
 }
 
-func (ai *BearerAuth) Handler(ctx *gin.Context) {
-
-	authorization := ctx.GetHeader("Authorization")
+func (ai *BearerAuth) Handler(c *gin.Context) {
+	authorization := c.GetHeader(rpctypes.TokenNameSwagger)
 	if authorization == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "no found token"})
-		ctx.Abort()
+		c.JSON(http.StatusUnauthorized, gin.H{"msg": "no found token"})
+		c.Abort()
 		return
 	}
 
-	token := strings.TrimPrefix(authorization, "Bearer ")
-	ai.rtw.Lock()
-	ai.token = token
-	ai.rtw.Unlock()
+	ctx := metadata.NewOutgoingContext(c.Request.Context(), metadata.Pairs(rpctypes.TokenNameGRPC, authorization))
+	c.Request = c.Request.WithContext(ctx)
 
-	ctx.Next()
+	c.Next()
 
 	return
 }

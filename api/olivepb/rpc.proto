@@ -226,7 +226,8 @@ message GetRoleRequest {
 }
 
 message GetRoleResponse {
-  authpbv1.Role role = 1;
+  ResponseHeader header = 1;
+  authpbv1.Role role = 2;
 }
 
 message CreateRoleRequest {
@@ -240,9 +241,7 @@ message CreateRoleResponse {
 
 message UpdateRoleRequest {
   string name = 1;
-  string desc = 2;
-  map<string, string> metadata = 3;
-  string namespace = 4;
+  authpbv1.RolePatcher patcher = 2;
 }
 
 message UpdateRoleResponse {
@@ -275,7 +274,8 @@ message GetUserRequest {
 }
 
 message GetUserResponse {
-  authpbv1.User user = 1;
+  ResponseHeader header = 1;
+  authpbv1.User user = 2;
 }
 
 message CreateUserRequest {
@@ -289,10 +289,7 @@ message CreateUserResponse {
 
 message UpdateUserRequest {
   string name = 1;
-  string desc = 2;
-  map<string, string> metadata = 3;
-  string namespace = 4;
-  string password = 5;
+  authpbv1.UserPatcher patcher = 2;
 }
 
 message UpdateUserResponse {

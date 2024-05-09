@@ -52,9 +52,10 @@ var (
 )
 
 var (
-	DefaultRootRole = "root"
-	DefaultRootUser = "root"
-	DefaultPassword = "p@ssw0rd"
+	DefaultRootRole   = "root"
+	DefaultRootUser   = "root"
+	DefaultSystemUser = "system"
+	DefaultPassword   = "p@ssw0rd"
 
 	DefaultNamespace = "default"
 )

@@ -22,8 +22,11 @@
 package rpctypes
 
 var (
-	TokenFieldNameGRPC    = "token"
-	TokenFieldNameSwagger = "authorization"
+	TokenNameGRPC    = "Token"
+	TokenNameSwagger = "Authorization"
+
+	TokenBearer = "Bearer"
+	TokenBasic  = "Basic"
 )
 
 // TokenFieldNameGRPCKey is used as a key of context to store token.
