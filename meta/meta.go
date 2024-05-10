@@ -129,11 +129,14 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 	s.idGen = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
 	s.notifier = leader.NewNotify(s.etcd.Server)
 
-	sLimit := schedule.Limit{
+	scfg := &schedule.Config{
+		Logger:          s.lg,
+		Client:          s.v3cli,
+		Notifier:        s.notifier,
 		RegionLimit:     s.cfg.RegionLimit,
 		DefinitionLimit: s.cfg.RegionDefinitionsLimit,
 	}
-	s.scheduler = schedule.New(s.ctx, s.lg, s.v3cli, s.notifier, sLimit, s.StoppingNotify())
+	s.scheduler = schedule.New(scfg, s.StoppingNotify())
 	if err = s.scheduler.Start(); err != nil {
 		return err
 	}

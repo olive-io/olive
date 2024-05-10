@@ -38,7 +38,7 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/pkg/idutil"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
@@ -93,7 +93,7 @@ func (r *Runner) register() (*pb.Runner, error) {
 	defer cancel()
 
 	if runner.Id == 0 {
-		idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRunnerRegistrarId, r.oct.ActiveEtcdClient())
+		idGen, err := idutil.NewGenerator(ctx, ort.DefaultMetaRunnerRegistrarId, r.oct.ActiveEtcdClient())
 		if err != nil {
 			return nil, errors.Wrap(err, "create new id generator")
 		}
@@ -116,7 +116,7 @@ func (r *Runner) process() {
 	lg := r.Logger()
 	cfg := r.cfg
 
-	rKey := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Id))
+	rKey := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Id))
 	data, _ := proto.Marshal(runner)
 	_, err := r.oct.Put(ctx, rKey, string(data))
 	if err != nil {
@@ -143,7 +143,7 @@ func (r *Runner) process() {
 				stat := tt.Stat
 				lg.Debug("update region stat", zap.Stringer("stat", stat))
 
-				key := path.Join(runtime.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
+				key := path.Join(ort.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
 				data, _ = proto.Marshal(stat)
 				_, err = r.oct.Put(ctx, key, string(data))
 				if err != nil {
@@ -155,7 +155,7 @@ func (r *Runner) process() {
 			stat.Timestamp = time.Now().Unix()
 
 			lg.Debug("update runner stat", zap.Stringer("stat", stat))
-			key := path.Join(runtime.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
+			key := path.Join(ort.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
 			data, _ = proto.Marshal(stat)
 			_, err = r.oct.Put(ctx, key, string(data))
 			if err != nil {

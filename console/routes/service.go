@@ -32,7 +32,7 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
@@ -82,7 +82,7 @@ type ServiceListResponse struct {
 }
 
 func (sg *ServiceGroup) serviceList(ctx *gin.Context, in *ServiceListRequest) (*ServiceListResponse, error) {
-	prefix := runtime.DefaultRunnerDiscoveryNode
+	prefix := ort.DefaultRunnerDiscoveryNode
 	if in.Namespace != "" {
 		prefix = path.Join(prefix, in.Namespace)
 	}
@@ -129,7 +129,7 @@ type EndpointListResponse struct {
 }
 
 func (sg *ServiceGroup) endpointList(ctx *gin.Context, in *EndpointListRequest) (*EndpointListResponse, error) {
-	prefix := runtime.DefaultRunnerDiscoveryNode
+	prefix := ort.DefaultRunnerDiscoveryNode
 	if in.Namespace != "" {
 		prefix = path.Join(prefix, in.Namespace)
 	}

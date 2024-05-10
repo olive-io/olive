@@ -29,14 +29,14 @@ import (
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
 	"github.com/olive-io/olive/pkg/idutil"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 func TestNewGenerator(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
+	key := path.Join(ort.DefaultOlivePrefix, "runner", "id")
 
 	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
@@ -54,7 +54,7 @@ func BenchmarkNext(b *testing.B) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
+	key := path.Join(ort.DefaultOlivePrefix, "runner", "id")
 
 	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {

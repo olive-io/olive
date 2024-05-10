@@ -38,7 +38,7 @@ import (
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/queue"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 const (
@@ -49,19 +49,20 @@ const (
 	defaultRegionHeartbeatTTL = 1
 )
 
-type Limit struct {
-	RegionLimit     int
-	DefinitionLimit int
+type Config struct {
+	Logger   *zap.Logger      `json:"-"`
+	Client   *clientv3.Client `json:"-"`
+	Notifier leader.Notifier  `json:"-"`
+
+	RegionLimit     int `json:"region-limit"`
+	DefinitionLimit int `json:"definition-limit"`
 }
 
 type Scheduler struct {
+	*Config
+
 	ctx    context.Context
 	cancel context.CancelFunc
-
-	lg *zap.Logger
-
-	v3cli    *clientv3.Client
-	notifier leader.Notifier
 
 	rmu     sync.RWMutex
 	runners map[uint64]*pb.Runner
@@ -75,30 +76,22 @@ type Scheduler struct {
 
 	messageCh chan imessage
 
-	limit Limit
-
-	stopping <-chan struct{}
+	stopC <-chan struct{}
 }
 
-func New(
-	ctx context.Context, logger *zap.Logger,
-	client *clientv3.Client, notifier leader.Notifier,
-	limit Limit, stopping <-chan struct{}) *Scheduler {
+func New(cfg *Config, stopC <-chan struct{}) *Scheduler {
 
 	var cancel context.CancelFunc
-	ctx, cancel = context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	sc := &Scheduler{
+		Config:    cfg,
 		ctx:       ctx,
 		cancel:    cancel,
-		lg:        logger,
-		v3cli:     client,
-		notifier:  notifier,
 		runners:   map[uint64]*pb.Runner{},
 		regions:   map[uint64]*pb.Region{},
 		messageCh: make(chan imessage, messageParallel),
-		limit:     limit,
-		stopping:  stopping,
+		stopC:     stopC,
 	}
 
 	sc.runnerQ = queue.NewSync[*pb.RunnerStat](sc.runnerGetter())
@@ -123,8 +116,8 @@ func (sc *Scheduler) runnerGetter() queue.ScoreFn[*pb.RunnerStat] {
 
 		score := int((100-stat.CpuPer)/100*cpus)%30 +
 			int((100-stat.MemoryPer)/100*memory)%30 +
-			(sc.limit.RegionLimit-len(stat.Regions))%30 +
-			(sc.limit.RegionLimit-len(stat.Leaders))%10
+			(sc.RegionLimit-len(stat.Regions))%30 +
+			(sc.RegionLimit-len(stat.Leaders))%10
 
 		return int64(score)
 	}
@@ -139,7 +132,7 @@ func (sc *Scheduler) regionGetter() queue.ScoreFn[*pb.RegionStat] {
 			return math.MaxInt64
 		}
 
-		score := int64(float64(stat.Definitions)/float64(sc.limit.DefinitionLimit)*100)%70 +
+		score := int64(float64(stat.Definitions)/float64(sc.DefinitionLimit)*100)%70 +
 			int64(stat.Replicas*10)%30
 
 		return score
@@ -148,14 +141,14 @@ func (sc *Scheduler) regionGetter() queue.ScoreFn[*pb.RegionStat] {
 
 func (sc *Scheduler) sync() error {
 	ctx := sc.ctx
-	client := sc.v3cli
+	client := sc.Client
 	runners := make(map[uint64]*pb.Runner)
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
 
-	key := runtime.DefaultMetaRunnerRegistrar
+	key := ort.DefaultMetaRunnerRegistrar
 	resp, err := client.Get(ctx, key, options...)
 	if err != nil {
 		return err
@@ -173,7 +166,7 @@ func (sc *Scheduler) sync() error {
 	sc.rmu.Unlock()
 
 	regions := make(map[uint64]*pb.Region)
-	key = runtime.DefaultRunnerRegion
+	key = ort.DefaultRunnerRegion
 	resp, err = client.Get(ctx, key, options...)
 	if err != nil {
 		return err
@@ -190,7 +183,7 @@ func (sc *Scheduler) sync() error {
 	sc.regions = regions
 	sc.rgmu.Unlock()
 
-	key = runtime.DefaultMetaDefinitionMeta
+	key = ort.DefaultMetaDefinitionMeta
 	resp, err = client.Get(ctx, key, options...)
 	if err != nil {
 		return err
@@ -220,7 +213,7 @@ func (sc *Scheduler) Start() error {
 
 func (sc *Scheduler) dispatchMessage(m imessage) {
 	select {
-	case <-sc.stopping:
+	case <-sc.stopC:
 		return
 	case sc.messageCh <- m:
 	}
@@ -266,7 +259,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		ElectionRTT:  defaultRegionElectionTTL,
 		HeartbeatRTT: defaultRegionHeartbeatTTL,
 
-		DefinitionsLimit: uint64(sc.limit.DefinitionLimit),
+		DefinitionsLimit: uint64(sc.DefinitionLimit),
 
 		State:     pb.State_NotReady,
 		Timestamp: time.Now().Unix(),
@@ -285,9 +278,9 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 		})
 	}
 
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
+	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
 	data, _ := proto.Marshal(region)
-	resp, err := sc.v3cli.Put(ctx, key, string(data))
+	resp, err := sc.Client.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +294,7 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 }
 
 func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
-	idGen, err := idutil.NewGenerator(ctx, runtime.DefaultMetaRegionRegistrarId, sc.v3cli)
+	idGen, err := idutil.NewGenerator(ctx, ort.DefaultMetaRegionRegistrarId, sc.Client)
 	if err != nil {
 		return 0, err
 	}
@@ -342,9 +335,9 @@ func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, e
 		next += 1
 	}
 
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
+	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
 	data, _ := proto.Marshal(region)
-	resp, err := sc.v3cli.Put(ctx, key, string(data))
+	resp, err := sc.Client.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +365,7 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 			sc.rmu.RUnlock()
 
 			if regionTotal == 0 {
-				sc.lg.Info("dispatch message, allocates a new region")
+				sc.Logger.Info("dispatch message, allocates a new region")
 				sc.dispatchMessage(new(regionAllocMessage))
 			}
 		}()
@@ -387,9 +380,9 @@ func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb
 	}
 
 	dm.Region = region.Id
-	key := path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
+	key := path.Join(ort.DefaultMetaDefinitionMeta, dm.Id)
 	data, _ := proto.Marshal(dm)
-	_, err = sc.v3cli.Put(ctx, key, string(data))
+	_, err = sc.Client.Put(ctx, key, string(data))
 	if err != nil {
 		return nil, false, err
 	}
@@ -403,7 +396,7 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context, options ...runne
 		opt(option)
 	}
 
-	lg := sc.lg
+	lg := sc.Logger
 
 	length := sc.runnerQ.Len()
 	if length == 0 {
@@ -424,7 +417,7 @@ func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context, options ...runne
 	for i := 0; i < rc; i++ {
 		rs, ok := sc.runnerQ.Pop()
 		if !ok {
-			sc.lg.Panic("call runnerQ.Pop()")
+			sc.Logger.Panic("call runnerQ.Pop()")
 		}
 		rts[i] = rs.(*pb.RunnerStat)
 	}
@@ -488,9 +481,9 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 
 	region.Definitions += 1
 
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
+	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
 	data, _ := proto.Marshal(region)
-	if _, err := sc.v3cli.Put(ctx, key, string(data)); err != nil {
+	if _, err := sc.Client.Put(ctx, key, string(data)); err != nil {
 		return nil, false, err
 	}
 
@@ -503,15 +496,15 @@ func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, boo
 
 func (sc *Scheduler) waitUtilLeader() bool {
 	for {
-		if sc.notifier.IsLeader() {
-			<-sc.notifier.ReadyNotify()
+		if sc.Notifier.IsLeader() {
+			<-sc.Notifier.ReadyNotify()
 			return true
 		}
 
 		select {
-		case <-sc.stopping:
+		case <-sc.stopC:
 			return false
-		case <-sc.notifier.ChangeNotify():
+		case <-sc.Notifier.ChangeNotify():
 		}
 	}
 }
@@ -520,11 +513,12 @@ func (sc *Scheduler) run() {
 	tickDuration := time.Millisecond * 500
 	ticker := time.NewTimer(tickDuration)
 	defer ticker.Stop()
+	defer sc.cancel()
 
 	for {
 		if !sc.waitUtilLeader() {
 			select {
-			case <-sc.stopping:
+			case <-sc.stopC:
 				return
 			default:
 			}
@@ -534,19 +528,19 @@ func (sc *Scheduler) run() {
 		ticker.Reset(time.Second)
 
 		ctx, cancel := context.WithCancel(sc.ctx)
-		prefix := runtime.DefaultMetaRunnerPrefix
+		prefix := ort.DefaultMetaRunnerPrefix
 		options := []clientv3.OpOption{
 			clientv3.WithPrefix(),
 		}
-		wch := sc.v3cli.Watch(ctx, prefix, options...)
+		wch := sc.Client.Watch(ctx, prefix, options...)
 
 	LOOP:
 		for {
 			select {
-			case <-sc.stopping:
+			case <-sc.stopC:
 				cancel()
 				return
-			case <-sc.notifier.ChangeNotify():
+			case <-sc.Notifier.ChangeNotify():
 				break LOOP
 			case wr := <-wch:
 				if wr.Canceled {
@@ -571,13 +565,13 @@ func (sc *Scheduler) run() {
 
 				_, ok, err := sc.BindRegion(sc.ctx, dm)
 				if err != nil {
-					sc.lg.Error("binding region",
+					sc.Logger.Error("binding region",
 						zap.String("definition", dm.Id),
 						zap.Error(err))
 				}
 
 				if ok && dm.Region > 0 {
-					sc.lg.Info("binding definition",
+					sc.Logger.Info("binding definition",
 						zap.String("definition", dm.Id),
 						zap.Uint64("region", dm.Region))
 				}
@@ -589,11 +583,11 @@ func (sc *Scheduler) run() {
 }
 
 func (sc *Scheduler) processEvent(event *clientv3.Event) {
-	lg := sc.lg
+	lg := sc.Logger
 	kv := event.Kv
 	key := string(kv.Key)
 	switch {
-	case strings.HasPrefix(key, runtime.DefaultMetaRunnerStat):
+	case strings.HasPrefix(key, ort.DefaultMetaRunnerStat):
 		rs := new(pb.RunnerStat)
 		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RunnerState", zap.Error(err))
@@ -601,7 +595,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		}
 
 		sc.handleRunnerStat(rs)
-	case strings.HasPrefix(key, runtime.DefaultMetaRegionStat):
+	case strings.HasPrefix(key, ort.DefaultMetaRegionStat):
 		rs := new(pb.RegionStat)
 		if err := proto.Unmarshal(kv.Value, rs); err != nil {
 			lg.Error("unmarshal RegionState", zap.Error(err))
@@ -609,7 +603,7 @@ func (sc *Scheduler) processEvent(event *clientv3.Event) {
 		}
 
 		sc.handleRegionStat(rs)
-	case strings.HasPrefix(key, runtime.DefaultMetaRunnerRegistrar):
+	case strings.HasPrefix(key, ort.DefaultMetaRunnerRegistrar):
 		runner := new(pb.Runner)
 		if err := proto.Unmarshal(kv.Value, runner); err != nil {
 			lg.Error("unmarshal Runner", zap.Error(err))
@@ -649,7 +643,7 @@ func (sc *Scheduler) processMsg(msg imessage) {
 }
 
 func (sc *Scheduler) processAllocRegion(ctx context.Context) {
-	lg := sc.lg
+	lg := sc.Logger
 	region, err := sc.AllocRegion(ctx)
 	if err != nil {
 		lg.Error("allocate region", zap.Error(err))
@@ -660,7 +654,7 @@ func (sc *Scheduler) processAllocRegion(ctx context.Context) {
 }
 
 func (sc *Scheduler) processExpendRegion(ctx context.Context, id uint64) {
-	lg := sc.lg
+	lg := sc.Logger
 	region, err := sc.ExpendRegion(ctx, id)
 	if err != nil {
 		lg.Error("expend region", zap.Error(err))

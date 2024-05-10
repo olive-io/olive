@@ -36,7 +36,7 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 const (
@@ -59,7 +59,7 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 
 	definition.Region = dm.Region
 	definition.Version = newVersion
-	key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", newVersion))
+	key := path.Join(ort.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", newVersion))
 	data, _ := proto.Marshal(definition)
 	rsp, err := dm.client.Put(ctx, key, string(data))
 	if err != nil {
@@ -77,7 +77,7 @@ func (dm *definitionMeta) Save(ctx context.Context, definition *pb.Definition) e
 	definition.Rev = rev
 
 	data, _ = proto.Marshal(dm)
-	key = path.Join(runtime.DefaultMetaDefinitionMeta, dm.Id)
+	key = path.Join(ort.DefaultMetaDefinitionMeta, dm.Id)
 	_, err = dm.client.Put(ctx, key, string(data))
 	return err
 }
@@ -123,7 +123,7 @@ func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinit
 			if ok {
 				definition.Region = dm.Region
 
-				key := path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+				key := path.Join(ort.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
 				if e1 != nil {
@@ -139,7 +139,7 @@ func (s *bpmnServer) DeployDefinition(ctx context.Context, req *pb.DeployDefinit
 func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (resp *pb.ListDefinitionResponse, err error) {
 
 	resp = &pb.ListDefinitionResponse{}
-	preparedKey := runtime.DefaultMetaDefinitionMeta
+	preparedKey := ort.DefaultMetaDefinitionMeta
 
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
@@ -157,7 +157,7 @@ func (s *bpmnServer) ListDefinition(ctx context.Context, req *pb.ListDefinitionR
 		}
 		version := dm.Version
 
-		key := path.Join(runtime.DefaultRunnerDefinitions, id, fmt.Sprintf("%d", version))
+		key := path.Join(ort.DefaultRunnerDefinitions, id, fmt.Sprintf("%d", version))
 		definition := &pb.Definition{}
 
 		_, kv, err := s.get(ctx, key, definition, options...)
@@ -195,7 +195,7 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 	}
 
 	options := []clientv3.OpOption{clientv3.WithSerializable()}
-	key := path.Join(runtime.DefaultRunnerDefinitions, req.Id, fmt.Sprintf("%d", version))
+	key := path.Join(ort.DefaultRunnerDefinitions, req.Id, fmt.Sprintf("%d", version))
 	definition := &pb.Definition{}
 	_, kv, err := s.get(ctx, key, definition, options...)
 	if err != nil {
@@ -211,7 +211,7 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 			ok, _ := s.bindDefinition(ctx, &dm.DefinitionMeta)
 			if ok {
 				definition.Region = dm.Region
-				key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+				key = path.Join(ort.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 				data, _ := proto.Marshal(definition)
 				_, e1 := dm.client.Put(ctx, key, string(data))
 				if e1 != nil {
@@ -221,7 +221,7 @@ func (s *bpmnServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionReq
 		}()
 	} else if dm.Region != definition.Region {
 		definition.Region = dm.Region
-		key = path.Join(runtime.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
+		key = path.Join(ort.DefaultRunnerDefinitions, definition.Id, fmt.Sprintf("%d", definition.Version))
 		data, _ := proto.Marshal(definition)
 		_, e1 := dm.client.Put(ctx, key, string(data))
 		if e1 != nil {
@@ -281,7 +281,7 @@ func (s *bpmnServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefin
 	}
 	instance.Region = definition.Region
 
-	key := path.Join(runtime.DefaultRunnerProcessInstance,
+	key := path.Join(ort.DefaultRunnerProcessInstance,
 		definition.Id, fmt.Sprintf("%d", definition.Version), instance.Id)
 	data, _ := proto.Marshal(instance)
 	rsp, err := s.v3cli.Put(ctx, key, string(data))
@@ -300,7 +300,7 @@ func (s *bpmnServer) ListProcessInstances(ctx context.Context, req *pb.ListProce
 
 	lg := s.lg
 	resp = &pb.ListProcessInstancesResponse{}
-	key := path.Join(runtime.DefaultRunnerProcessInstance, req.DefinitionId)
+	key := path.Join(ort.DefaultRunnerProcessInstance, req.DefinitionId)
 	if req.DefinitionVersion != 0 {
 		key = path.Join(key, fmt.Sprintf("%d", req.DefinitionVersion))
 	}
@@ -336,7 +336,7 @@ func (s *bpmnServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessI
 
 	options := []clientv3.OpOption{clientv3.WithSerializable()}
 
-	key := path.Join(runtime.DefaultRunnerProcessInstance, req.DefinitionId,
+	key := path.Join(ort.DefaultRunnerProcessInstance, req.DefinitionId,
 		fmt.Sprintf("%d", req.DefinitionVersion),
 		req.Id)
 
@@ -395,7 +395,7 @@ func (s *bpmnServer) definitionMeta(ctx context.Context, id string) (*definition
 		client: s.v3cli,
 	}
 
-	key := path.Join(runtime.DefaultMetaDefinitionMeta, id)
+	key := path.Join(ort.DefaultMetaDefinitionMeta, id)
 	options := []clientv3.OpOption{clientv3.WithSerializable()}
 	_, _, err := s.get(ctx, key, &dm.DefinitionMeta, options...)
 	if err != nil {

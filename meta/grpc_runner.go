@@ -29,7 +29,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 type runnerServer struct {
@@ -48,7 +48,7 @@ func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest
 
 	lg := s.lg
 	resp = &pb.ListRunnerResponse{}
-	key := runtime.DefaultMetaRunnerRegistrar
+	key := ort.DefaultMetaRunnerRegistrar
 
 	runners := make([]*pb.Runner, 0)
 	var continueToken string
@@ -85,7 +85,7 @@ func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest
 
 	lg := s.lg
 	resp = &pb.ListRegionResponse{}
-	key := runtime.DefaultRunnerRegion
+	key := ort.DefaultRunnerRegion
 
 	regions := make([]*pb.Region, 0)
 	var continueToken string

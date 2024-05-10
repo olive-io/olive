@@ -88,9 +88,6 @@ const (
 	// DefaultStrictReconfigCheck is the default value for "--strict-reconfig-check" flag.
 	// It's enabled by default.
 	DefaultStrictReconfigCheck = true
-	// DefaultEnableV2 is the default value for "--enable-v2" flag.
-	// v2 API is disabled by default.
-	DefaultEnableV2 = false
 
 	// maxElectionMs specifies the maximum value of election timeout.
 	// More details are listed in ../Documentation/tuning.md#time-parameters.
@@ -234,11 +231,6 @@ type Config struct {
 	InitialCluster        string `json:"initial-cluster"`
 	InitialClusterToken   string `json:"initial-cluster-token"`
 	StrictReconfigCheck   bool   `json:"strict-reconfig-check"`
-
-	// EnableV2 exposes the deprecated V2 API surface.
-	// TODO: Delete in 3.6 (https://github.com/etcd-io/etcd/issues/12913)
-	// Deprecated in 3.5.
-	EnableV2 bool `json:"enable-v2"`
 
 	// AutoCompactionMode is either 'periodic' or 'revision'.
 	AutoCompactionMode string `json:"auto-compaction-mode"`
@@ -494,7 +486,6 @@ func NewConfig() *Config {
 
 		StrictReconfigCheck: DefaultStrictReconfigCheck,
 		Metrics:             "basic",
-		EnableV2:            DefaultEnableV2,
 
 		CORS:          map[string]struct{}{"*": {}},
 		HostWhitelist: map[string]struct{}{"*": {}},

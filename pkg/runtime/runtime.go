@@ -51,11 +51,14 @@ var (
 	DefaultRunnerDiscoveryNode   = path.Join(DefaultRunnerDiscoveryPrefix, "nodes")
 )
 
-var (
+const (
 	DefaultRootRole   = "root"
 	DefaultRootUser   = "root"
 	DefaultSystemUser = "system"
-	DefaultPassword   = "p@ssw0rd"
 
 	DefaultNamespace = "default"
+)
+
+var (
+	DefaultPassword = "p@ssw0rd"
 )

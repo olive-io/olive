@@ -32,7 +32,7 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
@@ -91,7 +91,7 @@ func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.C
 	if process.Status == pb.ProcessInstance_Waiting {
 		process.Status = pb.ProcessInstance_Prepare
 	}
-	key := path.Join(runtime.DefaultRunnerProcessInstance,
+	key := path.Join(ort.DefaultRunnerProcessInstance,
 		process.DefinitionsId, fmt.Sprintf("%d", process.DefinitionsVersion),
 		process.Id)
 	data, _ := proto.Marshal(process)

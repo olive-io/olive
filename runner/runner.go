@@ -42,7 +42,7 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 
 	"github.com/olive-io/olive/runner/backend"
@@ -261,7 +261,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	lg := r.Logger()
 
 	dopts := []dsy.Option{
-		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
+		dsy.Prefix(ort.DefaultRunnerDiscoveryNode),
 		dsy.SetLogger(lg),
 	}
 	discovery, err := dsy.NewDiscovery(r.oct.ActiveEtcdClient(), dopts...)
@@ -293,7 +293,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	}
 
 	ctx := r.ctx
-	prefix := runtime.DefaultRunnerRegion
+	prefix := ort.DefaultRunnerRegion
 	rev := r.getRev()
 
 	options := []clientv3.OpOption{
@@ -314,19 +314,19 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		rev = kv.ModRevision
 		key := string(kv.Value)
 		switch {
-		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+		case strings.HasPrefix(key, ort.DefaultRunnerRegion):
 			region, match, err := parseRegionKV(kv, r.pr.Id)
 			if err != nil || !match {
 				continue
 			}
 			regions = append(regions, region)
-		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+		case strings.HasPrefix(key, ort.DefaultRunnerDefinitions):
 			definition, match, err := parseDefinitionKV(kv)
 			if err != nil || !match {
 				continue
 			}
 			definitions = append(definitions, definition)
-		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+		case strings.HasPrefix(key, ort.DefaultRunnerProcessInstance):
 			proc, match, err := parseProcessInstanceKV(kv)
 			if err != nil || !match {
 				continue
@@ -366,7 +366,7 @@ func (r *Runner) watching() {
 		clientv3.WithPrevKV(),
 		clientv3.WithRev(rev + 1),
 	}
-	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
+	wch := r.oct.Watch(ctx, ort.DefaultRunnerPrefix, wopts...)
 	for {
 		select {
 		case <-r.StoppingNotify():
@@ -429,11 +429,11 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 	//	}
 	//}
 	switch {
-	case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+	case strings.HasPrefix(key, ort.DefaultRunnerRegion):
 		r.processRegion(ctx, event)
-	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+	case strings.HasPrefix(key, ort.DefaultRunnerDefinitions):
 		r.processBpmnDefinition(ctx, event)
-	case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+	case strings.HasPrefix(key, ort.DefaultRunnerProcessInstance):
 		r.processBpmnProcess(ctx, event)
 	}
 }

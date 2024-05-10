@@ -45,7 +45,7 @@ import (
 	mdutil "github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/pkg/crypto"
 	"github.com/olive-io/olive/pkg/jwt"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 var reqEnd = "\x00"
@@ -228,7 +228,7 @@ func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int6
 }
 
 func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
-	key := path.Join(runtime.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
+	key := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
 	}
@@ -238,7 +238,7 @@ func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, e
 }
 
 func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
-	key := path.Join(runtime.DefaultRunnerRegion, fmt.Sprintf("%d", id))
+	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
 	}
@@ -252,6 +252,18 @@ func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, e
 	region = new(pb.Region)
 	_, _, err = s.get(ctx, key, region, options...)
 	return
+}
+
+func (s *Server) mustBeRoot(ctx context.Context) (*authv1.User, error) {
+	user, err := s.currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Role != ort.DefaultRootRole {
+		return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthMgmt, "must be root role")
+	}
+	return user, nil
 }
 
 func (s *Server) currentUser(ctx context.Context) (*authv1.User, error) {
@@ -340,7 +352,7 @@ func (s *Server) basicAuth(ctx context.Context, token string) (*authv1.User, err
 		return nil, rpctypes.ErrGRPCAuthFailed
 	}
 
-	key := path.Join(runtime.DefaultUserPrefix, username)
+	key := path.Join(ort.DefaultUserPrefix, username)
 	user := &authv1.User{}
 	_, _, err = s.get(ctx, key, user, clientv3.WithSerializable())
 	if err != nil {

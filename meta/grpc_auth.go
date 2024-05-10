@@ -37,7 +37,7 @@ import (
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/pkg/crypto"
 	"github.com/olive-io/olive/pkg/jwt"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
 type authServer struct {
@@ -59,13 +59,13 @@ func (s *authServer) Prepare(ctx context.Context) error {
 		clientv3.WithKeysOnly(),
 	}
 	// initialize, check or create role and user
-	rootRoleKey := path.Join(runtime.DefaultRolePrefix, runtime.DefaultRootRole)
+	rootRoleKey := path.Join(ort.DefaultRolePrefix, ort.DefaultRootRole)
 	_, _, err := s.get(ctx, rootRoleKey, new(authv1.Role), getOpts...)
 	if err != nil {
 		rootRole := &authv1.Role{
-			Name:              runtime.DefaultRootRole,
+			Name:              ort.DefaultRootRole,
 			Metadata:          map[string]string{},
-			Namespace:         runtime.DefaultNamespace,
+			Namespace:         ort.DefaultNamespace,
 			CreationTimestamp: time.Now().Unix(),
 		}
 		_, err := s.put(ctx, rootRoleKey, rootRole)
@@ -74,15 +74,15 @@ func (s *authServer) Prepare(ctx context.Context) error {
 		}
 	}
 
-	rootUserKey := path.Join(runtime.DefaultUserPrefix, runtime.DefaultRootUser)
+	rootUserKey := path.Join(ort.DefaultUserPrefix, ort.DefaultRootUser)
 	_, _, err = s.get(ctx, rootUserKey, new(authv1.User), getOpts...)
 	if err != nil {
-		passwd := crypto.NewSha256().Hash([]byte(runtime.DefaultPassword))
+		passwd := crypto.NewSha256().Hash([]byte(ort.DefaultPassword))
 		rootUser := &authv1.User{
-			Name:              runtime.DefaultRootUser,
+			Name:              ort.DefaultRootUser,
 			Metadata:          map[string]string{},
-			Role:              runtime.DefaultRootRole,
-			Namespace:         runtime.DefaultNamespace,
+			Role:              ort.DefaultRootRole,
+			Namespace:         ort.DefaultNamespace,
 			Password:          passwd,
 			CreationTimestamp: time.Now().Unix(),
 		}
@@ -92,15 +92,15 @@ func (s *authServer) Prepare(ctx context.Context) error {
 		}
 	}
 
-	systemUserKey := path.Join(runtime.DefaultUserPrefix, runtime.DefaultSystemUser)
+	systemUserKey := path.Join(ort.DefaultUserPrefix, ort.DefaultSystemUser)
 	_, _, err = s.get(ctx, systemUserKey, new(authv1.User), getOpts...)
 	if err != nil {
-		passwd := crypto.NewSha256().Hash([]byte(runtime.DefaultPassword))
+		passwd := crypto.NewSha256().Hash([]byte(ort.DefaultPassword))
 		systemUser := &authv1.User{
-			Name:              runtime.DefaultSystemUser,
+			Name:              ort.DefaultSystemUser,
 			Metadata:          map[string]string{},
-			Role:              runtime.DefaultRootRole,
-			Namespace:         runtime.DefaultNamespace,
+			Role:              ort.DefaultRootRole,
+			Namespace:         ort.DefaultNamespace,
 			Password:          passwd,
 			CreationTimestamp: time.Now().Unix(),
 		}
@@ -117,7 +117,7 @@ func (s *authServer) ListRole(ctx context.Context, req *pb.ListRoleRequest) (res
 
 	lg := s.lg
 	resp = &pb.ListRoleResponse{}
-	key := runtime.DefaultRolePrefix
+	key := ort.DefaultRolePrefix
 
 	roles := make([]*authv1.Role, 0)
 	var continueToken string
@@ -154,7 +154,7 @@ func (s *authServer) GetRole(ctx context.Context, req *pb.GetRoleRequest) (resp 
 }
 
 func (s *authServer) getRole(ctx context.Context, name string) (*pb.ResponseHeader, *authv1.Role, error) {
-	key := path.Join(runtime.DefaultRolePrefix, name)
+	key := path.Join(ort.DefaultRolePrefix, name)
 	role := &authv1.Role{}
 	header, _, err := s.get(ctx, key, role, clientv3.WithSerializable())
 	if err != nil {
@@ -167,13 +167,9 @@ func (s *authServer) getRole(ctx context.Context, name string) (*pb.ResponseHead
 }
 
 func (s *authServer) CreateRole(ctx context.Context, req *pb.CreateRoleRequest) (resp *pb.CreateRoleResponse, err error) {
-	currentUser, err := s.currentUser(ctx)
+	_, err = s.mustBeRoot(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	if currentUser.Role != runtime.DefaultRootRole {
-		return nil, errors.Wrap(rpctypes.ErrGRPCInvalidAuthMgmt, "must be root role")
 	}
 
 	role := req.Role
@@ -190,7 +186,7 @@ func (s *authServer) CreateRole(ctx context.Context, req *pb.CreateRoleRequest) 
 
 	role.CreationTimestamp = time.Now().Unix()
 	role.UpdateTimestamp = role.CreationTimestamp
-	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	key := path.Join(ort.DefaultRolePrefix, role.Name)
 	header, err := s.put(ctx, key, role)
 	if err != nil {
 		return nil, err
@@ -211,6 +207,14 @@ func (s *authServer) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest) 
 	if err != nil {
 		return nil, err
 	}
+	user, err := s.currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if user.Role != role.Name && user.Role != ort.DefaultRootRole {
+		return nil, rpctypes.ErrGRPCInvalidAuthMgmt
+	}
+
 	if patcher.Desc != "" {
 		role.Desc = patcher.Desc
 	}
@@ -221,7 +225,7 @@ func (s *authServer) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest) 
 		role.Metadata = patcher.Metadata
 	}
 	role.UpdateTimestamp = time.Now().Unix()
-	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	key := path.Join(ort.DefaultRolePrefix, role.Name)
 	header, err := s.put(ctx, key, role)
 	if err != nil {
 		return nil, err
@@ -234,11 +238,20 @@ func (s *authServer) UpdateRole(ctx context.Context, req *pb.UpdateRoleRequest) 
 }
 
 func (s *authServer) RemoveRole(ctx context.Context, req *pb.RemoveRoleRequest) (resp *pb.RemoveRoleResponse, err error) {
-	_, role, err := s.getRole(ctx, req.Name)
+	name := req.Name
+	if name == ort.DefaultRootRole {
+		return nil, rpctypes.ErrGRPCInvalidAuthMgmt
+	}
+
+	if _, err = s.mustBeRoot(ctx); err != nil {
+		return nil, err
+	}
+
+	_, role, err := s.getRole(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	key := path.Join(runtime.DefaultRolePrefix, role.Name)
+	key := path.Join(ort.DefaultRolePrefix, role.Name)
 	header, err := s.del(ctx, key)
 	if err != nil {
 		return nil, err
@@ -254,7 +267,7 @@ func (s *authServer) ListUser(ctx context.Context, req *pb.ListUserRequest) (res
 
 	lg := s.lg
 	resp = &pb.ListUserResponse{}
-	key := runtime.DefaultUserPrefix
+	key := ort.DefaultUserPrefix
 
 	users := make([]*authv1.User, 0)
 	var continueToken string
@@ -290,7 +303,7 @@ func (s *authServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (resp 
 }
 
 func (s *authServer) getUser(ctx context.Context, name string) (*pb.ResponseHeader, *authv1.User, error) {
-	key := path.Join(runtime.DefaultUserPrefix, name)
+	key := path.Join(ort.DefaultUserPrefix, name)
 	user := &authv1.User{}
 	header, _, err := s.get(ctx, key, user, clientv3.WithSerializable())
 	if err != nil {
@@ -314,7 +327,7 @@ func (s *authServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 
 	user.CreationTimestamp = time.Now().Unix()
 	user.UpdateTimestamp = user.CreationTimestamp
-	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+	key := path.Join(ort.DefaultUserPrefix, user.Name)
 	header, err := s.put(ctx, key, user)
 	if err != nil {
 		return nil, err
@@ -335,6 +348,20 @@ func (s *authServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) 
 	if err != nil {
 		return nil, err
 	}
+	current, err := s.currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.Role == ort.DefaultRootRole && current.Name != user.Name {
+		return nil, rpctypes.ErrGRPCInvalidAuthMgmt
+	}
+	if user.Role != ort.DefaultRootRole &&
+		current.Name != user.Name &&
+		current.Role != ort.DefaultRootRole {
+		return nil, rpctypes.ErrGRPCInvalidAuthMgmt
+	}
+
 	if patcher.Desc != "" {
 		user.Desc = patcher.Desc
 	}
@@ -349,7 +376,7 @@ func (s *authServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) 
 		user.Password = passwd
 	}
 	user.UpdateTimestamp = time.Now().Unix()
-	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+	key := path.Join(ort.DefaultUserPrefix, user.Name)
 	header, err := s.put(ctx, key, user)
 	if err != nil {
 		return nil, err
@@ -362,11 +389,20 @@ func (s *authServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) 
 }
 
 func (s *authServer) RemoveUser(ctx context.Context, req *pb.RemoveUserRequest) (resp *pb.RemoveUserResponse, err error) {
-	_, user, err := s.getUser(ctx, req.Name)
+	username := req.Name
+	if username == ort.DefaultRootRole || username == ort.DefaultSystemUser {
+		return nil, rpctypes.ErrGRPCInvalidAuthMgmt
+	}
+	_, err = s.mustBeRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
-	key := path.Join(runtime.DefaultUserPrefix, user.Name)
+
+	_, user, err := s.getUser(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	key := path.Join(ort.DefaultUserPrefix, user.Name)
 	header, err := s.del(ctx, key)
 	if err != nil {
 		return nil, err
@@ -382,7 +418,7 @@ func (s *authServer) Authenticate(ctx context.Context, req *pb.AuthenticateReque
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
 	}
-	key := path.Join(runtime.DefaultUserPrefix, req.Name)
+	key := path.Join(ort.DefaultUserPrefix, req.Name)
 	user := &authv1.User{}
 	rh, _, err := s.get(ctx, key, user, options...)
 	if err != nil {

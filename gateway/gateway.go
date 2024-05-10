@@ -42,7 +42,7 @@ import (
 	"github.com/olive-io/olive/client"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
-	"github.com/olive-io/olive/pkg/runtime"
+	ort "github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
 
@@ -84,7 +84,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 		return nil, err
 	}
 
-	prefix := runtime.DefaultRunnerDiscoveryNode
+	prefix := ort.DefaultRunnerDiscoveryNode
 	discovery, err := dsy.NewDiscovery(oct.ActiveEtcdClient(), dsy.SetLogger(lg), dsy.Prefix(prefix))
 	if err != nil {
 		return nil, err
