@@ -177,8 +177,6 @@ func StartEtcd(inCfg *Config) (e *Etcd, err error) {
 		MaxWALFiles:                              cfg.MaxWalFiles,
 		InitialPeerURLsMap:                       urlsmap,
 		InitialClusterToken:                      token,
-		DiscoveryURL:                             cfg.Durl,
-		DiscoveryProxy:                           cfg.Dproxy,
 		NewCluster:                               cfg.IsNewCluster(),
 		PeerTLSInfo:                              cfg.PeerTLSInfo,
 		TickMs:                                   cfg.TickMs,

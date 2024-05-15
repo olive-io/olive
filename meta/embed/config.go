@@ -40,7 +40,6 @@ import (
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3compactor"
 
 	bolt "go.etcd.io/bbolt"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -223,14 +222,10 @@ type Config struct {
 	// TlsMaxVersion is the maximum accepted TLS version between client/server and peers.
 	TlsMaxVersion string `json:"tls-max-version"`
 
-	ClusterState          string `json:"initial-cluster-state"`
-	DNSCluster            string `json:"discovery-srv"`
-	DNSClusterServiceName string `json:"discovery-srv-name"`
-	Dproxy                string `json:"discovery-proxy"`
-	Durl                  string `json:"discovery"`
-	InitialCluster        string `json:"initial-cluster"`
-	InitialClusterToken   string `json:"initial-cluster-token"`
-	StrictReconfigCheck   bool   `json:"strict-reconfig-check"`
+	ClusterState        string `json:"initial-cluster-state"`
+	InitialCluster      string `json:"initial-cluster"`
+	InitialClusterToken string `json:"initial-cluster-token"`
+	StrictReconfigCheck bool   `json:"strict-reconfig-check"`
 
 	// AutoCompactionMode is either 'periodic' or 'revision'.
 	AutoCompactionMode string `json:"auto-compaction-mode"`
@@ -604,7 +599,7 @@ func (cfg *configYAML) configFromFile(path string) error {
 	}
 
 	// If a discovery flag is set, clear default initial cluster set by InitialClusterFromName
-	if (cfg.Durl != "" || cfg.DNSCluster != "") && cfg.InitialCluster == defaultInitialCluster {
+	if cfg.InitialCluster == defaultInitialCluster {
 		cfg.InitialCluster = ""
 	}
 	if cfg.ClusterState == "" {
@@ -684,7 +679,7 @@ func (cfg *Config) Validate() error {
 	}
 	// Check if conflicting flags are passed.
 	nSet := 0
-	for _, v := range []bool{cfg.Durl != "", cfg.InitialCluster != "", cfg.DNSCluster != ""} {
+	for _, v := range []bool{cfg.InitialCluster != ""} {
 		if v {
 			nSet++
 		}
@@ -767,96 +762,9 @@ func (cfg *Config) Validate() error {
 // PeerURLsMapAndToken sets up an initial peer URLsMap and cluster token for bootstrap or discovery.
 func (cfg *Config) PeerURLsMapAndToken(which string) (urlsmap types.URLsMap, token string, err error) {
 	token = cfg.InitialClusterToken
-	switch {
-	case cfg.Durl != "":
-		urlsmap = types.URLsMap{}
-		// If using discovery, generate a temporary cluster based on
-		// self's advertised peer URLs
-		urlsmap[cfg.Name] = cfg.AdvertisePeerUrls
-		token = cfg.Durl
-
-	case cfg.DNSCluster != "":
-		clusterStrs, cerr := cfg.GetDNSClusterNames()
-		lg := cfg.logger
-		if cerr != nil {
-			lg.Warn("failed to resolve during SRV discovery", zap.Error(cerr))
-		}
-		if len(clusterStrs) == 0 {
-			return nil, "", cerr
-		}
-		for _, s := range clusterStrs {
-			lg.Info("got bootstrap from DNS for etcd-server", zap.String("node", s))
-		}
-		clusterStr := strings.Join(clusterStrs, ",")
-		if strings.Contains(clusterStr, "https://") && cfg.PeerTLSInfo.TrustedCAFile == "" {
-			cfg.PeerTLSInfo.ServerName = cfg.DNSCluster
-		}
-		urlsmap, err = types.NewURLsMap(clusterStr)
-		// only etcd member must belong to the discovered cluster.
-		// proxy does not need to belong to the discovered cluster.
-		if which == "etcd" {
-			if _, ok := urlsmap[cfg.Name]; !ok {
-				return nil, "", fmt.Errorf("cannot find local etcd member %q in SRV records", cfg.Name)
-			}
-		}
-
-	default:
-		// We're statically configured, and cluster has appropriately been set.
-		urlsmap, err = types.NewURLsMap(cfg.InitialCluster)
-	}
+	// We're statically configured, and cluster has appropriately been set.
+	urlsmap, err = types.NewURLsMap(cfg.InitialCluster)
 	return urlsmap, token, err
-}
-
-// GetDNSClusterNames uses DNS SRV records to get a list of initial nodes for cluster bootstrapping.
-// This function will return a list of one or more nodes, as well as any errors encountered while
-// performing service discovery.
-// Note: Because this checks multiple sets of SRV records, discovery should only be considered to have
-// failed if the returned node list is empty.
-func (cfg *Config) GetDNSClusterNames() ([]string, error) {
-	var (
-		clusterStrs       []string
-		cerr              error
-		serviceNameSuffix string
-	)
-	if cfg.DNSClusterServiceName != "" {
-		serviceNameSuffix = "-" + cfg.DNSClusterServiceName
-	}
-
-	lg := cfg.GetLogger()
-
-	// Use both etcd-server-ssl and etcd-server for discovery.
-	// Combine the results if both are available.
-	clusterStrs, cerr = getCluster("https", "etcd-server-ssl"+serviceNameSuffix, cfg.Name, cfg.DNSCluster, cfg.AdvertisePeerUrls)
-	if cerr != nil {
-		clusterStrs = make([]string, 0)
-	}
-	lg.Info(
-		"get cluster for etcd-server-ssl SRV",
-		zap.String("service-scheme", "https"),
-		zap.String("service-name", "etcd-server-ssl"+serviceNameSuffix),
-		zap.String("server-name", cfg.Name),
-		zap.String("discovery-srv", cfg.DNSCluster),
-		zap.Strings("advertise-peer-urls", cfg.getAdvertisePeerUrls()),
-		zap.Strings("found-cluster", clusterStrs),
-		zap.Error(cerr),
-	)
-
-	defaultHTTPClusterStrs, httpCerr := getCluster("http", "etcd-server"+serviceNameSuffix, cfg.Name, cfg.DNSCluster, cfg.AdvertisePeerUrls)
-	if httpCerr == nil {
-		clusterStrs = append(clusterStrs, defaultHTTPClusterStrs...)
-	}
-	lg.Info(
-		"get cluster for etcd-server SRV",
-		zap.String("service-scheme", "http"),
-		zap.String("service-name", "etcd-server"+serviceNameSuffix),
-		zap.String("server-name", cfg.Name),
-		zap.String("discovery-srv", cfg.DNSCluster),
-		zap.Strings("advertise-peer-urls", cfg.getAdvertisePeerUrls()),
-		zap.Strings("found-cluster", clusterStrs),
-		zap.Error(httpCerr),
-	)
-
-	return clusterStrs, multierr.Combine(cerr, httpCerr)
 }
 
 func (cfg Config) InitialClusterFromName(name string) (ret string) {

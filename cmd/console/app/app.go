@@ -25,13 +25,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/olive-io/olive/console/config"
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/api/version"
-	genericserver "github.com/olive-io/olive/pkg/server"
-
 	"github.com/olive-io/olive/console"
+	"github.com/olive-io/olive/console/config"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 func NewConsoleCommand(stdout, stderr io.Writer) *cobra.Command {
@@ -71,7 +70,7 @@ func NewConsoleCommand(stdout, stderr io.Writer) *cobra.Command {
 }
 
 func setup(cfg *config.Config) error {
-	stopc := genericserver.SetupSignalHandler()
+	stopc := genericdaemon.SetupSignalHandler()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}

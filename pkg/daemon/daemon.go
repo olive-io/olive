@@ -19,7 +19,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package server
+package daemon
 
 import (
 	"net/http"
@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type IEmbedServer interface {
+type IDaemon interface {
 	// StopNotify returns a channel that receives an empty struct
 	// when the server is stopped.
 	StopNotify() <-chan struct{}
@@ -48,7 +48,7 @@ type IEmbedServer interface {
 	Shutdown()
 }
 
-type embedServer struct {
+type embedDaemon struct {
 	lg *zap.Logger
 
 	stopping chan struct{}
@@ -59,8 +59,8 @@ type embedServer struct {
 	wg   sync.WaitGroup
 }
 
-func NewEmbedServer(lg *zap.Logger) IEmbedServer {
-	s := &embedServer{
+func NewEmbedDaemon(lg *zap.Logger) IDaemon {
+	s := &embedDaemon{
 		lg:       lg,
 		stopping: make(chan struct{}, 1),
 		done:     make(chan struct{}, 1),
@@ -72,11 +72,11 @@ func NewEmbedServer(lg *zap.Logger) IEmbedServer {
 	return s
 }
 
-func (s *embedServer) StopNotify() <-chan struct{} { return s.done }
+func (s *embedDaemon) StopNotify() <-chan struct{} { return s.done }
 
-func (s *embedServer) StoppingNotify() <-chan struct{} { return s.stopping }
+func (s *embedDaemon) StoppingNotify() <-chan struct{} { return s.stopping }
 
-func (s *embedServer) GoAttach(fn func()) {
+func (s *embedDaemon) GoAttach(fn func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
 	defer s.wgMu.RUnlock()
 	select {
@@ -94,11 +94,11 @@ func (s *embedServer) GoAttach(fn func()) {
 	}()
 }
 
-func (s *embedServer) OnDestroy(fn func()) {
+func (s *embedDaemon) OnDestroy(fn func()) {
 	go s.doDestroy(fn)
 }
 
-func (s *embedServer) doDestroy(fn func()) {
+func (s *embedDaemon) doDestroy(fn func()) {
 	defer func() {
 		s.wgMu.Lock() // block concurrent waitgroup adds in GoAttach while stopping
 		close(s.stopping)
@@ -116,7 +116,7 @@ func (s *embedServer) doDestroy(fn func()) {
 	<-s.stop
 }
 
-func (s *embedServer) Shutdown() {
+func (s *embedDaemon) Shutdown() {
 	select {
 	case s.stop <- struct{}{}:
 	case <-s.done:

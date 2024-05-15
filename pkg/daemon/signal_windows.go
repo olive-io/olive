@@ -1,6 +1,3 @@
-//go:build !windows
-// +build !windows
-
 /*
    Copyright 2023 The olive Authors
 
@@ -22,11 +19,10 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package server
+package daemon
 
 import (
 	"os"
-	"syscall"
 )
 
-var shutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}
+var shutdownSignals = []os.Signal{os.Interrupt}

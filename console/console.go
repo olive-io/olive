@@ -41,14 +41,14 @@ import (
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/interceptor"
 	"github.com/olive-io/olive/console/routes"
-	genericserver "github.com/olive-io/olive/pkg/server"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
 )
 
 type Console struct {
-	genericserver.IEmbedServer
+	genericdaemon.IDaemon
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -68,7 +68,7 @@ type Console struct {
 
 func NewConsole(cfg *config.Config) (*Console, error) {
 	lg := cfg.GetLogger()
-	embedServer := genericserver.NewEmbedServer(lg)
+	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
 	lg.Debug("connect to olive-meta",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
@@ -118,13 +118,13 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	console := &Console{
-		IEmbedServer: embedServer,
-		ctx:          ctx,
-		cancel:       cancel,
-		cfg:          cfg,
-		oct:          oct,
-		engine:       fiz,
-		started:      make(chan struct{}, 1),
+		IDaemon: embedDaemon,
+		ctx:     ctx,
+		cancel:  cancel,
+		cfg:     cfg,
+		oct:     oct,
+		engine:  fiz,
+		started: make(chan struct{}, 1),
 	}
 
 	root := fiz.Group("/api", "Olive.Default", "")
@@ -227,7 +227,7 @@ func (c *Console) stop() error {
 	}
 
 	c.cancel()
-	c.IEmbedServer.Shutdown()
+	c.IDaemon.Shutdown()
 	return nil
 }
 

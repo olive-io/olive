@@ -41,17 +41,16 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	ort "github.com/olive-io/olive/pkg/runtime"
-	genericserver "github.com/olive-io/olive/pkg/server"
-
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
 
 type Runner struct {
-	genericserver.IEmbedServer
+	genericdaemon.IDaemon
 	pb.UnsafeRunnerRPCServer
 
 	ctx    context.Context
@@ -89,13 +88,13 @@ func NewRunner(cfg Config) (*Runner, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	be := newBackend(&cfg)
 
-	embedServer := genericserver.NewEmbedServer(lg)
+	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 	runner := &Runner{
-		IEmbedServer: embedServer,
-		ctx:          ctx,
-		cancel:       cancel,
-		cfg:          cfg,
-		gLock:        gLock,
+		IDaemon: embedDaemon,
+		ctx:     ctx,
+		cancel:  cancel,
+		cfg:     cfg,
+		gLock:   gLock,
 
 		oct: oct,
 		be:  be,
@@ -153,7 +152,7 @@ func (r *Runner) start() error {
 }
 
 func (r *Runner) stop() error {
-	r.IEmbedServer.Shutdown()
+	r.IDaemon.Shutdown()
 	return nil
 }
 
@@ -179,7 +178,7 @@ func (r *Runner) startGRPCServer() error {
 
 	mux := r.createMux(gwmux, handler)
 	r.serve = &http.Server{
-		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
+		Handler:        genericdaemon.GRPCHandlerFunc(gs, mux),
 		MaxHeaderBytes: 1024 * 1024 * 20,
 	}
 

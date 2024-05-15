@@ -40,17 +40,16 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/gateway/consumer"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
 	ort "github.com/olive-io/olive/pkg/runtime"
-	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
-
-	"github.com/olive-io/olive/gateway/consumer"
 )
 
 type Gateway struct {
-	genericserver.IEmbedServer
+	genericdaemon.IDaemon
 	*grpcproxy.ProxyServer
 
 	ctx    context.Context
@@ -75,7 +74,7 @@ type Gateway struct {
 
 func NewGateway(cfg *Config) (*Gateway, error) {
 	lg := cfg.GetLogger()
-	embedServer := genericserver.NewEmbedServer(lg)
+	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
 	lg.Debug("connect to olive-meta",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
@@ -92,7 +91,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	gw := &Gateway{
-		IEmbedServer:    embedServer,
+		IDaemon:         embedDaemon,
 		ctx:             ctx,
 		cancel:          cancel,
 		cfg:             cfg,
@@ -226,7 +225,7 @@ func (g *Gateway) destroy() {}
 
 func (g *Gateway) stop() error {
 	g.cancel()
-	g.IEmbedServer.Shutdown()
+	g.IDaemon.Shutdown()
 	return nil
 }
 

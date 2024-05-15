@@ -49,6 +49,7 @@ import (
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/api/version"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 
 	"github.com/olive-io/olive/pkg/addr"
 	"github.com/olive-io/olive/pkg/backoff"
@@ -56,7 +57,6 @@ import (
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/mnet"
 	"github.com/olive-io/olive/pkg/proxy/server"
-	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 var (
@@ -118,7 +118,7 @@ func NewProxyServer(discovery dsy.IDiscovery, cfg *Config) (*ProxyServer, error)
 	handler := ps.buildUserHandler()
 	mux := ps.createMux(gwmux, handler)
 	ps.serve = &http.Server{
-		Handler:        genericserver.GRPCHandlerFunc(ps.gs, mux),
+		Handler:        genericdaemon.GRPCHandlerFunc(ps.gs, mux),
 		MaxHeaderBytes: DefaultMaxHeaderBytes,
 	}
 

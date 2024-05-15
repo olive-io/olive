@@ -1,3 +1,6 @@
+//go:build !windows
+// +build !windows
+
 /*
    Copyright 2023 The olive Authors
 
@@ -19,29 +22,11 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package server
+package daemon
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"os"
+	"syscall"
 )
 
-func TestGenericServer(t *testing.T) {
-	queue := make([]int, 0)
-
-	logger := zap.NewExample()
-	s1 := NewEmbedServer(logger)
-	s1.OnDestroy(func() {
-		queue = append(queue, 2)
-	})
-	s1.GoAttach(func() {
-		queue = append(queue, 1)
-	})
-	s1.Shutdown()
-
-	if !assert.Equal(t, queue, []int{1, 2}) {
-		return
-	}
-}
+var shutdownSignals = []os.Signal{os.Interrupt, syscall.SIGTERM}

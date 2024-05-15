@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/api/version"
-	genericserver "github.com/olive-io/olive/pkg/server"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	"github.com/olive-io/olive/runner"
 )
 
@@ -67,7 +67,7 @@ func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
 
 func setup(cfg runner.Config) error {
 	var err error
-	stopc := genericserver.SetupSignalHandler()
+	stopc := genericdaemon.SetupSignalHandler()
 	if err = cfg.Validate(); err != nil {
 		return err
 	}

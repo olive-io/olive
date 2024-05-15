@@ -21,7 +21,7 @@ Launch an embedded etcd server using the configuration defaults:
 		"log"
 		"time"
 
-		"go.etcd.io/etcd/server/v3/embed"
+		"github.com/olive-io/olive/meta/embed"
 	)
 
 	func main() {

@@ -36,14 +36,13 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/embed"
-	genericserver "github.com/olive-io/olive/pkg/server"
-
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 type Server struct {
-	genericserver.IEmbedServer
+	genericdaemon.IDaemon
 
 	cfg Config
 
@@ -64,12 +63,12 @@ type Server struct {
 func NewServer(cfg Config) (*Server, error) {
 
 	lg := cfg.Config.GetLogger()
-	embedServer := genericserver.NewEmbedServer(lg)
+	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{
-		IEmbedServer: embedServer,
-		cfg:          cfg,
+		IDaemon: embedDaemon,
+		cfg:     cfg,
 
 		ctx:    ctx,
 		cancel: cancel,
@@ -145,7 +144,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	s.IEmbedServer.OnDestroy(s.destroy)
+	s.IDaemon.OnDestroy(s.destroy)
 
 	<-stopc
 
@@ -153,7 +152,7 @@ func (s *Server) Start(stopc <-chan struct{}) error {
 }
 
 func (s *Server) stop() error {
-	s.IEmbedServer.Shutdown()
+	s.IDaemon.Shutdown()
 	return nil
 }
 

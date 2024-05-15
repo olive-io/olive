@@ -29,7 +29,7 @@ import (
 
 	"github.com/olive-io/olive/api/version"
 	"github.com/olive-io/olive/meta"
-	genericserver "github.com/olive-io/olive/pkg/server"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
@@ -65,7 +65,7 @@ func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
 }
 
 func setup(cfg meta.Config) error {
-	stopc := genericserver.SetupSignalHandler()
+	stopc := genericdaemon.SetupSignalHandler()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
