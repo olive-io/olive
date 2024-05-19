@@ -27,6 +27,8 @@ import (
 	"github.com/olive-io/olive/meta/embed"
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
+	"k8s.io/apimachinery/pkg/version"
+	genericapiserver "k8s.io/apiserver/pkg/server"
 
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
@@ -43,6 +45,8 @@ const (
 
 type Config struct {
 	*embed.Config
+
+	GenericConfig *genericapiserver.RecommendedConfig
 
 	fs           *pflag.FlagSet
 	clusterState *flags.SelectiveStringValue
@@ -198,4 +202,32 @@ func (cfg *Config) configFromCmdLine() error {
 	cfg.Config.ClusterState = cfg.clusterState.String()
 
 	return nil
+}
+
+type completedConfig struct {
+	GenericConfig genericapiserver.CompletedConfig
+}
+
+// CompletedConfig embeds a private pointer that cannot be instantiated outside of this package.
+type CompletedConfig struct {
+	*completedConfig
+}
+
+// Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
+func (cfg *Config) Complete() CompletedConfig {
+	c := completedConfig{
+		cfg.GenericConfig.Complete(),
+	}
+
+	c.GenericConfig.Version = &version.Info{
+		Major: "1",
+		Minor: "0",
+	}
+
+	return CompletedConfig{&c}
+}
+
+// New returns a new instance of Server from the given config.
+func (c completedConfig) New() (*Server, error) {
+	return &Server{}, nil
 }

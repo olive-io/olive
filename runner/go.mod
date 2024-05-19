@@ -1,6 +1,6 @@
 module github.com/olive-io/olive/runner
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cockroachdb/errors v1.11.1
@@ -49,7 +49,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/expr-lang/expr v1.16.3 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/goccmack/goutil v1.2.3 // indirect

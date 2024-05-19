@@ -27,19 +27,49 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/meta/embed"
+	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/meta/schedule"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-
-	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/meta/embed"
-	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/meta/schedule"
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	genericapiserver "k8s.io/apiserver/pkg/server"
 )
+
+var (
+	// Scheme defines methods for serializing and deserializing API objects.
+	Scheme = runtime.NewScheme()
+	// Codecs provides methods for retrieving codecs and serializers for specific
+	// versions and content types.
+	Codecs = serializer.NewCodecFactory(Scheme)
+)
+
+func init() {
+	//install.Install(Scheme)
+
+	// we need to add the options to empty v1
+	// TODO fix the server code to avoid this
+	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
+
+	// TODO: keep the generic API server from wanting this
+	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
+	Scheme.AddUnversionedTypes(unversioned,
+		&metav1.Status{},
+		&metav1.APIVersions{},
+		&metav1.APIGroupList{},
+		&metav1.APIGroup{},
+		&metav1.APIResourceList{},
+	)
+}
 
 type Server struct {
 	genericdaemon.IDaemon
@@ -54,6 +84,8 @@ type Server struct {
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
 	idGen *idutil.Generator
+
+	GenericAPIServer *genericapiserver.GenericAPIServer
 
 	notifier leader.Notifier
 
