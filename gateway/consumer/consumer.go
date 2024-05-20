@@ -30,7 +30,7 @@ import (
 	"github.com/cockroachdb/errors"
 	json "github.com/json-iterator/go"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 var (

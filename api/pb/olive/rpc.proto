@@ -23,11 +23,11 @@ syntax = "proto3";
 
 package olivepb;
 
-option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+option go_package = "github.com/olive-io/olive/api/pb/olive;olivepb";
 
-import "github.com/olive-io/olive/api/olivepb/internal.proto";
-import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
-import "github.com/olive-io/olive/api/authpb/auth.proto";
+import "github.com/olive-io/olive/api/pb/olive/internal.proto";
+import "github.com/olive-io/olive/api/pb/discovery/discovery.proto";
+import "github.com/olive-io/olive/api/pb/auth/auth.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";

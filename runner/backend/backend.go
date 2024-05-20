@@ -31,11 +31,11 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	humanize "github.com/dustin/go-humanize"
+	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 const (

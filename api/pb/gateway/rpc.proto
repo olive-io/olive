@@ -23,10 +23,10 @@ syntax = "proto3";
 
 package gatewaypb;
 
-option go_package = "github.com/olive-io/olive/api/gatewaypb;gatewaypb";
+option go_package = "github.com/olive-io/olive/api/pb/gateway;gatewaypb";
 
-import "github.com/olive-io/olive/api/discoverypb/activity.proto";
-import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
+import "github.com/olive-io/olive/api/pb/discovery/activity.proto";
+import "github.com/olive-io/olive/api/pb/discovery/discovery.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";

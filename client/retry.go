@@ -26,7 +26,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 type retryPolicy uint8

@@ -29,8 +29,8 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/olivepb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	"github.com/olive-io/olive/client"
 	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/pkg/tonic"

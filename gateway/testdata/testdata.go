@@ -28,7 +28,7 @@ import (
 	json "github.com/json-iterator/go"
 	"sigs.k8s.io/yaml"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 //go:embed rpc.yml

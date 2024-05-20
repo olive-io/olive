@@ -27,7 +27,7 @@ import (
 
 	sm "github.com/lni/dragonboat/v4/statemachine"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"

@@ -47,7 +47,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 	"github.com/olive-io/olive/api/version"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 

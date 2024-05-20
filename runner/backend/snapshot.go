@@ -29,7 +29,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 type ISnapshot interface {

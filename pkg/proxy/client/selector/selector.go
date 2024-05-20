@@ -25,7 +25,7 @@ package selector
 import (
 	"errors"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 var (

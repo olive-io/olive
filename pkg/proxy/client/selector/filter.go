@@ -22,7 +22,7 @@
 package selector
 
 import (
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 // FilterEndpoint is an endpoint based Select Filter which will

@@ -27,7 +27,7 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/types"
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 type (

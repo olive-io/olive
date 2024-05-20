@@ -27,11 +27,6 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/meta/embed"
-	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/meta/schedule"
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/pkg/v3/idutil"
@@ -43,6 +38,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+
+	pb "github.com/olive-io/olive/api/pb/olive"
+	"github.com/olive-io/olive/meta/embed"
+	"github.com/olive-io/olive/meta/leader"
+	"github.com/olive-io/olive/meta/schedule"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 var (

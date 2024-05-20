@@ -23,7 +23,7 @@ syntax = "proto3";
 
 package authpbv1;
 
-option go_package = "github.com/olive-io/olive/api/authpb;authpbv1";
+option go_package = "github.com/olive-io/olive/api/pb/auth;authpbv1";
 
 message Role {
   string name = 1;

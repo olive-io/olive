@@ -40,9 +40,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/api/gatewaypb"
-	pb "github.com/olive-io/olive/api/olivepb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	"github.com/olive-io/olive/api/pb/gateway"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
@@ -443,7 +443,7 @@ func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInsta
 	return err
 }
 
-// actCov converts bact.Type to discoverypb.ActivityType
+// actCov converts bact.Type to discovery.ActivityType
 func actCov(actType bact.Type) dsypb.ActivityType {
 	var act dsypb.ActivityType
 	switch actType {

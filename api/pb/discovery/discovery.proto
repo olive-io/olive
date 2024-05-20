@@ -23,7 +23,7 @@ syntax = "proto3";
 
 package discoverypb;
 
-option go_package = "github.com/olive-io/olive/api/discoverypb;discoverypb";
+option go_package = "github.com/olive-io/olive/api/pb/discovery;discoverypb";
 
 enum BoxType {
   string = 0;

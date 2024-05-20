@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
-	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5"
 
-	authv1 "github.com/olive-io/olive/api/authpb"
+	authv1 "github.com/olive-io/olive/api/pb/auth"
 	"github.com/olive-io/olive/api/rpctypes"
 )
 

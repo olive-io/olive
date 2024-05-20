@@ -27,7 +27,7 @@ import (
 
 	"github.com/olive-io/bpmn/schema"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 type TestData struct {

@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: github.com/olive-io/olive/api/gatewaypb/rpc.proto
+// source: github.com/olive-io/olive/api/pb/gateway/rpc.proto
 
 package gatewaypb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -138,7 +137,7 @@ var Gateway_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/gatewaypb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/gateway/rpc.proto",
 }
 
 // EndpointRouterClient is the client API for EndpointRouter service.
@@ -264,5 +263,5 @@ var EndpointRouter_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/gatewaypb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/gateway/rpc.proto",
 }

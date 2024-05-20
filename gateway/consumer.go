@@ -28,7 +28,7 @@ import (
 	"github.com/cockroachdb/errors"
 	iradix "github.com/hashicorp/go-immutable-radix"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 	"github.com/olive-io/olive/gateway/consumer"
 )
 

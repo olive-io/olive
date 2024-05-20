@@ -23,9 +23,9 @@ syntax = "proto3";
 
 package olivepb;
 
-option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+option go_package = "github.com/olive-io/olive/api/pb/olive;olivepb";
 
-import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
+import "github.com/olive-io/olive/api/pb/discovery/discovery.proto";
 
 message ResponseHeader {
   // cluster_id is the ID of the cluster which sent the response.

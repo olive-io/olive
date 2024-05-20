@@ -27,7 +27,7 @@ import (
 
 	json "github.com/json-iterator/go"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
 )

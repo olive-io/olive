@@ -34,8 +34,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/gatewaypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	pb "github.com/olive-io/olive/api/pb/gateway"
 )
 
 var (

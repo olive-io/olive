@@ -27,7 +27,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 // Endpoint is a mapping between an RPC method and HTTP endpoint

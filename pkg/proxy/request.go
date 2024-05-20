@@ -33,8 +33,8 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/oxtoacart/bpool"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/gatewaypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	pb "github.com/olive-io/olive/api/pb/gateway"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/codec"
 	"github.com/olive-io/olive/pkg/proxy/codec/jsonrpc"
@@ -133,7 +133,7 @@ func (b *buffer) Write(_ []byte) (int, error) {
 	return 0, nil
 }
 
-// newRequest builds new *http.Request from *gatewaypb.TransmitRequest
+// newRequest builds new *http.Request from *gateway.TransmitRequest
 func newRequest(req *pb.TransmitRequest) (*http.Request, error) {
 	headers := req.Headers
 	if _, ok := headers[api.HandlerKey]; !ok {

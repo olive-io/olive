@@ -23,11 +23,12 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	authv1 "github.com/olive-io/olive/api/authpb"
+	"go.uber.org/zap"
+
+	authv1 "github.com/olive-io/olive/api/pb/auth"
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
-	"go.uber.org/zap"
 
 	"github.com/olive-io/olive/client"
 )

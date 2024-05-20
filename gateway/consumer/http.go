@@ -34,7 +34,7 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	json "github.com/json-iterator/go"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
@@ -45,7 +45,7 @@ var (
 
 type HttpConsumer struct {
 	ymu sync.RWMutex
-	// the mapping between address and id for discoverypb.Yard
+	// the mapping between address and id for discovery.Yard
 	addrs map[string]string
 	yards map[string]*dsypb.Yard
 }

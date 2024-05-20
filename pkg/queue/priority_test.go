@@ -16,8 +16,9 @@ package queue
 import (
 	"testing"
 
-	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/stretchr/testify/assert"
+
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 func TestNewRunnerQueue(t *testing.T) {

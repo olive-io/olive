@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/raft"

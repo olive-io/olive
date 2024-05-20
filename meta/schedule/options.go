@@ -24,7 +24,7 @@ package schedule
 import (
 	"math"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 type runnerMatch func(runner *pb.Runner) bool

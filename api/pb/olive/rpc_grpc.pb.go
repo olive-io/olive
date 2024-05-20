@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: github.com/olive-io/olive/api/olivepb/rpc.proto
+// source: github.com/olive-io/olive/api/pb/olive/rpc.proto
 
 package olivepb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -256,7 +255,7 @@ var MetaClusterRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // AuthRPCClient is the client API for AuthRPC service.
@@ -702,7 +701,7 @@ var AuthRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // RbacRPCClient is the client API for RbacRPC service.
@@ -968,7 +967,7 @@ var RbacRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // MetaRunnerRPCClient is the client API for MetaRunnerRPC service.
@@ -1090,7 +1089,7 @@ var MetaRunnerRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // MetaRegionRPCClient is the client API for MetaRegionRPC service.
@@ -1212,7 +1211,7 @@ var MetaRegionRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // BpmnRPCClient is the client API for BpmnRPC service.
@@ -1514,7 +1513,7 @@ var BpmnRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }
 
 // RunnerRPCClient is the client API for RunnerRPC service.
@@ -1600,5 +1599,5 @@ var RunnerRPC_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/olive-io/olive/api/olivepb/rpc.proto",
+	Metadata: "github.com/olive-io/olive/api/pb/olive/rpc.proto",
 }

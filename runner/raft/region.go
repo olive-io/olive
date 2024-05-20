@@ -41,7 +41,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/pkg/queue"

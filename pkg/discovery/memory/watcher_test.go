@@ -26,7 +26,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
+	dsypb "github.com/olive-io/olive/api/pb/discovery"
 )
 
 func TestWatcher(t *testing.T) {

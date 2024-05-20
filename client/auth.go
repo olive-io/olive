@@ -26,8 +26,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	authv1 "github.com/olive-io/olive/api/authpb"
-	pb "github.com/olive-io/olive/api/olivepb"
+	authv1 "github.com/olive-io/olive/api/pb/auth"
+	pb "github.com/olive-io/olive/api/pb/olive"
 )
 
 type (

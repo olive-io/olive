@@ -38,8 +38,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
-	authv1 "github.com/olive-io/olive/api/authpb"
-	pb "github.com/olive-io/olive/api/olivepb"
+	authv1 "github.com/olive-io/olive/api/pb/auth"
+	pb "github.com/olive-io/olive/api/pb/olive"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/meta/pagation"
 	mdutil "github.com/olive-io/olive/pkg/context/metadata"
