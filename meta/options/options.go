@@ -26,10 +26,11 @@ import (
 	"io"
 	"net"
 
-	"github.com/olive-io/olive/meta"
 	"github.com/spf13/cobra"
 
-	"github.com/olive-io/olive/api/core/v1"
+	"github.com/olive-io/olive/meta"
+
+	"github.com/olive-io/olive/apis/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"

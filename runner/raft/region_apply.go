@@ -30,7 +30,8 @@ import (
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
+	pb "github.com/olive-io/olive/apis/pb/olive"
+
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 

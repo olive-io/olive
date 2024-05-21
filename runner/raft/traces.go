@@ -26,7 +26,7 @@ import (
 
 	"github.com/lni/dragonboat/v4/raftio"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
+	pb "github.com/olive-io/olive/apis/pb/olive"
 )
 
 type leaderTrace raftio.LeaderInfo

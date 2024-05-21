@@ -24,7 +24,7 @@ package raft
 import (
 	"time"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
+	pb "github.com/olive-io/olive/apis/pb/olive"
 )
 
 func (r *Region) heartbeat() {

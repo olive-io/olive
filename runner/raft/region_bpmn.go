@@ -40,9 +40,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	"github.com/olive-io/olive/api/pb/gateway"
-	pb "github.com/olive-io/olive/api/pb/olive"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/olive"
+
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 

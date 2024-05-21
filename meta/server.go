@@ -39,7 +39,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
+	pb "github.com/olive-io/olive/apis/pb/olive"
+
 	"github.com/olive-io/olive/meta/embed"
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"

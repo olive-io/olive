@@ -27,8 +27,8 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/golang-jwt/jwt/v5"
 
-	authv1 "github.com/olive-io/olive/api/pb/auth"
-	"github.com/olive-io/olive/api/rpctypes"
+	authv1 "github.com/olive-io/olive/apis/pb/auth"
+	"github.com/olive-io/olive/apis/rpctypes"
 )
 
 var DefaultSalt = "Olive.io"

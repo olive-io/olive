@@ -28,6 +28,7 @@ import (
 	_ "github.com/olive-io/olive/pkg/runtime"
 	_ "github.com/olive-io/olive/runner"
 
-	_ "github.com/olive-io/olive/tests/pkg/idutil"
 	_ "github.com/ugorji/go/codec"
+
+	_ "github.com/olive-io/olive/tests/pkg/idutil"
 )

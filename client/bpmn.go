@@ -29,8 +29,8 @@ import (
 	"github.com/olive-io/bpmn/schema"
 	"google.golang.org/grpc"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	pb "github.com/olive-io/olive/api/pb/olive"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/olive"
 )
 
 type (

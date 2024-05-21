@@ -33,8 +33,9 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/oxtoacart/bpool"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	pb "github.com/olive-io/olive/api/pb/gateway"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/gateway"
+
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/codec"
 	"github.com/olive-io/olive/pkg/proxy/codec/jsonrpc"

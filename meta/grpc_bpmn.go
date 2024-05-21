@@ -34,8 +34,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
-	"github.com/olive-io/olive/api/rpctypes"
+	pb "github.com/olive-io/olive/apis/pb/olive"
+	"github.com/olive-io/olive/apis/rpctypes"
+
 	ort "github.com/olive-io/olive/pkg/runtime"
 )
 

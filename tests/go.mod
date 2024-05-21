@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/olive-io/bpmn/schema v1.3.4
-	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/apis v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
 	go.etcd.io/etcd/server/v3 v3.5.13
 )
@@ -76,6 +76,6 @@ require (
 )
 
 replace (
-	github.com/olive-io/olive/api => ../api
+	github.com/olive-io/olive/apis => ../apis
 	github.com/olive-io/olive/pkg => ../pkg
 )

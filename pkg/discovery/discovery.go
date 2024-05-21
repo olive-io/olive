@@ -27,7 +27,7 @@ import (
 
 	"github.com/cockroachdb/errors"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
 )
 
 var (

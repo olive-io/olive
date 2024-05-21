@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/olive-io/olive/api/rpctypes"
+	"github.com/olive-io/olive/apis/rpctypes"
 )
 
 type Interceptor interface {

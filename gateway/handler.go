@@ -32,8 +32,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	pb "github.com/olive-io/olive/api/pb/gateway"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/gateway"
+
 	"github.com/olive-io/olive/gateway/consumer"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/proxy/api"

@@ -27,7 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/olive-io/olive/api/version"
+	"github.com/olive-io/olive/apis/version"
 	"github.com/olive-io/olive/console"
 	"github.com/olive-io/olive/console/config"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"

@@ -24,7 +24,7 @@ package client
 import (
 	"context"
 
-	pb "github.com/olive-io/olive/api/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/discovery"
 )
 
 // CallFunc represents the individual call func

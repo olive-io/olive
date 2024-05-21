@@ -29,7 +29,8 @@ import (
 	"testing"
 	"time"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+
 	dsy "github.com/olive-io/olive/pkg/discovery"
 )
 

@@ -28,8 +28,8 @@ import (
 	"github.com/cockroachdb/errors"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	"github.com/olive-io/olive/api/pb/gateway"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+
 	cx "github.com/olive-io/olive/pkg/context"
 	"github.com/olive-io/olive/pkg/proxy/api"
 	"github.com/olive-io/olive/pkg/proxy/client"

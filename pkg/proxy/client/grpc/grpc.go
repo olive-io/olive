@@ -38,7 +38,8 @@ import (
 	"google.golang.org/grpc/encoding"
 	gmetadata "google.golang.org/grpc/metadata"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+
 	"github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/proxy/client"

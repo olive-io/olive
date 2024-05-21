@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/olive-io/olive/api/rpctypes"
+	"github.com/olive-io/olive/apis/rpctypes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

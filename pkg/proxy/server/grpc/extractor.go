@@ -26,7 +26,7 @@ import (
 	"reflect"
 	"strings"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
 )
 
 func extractGRPCEndpoint(method reflect.Method) *dsypb.Endpoint {

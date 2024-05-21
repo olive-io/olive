@@ -8,7 +8,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
 	github.com/hashicorp/go-immutable-radix v1.3.1
 	github.com/json-iterator/go v1.1.12
-	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/apis v0.1.1
 	github.com/olive-io/olive/client v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/prometheus/client_golang v1.19.1
@@ -81,7 +81,7 @@ require (
 )
 
 replace (
-	github.com/olive-io/olive/api => ../api
+	github.com/olive-io/olive/apis => ../apis
 	github.com/olive-io/olive/client => ../client
 	github.com/olive-io/olive/pkg => ../pkg
 )

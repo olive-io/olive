@@ -22,7 +22,7 @@
 package gateway
 
 import (
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
 )
 
 type AddOptions struct {

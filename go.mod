@@ -3,7 +3,7 @@ module github.com/olive-io/olive
 go 1.22.0
 
 require (
-	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/apis v0.1.1
 	github.com/olive-io/olive/client v0.1.1
 	github.com/olive-io/olive/console v0.1.1
 	github.com/olive-io/olive/gateway v0.1.1
@@ -14,6 +14,8 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/ugorji/go/codec v1.2.12 // used by tonic and gin@v1.9.x
 	go.etcd.io/etcd/server/v3 v3.5.13
+	golang.org/x/mod v0.15.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -176,7 +178,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -196,7 +197,7 @@ require (
 )
 
 replace (
-	github.com/olive-io/olive/api => ./api
+	github.com/olive-io/olive/apis => ./apis
 	github.com/olive-io/olive/client => ./client
 	github.com/olive-io/olive/console => ./console
 	github.com/olive-io/olive/gateway => ./gateway

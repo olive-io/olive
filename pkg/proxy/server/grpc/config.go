@@ -30,7 +30,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+
 	"github.com/olive-io/olive/pkg/proxy/api"
 )
 

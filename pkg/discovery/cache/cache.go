@@ -28,7 +28,8 @@ import (
 	"sync"
 	"time"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+
 	"github.com/olive-io/olive/pkg/discovery"
 )
 

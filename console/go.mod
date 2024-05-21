@@ -6,7 +6,7 @@ require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/json-iterator/go v1.1.12
-	github.com/olive-io/olive/api v0.1.1
+	github.com/olive-io/olive/apis v0.1.1
 	github.com/olive-io/olive/client v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/prometheus/client_golang v1.16.0
@@ -73,7 +73,7 @@ require (
 )
 
 replace (
-	github.com/olive-io/olive/api => ../api
+	github.com/olive-io/olive/apis => ../apis
 	github.com/olive-io/olive/client => ../client
 	github.com/olive-io/olive/pkg => ../pkg
 )

@@ -35,8 +35,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/pb/olive"
-	"github.com/olive-io/olive/api/version"
+	pb "github.com/olive-io/olive/apis/pb/olive"
+	"github.com/olive-io/olive/apis/version"
+
 	"github.com/olive-io/olive/pkg/idutil"
 	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/buckets"

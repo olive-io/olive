@@ -37,8 +37,9 @@ import (
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
-	dsypb "github.com/olive-io/olive/api/pb/discovery"
-	pb "github.com/olive-io/olive/api/pb/gateway"
+	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	pb "github.com/olive-io/olive/apis/pb/gateway"
+
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/gateway/consumer"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
