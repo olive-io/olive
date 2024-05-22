@@ -20,6 +20,8 @@
 */
 
 // +k8s:deepcopy-gen=package
+// +k8s:defaulter-gen=TypeMeta
+// +groupName=olive.io
 
 // Package core is the internal version of the API.
 package core

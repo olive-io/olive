@@ -46,7 +46,7 @@ var (
 
 type HttpConsumer struct {
 	ymu sync.RWMutex
-	// the mapping between address and id for discovery.Yard
+	// the mapping between address and id for apidiscovery.Yard
 	addrs map[string]string
 	yards map[string]*dsypb.Yard
 }

@@ -23,22 +23,7 @@ lint:
 install:
 
 genclients:
-	go run ./tools/olive-runtime-gen \
-		-g client-gen \
-		-g deepcopy-gen \
-		-g go-to-protobuf \
-		-g informer-gen \
-		-g lister-gen \
-		-g openapi-gen \
-		--module "github.com/olive-io/olive" \
-		--versions "github.com/olive-io/olive/apis/discovery"
-
-	go-to-protobuf --apimachinery-packages "+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,+k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1" \
-		--output-base $(GOPATH)/src \
- 		--go-header-file hack/boilerplate.go.txt \
- 		--proto-import=vendor --proto-import=vendor/k8s.io/kubernetes/third_party/protobuf \
- 		--packages github.com/olive-io/olive/apis/discovery
-
+	cd apis && ./hack/update-codegen.sh
 
 generate:
 	cd $(GOPATH)/src && \

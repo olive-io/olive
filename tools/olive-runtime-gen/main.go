@@ -14,7 +14,7 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-var bin, output string
+var bin string
 
 var cmd = cobra.Command{
 	Use:     "olive-runtime-gen",
@@ -52,39 +52,15 @@ func runE(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// setup the directory to generate the code to.
-	// code generators don't work with go modules, and try the full path of the module
-	output, err = os.MkdirTemp("", "gen")
-	if err != nil {
-		return err
+	for _, input := range versions {
+		if err = doGen(input); err != nil {
+			return err
+		}
 	}
-	if clean {
-		// nolint:errcheck
-		defer os.RemoveAll(output)
-	}
-	d, l := path.Split(module)                   // split the directory from the link we will create
-	p := filepath.Join(strings.Split(d, "/")...) // convert module path to os filepath
-	p = filepath.Join(output, p)                 // create the directory which will contain the link
-	err = os.MkdirAll(p, 0700)
-	if err != nil {
-		return err
-	}
-	// link the tmp location to this one so the code generator writes to the correct path
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	err = os.Symlink(wd, filepath.Join(p, l))
-	if err != nil {
-		return err
-	}
-
-	return doGen()
+	return nil
 }
 
-func doGen() error {
-	inputs := strings.Join(versions, ",")
-
+func doGen(input string) error {
 	gen := map[string]bool{}
 	for _, g := range generators {
 		gen[g] = true
@@ -92,9 +68,8 @@ func doGen() error {
 
 	if gen["deepcopy-gen"] {
 		err := run(getCmd("deepcopy-gen",
-			"--input-dirs", inputs,
-			"-O", "zz_generated.deepcopy",
-			"--bounding-dirs", path.Join(module, "apis")))
+			"--output-file", "zz_generated.deepcopy.go",
+			"--bounding-dirs", path.Join(module, "apis"), input))
 		if err != nil {
 			return err
 		}
@@ -102,13 +77,10 @@ func doGen() error {
 
 	if gen["openapi-gen"] {
 		err := run(getCmd("openapi-gen",
-			"--input-dirs", "k8s.io/apimachinery/pkg/api/resource,"+
-				"k8s.io/apimachinery/pkg/apis/meta/v1,"+
-				"k8s.io/apimachinery/pkg/runtime,"+
-				"k8s.io/apimachinery/pkg/version,"+
-				inputs,
-			"-O", "zz_generated.openapi",
-			"--output-package", path.Join(module, "client/openapi")))
+			"--output-file", "zz_generated.openapi.go",
+			"--output-dir", path.Join("client/generated/openapi"),
+			"--output-pkg", "module",
+			input))
 		if err != nil {
 			return err
 		}
@@ -126,7 +98,7 @@ func doGen() error {
 
 	if gen["client-gen"] {
 		inputBase := ""
-		versionsInputs := inputs
+		versionsInputs := input
 		// e.g. base = "example.io/foo/api", strippedVersions = "v1,v1beta1"
 		// e.g. base = "example.io/foo/pkg/apis", strippedVersions = "test/v1,test/v1beta1"
 		if base, strippedVersions, ok := findInputBase(module, versions); ok {
@@ -135,7 +107,9 @@ func doGen() error {
 		}
 		err := run(getCmd("client-gen",
 			"--clientset-name", "versioned", "--input-base", inputBase,
-			"--input", versionsInputs, "--output-package", path.Join(module, "client/clientset")))
+			"--input", versionsInputs,
+			"--output-pkg", path.Join("client/generated/clientset"),
+			"--output-dir", module))
 		if err != nil {
 			return err
 		}
@@ -143,7 +117,9 @@ func doGen() error {
 
 	if gen["lister-gen"] {
 		err := run(getCmd("lister-gen",
-			"--input-dirs", inputs, "--output-package", path.Join(module, "client/listers")))
+			"--output-pkg", module,
+			"--output-dir", path.Join("client/generated/listers"),
+			input))
 		if err != nil {
 			return err
 		}
@@ -151,10 +127,11 @@ func doGen() error {
 
 	if gen["informer-gen"] {
 		err := run(getCmd("informer-gen",
-			"--input-dirs", inputs,
-			"--versioned-clientset-package", path.Join(module, "client/clientset/versioned"),
-			"--listers-package", path.Join(module, "client/listers"),
-			"--output-package", path.Join(module, "client/informers")))
+			"--versioned-clientset-package", path.Join("client/generated/clientset/versioned"),
+			"--listers-package", path.Join(module, "client/generated/listers"),
+			"--output-pkg", module,
+			"--output-dir", path.Join("client/generated/informers"),
+			input))
 		if err != nil {
 			return err
 		}
@@ -236,7 +213,7 @@ func run(cmd *exec.Cmd) error {
 
 func getCmd(cmd string, args ...string) *exec.Cmd {
 	// nolint:gosec
-	e := exec.Command(filepath.Join(bin, cmd), "--output-base", output, "--go-header-file", header)
+	e := exec.Command(filepath.Join(bin, cmd), "--go-header-file", header)
 
 	e.Args = append(e.Args, args...)
 	return e
@@ -258,10 +235,10 @@ func findModuleRoot(dir string) string {
 }
 
 func findInputBase(module string, versions []string) (string, []string, bool) {
-	if allHasPrefix(filepath.Join(module, "api"), versions) {
-		base := filepath.Join(module, "api")
-		return base, allTrimPrefix(base+"/", versions), true
-	}
+	//if allHasPrefix(filepath.Join(module, "api"), versions) {
+	//	base := filepath.Join(module, "api")
+	//	return base, allTrimPrefix(base+"/", versions), true
+	//}
 	if allHasPrefix(filepath.Join(module, "apis"), versions) {
 		base := filepath.Join(module, "apis")
 		return base, allTrimPrefix(base+"/", versions), true
