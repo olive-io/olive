@@ -26,5 +26,5 @@ import (
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(v1.AddToScheme(scheme))
-	utilruntime.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion, v1.SchemeGroupVersion))
+	utilruntime.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion))
 }

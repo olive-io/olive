@@ -24,6 +24,7 @@ package apis
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	krt "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
@@ -52,8 +53,9 @@ func init() {
 	apidiscoveryInstall.Install(Scheme)
 	coreInstall.Install(Scheme)
 
-	metav1.AddToGroupVersion(Scheme, SchemeGroupVersion)
-	Scheme.AddUnversionedTypes(SchemeGroupVersion,
+	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
+	metav1.AddToGroupVersion(Scheme, unversioned)
+	Scheme.AddUnversionedTypes(unversioned,
 		&metav1.Status{},
 		&metav1.APIVersions{},
 		&metav1.APIGroupList{},
@@ -65,7 +67,7 @@ func init() {
 	ParameterCodec = krt.NewParameterCodec(Scheme)
 
 	Codec = Codecs.LegacyCodec(
-		SchemeGroupVersion,
+		unversioned,
 		metav1.Unversioned,
 		monv1.SchemeGroupVersion,
 		apidiscoveryv1.SchemeGroupVersion,

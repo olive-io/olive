@@ -239,12 +239,13 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		ctx:    ctx,
 		cancel: cancel,
 
-		genericAPIServer: genericServer,
-
 		lg:       lg,
+		etcd:     etcd,
 		v3cli:    v3client.New(etcd.Server),
 		idGen:    idutil.NewGenerator(uint16(etcd.Server.ID()), time.Now()),
 		notifier: leader.NewNotify(etcd.Server),
+
+		genericAPIServer: genericServer,
 	}
 
 	restStorageProviders := []RESTStorageProvider{

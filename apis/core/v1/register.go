@@ -63,6 +63,6 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		&ProcessInstanceList{},
 		&ProcessInstanceStat{},
 	)
-
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

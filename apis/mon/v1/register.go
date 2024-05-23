@@ -68,6 +68,6 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		&RegionList{},
 		&RegionStat{},
 	)
-
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

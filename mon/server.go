@@ -74,9 +74,9 @@ type MonitorServer struct {
 	v3cli *clientv3.Client
 	idGen *idutil.Generator
 
-	genericAPIServer *genericapiserver.GenericAPIServer
-
 	notifier leader.Notifier
+
+	genericAPIServer *genericapiserver.GenericAPIServer
 
 	scheduler *schedule.Scheduler
 }

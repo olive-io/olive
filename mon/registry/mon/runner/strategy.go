@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 
-	batchv1 "k8s.io/api/batch/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,7 +61,7 @@ func (runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.G
 		groupVersion = schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
 	}
 	switch groupVersion {
-	case batchv1.SchemeGroupVersion:
+	case monv1.SchemeGroupVersion:
 		// for back compatibility
 		return rest.OrphanDependents
 	default:
@@ -72,14 +71,14 @@ func (runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.G
 
 // NamespaceScoped returns true because all runners need to be within a namespace.
 func (runnerStrategy) NamespaceScoped() bool {
-	return true
+	return false
 }
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
 func (runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
-		"batch/v1": fieldpath.NewSet(
+		"mon/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
 		),
 	}
@@ -119,7 +118,7 @@ func (runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) 
 	newRunner := obj.(*monv1.Runner)
 	var warnings []string
 	if msgs := utilvalidation.IsDNS1123Label(newRunner.Name); len(msgs) != 0 {
-		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in Pod names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
+		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in Runner names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
 	}
 	return warnings
 }
@@ -167,7 +166,7 @@ var StatusStrategy = runnerStatusStrategy{Strategy}
 // and should not be modified by the user.
 func (runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
-		"batch/v1": fieldpath.NewSet(
+		"mon/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("spec"),
 		),
 	}
