@@ -247,7 +247,6 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		notifier: leader.NewNotify(etcd.Server),
 	}
 
-	// apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(apis.GroupName, apis.Scheme, apis.ParameterCodec, apis.Codecs)
 	restStorageProviders := []RESTStorageProvider{
 		&monrest.RESTStorageProvider{},
 	}

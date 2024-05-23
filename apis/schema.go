@@ -23,7 +23,7 @@ package apis
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
@@ -36,15 +36,15 @@ import (
 
 var (
 	// Scheme defines methods for serializing and deserializing API objects.
-	Scheme = runtime.NewScheme()
+	Scheme = krt.NewScheme()
 	// Codecs provides methods for retrieving codecs and serializers for specific
 	// versions and content types.
-	Codecs = serializer.NewCodecFactory(Scheme)
+	Codecs = serializer.CodecFactory{}
 
 	// ParameterCodec handles versioning of objects that are converted to query parameters.
-	ParameterCodec = runtime.NewParameterCodec(Scheme)
+	ParameterCodec krt.ParameterCodec
 
-	Codec runtime.Codec
+	Codec krt.Codec
 )
 
 func init() {
@@ -60,6 +60,9 @@ func init() {
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
 	)
+
+	Codecs = serializer.NewCodecFactory(Scheme)
+	ParameterCodec = krt.NewParameterCodec(Scheme)
 
 	Codec = Codecs.LegacyCodec(
 		SchemeGroupVersion,
