@@ -5,7 +5,7 @@ set -euo pipefail
 source ./scripts/lib.sh
 
 GIT_SHA=$(git rev-parse --short HEAD || echo "GitNotFound")
-VERSION_SYMBOL="${ROOT_MODULE}/api/version.GitSHA"
+VERSION_SYMBOL="${ROOT_MODULE}/apis/version.GitSHA"
 
 # use go env if noset
 GOOS=${GOOS:-$(go env GOOS)}
@@ -24,16 +24,16 @@ olive_build() {
   out="bin"
   if [[ -n "${BINDIR:-}" ]]; then out="${BINDIR}"; fi
 
-  run rm -f "${out}/olive-meta"
+  run rm -f "${out}/olive-mon"
   (
-    cd ./cmd/meta
+    cd ./cmd/mon
     # Static compilation is useful when olive component is run in a container. $GO_BUILD_FLAGS is OK
     # shellcheck disable=SC2086
     run env "${GO_BUILD_ENV[@]}" go build $GO_BUILD_FLAGS \
       -trimpath \
       -installsuffix=cgo \
       "-ldflags=${GO_LDFLAGS[*]}" \
-      -o="../../${out}/olive-meta" . || return 2
+      -o="../../${out}/olive-mon" . || return 2
   ) || return 2
 
   run rm -f "${out}/olive-runner"
@@ -58,7 +58,7 @@ olive_build() {
       -o="../../${out}/olive-gateway" . || return 2
   ) || return 2
   # Verify whether symbol we overwrote exists
-  # For cross-compiling we cannot run: ${out}/olive-meta --version | grep -q "Git SHA: ${GIT_SHA}"
+  # For cross-compiling we cannot run: ${out}/olive-mon --version | grep -q "Git SHA: ${GIT_SHA}"
 
   run rm -f "${out}/olive-console"
   # shellcheck disable=SC2086
@@ -73,9 +73,9 @@ olive_build() {
 
   # We need symbols to do this check:
   if [[ "${GO_LDFLAGS[*]}" != *"-s"* ]]; then
-    go tool nm "${out}/olive-meta" | grep "${VERSION_SYMBOL}" > /dev/null
+    go tool nm "${out}/olive-mon" | grep "${VERSION_SYMBOL}" > /dev/null
     if [[ "${PIPESTATUS[*]}" != "0 0" ]]; then
-      log_error "FAIL: Symbol ${VERSION_SYMBOL} not found in binary: ${out}/olive_meta"
+      log_error "FAIL: Symbol ${VERSION_SYMBOL} not found in binary: ${out}/olive_mon"
       return 2
     fi
   fi

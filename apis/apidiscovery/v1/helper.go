@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package v1
@@ -36,15 +36,15 @@ func (m *Box) WithRef(ref string) *Box {
 	return m
 }
 
-func (m *Box) Split() map[string]*Box {
-	params := make(map[string]*Box)
+func (m *Box) Split() map[string]Box {
+	params := make(map[string]Box)
 	for name, param := range m.Parameters {
 		params[name] = param
 	}
 	return params
 }
 
-func JoinBoxes(boxes map[string]*Box) *Box {
+func JoinBoxes(boxes map[string]Box) *Box {
 	b := &Box{
 		Type:       ObjectType,
 		Parameters: boxes,
@@ -101,14 +101,14 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 		b, _ := json.Marshal(v)
 		box.Data = string(b)
 	case MapType:
-		box.Parameters = map[string]*Box{
-			"key":   &Box{Type: parseBoxType(vt.Key())},
-			"value": &Box{Type: parseBoxType(vt.Elem())},
+		box.Parameters = map[string]Box{
+			"key":   Box{Type: parseBoxType(vt.Key())},
+			"value": Box{Type: parseBoxType(vt.Elem())},
 		}
 		b, _ := json.Marshal(v)
 		box.Data = string(b)
 	case ObjectType:
-		params := make(map[string]*Box)
+		params := make(map[string]Box)
 		for i := 0; i < vt.NumField(); i++ {
 			vf := vt.Field(i)
 			tag := vf.Tag.Get("json")
@@ -117,7 +117,7 @@ func boxFromAny(vt reflect.Type, v any) *Box {
 			}
 			vfv := reflect.New(vf.Type).Interface()
 			fb := boxFromAny(vf.Type, vfv)
-			params[tag] = fb
+			params[tag] = *fb
 		}
 		box.Parameters = params
 		b, _ := json.Marshal(v)
@@ -236,7 +236,7 @@ func decodeBox(box *Box, data []byte, paths string) error {
 				root = paths + "." + root
 			}
 			box.Data = string(data)
-			if err := decodeBox(param, data, root); err != nil {
+			if err := decodeBox(&param, data, root); err != nil {
 				return err
 			}
 		}
@@ -272,7 +272,7 @@ func encodeBox(box *Box) any {
 	case ObjectType:
 		out := map[string]any{}
 		for name, param := range box.Parameters {
-			out[name] = encodeBox(param)
+			out[name] = encodeBox(&param)
 		}
 		if len(box.Data) != 0 {
 			_ = json.Unmarshal([]byte(box.Data), &out)

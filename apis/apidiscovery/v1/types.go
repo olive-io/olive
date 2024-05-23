@@ -1,22 +1,22 @@
 /*
-   Copyright 2024 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package v1
@@ -37,18 +37,16 @@ const (
 	MapType     = BoxType("map")
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:deepcopy-gen:true
 
 // Box is an opaque value for a request or response
 type Box struct {
-	metav1.TypeMeta `json:",inline"`
-
 	Type BoxType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=BoxType"`
 	// Box Value by json.Marshal
 	Data string `json:"data" protobuf:"bytes,2,opt,name=data"`
 	// the reference, points to OpenAPI Component when type is Object
-	Ref        string          `json:"ref" protobuf:"bytes,3,opt,name=ref"`
-	Parameters map[string]*Box `json:"parameters" protobuf:"bytes,4,rep,name=parameters"`
+	Ref        string         `json:"ref" protobuf:"bytes,3,opt,name=ref"`
+	Parameters map[string]Box `json:"parameters" protobuf:"bytes,4,rep,name=parameters"`
 }
 
 // +genclient
@@ -67,7 +65,6 @@ type EndpointSpec struct {
 	Response Box `json:"response" protobuf:"bytes,2,opt,name=response"`
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // EndpointList is a list of Endpoint objects.
@@ -95,7 +92,6 @@ type NodeSpec struct {
 	Port    int64  `json:"port" protobuf:"varint,2,opt,name=port"`
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // NodeList is a list of Node objects.
@@ -125,7 +121,6 @@ type ServiceSpec struct {
 	Ttl       int64      `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ServiceList is a list of Service objects.
@@ -190,7 +185,6 @@ type ConsumerSpec struct {
 	Response Box          `json:"response" protobuf:"bytes,4,opt,name=response"`
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ConsumerList is a list of Consumer objects.
@@ -218,7 +212,6 @@ type YardSpec struct {
 	Consumers map[string]Consumer `json:"consumers" protobuf:"bytes,2,rep,name=consumers"`
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // YardList is a list of Yard objects.

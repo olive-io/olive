@@ -14,7 +14,7 @@ THIS_PKG="github.com/olive-io/olive"
 
 kube::codegen::gen_helpers \
     --boilerplate "${SCRIPT_ROOT}/../hack/boilerplate.go.txt" \
-    "${SCRIPT_ROOT}/apis"
+    "${SCRIPT_ROOT}"
 
 if [[ -n "${API_KNOWN_VIOLATIONS_DIR:-}" ]]; then
     report_filename="${API_KNOWN_VIOLATIONS_DIR}/olive_violation_exceptions.list"

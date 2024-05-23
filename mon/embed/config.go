@@ -313,10 +313,6 @@ type Config struct {
 	ExperimentalCorruptCheckTime        time.Duration `json:"experimental-corrupt-check-time"`
 	ExperimentalCompactHashCheckEnabled bool          `json:"experimental-compact-hash-check-enabled"`
 	ExperimentalCompactHashCheckTime    time.Duration `json:"experimental-compact-hash-check-time"`
-	// ExperimentalEnableV2V3 configures URLs that expose deprecated V2 API working on V3 store.
-	// Deprecated in v3.5.
-	// TODO: Delete in v3.6 (https://github.com/etcd-io/etcd/issues/12913)
-	ExperimentalEnableV2V3 string `json:"experimental-enable-v2v3"`
 	// ExperimentalEnableLeaseCheckpoint enables leader to send regular checkpoints to other members to prevent reset of remaining TTL on leader change.
 	ExperimentalEnableLeaseCheckpoint bool `json:"experimental-enable-lease-checkpoint"`
 	// ExperimentalEnableLeaseCheckpointPersist enables persisting remainingTTL to prevent indefinite auto-renewal of long lived leases. Always enabled in v3.6. Should be used to ensure smooth upgrade from v3.5 clusters with this feature enabled.

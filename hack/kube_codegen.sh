@@ -745,7 +745,7 @@ function kube::codegen::gen_protobuf() {
             --apimachinery-packages \
             "+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,+k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1" \
             --go-header-file "${boilerplate}" \
-            "${input_pkgs[@]}"
+            --packages "$(echo ${input_pkgs[@]} | tr -s " " ",")"
     fi
 
 #    touch "${report}" # in case it doesn't exist yet

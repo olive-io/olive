@@ -39,12 +39,12 @@ function package {
   if [ "${GOOS}" == "windows" ]; then
     ext=".exe"
   fi
-  for bin in olive-meta olive-runner olive-gateway; do
+  for bin in olive-mon olive-runner olive-gateway; do
     cp "${srcdir}/${bin}" "${target}/${bin}${ext}"
   done
 
   cp olive/README.md "${target}"/README.md
-  cp meta/README.md "${target}"/README-meta.md
+  cp mon/README.md "${target}"/README-mon.md
   cp runner/README.md "${target}"/README-runner.md
   cp gateway/README.md "${target}"/README-gateway.md
 

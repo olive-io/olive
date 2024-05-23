@@ -1,22 +1,22 @@
 /*
-   Copyright 2024 The olive Authors
+Copyright 2024 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package mon
@@ -58,7 +58,7 @@ func withKeyEnd(key string) string {
 
 type decodeFunc func(kv *mvccpb.KeyValue) error
 
-func (s *Server) get(ctx context.Context, key string, target proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, *mvccpb.KeyValue, error) {
+func (s *MonitorServer) get(ctx context.Context, key string, target proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, *mvccpb.KeyValue, error) {
 	rsp, err := s.v3cli.Get(ctx, key, opts...)
 	if err != nil {
 		return nil, nil, err
@@ -78,7 +78,7 @@ func (s *Server) get(ctx context.Context, key string, target proto.Message, opts
 	return rsp.Header, kv, nil
 }
 
-func (s *Server) put(ctx context.Context, key string, value proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
+func (s *MonitorServer) put(ctx context.Context, key string, value proto.Message, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
 	data, _ := proto.Marshal(value)
 	rsp, err := s.v3cli.Put(ctx, key, string(data), opts...)
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *Server) put(ctx context.Context, key string, value proto.Message, opts 
 	return rsp.Header, nil
 }
 
-func (s *Server) del(ctx context.Context, key string, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
+func (s *MonitorServer) del(ctx context.Context, key string, opts ...clientv3.OpOption) (*etcdserverpb.ResponseHeader, error) {
 	rsp, err := s.v3cli.Delete(ctx, key, opts...)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (s *Server) del(ctx context.Context, key string, opts ...clientv3.OpOption)
 	return rsp.Header, nil
 }
 
-func (s *Server) list(ctx context.Context, key string, fn decodeFunc) error {
+func (s *MonitorServer) list(ctx context.Context, key string, fn decodeFunc) error {
 	if fn == nil {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (s *Server) list(ctx context.Context, key string, fn decodeFunc) error {
 	return nil
 }
 
-func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int64, continueToken string, fn decodeFunc) (next string, err error) {
+func (s *MonitorServer) pageList(ctx context.Context, preparedKey string, reqLimit int64, continueToken string, fn decodeFunc) (next string, err error) {
 	keyPrefix := preparedKey
 	options := []clientv3.OpOption{
 		clientv3.WithPrefix(),
@@ -229,7 +229,7 @@ func (s *Server) pageList(ctx context.Context, preparedKey string, reqLimit int6
 	return
 }
 
-func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
+func (s *MonitorServer) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
 	key := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
@@ -239,7 +239,7 @@ func (s *Server) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, e
 	return
 }
 
-func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
+func (s *MonitorServer) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
 	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
@@ -256,7 +256,7 @@ func (s *Server) getRegion(ctx context.Context, id uint64) (region *pb.Region, e
 	return
 }
 
-func (s *Server) mustBeRoot(ctx context.Context) (*authv1.User, error) {
+func (s *MonitorServer) mustBeRoot(ctx context.Context) (*authv1.User, error) {
 	user, err := s.currentUser(ctx)
 	if err != nil {
 		return nil, err
@@ -268,7 +268,7 @@ func (s *Server) mustBeRoot(ctx context.Context) (*authv1.User, error) {
 	return user, nil
 }
 
-func (s *Server) currentUser(ctx context.Context) (*authv1.User, error) {
+func (s *MonitorServer) currentUser(ctx context.Context) (*authv1.User, error) {
 	user := &authv1.User{}
 	ok, err := mdutil.GetMsg(ctx, rpctypes.UserNameGRPC, user)
 	if err != nil {
@@ -280,7 +280,7 @@ func (s *Server) currentUser(ctx context.Context) (*authv1.User, error) {
 	return user, nil
 }
 
-func (s *Server) unaryInterceptor() func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (s *MonitorServer) unaryInterceptor() func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 
 		if !s.notifier.IsLeader() {
@@ -331,12 +331,12 @@ func (s *Server) unaryInterceptor() func(ctx context.Context, req interface{}, i
 	}
 }
 
-func (s *Server) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error {
+func (s *MonitorServer) prepareReq(ctx context.Context, scopes ...*authv1.Scope) error {
 
 	return nil
 }
 
-func (s *Server) bearerAuth(ctx context.Context, token string) (*authv1.User, error) {
+func (s *MonitorServer) bearerAuth(ctx context.Context, token string) (*authv1.User, error) {
 	user, err := jwt.ParseToken(token)
 	if err != nil {
 		return nil, err
@@ -344,7 +344,7 @@ func (s *Server) bearerAuth(ctx context.Context, token string) (*authv1.User, er
 	return user, nil
 }
 
-func (s *Server) basicAuth(ctx context.Context, token string) (*authv1.User, error) {
+func (s *MonitorServer) basicAuth(ctx context.Context, token string) (*authv1.User, error) {
 	encodeText, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
 		return nil, rpctypes.ErrGRPCInvalidAuthToken
@@ -368,11 +368,11 @@ func (s *Server) basicAuth(ctx context.Context, token string) (*authv1.User, err
 	return user, nil
 }
 
-func (s *Server) admit(ctx context.Context, role, user string, scope *authv1.Scope) error {
+func (s *MonitorServer) admit(ctx context.Context, role, user string, scope *authv1.Scope) error {
 	return nil
 }
 
-func (s *Server) responseHeader() *pb.ResponseHeader {
+func (s *MonitorServer) responseHeader() *pb.ResponseHeader {
 	es := s.etcd.Server
 	header := &pb.ResponseHeader{
 		ClusterId: uint64(es.Cluster().ID()),
@@ -382,7 +382,7 @@ func (s *Server) responseHeader() *pb.ResponseHeader {
 	return header
 }
 
-func (s *Server) buildGRPCConn(ctx context.Context, targetURL string) (*grpc.ClientConn, error) {
+func (s *MonitorServer) buildGRPCConn(ctx context.Context, targetURL string) (*grpc.ClientConn, error) {
 	url, err := urlpkg.Parse(targetURL)
 	if err != nil {
 		return nil, err

@@ -1,22 +1,22 @@
 /*
-   Copyright 2024 The olive Authors
+Copyright 2024 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package mon
@@ -45,11 +45,11 @@ type authServer struct {
 	pb.UnsafeAuthRPCServer
 	pb.UnsafeRbacRPCServer
 
-	*Server
+	*MonitorServer
 }
 
-func newAuthServer(s *Server) (*authServer, error) {
-	as := &authServer{Server: s}
+func newAuthServer(s *MonitorServer) (*authServer, error) {
+	as := &authServer{MonitorServer: s}
 
 	return as, nil
 }
@@ -431,7 +431,7 @@ func (s *authServer) Authenticate(ctx context.Context, req *pb.AuthenticateReque
 		return nil, rpctypes.ErrGRPCAuthFailed
 	}
 
-	expire := time.Second * time.Duration(s.cfg.AuthTokenTTL)
+	expire := time.Second * time.Duration(s.etcdConfig.AuthTokenTTL)
 	token, err := jwt.NewClaims(user).GenerateToken(expire)
 	if err != nil {
 		return nil, err
