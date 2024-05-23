@@ -62,17 +62,17 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStat":     schema_olive_apis_core_v1_ProcessInstanceStat(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStatus":   schema_olive_apis_core_v1_ProcessInstanceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":     schema_olive_apis_core_v1_ProcessRunningState(ref),
-		"github.com/olive-io/olive/apis/meta/v1.Region":                  schema_olive_apis_meta_v1_Region(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RegionList":              schema_olive_apis_meta_v1_RegionList(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RegionReplica":           schema_olive_apis_meta_v1_RegionReplica(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RegionSpec":              schema_olive_apis_meta_v1_RegionSpec(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RegionStat":              schema_olive_apis_meta_v1_RegionStat(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RegionStatus":            schema_olive_apis_meta_v1_RegionStatus(ref),
-		"github.com/olive-io/olive/apis/meta/v1.Runner":                  schema_olive_apis_meta_v1_Runner(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RunnerList":              schema_olive_apis_meta_v1_RunnerList(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RunnerSpec":              schema_olive_apis_meta_v1_RunnerSpec(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RunnerStat":              schema_olive_apis_meta_v1_RunnerStat(ref),
-		"github.com/olive-io/olive/apis/meta/v1.RunnerStatus":            schema_olive_apis_meta_v1_RunnerStatus(ref),
+		"github.com/olive-io/olive/apis/mon/v1.Region":                   schema_olive_apis_mon_v1_Region(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RegionList":               schema_olive_apis_mon_v1_RegionList(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RegionReplica":            schema_olive_apis_mon_v1_RegionReplica(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RegionSpec":               schema_olive_apis_mon_v1_RegionSpec(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RegionStat":               schema_olive_apis_mon_v1_RegionStat(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RegionStatus":             schema_olive_apis_mon_v1_RegionStatus(ref),
+		"github.com/olive-io/olive/apis/mon/v1.Runner":                   schema_olive_apis_mon_v1_Runner(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RunnerList":               schema_olive_apis_mon_v1_RunnerList(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RunnerSpec":               schema_olive_apis_mon_v1_RunnerSpec(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RunnerStat":               schema_olive_apis_mon_v1_RunnerStat(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RunnerStatus":             schema_olive_apis_mon_v1_RunnerStatus(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                  schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":              schema_pkg_apis_meta_v1_APIGroupList(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":               schema_pkg_apis_meta_v1_APIResource(ref),
@@ -1516,7 +1516,7 @@ func schema_olive_apis_core_v1_ProcessRunningState(ref common.ReferenceCallback)
 	}
 }
 
-func schema_olive_apis_meta_v1_Region(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_Region(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1546,13 +1546,13 @@ func schema_olive_apis_meta_v1_Region(ref common.ReferenceCallback) common.OpenA
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/meta/v1.RegionSpec"),
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RegionSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/meta/v1.RegionStatus"),
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RegionStatus"),
 						},
 					},
 				},
@@ -1560,11 +1560,11 @@ func schema_olive_apis_meta_v1_Region(ref common.ReferenceCallback) common.OpenA
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/meta/v1.RegionSpec", "github.com/olive-io/olive/apis/meta/v1.RegionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/mon/v1.RegionSpec", "github.com/olive-io/olive/apis/mon/v1.RegionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_olive_apis_meta_v1_RegionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RegionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1599,7 +1599,7 @@ func schema_olive_apis_meta_v1_RegionList(ref common.ReferenceCallback) common.O
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/meta/v1.Region"),
+										Ref:     ref("github.com/olive-io/olive/apis/mon/v1.Region"),
 									},
 								},
 							},
@@ -1610,11 +1610,11 @@ func schema_olive_apis_meta_v1_RegionList(ref common.ReferenceCallback) common.O
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/meta/v1.Region", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/olive-io/olive/apis/mon/v1.Region", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_olive_apis_meta_v1_RegionReplica(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RegionReplica(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1676,7 +1676,7 @@ func schema_olive_apis_meta_v1_RegionReplica(ref common.ReferenceCallback) commo
 	}
 }
 
-func schema_olive_apis_meta_v1_RegionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RegionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1704,7 +1704,7 @@ func schema_olive_apis_meta_v1_RegionSpec(ref common.ReferenceCallback) common.O
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/meta/v1.RegionReplica"),
+										Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RegionReplica"),
 									},
 								},
 							},
@@ -1750,11 +1750,11 @@ func schema_olive_apis_meta_v1_RegionSpec(ref common.ReferenceCallback) common.O
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/meta/v1.RegionReplica"},
+			"github.com/olive-io/olive/apis/mon/v1.RegionReplica"},
 	}
 }
 
-func schema_olive_apis_meta_v1_RegionStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RegionStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1853,7 +1853,7 @@ func schema_olive_apis_meta_v1_RegionStat(ref common.ReferenceCallback) common.O
 	}
 }
 
-func schema_olive_apis_meta_v1_RegionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RegionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1873,7 +1873,7 @@ func schema_olive_apis_meta_v1_RegionStatus(ref common.ReferenceCallback) common
 	}
 }
 
-func schema_olive_apis_meta_v1_Runner(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_Runner(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1903,13 +1903,13 @@ func schema_olive_apis_meta_v1_Runner(ref common.ReferenceCallback) common.OpenA
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/meta/v1.RunnerSpec"),
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RunnerSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/meta/v1.RunnerStatus"),
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RunnerStatus"),
 						},
 					},
 				},
@@ -1917,11 +1917,11 @@ func schema_olive_apis_meta_v1_Runner(ref common.ReferenceCallback) common.OpenA
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/meta/v1.RunnerSpec", "github.com/olive-io/olive/apis/meta/v1.RunnerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/mon/v1.RunnerSpec", "github.com/olive-io/olive/apis/mon/v1.RunnerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_olive_apis_meta_v1_RunnerList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RunnerList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1956,7 +1956,7 @@ func schema_olive_apis_meta_v1_RunnerList(ref common.ReferenceCallback) common.O
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/meta/v1.Runner"),
+										Ref:     ref("github.com/olive-io/olive/apis/mon/v1.Runner"),
 									},
 								},
 							},
@@ -1967,11 +1967,11 @@ func schema_olive_apis_meta_v1_RunnerList(ref common.ReferenceCallback) common.O
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/meta/v1.Runner", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/olive-io/olive/apis/mon/v1.Runner", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_olive_apis_meta_v1_RunnerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RunnerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2038,7 +2038,7 @@ func schema_olive_apis_meta_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 	}
 }
 
-func schema_olive_apis_meta_v1_RunnerStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RunnerStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2151,7 +2151,7 @@ func schema_olive_apis_meta_v1_RunnerStat(ref common.ReferenceCallback) common.O
 	}
 }
 
-func schema_olive_apis_meta_v1_RunnerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_RunnerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{

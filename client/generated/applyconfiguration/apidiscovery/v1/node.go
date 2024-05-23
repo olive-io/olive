@@ -44,7 +44,7 @@ func Node(name, namespace string) *NodeApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Node")
-	b.WithAPIVersion("discovery.olive.io/v1")
+	b.WithAPIVersion("apidiscovery.olive.io/v1")
 	return b
 }
 

@@ -67,13 +67,13 @@ func NewFilteredYardInformer(client versioned.Interface, namespace string, resyn
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.DiscoveryV1().Yards(namespace).List(context.TODO(), options)
+				return client.ApidiscoveryV1().Yards(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.DiscoveryV1().Yards(namespace).Watch(context.TODO(), options)
+				return client.ApidiscoveryV1().Yards(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&apidiscoveryv1.Yard{},

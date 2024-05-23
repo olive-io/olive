@@ -65,7 +65,7 @@ type endpoints struct {
 }
 
 // newEndpoints returns a Endpoints
-func newEndpoints(c *DiscoveryV1Client, namespace string) *endpoints {
+func newEndpoints(c *ApidiscoveryV1Client, namespace string) *endpoints {
 	return &endpoints{
 		client: c.RESTClient(),
 		ns:     namespace,

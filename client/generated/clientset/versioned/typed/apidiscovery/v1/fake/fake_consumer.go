@@ -39,7 +39,7 @@ import (
 
 // FakeConsumers implements ConsumerInterface
 type FakeConsumers struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

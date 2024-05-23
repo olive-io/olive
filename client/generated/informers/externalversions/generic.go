@@ -28,7 +28,7 @@ import (
 
 	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	metav1 "github.com/olive-io/olive/apis/meta/v1"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -59,37 +59,37 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=discovery.olive.io, Version=v1
+	// Group=apidiscovery.olive.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("consumers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().Consumers().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Consumers().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("consumerlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().ConsumerLists().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().ConsumerLists().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("endpoints"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().Endpoints().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Endpoints().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("endpointlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().EndpointLists().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().EndpointLists().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("nodes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().Nodes().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Nodes().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("nodelists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().NodeLists().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().NodeLists().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("services"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().Services().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Services().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("servicelists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().ServiceLists().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().ServiceLists().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("yards"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().Yards().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Yards().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("yardlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Discovery().V1().YardLists().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().YardLists().Informer()}, nil
 
-		// Group=meta.olive.io, Version=v1
-	case metav1.SchemeGroupVersion.WithResource("regions"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Meta().V1().Regions().Informer()}, nil
-	case metav1.SchemeGroupVersion.WithResource("regionlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Meta().V1().RegionLists().Informer()}, nil
-	case metav1.SchemeGroupVersion.WithResource("runners"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Meta().V1().Runners().Informer()}, nil
-	case metav1.SchemeGroupVersion.WithResource("runnerlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Meta().V1().RunnerLists().Informer()}, nil
+		// Group=mon.olive.io, Version=v1
+	case monv1.SchemeGroupVersion.WithResource("regions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Mon().V1().Regions().Informer()}, nil
+	case monv1.SchemeGroupVersion.WithResource("regionlists"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Mon().V1().RegionLists().Informer()}, nil
+	case monv1.SchemeGroupVersion.WithResource("runners"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Mon().V1().Runners().Informer()}, nil
+	case monv1.SchemeGroupVersion.WithResource("runnerlists"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Mon().V1().RunnerLists().Informer()}, nil
 
 		// Group=olive.io, Version=v1
 	case corev1.SchemeGroupVersion.WithResource("definitions"):

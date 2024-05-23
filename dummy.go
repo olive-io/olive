@@ -24,7 +24,7 @@ package olive
 import (
 	_ "github.com/olive-io/olive/client"
 	_ "github.com/olive-io/olive/gateway"
-	_ "github.com/olive-io/olive/meta"
+	_ "github.com/olive-io/olive/mon"
 	_ "github.com/olive-io/olive/pkg/runtime"
 	_ "github.com/olive-io/olive/runner"
 

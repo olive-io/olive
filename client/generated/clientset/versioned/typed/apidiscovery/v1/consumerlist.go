@@ -65,7 +65,7 @@ type consumerLists struct {
 }
 
 // newConsumerLists returns a ConsumerLists
-func newConsumerLists(c *DiscoveryV1Client, namespace string) *consumerLists {
+func newConsumerLists(c *ApidiscoveryV1Client, namespace string) *consumerLists {
 	return &consumerLists{
 		client: c.RESTClient(),
 		ns:     namespace,

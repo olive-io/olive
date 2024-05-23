@@ -38,7 +38,7 @@ import (
 
 // FakeNodeLists implements NodeListInterface
 type FakeNodeLists struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

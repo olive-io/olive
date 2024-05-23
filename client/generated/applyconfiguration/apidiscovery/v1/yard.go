@@ -44,7 +44,7 @@ func Yard(name, namespace string) *YardApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Yard")
-	b.WithAPIVersion("discovery.olive.io/v1")
+	b.WithAPIVersion("apidiscovery.olive.io/v1")
 	return b
 }
 

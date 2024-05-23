@@ -65,7 +65,7 @@ type serviceLists struct {
 }
 
 // newServiceLists returns a ServiceLists
-func newServiceLists(c *DiscoveryV1Client, namespace string) *serviceLists {
+func newServiceLists(c *ApidiscoveryV1Client, namespace string) *serviceLists {
 	return &serviceLists{
 		client: c.RESTClient(),
 		ns:     namespace,

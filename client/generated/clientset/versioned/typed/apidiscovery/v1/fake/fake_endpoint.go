@@ -39,7 +39,7 @@ import (
 
 // FakeEndpoints implements EndpointInterface
 type FakeEndpoints struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

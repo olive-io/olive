@@ -38,7 +38,7 @@ import (
 
 // FakeServiceLists implements ServiceListInterface
 type FakeServiceLists struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

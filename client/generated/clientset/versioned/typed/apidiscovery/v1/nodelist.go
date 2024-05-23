@@ -65,7 +65,7 @@ type nodeLists struct {
 }
 
 // newNodeLists returns a NodeLists
-func newNodeLists(c *DiscoveryV1Client, namespace string) *nodeLists {
+func newNodeLists(c *ApidiscoveryV1Client, namespace string) *nodeLists {
 	return &nodeLists{
 		client: c.RESTClient(),
 		ns:     namespace,

@@ -27,9 +27,9 @@ import (
 	"fmt"
 	"net/http"
 
-	discoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
 	olivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
-	metav1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/meta/v1"
+	monv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -37,22 +37,22 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	DiscoveryV1() discoveryv1.DiscoveryV1Interface
+	ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface
 	OliveV1() olivev1.OliveV1Interface
-	MetaV1() metav1.MetaV1Interface
+	MonV1() monv1.MonV1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	discoveryV1 *discoveryv1.DiscoveryV1Client
-	oliveV1     *olivev1.OliveV1Client
-	metaV1      *metav1.MetaV1Client
+	apidiscoveryV1 *apidiscoveryv1.ApidiscoveryV1Client
+	oliveV1        *olivev1.OliveV1Client
+	monV1          *monv1.MonV1Client
 }
 
-// DiscoveryV1 retrieves the DiscoveryV1Client
-func (c *Clientset) DiscoveryV1() discoveryv1.DiscoveryV1Interface {
-	return c.discoveryV1
+// ApidiscoveryV1 retrieves the ApidiscoveryV1Client
+func (c *Clientset) ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface {
+	return c.apidiscoveryV1
 }
 
 // OliveV1 retrieves the OliveV1Client
@@ -60,9 +60,9 @@ func (c *Clientset) OliveV1() olivev1.OliveV1Interface {
 	return c.oliveV1
 }
 
-// MetaV1 retrieves the MetaV1Client
-func (c *Clientset) MetaV1() metav1.MetaV1Interface {
-	return c.metaV1
+// MonV1 retrieves the MonV1Client
+func (c *Clientset) MonV1() monv1.MonV1Interface {
+	return c.monV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -109,7 +109,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.discoveryV1, err = discoveryv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.apidiscoveryV1, err = apidiscoveryv1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
-	cs.metaV1, err = metav1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.monV1, err = monv1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +142,9 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.discoveryV1 = discoveryv1.New(c)
+	cs.apidiscoveryV1 = apidiscoveryv1.New(c)
 	cs.oliveV1 = olivev1.New(c)
-	cs.metaV1 = metav1.New(c)
+	cs.monV1 = monv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

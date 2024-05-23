@@ -26,10 +26,10 @@ package applyconfiguration
 import (
 	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	metav1 "github.com/olive-io/olive/apis/meta/v1"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	apidiscoveryv1 "github.com/olive-io/olive/client/generated/applyconfiguration/apidiscovery/v1"
 	applyconfigurationcorev1 "github.com/olive-io/olive/client/generated/applyconfiguration/core/v1"
-	applyconfigurationmetav1 "github.com/olive-io/olive/client/generated/applyconfiguration/meta/v1"
+	applyconfigurationmonv1 "github.com/olive-io/olive/client/generated/applyconfiguration/mon/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -37,7 +37,7 @@ import (
 // apply configuration type exists for the given GroupVersionKind.
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
-	// Group=discovery.olive.io, Version=v1
+	// Group=apidiscovery.olive.io, Version=v1
 	case v1.SchemeGroupVersion.WithKind("Box"):
 		return &apidiscoveryv1.BoxApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Consumer"):
@@ -61,21 +61,21 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	case v1.SchemeGroupVersion.WithKind("YardSpec"):
 		return &apidiscoveryv1.YardSpecApplyConfiguration{}
 
-		// Group=meta.olive.io, Version=v1
-	case metav1.SchemeGroupVersion.WithKind("Region"):
-		return &applyconfigurationmetav1.RegionApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("RegionReplica"):
-		return &applyconfigurationmetav1.RegionReplicaApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("RegionSpec"):
-		return &applyconfigurationmetav1.RegionSpecApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("RegionStatus"):
-		return &applyconfigurationmetav1.RegionStatusApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("Runner"):
-		return &applyconfigurationmetav1.RunnerApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("RunnerSpec"):
-		return &applyconfigurationmetav1.RunnerSpecApplyConfiguration{}
-	case metav1.SchemeGroupVersion.WithKind("RunnerStatus"):
-		return &applyconfigurationmetav1.RunnerStatusApplyConfiguration{}
+		// Group=mon.olive.io, Version=v1
+	case monv1.SchemeGroupVersion.WithKind("Region"):
+		return &applyconfigurationmonv1.RegionApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RegionReplica"):
+		return &applyconfigurationmonv1.RegionReplicaApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RegionSpec"):
+		return &applyconfigurationmonv1.RegionSpecApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RegionStatus"):
+		return &applyconfigurationmonv1.RegionStatusApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("Runner"):
+		return &applyconfigurationmonv1.RunnerApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RunnerSpec"):
+		return &applyconfigurationmonv1.RunnerSpecApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RunnerStatus"):
+		return &applyconfigurationmonv1.RunnerStatusApplyConfiguration{}
 
 		// Group=olive.io, Version=v1
 	case corev1.SchemeGroupVersion.WithKind("Definition"):

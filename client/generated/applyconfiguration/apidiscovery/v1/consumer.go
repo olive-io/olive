@@ -44,7 +44,7 @@ func Consumer(name, namespace string) *ConsumerApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Consumer")
-	b.WithAPIVersion("discovery.olive.io/v1")
+	b.WithAPIVersion("apidiscovery.olive.io/v1")
 	return b
 }
 

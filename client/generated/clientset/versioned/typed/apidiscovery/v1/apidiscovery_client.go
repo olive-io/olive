@@ -31,7 +31,7 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type DiscoveryV1Interface interface {
+type ApidiscoveryV1Interface interface {
 	RESTClient() rest.Interface
 	ConsumersGetter
 	ConsumerListsGetter
@@ -45,55 +45,55 @@ type DiscoveryV1Interface interface {
 	YardListsGetter
 }
 
-// DiscoveryV1Client is used to interact with features provided by the discovery.olive.io group.
-type DiscoveryV1Client struct {
+// ApidiscoveryV1Client is used to interact with features provided by the apidiscovery.olive.io group.
+type ApidiscoveryV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *DiscoveryV1Client) Consumers(namespace string) ConsumerInterface {
+func (c *ApidiscoveryV1Client) Consumers(namespace string) ConsumerInterface {
 	return newConsumers(c, namespace)
 }
 
-func (c *DiscoveryV1Client) ConsumerLists(namespace string) ConsumerListInterface {
+func (c *ApidiscoveryV1Client) ConsumerLists(namespace string) ConsumerListInterface {
 	return newConsumerLists(c, namespace)
 }
 
-func (c *DiscoveryV1Client) Endpoints(namespace string) EndpointInterface {
+func (c *ApidiscoveryV1Client) Endpoints(namespace string) EndpointInterface {
 	return newEndpoints(c, namespace)
 }
 
-func (c *DiscoveryV1Client) EndpointLists(namespace string) EndpointListInterface {
+func (c *ApidiscoveryV1Client) EndpointLists(namespace string) EndpointListInterface {
 	return newEndpointLists(c, namespace)
 }
 
-func (c *DiscoveryV1Client) Nodes(namespace string) NodeInterface {
+func (c *ApidiscoveryV1Client) Nodes(namespace string) NodeInterface {
 	return newNodes(c, namespace)
 }
 
-func (c *DiscoveryV1Client) NodeLists(namespace string) NodeListInterface {
+func (c *ApidiscoveryV1Client) NodeLists(namespace string) NodeListInterface {
 	return newNodeLists(c, namespace)
 }
 
-func (c *DiscoveryV1Client) Services(namespace string) ServiceInterface {
+func (c *ApidiscoveryV1Client) Services(namespace string) ServiceInterface {
 	return newServices(c, namespace)
 }
 
-func (c *DiscoveryV1Client) ServiceLists(namespace string) ServiceListInterface {
+func (c *ApidiscoveryV1Client) ServiceLists(namespace string) ServiceListInterface {
 	return newServiceLists(c, namespace)
 }
 
-func (c *DiscoveryV1Client) Yards(namespace string) YardInterface {
+func (c *ApidiscoveryV1Client) Yards(namespace string) YardInterface {
 	return newYards(c, namespace)
 }
 
-func (c *DiscoveryV1Client) YardLists(namespace string) YardListInterface {
+func (c *ApidiscoveryV1Client) YardLists(namespace string) YardListInterface {
 	return newYardLists(c, namespace)
 }
 
-// NewForConfig creates a new DiscoveryV1Client for the given config.
+// NewForConfig creates a new ApidiscoveryV1Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*DiscoveryV1Client, error) {
+func NewForConfig(c *rest.Config) (*ApidiscoveryV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -105,9 +105,9 @@ func NewForConfig(c *rest.Config) (*DiscoveryV1Client, error) {
 	return NewForConfigAndClient(&config, httpClient)
 }
 
-// NewForConfigAndClient creates a new DiscoveryV1Client for the given config and http client.
+// NewForConfigAndClient creates a new ApidiscoveryV1Client for the given config and http client.
 // Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*DiscoveryV1Client, error) {
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*ApidiscoveryV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -116,12 +116,12 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*DiscoveryV1Client, 
 	if err != nil {
 		return nil, err
 	}
-	return &DiscoveryV1Client{client}, nil
+	return &ApidiscoveryV1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new DiscoveryV1Client for the given config and
+// NewForConfigOrDie creates a new ApidiscoveryV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *DiscoveryV1Client {
+func NewForConfigOrDie(c *rest.Config) *ApidiscoveryV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -129,9 +129,9 @@ func NewForConfigOrDie(c *rest.Config) *DiscoveryV1Client {
 	return client
 }
 
-// New creates a new DiscoveryV1Client for the given RESTClient.
-func New(c rest.Interface) *DiscoveryV1Client {
-	return &DiscoveryV1Client{c}
+// New creates a new ApidiscoveryV1Client for the given RESTClient.
+func New(c rest.Interface) *ApidiscoveryV1Client {
+	return &ApidiscoveryV1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -149,7 +149,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *DiscoveryV1Client) RESTClient() rest.Interface {
+func (c *ApidiscoveryV1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

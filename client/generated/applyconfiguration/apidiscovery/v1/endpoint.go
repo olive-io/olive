@@ -44,7 +44,7 @@ func Endpoint(name, namespace string) *EndpointApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Endpoint")
-	b.WithAPIVersion("discovery.olive.io/v1")
+	b.WithAPIVersion("apidiscovery.olive.io/v1")
 	return b
 }
 

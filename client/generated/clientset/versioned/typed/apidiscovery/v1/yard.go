@@ -65,7 +65,7 @@ type yards struct {
 }
 
 // newYards returns a Yards
-func newYards(c *DiscoveryV1Client, namespace string) *yards {
+func newYards(c *ApidiscoveryV1Client, namespace string) *yards {
 	return &yards{
 		client: c.RESTClient(),
 		ns:     namespace,

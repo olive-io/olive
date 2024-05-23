@@ -65,7 +65,7 @@ type endpointLists struct {
 }
 
 // newEndpointLists returns a EndpointLists
-func newEndpointLists(c *DiscoveryV1Client, namespace string) *endpointLists {
+func newEndpointLists(c *ApidiscoveryV1Client, namespace string) *endpointLists {
 	return &endpointLists{
 		client: c.RESTClient(),
 		ns:     namespace,

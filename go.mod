@@ -7,22 +7,18 @@ require (
 	github.com/olive-io/olive/client v0.1.1
 	github.com/olive-io/olive/console v0.1.1
 	github.com/olive-io/olive/gateway v0.1.1
-	github.com/olive-io/olive/meta v0.1.1
+	github.com/olive-io/olive/mon v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/olive-io/olive/runner v0.1.1
 	github.com/olive-io/olive/tests v0.1.1
 	github.com/spf13/cobra v1.8.0
 	github.com/ugorji/go/codec v1.2.12 // used by tonic and gin@v1.9.x
 	go.etcd.io/etcd/server/v3 v3.5.13
-	golang.org/x/mod v0.15.0
 	google.golang.org/protobuf v1.34.1
-	k8s.io/apimachinery v0.30.1
+	k8s.io/apimachinery v0.30.1 // indirect
 )
 
-require (
-	k8s.io/client-go v0.30.1
-	k8s.io/code-generator v0.30.1
-)
+require k8s.io/code-generator v0.30.1
 
 require (
 	github.com/ChrisTrenkamp/xsel v0.9.15 // indirect
@@ -173,6 +169,7 @@ require (
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
@@ -191,6 +188,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.30.1 // indirect
 	k8s.io/apiserver v0.30.1 // indirect
+	k8s.io/client-go v0.30.1 // indirect
 	k8s.io/component-base v0.30.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
@@ -207,7 +205,7 @@ replace (
 	github.com/olive-io/olive/client => ./client
 	github.com/olive-io/olive/console => ./console
 	github.com/olive-io/olive/gateway => ./gateway
-	github.com/olive-io/olive/meta => ./meta
+	github.com/olive-io/olive/mon => ./mon
 	github.com/olive-io/olive/pkg => ./pkg
 	github.com/olive-io/olive/runner => ./runner
 	github.com/olive-io/olive/tests => ./tests

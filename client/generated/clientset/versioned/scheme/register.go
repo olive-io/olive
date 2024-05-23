@@ -24,9 +24,9 @@
 package scheme
 
 import (
-	discoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	olivev1 "github.com/olive-io/olive/apis/core/v1"
-	metav1 "github.com/olive-io/olive/apis/meta/v1"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,9 +38,9 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	discoveryv1.AddToScheme,
+	apidiscoveryv1.AddToScheme,
 	olivev1.AddToScheme,
-	metav1.AddToScheme,
+	monv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

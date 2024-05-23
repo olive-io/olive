@@ -32,7 +32,7 @@ import (
 	apidiscovery "github.com/olive-io/olive/client/generated/informers/externalversions/apidiscovery"
 	core "github.com/olive-io/olive/client/generated/informers/externalversions/core"
 	internalinterfaces "github.com/olive-io/olive/client/generated/informers/externalversions/internalinterfaces"
-	meta "github.com/olive-io/olive/client/generated/informers/externalversions/meta"
+	mon "github.com/olive-io/olive/client/generated/informers/externalversions/mon"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -260,12 +260,12 @@ type SharedInformerFactory interface {
 	// client.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
-	Discovery() apidiscovery.Interface
+	Apidiscovery() apidiscovery.Interface
 	Olive() core.Interface
-	Meta() meta.Interface
+	Mon() mon.Interface
 }
 
-func (f *sharedInformerFactory) Discovery() apidiscovery.Interface {
+func (f *sharedInformerFactory) Apidiscovery() apidiscovery.Interface {
 	return apidiscovery.New(f, f.namespace, f.tweakListOptions)
 }
 
@@ -273,6 +273,6 @@ func (f *sharedInformerFactory) Olive() core.Interface {
 	return core.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Meta() meta.Interface {
-	return meta.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Mon() mon.Interface {
+	return mon.New(f, f.namespace, f.tweakListOptions)
 }

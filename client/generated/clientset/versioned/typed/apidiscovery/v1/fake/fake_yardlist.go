@@ -38,7 +38,7 @@ import (
 
 // FakeYardLists implements YardListInterface
 type FakeYardLists struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

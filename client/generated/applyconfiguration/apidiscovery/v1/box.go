@@ -43,7 +43,7 @@ type BoxApplyConfiguration struct {
 func Box() *BoxApplyConfiguration {
 	b := &BoxApplyConfiguration{}
 	b.WithKind("Box")
-	b.WithAPIVersion("discovery.olive.io/v1")
+	b.WithAPIVersion("apidiscovery.olive.io/v1")
 	return b
 }
 

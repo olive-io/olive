@@ -65,7 +65,7 @@ type nodes struct {
 }
 
 // newNodes returns a Nodes
-func newNodes(c *DiscoveryV1Client, namespace string) *nodes {
+func newNodes(c *ApidiscoveryV1Client, namespace string) *nodes {
 	return &nodes{
 		client: c.RESTClient(),
 		ns:     namespace,

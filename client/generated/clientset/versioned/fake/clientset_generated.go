@@ -25,12 +25,12 @@ package fake
 
 import (
 	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	discoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
-	fakediscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1/fake"
+	apidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
+	fakeapidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1/fake"
 	olivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
 	fakeolivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1/fake"
-	metav1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/meta/v1"
-	fakemetav1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/meta/v1/fake"
+	monv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1"
+	fakemonv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -88,9 +88,9 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// DiscoveryV1 retrieves the DiscoveryV1Client
-func (c *Clientset) DiscoveryV1() discoveryv1.DiscoveryV1Interface {
-	return &fakediscoveryv1.FakeDiscoveryV1{Fake: &c.Fake}
+// ApidiscoveryV1 retrieves the ApidiscoveryV1Client
+func (c *Clientset) ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface {
+	return &fakeapidiscoveryv1.FakeApidiscoveryV1{Fake: &c.Fake}
 }
 
 // OliveV1 retrieves the OliveV1Client
@@ -98,7 +98,7 @@ func (c *Clientset) OliveV1() olivev1.OliveV1Interface {
 	return &fakeolivev1.FakeOliveV1{Fake: &c.Fake}
 }
 
-// MetaV1 retrieves the MetaV1Client
-func (c *Clientset) MetaV1() metav1.MetaV1Interface {
-	return &fakemetav1.FakeMetaV1{Fake: &c.Fake}
+// MonV1 retrieves the MonV1Client
+func (c *Clientset) MonV1() monv1.MonV1Interface {
+	return &fakemonv1.FakeMonV1{Fake: &c.Fake}
 }

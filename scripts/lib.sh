@@ -164,7 +164,7 @@ function run_for_module {
 }
 
 function module_dirs() {
-  echo "api pkg client meta runner gateway console tests ."
+  echo "apis pkg client mon runner gateway console tests ."
 }
 
 function go_work() {
@@ -187,10 +187,10 @@ function maybe_run() {
 
 function modules() {
   modules=(
-    "${ROOT_MODULE}/api"
+    "${ROOT_MODULE}/apis"
     "${ROOT_MODULE}/pkg"
     "${ROOT_MODULE}/client"
-    "${ROOT_MODULE}/meta"
+    "${ROOT_MODULE}/mon"
     "${ROOT_MODULE}/runner"
     "${ROOT_MODULE}/gateway"
     "${ROOT_MODULE}/console"

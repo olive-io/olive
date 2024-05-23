@@ -38,7 +38,7 @@ import (
 
 // FakeEndpointLists implements EndpointListInterface
 type FakeEndpointLists struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

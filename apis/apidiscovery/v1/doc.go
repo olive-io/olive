@@ -23,7 +23,7 @@
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=discovery.olive.io
+// +groupName=apidiscovery.olive.io
 
 // Package discovery is the internal version of the API.
 package v1

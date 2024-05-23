@@ -9,7 +9,7 @@ require (
 	github.com/olive-io/olive/apis v0.1.1
 	github.com/olive-io/olive/client v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
-	github.com/prometheus/client_golang v1.16.0
+	github.com/prometheus/client_golang v1.19.1
 	github.com/spf13/pflag v1.0.5
 	go.etcd.io/etcd/client/v3 v3.5.13
 	go.uber.org/zap v1.27.0

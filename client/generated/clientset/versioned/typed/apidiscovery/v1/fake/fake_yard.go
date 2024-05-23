@@ -39,7 +39,7 @@ import (
 
 // FakeYards implements YardInterface
 type FakeYards struct {
-	Fake *FakeDiscoveryV1
+	Fake *FakeApidiscoveryV1
 	ns   string
 }
 

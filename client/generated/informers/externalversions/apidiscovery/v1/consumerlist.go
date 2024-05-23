@@ -67,13 +67,13 @@ func NewFilteredConsumerListInformer(client versioned.Interface, namespace strin
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.DiscoveryV1().ConsumerLists(namespace).List(context.TODO(), options)
+				return client.ApidiscoveryV1().ConsumerLists(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.DiscoveryV1().ConsumerLists(namespace).Watch(context.TODO(), options)
+				return client.ApidiscoveryV1().ConsumerLists(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&apidiscoveryv1.ConsumerList{},

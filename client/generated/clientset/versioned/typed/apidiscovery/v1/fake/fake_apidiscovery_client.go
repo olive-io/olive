@@ -29,53 +29,53 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeDiscoveryV1 struct {
+type FakeApidiscoveryV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeDiscoveryV1) Consumers(namespace string) v1.ConsumerInterface {
+func (c *FakeApidiscoveryV1) Consumers(namespace string) v1.ConsumerInterface {
 	return &FakeConsumers{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) ConsumerLists(namespace string) v1.ConsumerListInterface {
+func (c *FakeApidiscoveryV1) ConsumerLists(namespace string) v1.ConsumerListInterface {
 	return &FakeConsumerLists{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) Endpoints(namespace string) v1.EndpointInterface {
+func (c *FakeApidiscoveryV1) Endpoints(namespace string) v1.EndpointInterface {
 	return &FakeEndpoints{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) EndpointLists(namespace string) v1.EndpointListInterface {
+func (c *FakeApidiscoveryV1) EndpointLists(namespace string) v1.EndpointListInterface {
 	return &FakeEndpointLists{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) Nodes(namespace string) v1.NodeInterface {
+func (c *FakeApidiscoveryV1) Nodes(namespace string) v1.NodeInterface {
 	return &FakeNodes{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) NodeLists(namespace string) v1.NodeListInterface {
+func (c *FakeApidiscoveryV1) NodeLists(namespace string) v1.NodeListInterface {
 	return &FakeNodeLists{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) Services(namespace string) v1.ServiceInterface {
+func (c *FakeApidiscoveryV1) Services(namespace string) v1.ServiceInterface {
 	return &FakeServices{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) ServiceLists(namespace string) v1.ServiceListInterface {
+func (c *FakeApidiscoveryV1) ServiceLists(namespace string) v1.ServiceListInterface {
 	return &FakeServiceLists{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) Yards(namespace string) v1.YardInterface {
+func (c *FakeApidiscoveryV1) Yards(namespace string) v1.YardInterface {
 	return &FakeYards{c, namespace}
 }
 
-func (c *FakeDiscoveryV1) YardLists(namespace string) v1.YardListInterface {
+func (c *FakeApidiscoveryV1) YardLists(namespace string) v1.YardListInterface {
 	return &FakeYardLists{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeDiscoveryV1) RESTClient() rest.Interface {
+func (c *FakeApidiscoveryV1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }
