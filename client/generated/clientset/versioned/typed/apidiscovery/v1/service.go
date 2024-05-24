@@ -48,6 +48,7 @@ type ServicesGetter interface {
 type ServiceInterface interface {
 	Create(ctx context.Context, service *v1.Service, opts metav1.CreateOptions) (*v1.Service, error)
 	Update(ctx context.Context, service *v1.Service, opts metav1.UpdateOptions) (*v1.Service, error)
+	UpdateStatus(ctx context.Context, service *v1.Service, opts metav1.UpdateOptions) (*v1.Service, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Service, error)
@@ -55,6 +56,7 @@ type ServiceInterface interface {
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Service, err error)
 	Apply(ctx context.Context, service *apidiscoveryv1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Service, err error)
+	ApplyStatus(ctx context.Context, service *apidiscoveryv1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Service, err error)
 	ServiceExpansion
 }
 
@@ -144,6 +146,22 @@ func (c *services) Update(ctx context.Context, service *v1.Service, opts metav1.
 	return
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *services) UpdateStatus(ctx context.Context, service *v1.Service, opts metav1.UpdateOptions) (result *v1.Service, err error) {
+	result = &v1.Service{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("services").
+		Name(service.Name).
+		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(service).
+		Do(ctx).
+		Into(result)
+	return
+}
+
 // Delete takes name of the service and deletes it. Returns an error if one occurs.
 func (c *services) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
@@ -205,6 +223,36 @@ func (c *services) Apply(ctx context.Context, service *apidiscoveryv1.ServiceApp
 		Namespace(c.ns).
 		Resource("services").
 		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *services) ApplyStatus(ctx context.Context, service *apidiscoveryv1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Service, err error) {
+	if service == nil {
+		return nil, fmt.Errorf("service provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(service)
+	if err != nil {
+		return nil, err
+	}
+
+	name := service.Name
+	if name == nil {
+		return nil, fmt.Errorf("service.Name must be provided to Apply")
+	}
+
+	result = &v1.Service{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("services").
+		Name(*name).
+		SubResource("status").
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).

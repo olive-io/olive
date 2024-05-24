@@ -44,16 +44,16 @@ import (
 	monvalidation "github.com/olive-io/olive/apis/mon/validation"
 )
 
-// runnerStrategy implements verification logic for Replication Controllers.
+// runnerStrategy implements verification logic for Runner.
 type runnerStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
 }
 
-// Strategy is the default logic that applies when creating and updating Replication Controller objects.
+// Strategy is the default logic that applies when creating and updating Runner objects.
 var Strategy = runnerStrategy{apis.Scheme, names.SimpleNameGenerator}
 
-// DefaultGarbageCollectionPolicy returns OrphanDependents for batch/v1 for backwards compatibility,
+// DefaultGarbageCollectionPolicy returns OrphanDependents for mon/v1 for backwards compatibility,
 // and DeleteDependents for all other versions.
 func (runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
 	var groupVersion schema.GroupVersion

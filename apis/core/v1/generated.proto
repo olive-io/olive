@@ -27,7 +27,6 @@ package github.com.olive_io.olive.apis.core.v1;
 
 import "github.com/olive-io/olive/apis/apidiscovery/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".

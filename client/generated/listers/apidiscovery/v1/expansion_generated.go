@@ -23,13 +23,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// ConsumerListerExpansion allows custom methods to be added to
-// ConsumerLister.
-type ConsumerListerExpansion interface{}
+// EdgeListerExpansion allows custom methods to be added to
+// EdgeLister.
+type EdgeListerExpansion interface{}
 
-// ConsumerNamespaceListerExpansion allows custom methods to be added to
-// ConsumerNamespaceLister.
-type ConsumerNamespaceListerExpansion interface{}
+// EdgeNamespaceListerExpansion allows custom methods to be added to
+// EdgeNamespaceLister.
+type EdgeNamespaceListerExpansion interface{}
 
 // EndpointListerExpansion allows custom methods to be added to
 // EndpointLister.
@@ -39,14 +39,6 @@ type EndpointListerExpansion interface{}
 // EndpointNamespaceLister.
 type EndpointNamespaceListerExpansion interface{}
 
-// NodeListerExpansion allows custom methods to be added to
-// NodeLister.
-type NodeListerExpansion interface{}
-
-// NodeNamespaceListerExpansion allows custom methods to be added to
-// NodeNamespaceLister.
-type NodeNamespaceListerExpansion interface{}
-
 // ServiceListerExpansion allows custom methods to be added to
 // ServiceLister.
 type ServiceListerExpansion interface{}
@@ -54,11 +46,3 @@ type ServiceListerExpansion interface{}
 // ServiceNamespaceListerExpansion allows custom methods to be added to
 // ServiceNamespaceLister.
 type ServiceNamespaceListerExpansion interface{}
-
-// YardListerExpansion allows custom methods to be added to
-// YardLister.
-type YardListerExpansion interface{}
-
-// YardNamespaceListerExpansion allows custom methods to be added to
-// YardNamespaceLister.
-type YardNamespaceListerExpansion interface{}

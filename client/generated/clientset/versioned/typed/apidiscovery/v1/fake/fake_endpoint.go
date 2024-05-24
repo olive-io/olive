@@ -109,6 +109,18 @@ func (c *FakeEndpoints) Update(ctx context.Context, endpoint *v1.Endpoint, opts 
 	return obj.(*v1.Endpoint), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeEndpoints) UpdateStatus(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (*v1.Endpoint, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(endpointsResource, "status", c.ns, endpoint), &v1.Endpoint{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Endpoint), err
+}
+
 // Delete takes name of the endpoint and deletes it. Returns an error if one occurs.
 func (c *FakeEndpoints) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
@@ -151,6 +163,29 @@ func (c *FakeEndpoints) Apply(ctx context.Context, endpoint *apidiscoveryv1.Endp
 	}
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, *name, types.ApplyPatchType, data), &v1.Endpoint{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Endpoint), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeEndpoints) ApplyStatus(ctx context.Context, endpoint *apidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Endpoint, err error) {
+	if endpoint == nil {
+		return nil, fmt.Errorf("endpoint provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	name := endpoint.Name
+	if name == nil {
+		return nil, fmt.Errorf("endpoint.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Endpoint{})
 
 	if obj == nil {
 		return nil, err

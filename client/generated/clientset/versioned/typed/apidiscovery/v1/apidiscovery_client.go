@@ -33,11 +33,9 @@ import (
 
 type ApidiscoveryV1Interface interface {
 	RESTClient() rest.Interface
-	ConsumersGetter
+	EdgesGetter
 	EndpointsGetter
-	NodesGetter
 	ServicesGetter
-	YardsGetter
 }
 
 // ApidiscoveryV1Client is used to interact with features provided by the apidiscovery.olive.io group.
@@ -45,24 +43,16 @@ type ApidiscoveryV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *ApidiscoveryV1Client) Consumers(namespace string) ConsumerInterface {
-	return newConsumers(c, namespace)
+func (c *ApidiscoveryV1Client) Edges(namespace string) EdgeInterface {
+	return newEdges(c, namespace)
 }
 
 func (c *ApidiscoveryV1Client) Endpoints(namespace string) EndpointInterface {
 	return newEndpoints(c, namespace)
 }
 
-func (c *ApidiscoveryV1Client) Nodes(namespace string) NodeInterface {
-	return newNodes(c, namespace)
-}
-
 func (c *ApidiscoveryV1Client) Services(namespace string) ServiceInterface {
 	return newServices(c, namespace)
-}
-
-func (c *ApidiscoveryV1Client) Yards(namespace string) YardInterface {
-	return newYards(c, namespace)
 }
 
 // NewForConfig creates a new ApidiscoveryV1Client for the given config.

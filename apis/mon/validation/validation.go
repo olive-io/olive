@@ -99,6 +99,52 @@ func validateRunnerStatus(runner *monv1.Runner, fldPath *field.Path) field.Error
 	return allErrs
 }
 
+// ValidateRegionName can be used to check whether the given region name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateRegionName = apimachineryvalidation.NameIsDNSSubdomain
+
+// ValidateRegion tests if required fields are set.
+func ValidateRegion(region *monv1.Region) field.ErrorList {
+	allErrs := ValidateObjectMeta(&region.ObjectMeta, false, ValidateRegionName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateRegionUpdate validates an update to a Region and returns an ErrorList with any errors.
+func ValidateRegionUpdate(region, oldRegion *monv1.Region) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRegionSpecUpdate(region.Spec, oldRegion.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateRegionSpecUpdate validates an update to a RegionSpec and returns an ErrorList with any errors.
+func ValidateRegionSpecUpdate(spec, oldSpec monv1.RegionSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateRegionUpdateStatus validates an update to the status of a Region and returns an ErrorList with any errors.
+func ValidateRegionUpdateStatus(region, oldRegion *monv1.Region) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRegionStatusUpdate(region, oldRegion)...)
+	return allErrs
+}
+
+// ValidateRegionStatusUpdate validates an update to a RegionStatus and returns an ErrorList with any errors.
+func ValidateRegionStatusUpdate(region, oldRegion *monv1.Region) field.ErrorList {
+	allErrs := field.ErrorList{}
+	statusFld := field.NewPath("status")
+	allErrs = append(allErrs, validateRegionStatus(region, statusFld)...)
+
+	return allErrs
+}
+
+// validateRegionStatus validates a RegionStatus and returns an ErrorList with any errors.
+func validateRegionStatus(region *monv1.Region, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
 // Validate finalizer names
 func validateFinalizerName(stringValue string, fldPath *field.Path) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateFinalizerName(stringValue, fldPath)

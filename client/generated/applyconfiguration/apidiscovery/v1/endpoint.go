@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
+	apisapidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
@@ -34,7 +35,8 @@ import (
 type EndpointApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *EndpointSpecApplyConfiguration `json:"spec,omitempty"`
+	Spec                             *EndpointSpecApplyConfiguration    `json:"spec,omitempty"`
+	Status                           *apisapidiscoveryv1.EndpointStatus `json:"status,omitempty"`
 }
 
 // Endpoint constructs an declarative configuration of the Endpoint type for use with
@@ -211,5 +213,13 @@ func (b *EndpointApplyConfiguration) ensureObjectMetaApplyConfigurationExists() 
 // If called multiple times, the Spec field is set to the value of the last call.
 func (b *EndpointApplyConfiguration) WithSpec(value *EndpointSpecApplyConfiguration) *EndpointApplyConfiguration {
 	b.Spec = value
+	return b
+}
+
+// WithStatus sets the Status field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Status field is set to the value of the last call.
+func (b *EndpointApplyConfiguration) WithStatus(value apisapidiscoveryv1.EndpointStatus) *EndpointApplyConfiguration {
+	b.Status = &value
 	return b
 }

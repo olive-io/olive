@@ -45,12 +45,16 @@ func Resource(resource string) schema.GroupResource {
 
 var (
 	// SchemeBuilder object to register various known types
-	SchemeBuilder = krt.NewSchemeBuilder(addKnownTypes)
+	localSchemeBuilder = krt.NewSchemeBuilder(addKnownTypes)
 
 	// AddToScheme represents a func that can be used to apply all the registered
 	// funcs in a scheme
-	AddToScheme = SchemeBuilder.AddToScheme
+	AddToScheme = localSchemeBuilder.AddToScheme
 )
+
+func init() {
+	localSchemeBuilder.Register(addDefaultingFuncs, addConversionFuncs)
+}
 
 func addKnownTypes(scheme *krt.Scheme) error {
 	if err := scheme.AddIgnoredConversionType(&metav1.TypeMeta{}, &metav1.TypeMeta{}); err != nil {

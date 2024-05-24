@@ -33,24 +33,16 @@ type FakeApidiscoveryV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeApidiscoveryV1) Consumers(namespace string) v1.ConsumerInterface {
-	return &FakeConsumers{c, namespace}
+func (c *FakeApidiscoveryV1) Edges(namespace string) v1.EdgeInterface {
+	return &FakeEdges{c, namespace}
 }
 
 func (c *FakeApidiscoveryV1) Endpoints(namespace string) v1.EndpointInterface {
 	return &FakeEndpoints{c, namespace}
 }
 
-func (c *FakeApidiscoveryV1) Nodes(namespace string) v1.NodeInterface {
-	return &FakeNodes{c, namespace}
-}
-
 func (c *FakeApidiscoveryV1) Services(namespace string) v1.ServiceInterface {
 	return &FakeServices{c, namespace}
-}
-
-func (c *FakeApidiscoveryV1) Yards(namespace string) v1.YardInterface {
-	return &FakeYards{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

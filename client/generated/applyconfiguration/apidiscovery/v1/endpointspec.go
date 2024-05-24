@@ -26,6 +26,8 @@ package v1
 // EndpointSpecApplyConfiguration represents an declarative configuration of the EndpointSpec type for use
 // with apply.
 type EndpointSpecApplyConfiguration struct {
+	URL      *string                `json:"url,omitempty"`
+	Method   *string                `json:"method,omitempty"`
 	Request  *BoxApplyConfiguration `json:"request,omitempty"`
 	Response *BoxApplyConfiguration `json:"response,omitempty"`
 }
@@ -34,6 +36,22 @@ type EndpointSpecApplyConfiguration struct {
 // apply.
 func EndpointSpec() *EndpointSpecApplyConfiguration {
 	return &EndpointSpecApplyConfiguration{}
+}
+
+// WithURL sets the URL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the URL field is set to the value of the last call.
+func (b *EndpointSpecApplyConfiguration) WithURL(value string) *EndpointSpecApplyConfiguration {
+	b.URL = &value
+	return b
+}
+
+// WithMethod sets the Method field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Method field is set to the value of the last call.
+func (b *EndpointSpecApplyConfiguration) WithMethod(value string) *EndpointSpecApplyConfiguration {
+	b.Method = &value
+	return b
 }
 
 // WithRequest sets the Request field in the declarative configuration to the given value

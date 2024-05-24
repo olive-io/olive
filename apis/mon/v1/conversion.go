@@ -33,12 +33,32 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 			switch label {
 			case "metadata.name",
 				"metadata.namespace",
+				"spec.id",
 				"spec.name",
 				"status.phase":
 				return label, value, nil
 			// This is for backwards compatibility with old v1 clients which send spec.host
-			case "spec.host":
-				return "spec.nodeName", value, nil
+			case "spec.peerURLs":
+				return "spec.peers", value, nil
+			case "spec.clientURLs":
+				return "spec.clients", value, nil
+			default:
+				return "", "", fmt.Errorf("field label not supported: %s", label)
+			}
+		},
+	)
+	if err != nil {
+		return err
+	}
+	err = scheme.AddFieldLabelConversionFunc(SchemeGroupVersion.WithKind("Region"),
+		func(label, value string) (string, string, error) {
+			switch label {
+			case "metadata.name",
+				"metadata.namespace",
+				"spec.id",
+				"spec.replicas",
+				"status.phase":
+				return label, value, nil
 			default:
 				return "", "", fmt.Errorf("field label not supported: %s", label)
 			}

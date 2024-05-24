@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:defaulter-gen=TypeMeta
+// +k8s:defaulter-gen-input=github.com/olive-io/olive/apis/apidiscovery/v1
+// +k8s:conversion-gen=github.com/olive-io/olive/apis/apidiscovery
 // +groupName=apidiscovery.olive.io
 
 // Package v1 is the apidiscovery version of the API.

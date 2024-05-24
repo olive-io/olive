@@ -60,16 +60,12 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=apidiscovery.olive.io, Version=v1
-	case v1.SchemeGroupVersion.WithResource("consumers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Consumers().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("edges"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Edges().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("endpoints"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Endpoints().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("nodes"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Nodes().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("services"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Services().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("yards"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Yards().Informer()}, nil
 
 		// Group=mon.olive.io, Version=v1
 	case monv1.SchemeGroupVersion.WithResource("regions"):

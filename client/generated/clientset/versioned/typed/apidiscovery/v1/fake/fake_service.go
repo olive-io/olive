@@ -109,6 +109,18 @@ func (c *FakeServices) Update(ctx context.Context, service *v1.Service, opts met
 	return obj.(*v1.Service), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeServices) UpdateStatus(ctx context.Context, service *v1.Service, opts metav1.UpdateOptions) (*v1.Service, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(servicesResource, "status", c.ns, service), &v1.Service{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Service), err
+}
+
 // Delete takes name of the service and deletes it. Returns an error if one occurs.
 func (c *FakeServices) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
@@ -151,6 +163,29 @@ func (c *FakeServices) Apply(ctx context.Context, service *apidiscoveryv1.Servic
 	}
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, *name, types.ApplyPatchType, data), &v1.Service{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Service), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeServices) ApplyStatus(ctx context.Context, service *apidiscoveryv1.ServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Service, err error) {
+	if service == nil {
+		return nil, fmt.Errorf("service provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(service)
+	if err != nil {
+		return nil, err
+	}
+	name := service.Name
+	if name == nil {
+		return nil, fmt.Errorf("service.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Service{})
 
 	if obj == nil {
 		return nil, err

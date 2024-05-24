@@ -22,15 +22,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package mon
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // GroupName is the group name use in this package
-const GroupName = "mon"
+const GroupName = "mon.olive.io"
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: krt.APIVersionInternal}
 
 // Kind takes an unqualified kind and returns a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {
@@ -44,13 +44,13 @@ func Resource(resource string) schema.GroupResource {
 
 var (
 	// SchemeBuilder points to a list of functions added to Scheme.
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
+	SchemeBuilder = krt.NewSchemeBuilder(addKnownTypes)
 	// AddToScheme applies all the stored functions to the scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
 // Adds the list of known types to the given scheme.
-func addKnownTypes(scheme *runtime.Scheme) error {
+func addKnownTypes(scheme *krt.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion)
 	return nil
 }

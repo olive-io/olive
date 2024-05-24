@@ -49,89 +49,6 @@ type Box struct {
 	Parameters map[string]Box `json:"parameters" protobuf:"bytes,4,rep,name=parameters"`
 }
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Endpoint is an endpoint provided by a service
-type Endpoint struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec EndpointSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-}
-
-type EndpointSpec struct {
-	Request  Box `json:"request" protobuf:"bytes,1,opt,name=request"`
-	Response Box `json:"response" protobuf:"bytes,2,opt,name=response"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// EndpointList is a list of Endpoint objects.
-type EndpointList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Endpoint
-	Items []Endpoint `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Node represents the node the service is on
-type Node struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec NodeSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-}
-
-type NodeSpec struct {
-	Address string `json:"address" protobuf:"bytes,1,opt,name=address"`
-	Port    int64  `json:"port" protobuf:"varint,2,opt,name=port"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// NodeList is a list of Node objects.
-type NodeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Node
-	Items []Node `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Service represents a olive service
-type Service struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec ServiceSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-}
-
-type ServiceSpec struct {
-	Version   string     `json:"version" protobuf:"bytes,1,opt,name=version"`
-	Endpoints []Endpoint `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
-	Nodes     []Node     `json:"nodes" protobuf:"bytes,3,rep,name=nodes"`
-	Ttl       int64      `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// ServiceList is a list of Service objects.
-type ServiceList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Service
-	Items []Service `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
 type ActivityTask string
 
 const (
@@ -145,7 +62,7 @@ const (
 	CallActivity = ActivityTask("CallActivity")
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:deepcopy-gen:true
 
 // Activity defines bpmn Activity of specification
 type Activity struct {
@@ -170,55 +87,109 @@ type Activity struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Consumer represents a gateway External interfaces
-type Consumer struct {
+// Endpoint is an endpoint provided by a service
+type Endpoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	Spec ConsumerSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec   EndpointSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status EndpointStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
-type ConsumerSpec struct {
-	Activity ActivityTask `json:"activity" protobuf:"bytes,1,opt,name=activity,casttype=ActivityTask"`
-	Action   string       `json:"action" protobuf:"bytes,2,opt,name=action"`
-	Request  Box          `json:"request" protobuf:"bytes,3,opt,name=request"`
-	Response Box          `json:"response" protobuf:"bytes,4,opt,name=response"`
+type EndpointSpec struct {
+	URL      string `json:"url" protobuf:"bytes,1,opt,name=url"`
+	Method   string `json:"method" protobuf:"bytes,2,opt,name=method"`
+	Request  Box    `json:"request" protobuf:"bytes,3,opt,name=request"`
+	Response Box    `json:"response" protobuf:"bytes,4,opt,name=response"`
+}
+
+type EndpointStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ConsumerList is a list of Consumer objects.
-type ConsumerList struct {
+// EndpointList is a list of Endpoint objects.
+type EndpointList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	// Items is a list of Consumer
-	Items []Consumer `json:"items" protobuf:"bytes,2,rep,name=items"`
+	// Items is a list of Endpoint
+	Items []Endpoint `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +k8s:deepcopy-gen:true
+
+// Node represents the node the service is on
+type Node struct {
+	metav1.TypeMeta `json:",inline"`
+
+	Id       string            `json:"id" protobuf:"bytes,1,opt,name=id"`
+	Metadata map[string]string `json:"metadata" protobuf:"bytes,2,rep,name=metadata"`
+	Address  string            `json:"address" protobuf:"bytes,3,opt,name=address"`
+	Port     int64             `json:"port" protobuf:"varint,4,opt,name=port"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Yard defines the sets of Consumer
-type Yard struct {
+// Service represents a olive service
+type Service struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	Spec YardSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec   ServiceSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status ServiceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
-type YardSpec struct {
-	Address   string              `json:"address" protobuf:"bytes,1,opt,name=address"`
-	Consumers map[string]Consumer `json:"consumers" protobuf:"bytes,2,rep,name=consumers"`
+type ServiceSpec struct {
+	Version   string     `json:"version" protobuf:"bytes,1,opt,name=version"`
+	Endpoints []Endpoint `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
+	Nodes     []Node     `json:"nodes" protobuf:"bytes,3,rep,name=nodes"`
+	Ttl       int64      `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
+}
+
+type ServiceStatus struct {
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ServiceList is a list of Service objects.
+type ServiceList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Items is a list of Service
+	Items []Service `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Edge defines the sets of Endpoint
+type Edge struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Spec   EdgeSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status EdgeStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+}
+
+type EdgeSpec struct {
+	Address string `json:"address" protobuf:"bytes,1,opt,name=address"`
+
+	Endpoints map[string]Endpoint `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
+}
+
+type EdgeStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // YardList is a list of Yard objects.
-type YardList struct {
+type EdgeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	// Items is a list of Yard
-	Items []Yard `json:"items" protobuf:"bytes,2,rep,name=items"`
+	// Items is a list of Edge
+	Items []Edge `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

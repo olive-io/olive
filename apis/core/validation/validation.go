@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/olive-io/olive/apis/core/helper"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
 // ValidateNameFunc validates that the provided name is valid for a given resource type.
@@ -38,10 +39,14 @@ import (
 // value that were not valid.  Otherwise this returns an empty list or nil.
 type ValidateNameFunc apimachineryvalidation.ValidateNameFunc
 
+// ValidateDefinitionName can be used to check whether the given definitions name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateDefinitionName = apimachineryvalidation.NameIsDNSSubdomain
+
 // ValidateObjectMeta validates an object's metadata on creation. It expects that name generation has already
 // been performed.
 // It doesn't return an error for rootscoped resources with namespace, because namespace should already be cleared before.
-// TODO: Remove calls to this method scattered in validations of specific resources, e.g., ValidatePodUpdate.
 func ValidateObjectMeta(meta *metav1.ObjectMeta, requiresNamespace bool, nameFn ValidateNameFunc, fldPath *field.Path) field.ErrorList {
 	allErrs := apimachineryvalidation.ValidateObjectMeta(meta, requiresNamespace, apimachineryvalidation.ValidateNameFunc(nameFn), fldPath)
 	// run additional checks for the finalizer name
@@ -59,6 +64,93 @@ func ValidateObjectMetaUpdate(newMeta, oldMeta *metav1.ObjectMeta, fldPath *fiel
 		allErrs = append(allErrs, validateKubeFinalizerName(string(newMeta.Finalizers[i]), fldPath.Child("finalizers").Index(i))...)
 	}
 
+	return allErrs
+}
+
+// ValidateDefinition tests if required fields are set.
+func ValidateDefinition(definition *corev1.Definition) field.ErrorList {
+	allErrs := ValidateObjectMeta(&definition.ObjectMeta, false, ValidateDefinitionName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateDefinitionUpdate validates an update to a Definition and returns an ErrorList with any errors.
+func ValidateDefinitionUpdate(definition, oldDefinition *corev1.Definition) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&definition.ObjectMeta, &oldDefinition.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateDefinitionSpecUpdate(definition.Spec, oldDefinition.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateDefinitionSpecUpdate validates an update to a DefinitionSpec and returns an ErrorList with any errors.
+func ValidateDefinitionSpecUpdate(spec, oldSpec corev1.DefinitionSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateDefinitionUpdateStatus validates an update to the status of a Definition and returns an ErrorList with any errors.
+func ValidateDefinitionUpdateStatus(definition, oldDefinition *corev1.Definition) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&definition.ObjectMeta, &oldDefinition.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateDefinitionStatusUpdate(definition, oldDefinition)...)
+	return allErrs
+}
+
+// ValidateDefinitionStatusUpdate validates an update to a DefinitionStatus and returns an ErrorList with any errors.
+func ValidateDefinitionStatusUpdate(definition, oldDefinition *corev1.Definition) field.ErrorList {
+	allErrs := field.ErrorList{}
+	statusFld := field.NewPath("status")
+	allErrs = append(allErrs, validateDefinitionStatus(definition, statusFld)...)
+
+	return allErrs
+}
+
+// validateDefinitionStatus validates a DefinitionStatus and returns an ErrorList with any errors.
+func validateDefinitionStatus(definition *corev1.Definition, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateProcessInstanceName can be used to check whether the given processInstance name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateProcessInstanceName = apimachineryvalidation.NameIsDNSSubdomain
+
+// ValidateProcessInstance tests if required fields are set.
+func ValidateProcessInstance(processInstance *corev1.ProcessInstance) field.ErrorList {
+	allErrs := ValidateObjectMeta(&processInstance.ObjectMeta, false, ValidateProcessInstanceName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateProcessInstanceUpdate validates an update to a ProcessInstance and returns an ErrorList with any errors.
+func ValidateProcessInstanceUpdate(processInstance, oldProcessInstance *corev1.ProcessInstance) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&processInstance.ObjectMeta, &oldProcessInstance.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateProcessInstanceSpecUpdate(processInstance.Spec, oldProcessInstance.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateProcessInstanceSpecUpdate validates an update to a ProcessInstanceSpec and returns an ErrorList with any errors.
+func ValidateProcessInstanceSpecUpdate(spec, oldSpec corev1.ProcessInstanceSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateProcessInstanceUpdateStatus validates an update to the status of a ProcessInstance and returns an ErrorList with any errors.
+func ValidateProcessInstanceUpdateStatus(processInstance, oldProcessInstance *corev1.ProcessInstance) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&processInstance.ObjectMeta, &oldProcessInstance.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateProcessInstanceStatusUpdate(processInstance, oldProcessInstance)...)
+	return allErrs
+}
+
+// ValidateProcessInstanceStatusUpdate validates an update to a ProcessInstanceStatus and returns an ErrorList with any errors.
+func ValidateProcessInstanceStatusUpdate(processInstance, oldProcessInstance *corev1.ProcessInstance) field.ErrorList {
+	allErrs := field.ErrorList{}
+	statusFld := field.NewPath("status")
+	allErrs = append(allErrs, validateProcessInstanceStatus(processInstance, statusFld)...)
+
+	return allErrs
+}
+
+// validateProcessInstanceStatus validates a ProcessInstanceStatus and returns an ErrorList with any errors.
+func validateProcessInstanceStatus(processInstance *corev1.ProcessInstance, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
 	return allErrs
 }
 

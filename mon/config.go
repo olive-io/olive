@@ -37,6 +37,8 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
+	apidiscoveryrest "github.com/olive-io/olive/mon/registry/apidiscovery/rest"
+	corerest "github.com/olive-io/olive/mon/registry/core/rest"
 	monrest "github.com/olive-io/olive/mon/registry/mon/rest"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
@@ -249,6 +251,8 @@ func (c completedConfig) New() (*MonitorServer, error) {
 	}
 
 	restStorageProviders := []RESTStorageProvider{
+		&apidiscoveryrest.RESTStorageProvider{},
+		&corerest.RESTStorageProvider{},
 		&monrest.RESTStorageProvider{},
 	}
 

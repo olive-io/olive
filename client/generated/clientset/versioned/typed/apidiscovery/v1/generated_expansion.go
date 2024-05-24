@@ -23,12 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-type ConsumerExpansion interface{}
+type EdgeExpansion interface{}
 
 type EndpointExpansion interface{}
 
-type NodeExpansion interface{}
-
 type ServiceExpansion interface{}
-
-type YardExpansion interface{}

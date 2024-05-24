@@ -36,21 +36,19 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 	return map[string]common.OpenAPIDefinition{
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":        schema_olive_apis_apidiscovery_v1_Activity(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":             schema_olive_apis_apidiscovery_v1_Box(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Consumer":        schema_olive_apis_apidiscovery_v1_Consumer(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ConsumerList":    schema_olive_apis_apidiscovery_v1_ConsumerList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ConsumerSpec":    schema_olive_apis_apidiscovery_v1_ConsumerSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":            schema_olive_apis_apidiscovery_v1_Edge(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeList":        schema_olive_apis_apidiscovery_v1_EdgeList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":        schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":      schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":        schema_olive_apis_apidiscovery_v1_Endpoint(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":    schema_olive_apis_apidiscovery_v1_EndpointList(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":    schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":  schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Node":            schema_olive_apis_apidiscovery_v1_Node(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.NodeList":        schema_olive_apis_apidiscovery_v1_NodeList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.NodeSpec":        schema_olive_apis_apidiscovery_v1_NodeSpec(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Service":         schema_olive_apis_apidiscovery_v1_Service(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceList":     schema_olive_apis_apidiscovery_v1_ServiceList(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec":     schema_olive_apis_apidiscovery_v1_ServiceSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Yard":            schema_olive_apis_apidiscovery_v1_Yard(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.YardList":        schema_olive_apis_apidiscovery_v1_YardList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.YardSpec":        schema_olive_apis_apidiscovery_v1_YardSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus":   schema_olive_apis_apidiscovery_v1_ServiceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.Definition":              schema_olive_apis_core_v1_Definition(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionList":          schema_olive_apis_core_v1_DefinitionList(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":          schema_olive_apis_core_v1_DefinitionSpec(ref),
@@ -265,11 +263,11 @@ func schema_olive_apis_apidiscovery_v1_Box(ref common.ReferenceCallback) common.
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_Consumer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_Edge(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Consumer represents a gateway External interfaces",
+				Description: "Edge defines the sets of Endpoint",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -295,23 +293,29 @@ func schema_olive_apis_apidiscovery_v1_Consumer(ref common.ReferenceCallback) co
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.ConsumerSpec"),
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus"),
 						},
 					},
 				},
-				Required: []string{"spec"},
+				Required: []string{"spec", "status"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.ConsumerSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec", "github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_ConsumerList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_EdgeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ConsumerList is a list of Consumer objects.",
+				Description: "YardList is a list of Yard objects.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -336,13 +340,13 @@ func schema_olive_apis_apidiscovery_v1_ConsumerList(ref common.ReferenceCallback
 					},
 					"items": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Consumer",
+							Description: "Items is a list of Edge",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Consumer"),
+										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Edge"),
 									},
 								},
 							},
@@ -353,48 +357,53 @@ func schema_olive_apis_apidiscovery_v1_ConsumerList(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Consumer", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.Edge", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_ConsumerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_EdgeSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"activity": {
+					"address": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
 						},
 					},
-					"action": {
+					"endpoints": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"request": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
-						},
-					},
-					"response": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint"),
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"activity", "action", "request", "response"},
+				Required: []string{"address", "endpoints"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Box"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint"},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_EdgeStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		},
 	}
 }
 
@@ -431,12 +440,18 @@ func schema_olive_apis_apidiscovery_v1_Endpoint(ref common.ReferenceCallback) co
 							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec"),
 						},
 					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus"),
+						},
+					},
 				},
-				Required: []string{"spec"},
+				Required: []string{"spec", "status"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec", "github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -496,6 +511,20 @@ func schema_olive_apis_apidiscovery_v1_EndpointSpec(ref common.ReferenceCallback
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"method": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
 					"request": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -509,11 +538,21 @@ func schema_olive_apis_apidiscovery_v1_EndpointSpec(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"request", "response"},
+				Required: []string{"url", "method", "request", "response"},
 			},
 		},
 		Dependencies: []string{
 			"github.com/olive-io/olive/apis/apidiscovery/v1.Box"},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_EndpointStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		},
 	}
 }
 
@@ -538,83 +577,28 @@ func schema_olive_apis_apidiscovery_v1_Node(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
-					"metadata": {
+					"id": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.NodeSpec"),
-						},
-					},
-				},
-				Required: []string{"spec"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.NodeSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_apidiscovery_v1_NodeList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "NodeList is a list of Node objects.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Node",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Node"),
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
 						},
 					},
-				},
-				Required: []string{"items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Node", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_apidiscovery_v1_NodeSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
 					"address": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
@@ -630,7 +614,7 @@ func schema_olive_apis_apidiscovery_v1_NodeSpec(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"address", "port"},
+				Required: []string{"id", "metadata", "address", "port"},
 			},
 		},
 	}
@@ -669,12 +653,18 @@ func schema_olive_apis_apidiscovery_v1_Service(ref common.ReferenceCallback) com
 							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec"),
 						},
 					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus"),
+						},
+					},
 				},
-				Required: []string{"spec"},
+				Required: []string{"spec", "status"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec", "github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -783,131 +773,13 @@ func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback)
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_Yard(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Yard defines the sets of Consumer",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.YardSpec"),
-						},
-					},
-				},
-				Required: []string{"spec"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.YardSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_apidiscovery_v1_YardList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "YardList is a list of Yard objects.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Yard",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Yard"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Yard", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_apidiscovery_v1_YardSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_ServiceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"address": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"consumers": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Consumer"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"address", "consumers"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Consumer"},
 	}
 }
 

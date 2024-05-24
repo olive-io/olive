@@ -67,7 +67,7 @@ type ServerOptions struct {
 func NewServerOptions(out, errOut io.Writer) *ServerOptions {
 
 	embedEtcdOptions := NewEmbedEtcdOptions()
-	recommendedOptions := NewRecommendedOptions(DefaultEtcdPathPrefix, apis.Codec)
+	recommendedOptions := NewRecommendedOptions(DefaultEtcdPathPrefix, Codec)
 
 	o := &ServerOptions{
 		EmbedEtcdOptions:   embedEtcdOptions,

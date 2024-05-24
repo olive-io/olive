@@ -29,16 +29,12 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// Consumers returns a ConsumerInformer.
-	Consumers() ConsumerInformer
+	// Edges returns a EdgeInformer.
+	Edges() EdgeInformer
 	// Endpoints returns a EndpointInformer.
 	Endpoints() EndpointInformer
-	// Nodes returns a NodeInformer.
-	Nodes() NodeInformer
 	// Services returns a ServiceInformer.
 	Services() ServiceInformer
-	// Yards returns a YardInformer.
-	Yards() YardInformer
 }
 
 type version struct {
@@ -52,9 +48,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Consumers returns a ConsumerInformer.
-func (v *version) Consumers() ConsumerInformer {
-	return &consumerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Edges returns a EdgeInformer.
+func (v *version) Edges() EdgeInformer {
+	return &edgeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Endpoints returns a EndpointInformer.
@@ -62,17 +58,7 @@ func (v *version) Endpoints() EndpointInformer {
 	return &endpointInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Nodes returns a NodeInformer.
-func (v *version) Nodes() NodeInformer {
-	return &nodeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Services returns a ServiceInformer.
 func (v *version) Services() ServiceInformer {
 	return &serviceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Yards returns a YardInformer.
-func (v *version) Yards() YardInformer {
-	return &yardInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

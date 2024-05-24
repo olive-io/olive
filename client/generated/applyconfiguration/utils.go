@@ -40,26 +40,20 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	// Group=apidiscovery.olive.io, Version=v1
 	case v1.SchemeGroupVersion.WithKind("Box"):
 		return &apidiscoveryv1.BoxApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("Consumer"):
-		return &apidiscoveryv1.ConsumerApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ConsumerSpec"):
-		return &apidiscoveryv1.ConsumerSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("Edge"):
+		return &apidiscoveryv1.EdgeApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("EdgeSpec"):
+		return &apidiscoveryv1.EdgeSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Endpoint"):
 		return &apidiscoveryv1.EndpointApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("EndpointSpec"):
 		return &apidiscoveryv1.EndpointSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Node"):
 		return &apidiscoveryv1.NodeApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("NodeSpec"):
-		return &apidiscoveryv1.NodeSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Service"):
 		return &apidiscoveryv1.ServiceApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ServiceSpec"):
 		return &apidiscoveryv1.ServiceSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("Yard"):
-		return &apidiscoveryv1.YardApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("YardSpec"):
-		return &apidiscoveryv1.YardSpecApplyConfiguration{}
 
 		// Group=mon.olive.io, Version=v1
 	case monv1.SchemeGroupVersion.WithKind("Region"):

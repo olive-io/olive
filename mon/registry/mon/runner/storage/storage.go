@@ -59,8 +59,7 @@ func NewStorage(optsGetter generic.RESTOptionsGetter) (RunnerStorage, error) {
 	}, nil
 }
 
-var deleteOptionWarnings = "child pods are preserved by default when runners are deleted; " +
-	"set propagationPolicy=Background to remove them or set propagationPolicy=Orphan to suppress this warning"
+var deleteOptionWarnings = ""
 
 // REST implements a RESTStorage for runners against etcd
 type REST struct {
@@ -116,14 +115,19 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 }
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
-	//nolint:staticcheck // SA1019 backwards compatibility
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
 		runner.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as Runner deletion strategy by default is orphaning
-		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
+}
+
+// Implement ShortNamesProvider
+var _ rest.ShortNamesProvider = &REST{}
+
+// ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
+func (r *REST) ShortNames() []string {
+	return []string{"rt"}
 }
 
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.

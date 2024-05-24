@@ -18,10 +18,13 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:defaulter-gen=TypeMeta
+// +k8s:defaulter-gen-input=github.com/olive-io/olive/apis/core/v1
+// +k8s:conversion-gen=github.com/olive-io/olive/apis/core
 // +groupName=olive.io
 
 // Package v1 is the internal version of the API.

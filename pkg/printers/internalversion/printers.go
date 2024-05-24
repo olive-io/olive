@@ -17,24 +17,60 @@ limitations under the License.
 package internalversion
 
 import (
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	krt "k8s.io/apimachinery/pkg/runtime"
+
 	api "github.com/olive-io/olive/apis/core"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/pkg/printers"
 )
 
 const (
-	loadBalancerWidth = 16
+	// labelNodeRolePrefix is a label prefix for runner roles
+	labelRunnerRolePrefix = "runner-role.olive.io/"
 
-	// labelNodeRolePrefix is a label prefix for node roles
-	// It's copied over to here until it's merged in core: https://github.com/kubernetes/kubernetes/pull/39112
-	labelNodeRolePrefix = "node-role.olive.io/"
-
-	// nodeLabelRole specifies the role of a node
-	nodeLabelRole = "olive.io/role"
+	// runnerLabelRole specifies the role of a runner
+	runnerLabelRole = "olive.io/role"
 )
 
 // AddHandlers adds print handlers for default Kubernetes types dealing with internal versions.
 func AddHandlers(h printers.PrintHandler) {
+	runnerColumnDefinitions := []metav1.TableColumnDefinition{
+		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Status", Type: "string", Description: "The status of the node"},
+	}
 
+	_ = h.TableHandler(runnerColumnDefinitions, printRunner)
+	_ = h.TableHandler(runnerColumnDefinitions, printRunnerList)
+}
+
+func printRunner(obj *monv1.Runner, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+	row := metav1.TableRow{
+		Object: krt.RawExtension{Object: obj},
+	}
+
+	ips := []string{}
+	for _, url := range obj.Spec.ClientURLs {
+		ips = append(ips, url)
+	}
+
+	row.Cells = append(row.Cells, obj.Name, strings.Join(ips, ","), obj.Status.Phase)
+
+	return []metav1.TableRow{row}, nil
+}
+
+func printRunnerList(list *monv1.RunnerList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+	rows := make([]metav1.TableRow, 0, len(list.Items))
+	for i := range list.Items {
+		r, err := printRunner(&list.Items[i], options)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, r...)
+	}
+	return rows, nil
 }
 
 func printBoolPtr(value *bool) string {

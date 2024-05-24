@@ -84,15 +84,7 @@ type MonitorServer struct {
 // DefaultAPIResourceConfigSource returns default configuration for an APIResource.
 func DefaultAPIResourceConfigSource() *serverstorage.ResourceConfig {
 	ret := serverstorage.NewResourceConfig()
-	// NOTE: GroupVersions listed here will be enabled by default. Don't put alpha or beta versions in the list.
 	ret.EnableVersions(stableAPIGroupVersionsEnabledByDefault...)
-
-	// disable alpha and beta versions explicitly so we have a full list of what's possible to serve
-	//ret.DisableVersions(betaAPIGroupVersionsDisabledByDefault...)
-	//ret.DisableVersions(alphaAPIGroupVersionsDisabledByDefault...)
-
-	// enable the legacy beta resources that were present before stopped serving new beta APIs by default.
-	//ret.EnableResources(legacyBetaEnabledByDefaultResources...)
 
 	return ret
 }
@@ -102,10 +94,10 @@ func (s *MonitorServer) InstallAPIs(apiResourceConfigSource serverstorage.APIRes
 	nonLegacy := []*genericapiserver.APIGroupInfo{}
 
 	// used later in the loop to filter the served resource by those that have expired.
-	//resourceExpirationEvaluator, err := genericapiserver.NewResourceExpirationEvaluator(*s.genericAPIServer.Version)
-	//if err != nil {
-	//	return err
-	//}
+	resourceExpirationEvaluator, err := genericapiserver.NewResourceExpirationEvaluator(*s.genericAPIServer.Version)
+	if err != nil {
+		return err
+	}
 
 	for _, restStorageBuilder := range restStorageProviders {
 		groupName := restStorageBuilder.GroupName()
@@ -123,11 +115,11 @@ func (s *MonitorServer) InstallAPIs(apiResourceConfigSource serverstorage.APIRes
 		// Remove resources that serving kinds that are removed.
 		// We do this here so that we don't accidentally serve versions without resources or openapi information that for kinds we don't serve.
 		// This is a spot above the construction of individual storage handlers so that no sig accidentally forgets to check.
-		//resourceExpirationEvaluator.RemoveDeletedKinds(groupName, apiGroupInfo.Scheme, apiGroupInfo.VersionedResourcesStorageMap)
-		//if len(apiGroupInfo.VersionedResourcesStorageMap) == 0 {
-		//	klog.V(1).Infof("Removing API group %v because it is time to stop serving it because it has no versions per APILifecycle.", groupName)
-		//	continue
-		//}
+		resourceExpirationEvaluator.RemoveDeletedKinds(groupName, apiGroupInfo.Scheme, apiGroupInfo.VersionedResourcesStorageMap)
+		if len(apiGroupInfo.VersionedResourcesStorageMap) == 0 {
+			klog.V(1).Infof("Removing API group %v because it is time to stop serving it because it has no versions per APILifecycle.", groupName)
+			continue
+		}
 
 		klog.V(1).Infof("Enabling API group %q.", groupName)
 

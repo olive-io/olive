@@ -26,13 +26,6 @@ import (
 	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-
-	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	coreInstall "github.com/olive-io/olive/apis/core/install"
-	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monInstall "github.com/olive-io/olive/apis/mon/install"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 )
 
 var (
@@ -44,14 +37,12 @@ var (
 
 	// ParameterCodec handles versioning of objects that are converted to query parameters.
 	ParameterCodec krt.ParameterCodec
-
-	Codec krt.Codec
 )
 
 func init() {
-	monInstall.Install(Scheme)
-	apidiscoveryInstall.Install(Scheme)
-	coreInstall.Install(Scheme)
+	//monInstall.Install(Scheme)
+	//apidiscoveryInstall.Install(Scheme)
+	//coreInstall.Install(Scheme)
 
 	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
 	metav1.AddToGroupVersion(Scheme, unversioned)
@@ -65,12 +56,4 @@ func init() {
 
 	Codecs = serializer.NewCodecFactory(Scheme)
 	ParameterCodec = krt.NewParameterCodec(Scheme)
-
-	Codec = Codecs.LegacyCodec(
-		unversioned,
-		metav1.Unversioned,
-		monv1.SchemeGroupVersion,
-		apidiscoveryv1.SchemeGroupVersion,
-		corev1.SchemeGroupVersion,
-	)
 }
