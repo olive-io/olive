@@ -52,7 +52,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	storage := map[string]rest.Storage{}
 
 	// runner
-	if resource := "runner"; apiResourceConfigSource.ResourceEnabled(monv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(monv1.SchemeGroupVersion.WithResource(resource)) {
 		runnersStorage, runnersStatusStorage, err := runnerstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err
@@ -62,7 +62,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	}
 
 	// region
-	if resource := "region"; apiResourceConfigSource.ResourceEnabled(monv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(monv1.SchemeGroupVersion.WithResource(resource)) {
 		regionsStorage, regionsStatusStorage, err := regionstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err

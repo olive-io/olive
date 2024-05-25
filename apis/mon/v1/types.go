@@ -25,6 +25,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type NodeConfig struct {
+	metav1.TypeMeta `json:",inline"`
+
+	Endpoints []string `json:"endpoints" protobuf:"bytes,1,rep,name=endpoints"`
+}
+
 // RunnerPhase defines the phase in which a runner is in
 type RunnerPhase string
 
@@ -54,7 +62,7 @@ type Runner struct {
 // RunnerSpec is the specification of a Runner.
 type RunnerSpec struct {
 	// ID is the member ID for this member.
-	ID uint64 `json:"id" protobuf:"varint,1,opt,name=id"`
+	ID int64 `json:"id" protobuf:"varint,1,opt,name=id"`
 	// name is the human-readable name of the member. If the member is not started, the name will be an empty string.
 	Name string `json:"name" protobuf:"bytes,2,opt,name=name"`
 	// peerURLs is the list of URLs the member exposes to the cluster for communication.

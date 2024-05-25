@@ -23,20 +23,19 @@ package mon
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
-	"go.etcd.io/etcd/client/pkg/v3/types"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/version"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/olive-io/olive/apis"
+	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
 	apidiscoveryrest "github.com/olive-io/olive/mon/registry/apidiscovery/rest"
@@ -46,33 +45,19 @@ import (
 )
 
 const (
-	DefaultName                   = "default"
-	DefaultListenerClientAddress  = "http://localhost:4379"
-	DefaultListenerPeerAddress    = "http://localhost:4380"
 	DefaultRegionLimit            = 100
 	DefaultRegionDefinitionsLimit = 500
-	DefaultTokenTTL               = uint(600)
 )
 
 type Config struct {
-	EtcdConfig    *embed.Config
 	GenericConfig *genericapiserver.RecommendedConfig
 	ExtraConfig   *ExtraConfig
 }
 
 func NewConfig() *Config {
-	etcdConfig := embed.NewConfig()
-	etcdConfig.ListenClientUrls, _ = types.NewURLs(strings.Split(DefaultListenerClientAddress, ","))
-	etcdConfig.AdvertiseClientUrls = etcdConfig.ListenClientUrls
-	etcdConfig.ListenPeerUrls, _ = types.NewURLs(strings.Split(DefaultListenerPeerAddress, ","))
-	etcdConfig.AdvertisePeerUrls = etcdConfig.ListenPeerUrls
-	etcdConfig.InitialCluster = DefaultName + "=" + DefaultListenerPeerAddress
-	etcdConfig.AuthTokenTTL = DefaultTokenTTL
-
 	genericConfig := genericapiserver.NewRecommendedConfig(apis.Codecs)
 
 	cfg := Config{
-		EtcdConfig:    etcdConfig,
 		GenericConfig: genericConfig,
 		ExtraConfig:   NewExtraConfig(),
 	}
@@ -81,14 +66,13 @@ func NewConfig() *Config {
 }
 
 func (cfg *Config) Validate() (err error) {
-	if err = cfg.EtcdConfig.Validate(); err != nil {
-		return
-	}
-
 	return
 }
 
 type ExtraConfig struct {
+	Logger *zap.Logger
+	Etcd   *embed.Etcd
+
 	APIResourceConfigSource serverstorage.APIResourceConfigSource
 
 	KubeClient            clientset.Interface
@@ -123,7 +107,6 @@ type CompletedConfig struct {
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
 func (cfg *Config) Complete() CompletedConfig {
 	c := completedConfig{
-		EtcdConfig:    cfg.EtcdConfig,
 		GenericConfig: cfg.GenericConfig.Complete(),
 		ExtraConfig:   cfg.ExtraConfig,
 	}
@@ -138,14 +121,9 @@ func (cfg *Config) Complete() CompletedConfig {
 
 // New returns a new instance of Server from the given config.
 func (c completedConfig) New() (*MonitorServer, error) {
-	lg := c.EtcdConfig.GetLogger()
+	lg := c.ExtraConfig.Logger
+	etcd := c.ExtraConfig.Etcd
 	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
-
-	etcd, err := embed.StartEtcd(c.EtcdConfig)
-	if err != nil {
-		return nil, err
-	}
-	<-etcd.Server.ReadyNotify()
 
 	genericServer, err := c.GenericConfig.New("olive-mon", genericapiserver.NewEmptyDelegate())
 	if err != nil {
@@ -159,7 +137,6 @@ func (c completedConfig) New() (*MonitorServer, error) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-
 	monServer := &MonitorServer{
 		IDaemon: embedDaemon,
 
@@ -181,7 +158,9 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		&monrest.RESTStorageProvider{},
 	}
 
-	if err = monServer.InstallAPIs(c.ExtraConfig.APIResourceConfigSource, c.GenericConfig.RESTOptionsGetter,
+	if err = monServer.InstallAPIs(
+		c.ExtraConfig.APIResourceConfigSource,
+		c.GenericConfig.RESTOptionsGetter,
 		restStorageProviders...); err != nil {
 		return nil, err
 	}

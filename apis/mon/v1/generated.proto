@@ -31,6 +31,10 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 // Package-wide variables from generator "generated".
 option go_package = "github.com/olive-io/olive/apis/mon/v1";
 
+message NodeConfig {
+  repeated string endpoints = 1;
+}
+
 // Region the olive node
 message Region {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -132,7 +136,7 @@ message RunnerList {
 // RunnerSpec is the specification of a Runner.
 message RunnerSpec {
   // ID is the member ID for this member.
-  optional uint64 id = 1;
+  optional int64 id = 1;
 
   // name is the human-readable name of the member. If the member is not started, the name will be an empty string.
   optional string name = 2;

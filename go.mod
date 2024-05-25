@@ -16,9 +16,8 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.13
 	google.golang.org/protobuf v1.34.1
 	k8s.io/apimachinery v0.30.1 // indirect
+	k8s.io/code-generator v0.30.1
 )
-
-require k8s.io/code-generator v0.30.1
 
 require (
 	github.com/ChrisTrenkamp/xsel v0.9.15 // indirect

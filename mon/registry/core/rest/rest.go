@@ -52,7 +52,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	storage := map[string]rest.Storage{}
 
 	// definition
-	if resource := "definition"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "definitions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
 		runnersStorage, runnersStatusStorage, err := definitionstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err
@@ -62,7 +62,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	}
 
 	// processInstance
-	if resource := "process"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "processinstances"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
 		regionsStorage, regionsStatusStorage, err := processstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err

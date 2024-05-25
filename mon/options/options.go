@@ -106,6 +106,19 @@ func (o *ServerOptions) Config() (*monserver.Config, error) {
 		return nil, err
 	}
 
+	lg := etcdConfig.GetLogger()
+	etcd, err := embed.StartEtcd(etcdConfig)
+	if err != nil {
+		return nil, err
+	}
+	<-etcd.Server.ReadyNotify()
+
+	extraConfig := monserver.NewExtraConfig()
+	extraConfig.Logger = lg
+	extraConfig.Etcd = etcd
+	extraConfig.RegionLimit = DefaultRegionLimit
+	extraConfig.RegionDefinitionsLimit = DefaultRegionDefinitionsLimit
+
 	if err := o.EmbedEtcdOptions.ApplyToEtcdStorage(o.RecommendedOptions.EtcdStorage); err != nil {
 		return nil, err
 	}
@@ -143,15 +156,11 @@ func (o *ServerOptions) Config() (*monserver.Config, error) {
 
 	genericConfig.CorsAllowedOriginList = []string{".*"}
 
-	extraConfig := monserver.NewExtraConfig()
-	extraConfig.RegionLimit = DefaultRegionLimit
-	extraConfig.RegionDefinitionsLimit = DefaultRegionDefinitionsLimit
 	if err := o.RecommendedOptions.ApplyTo(genericConfig, extraConfig); err != nil {
 		return nil, err
 	}
 
 	config := &monserver.Config{
-		EtcdConfig:    etcdConfig,
 		GenericConfig: genericConfig,
 		ExtraConfig:   extraConfig,
 	}

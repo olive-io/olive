@@ -53,7 +53,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	storage := map[string]rest.Storage{}
 
 	// endpoint
-	if resource := "endpoint"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "endpoints"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
 		endpointsStorage, endpointsStatusStorage, err := endpointstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err
@@ -63,7 +63,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	}
 
 	// service
-	if resource := "service"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "services"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
 		servicesStorage, servicesStatusStorage, err := servicestore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err
@@ -73,7 +73,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	}
 
 	// edge
-	if resource := "edge"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "edges"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
 		edgesStorage, edgesStatusStorage, err := edgestore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err

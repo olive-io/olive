@@ -60,6 +60,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStat":     schema_olive_apis_core_v1_ProcessInstanceStat(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStatus":   schema_olive_apis_core_v1_ProcessInstanceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":     schema_olive_apis_core_v1_ProcessRunningState(ref),
+		"github.com/olive-io/olive/apis/mon/v1.NodeConfig":               schema_olive_apis_mon_v1_NodeConfig(ref),
 		"github.com/olive-io/olive/apis/mon/v1.Region":                   schema_olive_apis_mon_v1_Region(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionList":               schema_olive_apis_mon_v1_RegionList(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionReplica":            schema_olive_apis_mon_v1_RegionReplica(ref),
@@ -1370,6 +1371,47 @@ func schema_olive_apis_core_v1_ProcessRunningState(ref common.ReferenceCallback)
 					},
 				},
 				Required: []string{"properties", "dataObjects", "variables"},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_mon_v1_NodeConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"endpoints": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"endpoints"},
 			},
 		},
 	}
