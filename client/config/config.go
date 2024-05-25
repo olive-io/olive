@@ -19,23 +19,28 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package client
+package config
 
-type PageOptions struct {
-	Limit int64
-	Token string
+import (
+	restclient "k8s.io/client-go/rest"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+)
+
+type RestConfig struct {
+	restclient.Config
 }
 
-type PageOption func(*PageOptions)
+type CmdAPIConfig struct {
+	clientcmdapi.Config
 
-func WithLimit(limit int64) PageOption {
-	return func(opts *PageOptions) {
-		opts.Limit = limit
-	}
+	Endpoints string `json:"endpoints"`
+	Timeout   int64  `json:"timeout"`
 }
 
-func WithToken(token string) PageOption {
-	return func(opts *PageOptions) {
-		opts.Token = token
-	}
+func FromCmdAPIConfig(config *clientcmdapi.Config) *CmdAPIConfig {
+	return &CmdAPIConfig{Config: *config}
+}
+
+func NewCmdAPIConfig() *CmdAPIConfig {
+	return &CmdAPIConfig{Config: *clientcmdapi.NewConfig()}
 }

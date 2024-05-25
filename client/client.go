@@ -36,17 +36,11 @@ import (
 
 // Client provides and manages an olive-meta client session.
 type Client struct {
-	Cluster
-	MetaRunnerRPC
-	MetaRegionRPC
-	AuthRPC
-	RbacRPC
-	BpmnRPC
-
 	// embed etcd client
+	clientv3.Cluster
 	clientv3.KV
-	clientv3.Lease
 	clientv3.Watcher
+	clientv3.Maintenance
 
 	// the client of etcd server
 	ec *clientv3.Client
@@ -79,15 +73,15 @@ func newClient(cfg *Config) (*Client, error) {
 	if ipt := cfg.Interceptor; ipt != nil {
 		cfg.DialOptions = append(cfg.DialOptions, grpc.WithUnaryInterceptor(ipt.Unary()))
 	}
-	etcd, err := clientv3.New(cfg.Config)
+	etcdClient, err := clientv3.New(cfg.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(etcd.Ctx())
+	ctx, cancel := context.WithCancel(etcdClient.Ctx())
 	client := &Client{
-		ec:       etcd,
-		conn:     etcd.ActiveConnection(),
+		ec:       etcdClient,
+		conn:     etcdClient.ActiveConnection(),
 		ctx:      ctx,
 		cancel:   cancel,
 		callOpts: defaultCallOpts,
@@ -111,15 +105,10 @@ func newClient(cfg *Config) (*Client, error) {
 		client.callOpts = callOpts
 	}
 
-	client.Cluster = NewCluster(client)
-	client.MetaRunnerRPC = NewRunnerRPC(client)
-	client.MetaRegionRPC = NewRegionRPC(client)
-	client.AuthRPC = NewAuthRPC(client)
-	client.BpmnRPC = NewBpmnRPC(client)
-	client.RbacRPC = NewRbacRPC(client)
-	client.KV = etcd.KV
-	client.Lease = etcd.Lease
-	client.Watcher = etcd.Watcher
+	client.Cluster = etcdClient.Cluster
+	client.KV = etcdClient.KV
+	client.Watcher = etcdClient.Watcher
+	client.Maintenance = etcdClient.Maintenance
 
 	return client, nil
 }
