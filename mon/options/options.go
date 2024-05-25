@@ -34,10 +34,8 @@ import (
 
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/version"
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
 	"github.com/olive-io/olive/client/generated/openapi"
-	"github.com/olive-io/olive/mon"
+	monserver "github.com/olive-io/olive/mon"
 	"github.com/olive-io/olive/mon/embed"
 )
 
@@ -48,7 +46,6 @@ const (
 	DefaultListenerPeerAddress    = "http://localhost:4380"
 	DefaultRegionLimit            = 100
 	DefaultRegionDefinitionsLimit = 500
-	DefaultTokenTTL               = uint(600)
 )
 
 // ServerOptions contains state for master/api server
@@ -56,9 +53,8 @@ type ServerOptions struct {
 	EmbedEtcdOptions   *EmbedEtcdOptions
 	RecommendedOptions *RecommendedOptions
 
-	SharedInformerFactory informers.SharedInformerFactory
-	StdOut                io.Writer
-	StdErr                io.Writer
+	StdOut io.Writer
+	StdErr io.Writer
 
 	AlternateDNS []string
 }
@@ -78,7 +74,6 @@ func NewServerOptions(out, errOut io.Writer) *ServerOptions {
 	}
 	//o.RecommendedOptions.EtcdStorage.StorageConfig.EncodeVersioner = krt.NewMultiGroupVersioner(v1alpha1.SchemeGroupVersion, schema.GroupKind{Group: v1alpha1.GroupName})
 	o.RecommendedOptions.Admission = nil
-	o.RecommendedOptions.CoreAPI = nil
 	o.RecommendedOptions.Authentication = nil
 	o.RecommendedOptions.Authorization.RemoteKubeConfigFileOptional = true
 	o.RecommendedOptions.Authorization = nil
@@ -105,8 +100,8 @@ func (o *ServerOptions) Complete() error {
 }
 
 // Config returns config for the api server given ServerOptions
-func (o *ServerOptions) Config() (*mon.Config, error) {
-	etcdConfig := embed.NewConfig()
+func (o *ServerOptions) Config() (*monserver.Config, error) {
+	etcdConfig := &embed.Config{}
 	if err := o.EmbedEtcdOptions.ApplyTo(etcdConfig); err != nil {
 		return nil, err
 	}
@@ -119,17 +114,17 @@ func (o *ServerOptions) Config() (*mon.Config, error) {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
 	}
 
-	o.RecommendedOptions.ExtraAdmissionInitializers = func(c *genericapiserver.RecommendedConfig) ([]admission.PluginInitializer, error) {
-		client, err := clientset.NewForConfig(c.LoopbackClientConfig)
-		if err != nil {
-			return nil, err
-		}
+	o.RecommendedOptions.ExtraAdmissionInitializers = func(c *genericapiserver.RecommendedConfig, extraConfig *monserver.ExtraConfig) ([]admission.PluginInitializer, error) {
+		//client, err := clientset.NewForConfig(c.LoopbackClientConfig)
+		//if err != nil {
+		//	return nil, err
+		//}
 		//dynamicClient, err := dynamic.NewForConfig(c.LoopbackClientConfig)
 		//if err != nil {
 		//	return nil, err
 		//}
-		informerFactory := informers.NewSharedInformerFactory(client, c.LoopbackClientConfig.Timeout)
-		o.SharedInformerFactory = informerFactory
+		//informerFactory := informers.NewSharedInformerFactory(client, c.LoopbackClientConfig.Timeout)
+		//o.SharedInformerFactory = informerFactory
 
 		//
 		//initializer.New(client, dynamicClient, informerFactory,  utilfeature.DefaultFeatureGate, )
@@ -148,14 +143,17 @@ func (o *ServerOptions) Config() (*mon.Config, error) {
 
 	genericConfig.CorsAllowedOriginList = []string{".*"}
 
-	if err := o.RecommendedOptions.ApplyTo(genericConfig); err != nil {
+	extraConfig := monserver.NewExtraConfig()
+	extraConfig.RegionLimit = DefaultRegionLimit
+	extraConfig.RegionDefinitionsLimit = DefaultRegionDefinitionsLimit
+	if err := o.RecommendedOptions.ApplyTo(genericConfig, extraConfig); err != nil {
 		return nil, err
 	}
 
-	config := &mon.Config{
+	config := &monserver.Config{
 		EtcdConfig:    etcdConfig,
 		GenericConfig: genericConfig,
-		//ExtraConfig:   apiserver.ExtraConfig{},
+		ExtraConfig:   extraConfig,
 	}
 	return config, nil
 }

@@ -31,11 +31,12 @@ import (
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	"k8s.io/apiserver/pkg/util/feature"
-	"k8s.io/client-go/dynamic"
+	dynamicclient "k8s.io/client-go/dynamic"
 	"k8s.io/component-base/featuregate"
 
 	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
 	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
+	monserver "github.com/olive-io/olive/mon"
 )
 
 // RecommendedOptions contains the recommended options for running an API server.
@@ -48,13 +49,12 @@ type RecommendedOptions struct {
 	Authorization  *genericoptions.DelegatingAuthorizationOptions
 	Audit          *genericoptions.AuditOptions
 	Features       *FeatureOptions
-	CoreAPI        *genericoptions.CoreAPIOptions
 
 	// FeatureGate is a way to plumb feature gate through if you have them.
 	FeatureGate featuregate.FeatureGate
 	// ExtraAdmissionInitializers is called once after all ApplyTo from the options above, to pass the returned
 	// admission plugin initializers to Admission.ApplyTo.
-	ExtraAdmissionInitializers func(c *genericserver.RecommendedConfig) ([]admission.PluginInitializer, error)
+	ExtraAdmissionInitializers func(c *genericserver.RecommendedConfig, extraConfig *monserver.ExtraConfig) ([]admission.PluginInitializer, error)
 	Admission                  *AdmissionOptions
 	// API Server Egress Selector is used to control outbound traffic from the API Server
 	EgressSelector *genericoptions.EgressSelectorOptions
@@ -77,15 +77,13 @@ func NewRecommendedOptions(prefix string, codec krt.Codec) *RecommendedOptions {
 		Authorization:  genericoptions.NewDelegatingAuthorizationOptions(),
 		Audit:          genericoptions.NewAuditOptions(),
 		Features:       NewFeatureOptions(),
-		CoreAPI:        genericoptions.NewCoreAPIOptions(),
-		// Wired a global by default that sadly people will abuse to have different meanings in different repos.
-		// Please consider creating your own FeatureGate so you can have a consistent meaning for what a variable contains
-		// across different repos.  Future you will thank you.
-		FeatureGate:                feature.DefaultFeatureGate,
-		ExtraAdmissionInitializers: func(c *genericserver.RecommendedConfig) ([]admission.PluginInitializer, error) { return nil, nil },
-		Admission:                  NewAdmissionOptions(),
-		EgressSelector:             genericoptions.NewEgressSelectorOptions(),
-		Traces:                     genericoptions.NewTracingOptions(),
+		FeatureGate:    feature.DefaultFeatureGate,
+		ExtraAdmissionInitializers: func(c *genericserver.RecommendedConfig, extraConfig *monserver.ExtraConfig) ([]admission.PluginInitializer, error) {
+			return nil, nil
+		},
+		Admission:      NewAdmissionOptions(),
+		EgressSelector: genericoptions.NewEgressSelectorOptions(),
+		Traces:         genericoptions.NewTracingOptions(),
 	}
 }
 
@@ -96,7 +94,6 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Authorization.AddFlags(fs)
 	o.Audit.AddFlags(fs)
 	o.Features.AddFlags(fs)
-	o.CoreAPI.AddFlags(fs)
 	o.Admission.AddFlags(fs)
 	o.EgressSelector.AddFlags(fs)
 	o.Traces.AddFlags(fs)
@@ -104,7 +101,7 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 
 // ApplyTo adds RecommendedOptions to the server configuration.
 // pluginInitializers can be empty, it is only need for additional initializers.
-func (o *RecommendedOptions) ApplyTo(config *genericserver.RecommendedConfig) error {
+func (o *RecommendedOptions) ApplyTo(config *genericserver.RecommendedConfig, extraConfig *monserver.ExtraConfig) error {
 	if err := o.SecureServing.ApplyTo(&config.Config.SecureServing, &config.Config.LoopbackClientConfig); err != nil {
 		return err
 	}
@@ -126,28 +123,30 @@ func (o *RecommendedOptions) ApplyTo(config *genericserver.RecommendedConfig) er
 	if err := o.Audit.ApplyTo(&config.Config); err != nil {
 		return err
 	}
-	if err := o.CoreAPI.ApplyTo(config); err != nil {
-		return err
-	}
 
 	config.LoopbackClientConfig.ContentConfig.ContentType = krt.ContentTypeProtobuf
 	config.LoopbackClientConfig.DisableCompression = false
+	config.LoopbackClientConfig.Timeout = time.Minute * 10
 
-	kubeClientConfig := config.LoopbackClientConfig
-	kubeClient, err := clientset.NewForConfig(kubeClientConfig)
+	kubeClient, err := clientset.NewForConfig(config.LoopbackClientConfig)
 	if err != nil {
 		return err
 	}
-	informerFactory := informers.NewSharedInformerFactory(kubeClient, 10*time.Minute)
+
+	informerFactory := informers.NewSharedInformerFactory(kubeClient, config.LoopbackClientConfig.Timeout)
+	dynamicClient, err := dynamicclient.NewForConfig(config.LoopbackClientConfig)
+	if err != nil {
+		return err
+	}
+
+	extraConfig.KubeClient = kubeClient
+	extraConfig.SharedInformerFactory = informerFactory
+	extraConfig.DynamicClient = dynamicClient
 
 	if err := o.Features.ApplyTo(&config.Config, kubeClient, informerFactory); err != nil {
 		return err
 	}
-	initializers, err := o.ExtraAdmissionInitializers(config)
-	if err != nil {
-		return err
-	}
-	dynamicClient, err := dynamic.NewForConfig(config.LoopbackClientConfig)
+	initializers, err := o.ExtraAdmissionInitializers(config, extraConfig)
 	if err != nil {
 		return err
 	}
@@ -166,7 +165,6 @@ func (o *RecommendedOptions) Validate() []error {
 	errors = append(errors, o.Authorization.Validate()...)
 	errors = append(errors, o.Audit.Validate()...)
 	errors = append(errors, o.Features.Validate()...)
-	errors = append(errors, o.CoreAPI.Validate()...)
 	errors = append(errors, o.Admission.Validate()...)
 	errors = append(errors, o.EgressSelector.Validate()...)
 	errors = append(errors, o.Traces.Validate()...)

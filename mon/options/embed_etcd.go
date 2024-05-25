@@ -22,7 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package options
 
 import (
+	"github.com/go-logr/zapr"
 	"github.com/spf13/pflag"
+	"k8s.io/klog/v2"
 
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
@@ -110,8 +112,13 @@ func (o *EmbedEtcdOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Config.AutoCompactionMode, "auto-compaction-mode", "periodic", "interpret 'auto-compaction-retention' one of: periodic|revision. 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. '5m'). 'revision' for revision number based retention.")
 }
 
-func (o *EmbedEtcdOptions) ApplyTo(c *embed.Config) error {
-	*c = *o.Config
+func (o *EmbedEtcdOptions) ApplyTo(cfg *embed.Config) error {
+	*cfg = *o.Config
+
+	// set klog by zap Logger
+	logger := cfg.GetLogger()
+	klog.SetLogger(zapr.NewLogger(logger))
+
 	return nil
 }
 

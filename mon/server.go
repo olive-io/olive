@@ -149,57 +149,6 @@ func (s *MonitorServer) InstallAPIs(apiResourceConfigSource serverstorage.APIRes
 }
 
 func (s *MonitorServer) Start(stopc <-chan struct{}) error {
-	//ec := s.etcdConfig
-	//ec.EnableGRPCGateway = true
-	//
-	//ec.UserHandlers = map[string]http.Handler{
-	//	"/metrics": promhttp.Handler(),
-	//}
-	//
-	//clusterRPC, err := newClusterServer(s)
-	//if err != nil {
-	//	return err
-	//}
-	//runnerRPC, err := newRunnerServer(s)
-	//if err != nil {
-	//	return err
-	//}
-	//authRPC, err := newAuthServer(s)
-	//if err != nil {
-	//	return err
-	//}
-	//bpmnRPC, err := newBpmnServer(s)
-	//if err != nil {
-	//	return err
-	//}
-	//ec.ServiceRegister = func(gs *grpc.Server) {
-	//	pb.RegisterMetaClusterRPCServer(gs, clusterRPC)
-	//	pb.RegisterMetaRunnerRPCServer(gs, runnerRPC)
-	//	pb.RegisterMetaRegionRPCServer(gs, runnerRPC)
-	//	pb.RegisterAuthRPCServer(gs, authRPC)
-	//	pb.RegisterRbacRPCServer(gs, authRPC)
-	//	pb.RegisterBpmnRPCServer(gs, bpmnRPC)
-	//}
-	//
-	//ec.UnaryInterceptor = s.unaryInterceptor()
-	//s.etcd, err = embed.StartEtcd(ec)
-	//if err != nil {
-	//	return errors.Wrap(err, "start embed etcd")
-	//}
-	//
-	//select {
-	//case <-s.etcd.Server.ReadyNotify():
-	//case <-stopc:
-	//	return errors.New("etcd server not stops")
-	//}
-
-	//s.genericAPIServer.AddPostStartHookOrDie("start-olive-mon-informers", func(ctx genericapiserver.PostStartHookContext) error {
-	//	config.GenericConfig.SharedInformerFactory.Start(ctx.StopCh)
-	//	o.SharedInformerFactory.Start(ctx.StopCh)
-	//	return nil
-	//})
-	//
-	//return server.GenericAPIServer.PrepareRun().Run(stopCh)
 	shutdownTimeout := time.Second * 10
 	preparedServer := s.genericAPIServer.PrepareRun()
 	stoppedCh, listenerStoppedCh, err := preparedServer.NonBlockingRun(stopc, shutdownTimeout)
