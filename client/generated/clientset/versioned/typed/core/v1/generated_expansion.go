@@ -25,4 +25,4 @@ package v1
 
 type DefinitionExpansion interface{}
 
-type ProcessInstanceExpansion interface{}
+type ProcessExpansion interface{}

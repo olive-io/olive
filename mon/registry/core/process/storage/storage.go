@@ -34,28 +34,28 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/mon/registry/core/processInstance"
+	"github.com/olive-io/olive/mon/registry/core/process"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// ProcessInstanceStorage includes dummy storage for ProcessInstance.
-type ProcessInstanceStorage struct {
-	ProcessInstance *REST
-	Status          *StatusREST
+// ProcessStorage includes dummy storage for Process.
+type ProcessStorage struct {
+	Process *REST
+	Status  *StatusREST
 }
 
-// NewStorage creates a new ProcessInstanceStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (ProcessInstanceStorage, error) {
+// NewStorage creates a new ProcessStorage against etcd.
+func NewStorage(optsGetter generic.RESTOptionsGetter) (ProcessStorage, error) {
 	processInstanceRest, processInstanceStatusRest, err := NewREST(optsGetter)
 	if err != nil {
-		return ProcessInstanceStorage{}, err
+		return ProcessStorage{}, err
 	}
 
-	return ProcessInstanceStorage{
-		ProcessInstance: processInstanceRest,
-		Status:          processInstanceStatusRest,
+	return ProcessStorage{
+		Process: processInstanceRest,
+		Status:  processInstanceStatusRest,
 	}, nil
 }
 
@@ -66,30 +66,30 @@ type REST struct {
 	*genericregistry.Store
 }
 
-// NewREST returns a RESTStorage object that will work against ProcessInstances.
+// NewREST returns a RESTStorage object that will work against Processs.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &corev1.ProcessInstance{} },
-		NewListFunc:               func() runtime.Object { return &corev1.ProcessInstanceList{} },
-		PredicateFunc:             processInstance.MatchProcessInstance,
+		NewFunc:                   func() runtime.Object { return &corev1.Process{} },
+		NewListFunc:               func() runtime.Object { return &corev1.ProcessList{} },
+		PredicateFunc:             process.MatchProcess,
 		DefaultQualifiedResource:  corev1.Resource("processes"),
 		SingularQualifiedResource: corev1.Resource("process"),
 
-		CreateStrategy:      processInstance.Strategy,
-		UpdateStrategy:      processInstance.Strategy,
-		DeleteStrategy:      processInstance.Strategy,
-		ResetFieldsStrategy: processInstance.Strategy,
+		CreateStrategy:      process.Strategy,
+		UpdateStrategy:      process.Strategy,
+		DeleteStrategy:      process.Strategy,
+		ResetFieldsStrategy: process.Strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: processInstance.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: process.GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = processInstance.StatusStrategy
-	statusStore.ResetFieldsStrategy = processInstance.StatusStrategy
+	statusStore.UpdateStrategy = process.StatusStrategy
+	statusStore.ResetFieldsStrategy = process.StatusStrategy
 
 	return &REST{store}, &StatusREST{store: &statusStore}, nil
 }
@@ -107,15 +107,15 @@ var _ rest.ShortNamesProvider = &REST{}
 
 // ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
 func (r *REST) ShortNames() []string {
-	return []string{"pi"}
+	return []string{"pr"}
 }
 
 func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions) (runtime.Object, bool, error) {
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		processInstance.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as ProcessInstance deletion strategy by default is orphaning
+		process.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		// Throw a warning if delete options are not explicitly set as Process deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
@@ -124,7 +124,7 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		processInstance.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		process.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
@@ -135,9 +135,9 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
-// New creates a new ProcessInstance object.
+// New creates a new Process object.
 func (r *StatusREST) New() runtime.Object {
-	return &corev1.ProcessInstance{}
+	return &corev1.Process{}
 }
 
 // Destroy cleans up resources on shutdown.

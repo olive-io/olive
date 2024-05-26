@@ -27,24 +27,24 @@ import (
 	v1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// ProcessInstanceStatusApplyConfiguration represents an declarative configuration of the ProcessInstanceStatus type for use
+// ProcessStatusApplyConfiguration represents an declarative configuration of the ProcessStatus type for use
 // with apply.
-type ProcessInstanceStatusApplyConfiguration struct {
+type ProcessStatusApplyConfiguration struct {
 	Phase   *v1.ProcessPhase `json:"phase,omitempty"`
 	Message *string          `json:"message,omitempty"`
-	Region  *uint64          `json:"region,omitempty"`
+	Region  *int64           `json:"region,omitempty"`
 }
 
-// ProcessInstanceStatusApplyConfiguration constructs an declarative configuration of the ProcessInstanceStatus type for use with
+// ProcessStatusApplyConfiguration constructs an declarative configuration of the ProcessStatus type for use with
 // apply.
-func ProcessInstanceStatus() *ProcessInstanceStatusApplyConfiguration {
-	return &ProcessInstanceStatusApplyConfiguration{}
+func ProcessStatus() *ProcessStatusApplyConfiguration {
+	return &ProcessStatusApplyConfiguration{}
 }
 
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *ProcessInstanceStatusApplyConfiguration) WithPhase(value v1.ProcessPhase) *ProcessInstanceStatusApplyConfiguration {
+func (b *ProcessStatusApplyConfiguration) WithPhase(value v1.ProcessPhase) *ProcessStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }
@@ -52,7 +52,7 @@ func (b *ProcessInstanceStatusApplyConfiguration) WithPhase(value v1.ProcessPhas
 // WithMessage sets the Message field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Message field is set to the value of the last call.
-func (b *ProcessInstanceStatusApplyConfiguration) WithMessage(value string) *ProcessInstanceStatusApplyConfiguration {
+func (b *ProcessStatusApplyConfiguration) WithMessage(value string) *ProcessStatusApplyConfiguration {
 	b.Message = &value
 	return b
 }
@@ -60,7 +60,7 @@ func (b *ProcessInstanceStatusApplyConfiguration) WithMessage(value string) *Pro
 // WithRegion sets the Region field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Region field is set to the value of the last call.
-func (b *ProcessInstanceStatusApplyConfiguration) WithRegion(value uint64) *ProcessInstanceStatusApplyConfiguration {
+func (b *ProcessStatusApplyConfiguration) WithRegion(value int64) *ProcessStatusApplyConfiguration {
 	b.Region = &value
 	return b
 }

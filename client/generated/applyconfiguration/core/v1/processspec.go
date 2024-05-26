@@ -27,27 +27,27 @@ import (
 	v1 "github.com/olive-io/olive/client/generated/applyconfiguration/apidiscovery/v1"
 )
 
-// ProcessInstanceSpecApplyConfiguration represents an declarative configuration of the ProcessInstanceSpec type for use
+// ProcessSpecApplyConfiguration represents an declarative configuration of the ProcessSpec type for use
 // with apply.
-type ProcessInstanceSpecApplyConfiguration struct {
+type ProcessSpecApplyConfiguration struct {
 	Definition  *string                             `json:"definition,omitempty"`
-	Version     *uint64                             `json:"version,omitempty"`
+	Version     *int64                              `json:"version,omitempty"`
 	BpmnProcess *string                             `json:"bpmnProcess,omitempty"`
 	Headers     map[string]string                   `json:"headers,omitempty"`
 	Properties  map[string]v1.BoxApplyConfiguration `json:"properties,omitempty"`
 	DataObjects map[string]string                   `json:"dataObjects,omitempty"`
 }
 
-// ProcessInstanceSpecApplyConfiguration constructs an declarative configuration of the ProcessInstanceSpec type for use with
+// ProcessSpecApplyConfiguration constructs an declarative configuration of the ProcessSpec type for use with
 // apply.
-func ProcessInstanceSpec() *ProcessInstanceSpecApplyConfiguration {
-	return &ProcessInstanceSpecApplyConfiguration{}
+func ProcessSpec() *ProcessSpecApplyConfiguration {
+	return &ProcessSpecApplyConfiguration{}
 }
 
 // WithDefinition sets the Definition field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Definition field is set to the value of the last call.
-func (b *ProcessInstanceSpecApplyConfiguration) WithDefinition(value string) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithDefinition(value string) *ProcessSpecApplyConfiguration {
 	b.Definition = &value
 	return b
 }
@@ -55,7 +55,7 @@ func (b *ProcessInstanceSpecApplyConfiguration) WithDefinition(value string) *Pr
 // WithVersion sets the Version field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Version field is set to the value of the last call.
-func (b *ProcessInstanceSpecApplyConfiguration) WithVersion(value uint64) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithVersion(value int64) *ProcessSpecApplyConfiguration {
 	b.Version = &value
 	return b
 }
@@ -63,7 +63,7 @@ func (b *ProcessInstanceSpecApplyConfiguration) WithVersion(value uint64) *Proce
 // WithBpmnProcess sets the BpmnProcess field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the BpmnProcess field is set to the value of the last call.
-func (b *ProcessInstanceSpecApplyConfiguration) WithBpmnProcess(value string) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithBpmnProcess(value string) *ProcessSpecApplyConfiguration {
 	b.BpmnProcess = &value
 	return b
 }
@@ -72,7 +72,7 @@ func (b *ProcessInstanceSpecApplyConfiguration) WithBpmnProcess(value string) *P
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Headers field,
 // overwriting an existing map entries in Headers field with the same key.
-func (b *ProcessInstanceSpecApplyConfiguration) WithHeaders(entries map[string]string) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithHeaders(entries map[string]string) *ProcessSpecApplyConfiguration {
 	if b.Headers == nil && len(entries) > 0 {
 		b.Headers = make(map[string]string, len(entries))
 	}
@@ -86,7 +86,7 @@ func (b *ProcessInstanceSpecApplyConfiguration) WithHeaders(entries map[string]s
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Properties field,
 // overwriting an existing map entries in Properties field with the same key.
-func (b *ProcessInstanceSpecApplyConfiguration) WithProperties(entries map[string]v1.BoxApplyConfiguration) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithProperties(entries map[string]v1.BoxApplyConfiguration) *ProcessSpecApplyConfiguration {
 	if b.Properties == nil && len(entries) > 0 {
 		b.Properties = make(map[string]v1.BoxApplyConfiguration, len(entries))
 	}
@@ -100,7 +100,7 @@ func (b *ProcessInstanceSpecApplyConfiguration) WithProperties(entries map[strin
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the DataObjects field,
 // overwriting an existing map entries in DataObjects field with the same key.
-func (b *ProcessInstanceSpecApplyConfiguration) WithDataObjects(entries map[string]string) *ProcessInstanceSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithDataObjects(entries map[string]string) *ProcessSpecApplyConfiguration {
 	if b.DataObjects == nil && len(entries) > 0 {
 		b.DataObjects = make(map[string]string, len(entries))
 	}

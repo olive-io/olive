@@ -54,12 +54,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":          schema_olive_apis_core_v1_DefinitionSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":        schema_olive_apis_core_v1_DefinitionStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":            schema_olive_apis_core_v1_FlowNodeStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstance":         schema_olive_apis_core_v1_ProcessInstance(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceList":     schema_olive_apis_core_v1_ProcessInstanceList(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceSpec":     schema_olive_apis_core_v1_ProcessInstanceSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStat":     schema_olive_apis_core_v1_ProcessInstanceStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceStatus":   schema_olive_apis_core_v1_ProcessInstanceStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Process":                 schema_olive_apis_core_v1_Process(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessList":             schema_olive_apis_core_v1_ProcessList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":     schema_olive_apis_core_v1_ProcessRunningState(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":             schema_olive_apis_core_v1_ProcessSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStat":             schema_olive_apis_core_v1_ProcessStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":           schema_olive_apis_core_v1_ProcessStatus(ref),
 		"github.com/olive-io/olive/apis/mon/v1.NodeConfig":               schema_olive_apis_mon_v1_NodeConfig(ref),
 		"github.com/olive-io/olive/apis/mon/v1.Region":                   schema_olive_apis_mon_v1_Region(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionList":               schema_olive_apis_mon_v1_RegionList(ref),
@@ -1017,11 +1017,11 @@ func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ProcessInstance is bpmn process instance",
+				Description: "Process is bpmn process instance",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -1047,13 +1047,13 @@ func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) com
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessInstanceSpec"),
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessInstanceStatus"),
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessStatus"),
 						},
 					},
 				},
@@ -1061,15 +1061,15 @@ func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessInstanceSpec", "github.com/olive-io/olive/apis/core/v1.ProcessInstanceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/core/v1.ProcessSpec", "github.com/olive-io/olive/apis/core/v1.ProcessStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstanceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_ProcessList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ProcessInstanceList is a list of ProcessInstance objects.",
+				Description: "ProcessList is a list of Process objects.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -1094,13 +1094,13 @@ func schema_olive_apis_core_v1_ProcessInstanceList(ref common.ReferenceCallback)
 					},
 					"items": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of ProcessInstance",
+							Description: "Items is a list of Process",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessInstance"),
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Process"),
 									},
 								},
 							},
@@ -1111,11 +1111,69 @@ func schema_olive_apis_core_v1_ProcessInstanceList(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessInstance", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/olive-io/olive/apis/core/v1.Process", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstanceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_ProcessRunningState(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"properties": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"dataObjects": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"variables": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"properties", "dataObjects", "variables"},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_core_v1_ProcessSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1198,11 +1256,11 @@ func schema_olive_apis_core_v1_ProcessInstanceSpec(ref common.ReferenceCallback)
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstanceStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_ProcessStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ProcessInstanceStat is stat information of ProcessInstance",
+				Description: "ProcessStat is stat information of Process",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -1221,7 +1279,7 @@ func schema_olive_apis_core_v1_ProcessInstanceStat(ref common.ReferenceCallback)
 					},
 					"id": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The id of ProcessInstance",
+							Description: "The id of Process",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -1284,7 +1342,7 @@ func schema_olive_apis_core_v1_ProcessInstanceStat(ref common.ReferenceCallback)
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstanceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_ProcessStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1313,64 +1371,6 @@ func schema_olive_apis_core_v1_ProcessInstanceStatus(ref common.ReferenceCallbac
 					},
 				},
 				Required: []string{"phase", "region"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessRunningState(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"properties": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"dataObjects": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"variables": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"properties", "dataObjects", "variables"},
 			},
 		},
 	}

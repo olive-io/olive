@@ -41,9 +41,6 @@ import (
 
 const (
 	DefaultEtcdPathPrefix         = "/registry/olive"
-	DefaultName                   = "default"
-	DefaultListenerClientAddress  = "http://localhost:4379"
-	DefaultListenerPeerAddress    = "http://localhost:4380"
 	DefaultRegionLimit            = 100
 	DefaultRegionDefinitionsLimit = 500
 )

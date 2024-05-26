@@ -31,7 +31,7 @@ import (
 	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	definitionstore "github.com/olive-io/olive/mon/registry/core/definition/storage"
-	processstore "github.com/olive-io/olive/mon/registry/core/processInstance/storage"
+	processstore "github.com/olive-io/olive/mon/registry/core/process/storage"
 )
 
 type RESTStorageProvider struct{}
@@ -62,7 +62,7 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	}
 
 	// processInstance
-	if resource := "processinstances"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "processes"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
 		regionsStorage, regionsStatusStorage, err := processstore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err

@@ -62,8 +62,8 @@ const (
 	DefaultGRPCKeepAliveTimeout  = 20 * time.Second
 	DefaultDowngradeCheckTime    = 5 * time.Second
 
-	DefaultListenPeerURLs   = "http://localhost:2380"
-	DefaultListenClientURLs = "http://localhost:2379"
+	DefaultListenPeerURLs   = "http://localhost:4380"
+	DefaultListenClientURLs = "http://localhost:4379"
 
 	DefaultLogOutput = "default"
 	JournalLogOutput = "systemd/journal"
@@ -78,11 +78,6 @@ const (
 	// LocalTime  = false // use computers local time, UTC by default
 	// Compress   = false // compress the rotated log in gzip format
 	DefaultLogRotationConfig = `{"maxsize": 100, "maxage": 0, "maxbackups": 0, "localtime": false, "compress": false}`
-
-	// ExperimentalDistributedTracingAddress is the default collector address.
-	ExperimentalDistributedTracingAddress = "localhost:4317"
-	// ExperimentalDistributedTracingServiceName is the default etcd service name.
-	ExperimentalDistributedTracingServiceName = "etcd"
 
 	// DefaultStrictReconfigCheck is the default value for "--strict-reconfig-check" flag.
 	// It's enabled by default.
@@ -101,8 +96,8 @@ var (
 	ErrUnsetAdvertiseClientURLsFlag = fmt.Errorf("--advertise-client-urls is required when --listen-client-urls is set explicitly")
 	ErrLogRotationInvalidLogOutput  = fmt.Errorf("--log-outputs requires a single file path when --log-rotate-config-json is defined")
 
-	DefaultInitialAdvertisePeerURLs = "http://localhost:2380"
-	DefaultAdvertiseClientURLs      = "http://localhost:2379"
+	DefaultInitialAdvertisePeerURLs = "http://localhost:4380"
+	DefaultAdvertiseClientURLs      = "http://localhost:4379"
 
 	defaultHostname   string
 	defaultHostStatus error

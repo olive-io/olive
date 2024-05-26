@@ -57,18 +57,18 @@ func (o *EmbedEtcdOptions) Validate() []error {
 }
 
 func (o *EmbedEtcdOptions) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&o.Config.Name, "name", DefaultName,
+	fs.StringVar(&o.Config.Name, "name", embed.DefaultName,
 		"Human-readable name for this member.")
-	fs.StringVar(&o.Config.Dir, "data-dir", DefaultName+".olive",
+	fs.StringVar(&o.Config.Dir, "data-dir", embed.DefaultName+".olive",
 		"Path to the data directory.")
 	fs.StringVar(&o.Config.WalDir, "wal-dir", o.Config.WalDir, "Path to the dedicated wal directory.")
 	fs.Var(
-		flags.NewUniqueURLsWithExceptions(DefaultListenerPeerAddress, ""),
+		flags.NewUniqueURLsWithExceptions(embed.DefaultListenPeerURLs, ""),
 		"listen-peer-urls",
 		"List of URLs to listen on for peer traffic.",
 	)
 	fs.Var(
-		flags.NewUniqueURLsWithExceptions(DefaultListenerClientAddress, ""), "listen-client-urls",
+		flags.NewUniqueURLsWithExceptions(embed.DefaultListenClientURLs, ""), "listen-client-urls",
 		"List of URLs to listen on for client traffic.",
 	)
 	fs.UintVar(&o.Config.MaxSnapFiles, "max-snapshots", o.Config.MaxSnapFiles, "Maximum number of snapshot files to retain (0 is unlimited).")
@@ -98,12 +98,12 @@ func (o *EmbedEtcdOptions) AddFlags(fs *pflag.FlagSet) {
 
 	// clustering
 	fs.Var(
-		flags.NewUniqueURLsWithExceptions(DefaultListenerPeerAddress, ""),
+		flags.NewUniqueURLsWithExceptions(embed.DefaultInitialAdvertisePeerURLs, ""),
 		"initial-advertise-peer-urls",
 		"List of this member's peer URLs to advertise to the rest of the cluster.",
 	)
 	fs.Var(
-		flags.NewUniqueURLsWithExceptions(DefaultListenerClientAddress, ""),
+		flags.NewUniqueURLsWithExceptions(embed.DefaultAdvertiseClientURLs, ""),
 		"advertise-client-urls",
 		"List of this member's client URLs to advertise to the public.",
 	)

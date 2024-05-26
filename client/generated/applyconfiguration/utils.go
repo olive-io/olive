@@ -78,12 +78,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.DefinitionSpecApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("DefinitionStatus"):
 		return &applyconfigurationcorev1.DefinitionStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessInstance"):
-		return &applyconfigurationcorev1.ProcessInstanceApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessInstanceSpec"):
-		return &applyconfigurationcorev1.ProcessInstanceSpecApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessInstanceStatus"):
-		return &applyconfigurationcorev1.ProcessInstanceStatusApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("Process"):
+		return &applyconfigurationcorev1.ProcessApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessSpec"):
+		return &applyconfigurationcorev1.ProcessSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessStatus"):
+		return &applyconfigurationcorev1.ProcessStatusApplyConfiguration{}
 
 	}
 	return nil

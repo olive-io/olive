@@ -31,8 +31,8 @@ import (
 type Interface interface {
 	// Definitions returns a DefinitionInformer.
 	Definitions() DefinitionInformer
-	// ProcessInstances returns a ProcessInstanceInformer.
-	ProcessInstances() ProcessInstanceInformer
+	// Processes returns a ProcessInformer.
+	Processes() ProcessInformer
 }
 
 type version struct {
@@ -51,7 +51,7 @@ func (v *version) Definitions() DefinitionInformer {
 	return &definitionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// ProcessInstances returns a ProcessInstanceInformer.
-func (v *version) ProcessInstances() ProcessInstanceInformer {
-	return &processInstanceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Processes returns a ProcessInformer.
+func (v *version) Processes() ProcessInformer {
+	return &processInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -297,7 +297,7 @@ func (in *RunnerStat) DeepCopyInto(out *RunnerStat) {
 	out.TypeMeta = in.TypeMeta
 	if in.Regions != nil {
 		in, out := &in.Regions, &out.Regions
-		*out = make([]uint64, len(*in))
+		*out = make([]int64, len(*in))
 		copy(*out, *in)
 	}
 	if in.Leaders != nil {

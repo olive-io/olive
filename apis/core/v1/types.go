@@ -53,9 +53,9 @@ type Definition struct {
 
 type DefinitionSpec struct {
 	Content string `json:"content,omitempty" protobuf:"bytes,1,opt,name=content"`
-	Version uint64 `json:"version,omitempty" protobuf:"varint,2,opt,name=version"`
+	Version int64  `json:"version,omitempty" protobuf:"varint,2,opt,name=version"`
 	// the id of olive region
-	Region uint64 `json:"region,omitempty" protobuf:"varint,3,opt,name=region"`
+	Region int64 `json:"region,omitempty" protobuf:"varint,3,opt,name=region"`
 }
 
 type DefinitionStatus struct {
@@ -87,20 +87,20 @@ const (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ProcessInstance is bpmn process instance
-type ProcessInstance struct {
+// Process is bpmn process instance
+type Process struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	Spec   ProcessInstanceSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status ProcessInstanceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Spec   ProcessSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status ProcessStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
-type ProcessInstanceSpec struct {
+type ProcessSpec struct {
 	// the id of Definition
 	Definition string `json:"definition" protobuf:"bytes,1,opt,name=definition"`
 	// the version if Definition
-	Version uint64 `json:"version" protobuf:"varint,2,opt,name=version"`
+	Version int64 `json:"version" protobuf:"varint,2,opt,name=version"`
 	// the process id of bpmn Process Element in Definition
 	BpmnProcess string                        `json:"bpmnProcess" protobuf:"bytes,3,opt,name=bpmnProcess"`
 	Headers     map[string]string             `json:"headers" protobuf:"bytes,4,rep,name=headers"`
@@ -108,37 +108,37 @@ type ProcessInstanceSpec struct {
 	DataObjects map[string]string             `json:"dataObjects" protobuf:"bytes,6,rep,name=dataObjects"`
 }
 
-type ProcessInstanceStatus struct {
+type ProcessStatus struct {
 	Phase   ProcessPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=ProcessPhase"`
 	Message string       `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
 	// the id of olive region
-	Region uint64 `json:"region" protobuf:"varint,3,opt,name=region"`
+	Region int64 `json:"region" protobuf:"varint,3,opt,name=region"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ProcessInstanceList is a list of ProcessInstance objects.
-type ProcessInstanceList struct {
+// ProcessList is a list of Process objects.
+type ProcessList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	// Items is a list of ProcessInstance
-	Items []ProcessInstance `json:"items" protobuf:"bytes,2,rep,name=items"`
+	// Items is a list of Process
+	Items []Process `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ProcessInstanceStat is stat information of ProcessInstance
-type ProcessInstanceStat struct {
+// ProcessStat is stat information of Process
+type ProcessStat struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// The id of ProcessInstance
+	// The id of Process
 	Id                string `json:"id" protobuf:"bytes,1,opt,name=id"`
 	DefinitionContent string `json:"definitionContent" protobuf:"bytes,2,opt,name=definitionContent"`
 
-	ProcessState ProcessRunningState `json:"processState" protobuf:"bytes,3,opt,name=processState"`
+	State ProcessRunningState `json:"processState" protobuf:"bytes,3,opt,name=processState"`
 
-	Attempts  uint64                  `json:"attempts" protobuf:"varint,4,opt,name=attempts"`
+	Attempts  int64                   `json:"attempts" protobuf:"varint,4,opt,name=attempts"`
 	FlowNodes map[string]FlowNodeStat `json:"flowNodes" protobuf:"bytes,5,rep,name=flowNodes"`
 	StartTime int64                   `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
 	EndTime   int64                   `json:"endTime" protobuf:"varint,7,opt,name=endTime"`

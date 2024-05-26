@@ -94,15 +94,15 @@ type RunnerList struct {
 type RunnerStat struct {
 	metav1.TypeMeta
 
-	Id            uint64   `json:"id" protobuf:"varint,1,opt,name=id"`
+	Id            int64    `json:"id" protobuf:"varint,1,opt,name=id"`
 	CpuPer        float64  `json:"cpuPer" protobuf:"fixed64,2,opt,name=cpuPer"`
 	MemoryPer     float64  `json:"memoryPer" protobuf:"fixed64,3,opt,name=memoryPer"`
-	Regions       []uint64 `json:"regions" protobuf:"varint,4,rep,name=regions"`
+	Regions       []int64  `json:"regions" protobuf:"varint,4,rep,name=regions"`
 	Leaders       []string `json:"leaders" protobuf:"bytes,5,rep,name=leaders"`
-	Definitions   uint64   `json:"definitions" protobuf:"varint,6,opt,name=definitions"`
-	BpmnProcesses uint64   `json:"bpmnProcesses" protobuf:"varint,7,opt,name=bpmnProcesses"`
-	BpmnEvents    uint64   `json:"bpmnEvents" protobuf:"varint,8,opt,name=bpmnEvents"`
-	BpmnTasks     uint64   `json:"bpmnTasks" protobuf:"varint,9,opt,name=bpmnTasks"`
+	Definitions   int64    `json:"definitions" protobuf:"varint,6,opt,name=definitions"`
+	BpmnProcesses int64    `json:"bpmnProcesses" protobuf:"varint,7,opt,name=bpmnProcesses"`
+	BpmnEvents    int64    `json:"bpmnEvents" protobuf:"varint,8,opt,name=bpmnEvents"`
+	BpmnTasks     int64    `json:"bpmnTasks" protobuf:"varint,9,opt,name=bpmnTasks"`
 	Message       string   `json:"message" protobuf:"bytes,10,opt,name=message"`
 	Timestamp     int64    `json:"timestamp" protobuf:"varint,11,opt,name=timestamp"`
 }
@@ -133,20 +133,20 @@ type Region struct {
 
 // RegionSpec is the specification of a Region.
 type RegionSpec struct {
-	Id               uint64          `json:"id" protobuf:"varint,1,opt,name=id"`
-	DeploymentId     uint64          `json:"deploymentId" protobuf:"varint,2,opt,name=deploymentId"`
+	Id               int64           `json:"id" protobuf:"varint,1,opt,name=id"`
+	DeploymentId     int64           `json:"deploymentId" protobuf:"varint,2,opt,name=deploymentId"`
 	Replicas         []RegionReplica `json:"replicas" protobuf:"bytes,3,rep,name=replicas"`
-	ElectionRTT      uint64          `json:"electionRTT" protobuf:"varint,4,opt,name=electionRTT"`
-	HeartbeatRTT     uint64          `json:"heartbeatRTT" protobuf:"varint,5,opt,name=heartbeatRTT"`
-	Leader           uint64          `json:"leader" protobuf:"varint,6,opt,name=leader"`
-	Definitions      uint64          `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
-	DefinitionsLimit uint64          `json:"definitionsLimit" protobuf:"varint,8,opt,name=definitionsLimit"`
+	ElectionRTT      int64           `json:"electionRTT" protobuf:"varint,4,opt,name=electionRTT"`
+	HeartbeatRTT     int64           `json:"heartbeatRTT" protobuf:"varint,5,opt,name=heartbeatRTT"`
+	Leader           int64           `json:"leader" protobuf:"varint,6,opt,name=leader"`
+	Definitions      int64           `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
+	DefinitionsLimit int64           `json:"definitionsLimit" protobuf:"varint,8,opt,name=definitionsLimit"`
 }
 
 type RegionReplica struct {
-	Id          uint64 `json:"id" protobuf:"varint,1,opt,name=id"`
-	Runner      uint64 `json:"runner" protobuf:"varint,2,opt,name=runner"`
-	Region      uint64 `json:"region" protobuf:"varint,3,opt,name=region"`
+	Id          int64  `json:"id" protobuf:"varint,1,opt,name=id"`
+	Runner      int64  `json:"runner" protobuf:"varint,2,opt,name=runner"`
+	Region      int64  `json:"region" protobuf:"varint,3,opt,name=region"`
 	RaftAddress string `json:"raftAddress" protobuf:"bytes,4,opt,name=raftAddress"`
 	IsNonVoting bool   `json:"isNonVoting" protobuf:"varint,5,opt,name=isNonVoting"`
 	IsWitness   bool   `json:"isWitness" protobuf:"varint,6,opt,name=isWitness"`
@@ -174,15 +174,15 @@ type RegionList struct {
 type RegionStat struct {
 	metav1.TypeMeta
 
-	Id                 uint64 `json:"id" protobuf:"varint,1,opt,name=id"`
-	Leader             uint64 `json:"leader" protobuf:"varint,2,opt,name=leader"`
-	Term               uint64 `json:"term" protobuf:"varint,3,opt,name=term"`
+	Id                 int64  `json:"id" protobuf:"varint,1,opt,name=id"`
+	Leader             int64  `json:"leader" protobuf:"varint,2,opt,name=leader"`
+	Term               int64  `json:"term" protobuf:"varint,3,opt,name=term"`
 	Replicas           int32  `json:"replicas" protobuf:"varint,4,opt,name=replicas"`
-	Definitions        uint64 `json:"definitions" protobuf:"varint,5,opt,name=definitions"`
-	RunningDefinitions uint64 `json:"runningDefinitions" protobuf:"varint,6,opt,name=runningDefinitions"`
-	BpmnProcesses      uint64 `json:"bpmnProcesses" protobuf:"varint,7,opt,name=bpmnProcesses"`
-	BpmnEvents         uint64 `json:"bpmnEvents" protobuf:"varint,8,opt,name=bpmnEvents"`
-	BpmnTasks          uint64 `json:"bpmnTasks" protobuf:"varint,9,opt,name=bpmnTasks"`
+	Definitions        int64  `json:"definitions" protobuf:"varint,5,opt,name=definitions"`
+	RunningDefinitions int64  `json:"runningDefinitions" protobuf:"varint,6,opt,name=runningDefinitions"`
+	BpmnProcesses      int64  `json:"bpmnProcesses" protobuf:"varint,7,opt,name=bpmnProcesses"`
+	BpmnEvents         int64  `json:"bpmnEvents" protobuf:"varint,8,opt,name=bpmnEvents"`
+	BpmnTasks          int64  `json:"bpmnTasks" protobuf:"varint,9,opt,name=bpmnTasks"`
 	Message            string `json:"message" protobuf:"bytes,10,opt,name=message"`
 	Timestamp          int64  `json:"timestamp" protobuf:"varint,11,opt,name=timestamp"`
 }

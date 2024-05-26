@@ -26,14 +26,14 @@ package v1
 // RegionSpecApplyConfiguration represents an declarative configuration of the RegionSpec type for use
 // with apply.
 type RegionSpecApplyConfiguration struct {
-	Id               *uint64                           `json:"id,omitempty"`
-	DeploymentId     *uint64                           `json:"deploymentId,omitempty"`
+	Id               *int64                            `json:"id,omitempty"`
+	DeploymentId     *int64                            `json:"deploymentId,omitempty"`
 	Replicas         []RegionReplicaApplyConfiguration `json:"replicas,omitempty"`
-	ElectionRTT      *uint64                           `json:"electionRTT,omitempty"`
-	HeartbeatRTT     *uint64                           `json:"heartbeatRTT,omitempty"`
-	Leader           *uint64                           `json:"leader,omitempty"`
-	Definitions      *uint64                           `json:"definitions,omitempty"`
-	DefinitionsLimit *uint64                           `json:"definitionsLimit,omitempty"`
+	ElectionRTT      *int64                            `json:"electionRTT,omitempty"`
+	HeartbeatRTT     *int64                            `json:"heartbeatRTT,omitempty"`
+	Leader           *int64                            `json:"leader,omitempty"`
+	Definitions      *int64                            `json:"definitions,omitempty"`
+	DefinitionsLimit *int64                            `json:"definitionsLimit,omitempty"`
 }
 
 // RegionSpecApplyConfiguration constructs an declarative configuration of the RegionSpec type for use with
@@ -45,7 +45,7 @@ func RegionSpec() *RegionSpecApplyConfiguration {
 // WithId sets the Id field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Id field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithId(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithId(value int64) *RegionSpecApplyConfiguration {
 	b.Id = &value
 	return b
 }
@@ -53,7 +53,7 @@ func (b *RegionSpecApplyConfiguration) WithId(value uint64) *RegionSpecApplyConf
 // WithDeploymentId sets the DeploymentId field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeploymentId field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithDeploymentId(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithDeploymentId(value int64) *RegionSpecApplyConfiguration {
 	b.DeploymentId = &value
 	return b
 }
@@ -74,7 +74,7 @@ func (b *RegionSpecApplyConfiguration) WithReplicas(values ...*RegionReplicaAppl
 // WithElectionRTT sets the ElectionRTT field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ElectionRTT field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithElectionRTT(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithElectionRTT(value int64) *RegionSpecApplyConfiguration {
 	b.ElectionRTT = &value
 	return b
 }
@@ -82,7 +82,7 @@ func (b *RegionSpecApplyConfiguration) WithElectionRTT(value uint64) *RegionSpec
 // WithHeartbeatRTT sets the HeartbeatRTT field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the HeartbeatRTT field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithHeartbeatRTT(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithHeartbeatRTT(value int64) *RegionSpecApplyConfiguration {
 	b.HeartbeatRTT = &value
 	return b
 }
@@ -90,7 +90,7 @@ func (b *RegionSpecApplyConfiguration) WithHeartbeatRTT(value uint64) *RegionSpe
 // WithLeader sets the Leader field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Leader field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithLeader(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithLeader(value int64) *RegionSpecApplyConfiguration {
 	b.Leader = &value
 	return b
 }
@@ -98,7 +98,7 @@ func (b *RegionSpecApplyConfiguration) WithLeader(value uint64) *RegionSpecApply
 // WithDefinitions sets the Definitions field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Definitions field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithDefinitions(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithDefinitions(value int64) *RegionSpecApplyConfiguration {
 	b.Definitions = &value
 	return b
 }
@@ -106,7 +106,7 @@ func (b *RegionSpecApplyConfiguration) WithDefinitions(value uint64) *RegionSpec
 // WithDefinitionsLimit sets the DefinitionsLimit field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DefinitionsLimit field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithDefinitionsLimit(value uint64) *RegionSpecApplyConfiguration {
+func (b *RegionSpecApplyConfiguration) WithDefinitionsLimit(value int64) *RegionSpecApplyConfiguration {
 	b.DefinitionsLimit = &value
 	return b
 }

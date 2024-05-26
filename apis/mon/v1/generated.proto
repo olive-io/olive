@@ -53,11 +53,11 @@ message RegionList {
 }
 
 message RegionReplica {
-  optional uint64 id = 1;
+  optional int64 id = 1;
 
-  optional uint64 runner = 2;
+  optional int64 runner = 2;
 
-  optional uint64 region = 3;
+  optional int64 region = 3;
 
   optional string raftAddress = 4;
 
@@ -70,42 +70,42 @@ message RegionReplica {
 
 // RegionSpec is the specification of a Region.
 message RegionSpec {
-  optional uint64 id = 1;
+  optional int64 id = 1;
 
-  optional uint64 deploymentId = 2;
+  optional int64 deploymentId = 2;
 
   repeated RegionReplica replicas = 3;
 
-  optional uint64 electionRTT = 4;
+  optional int64 electionRTT = 4;
 
-  optional uint64 heartbeatRTT = 5;
+  optional int64 heartbeatRTT = 5;
 
-  optional uint64 leader = 6;
+  optional int64 leader = 6;
 
-  optional uint64 definitions = 7;
+  optional int64 definitions = 7;
 
-  optional uint64 definitionsLimit = 8;
+  optional int64 definitionsLimit = 8;
 }
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional uint64 id = 1;
+  optional int64 id = 1;
 
-  optional uint64 leader = 2;
+  optional int64 leader = 2;
 
-  optional uint64 term = 3;
+  optional int64 term = 3;
 
   optional int32 replicas = 4;
 
-  optional uint64 definitions = 5;
+  optional int64 definitions = 5;
 
-  optional uint64 runningDefinitions = 6;
+  optional int64 runningDefinitions = 6;
 
-  optional uint64 bpmnProcesses = 7;
+  optional int64 bpmnProcesses = 7;
 
-  optional uint64 bpmnEvents = 8;
+  optional int64 bpmnEvents = 8;
 
-  optional uint64 bpmnTasks = 9;
+  optional int64 bpmnTasks = 9;
 
   optional string message = 10;
 
@@ -153,23 +153,23 @@ message RunnerSpec {
 
 // RunnerStat is the stat information of Runner
 message RunnerStat {
-  optional uint64 id = 1;
+  optional int64 id = 1;
 
   optional double cpuPer = 2;
 
   optional double memoryPer = 3;
 
-  repeated uint64 regions = 4;
+  repeated int64 regions = 4;
 
   repeated string leaders = 5;
 
-  optional uint64 definitions = 6;
+  optional int64 definitions = 6;
 
-  optional uint64 bpmnProcesses = 7;
+  optional int64 bpmnProcesses = 7;
 
-  optional uint64 bpmnEvents = 8;
+  optional int64 bpmnEvents = 8;
 
-  optional uint64 bpmnTasks = 9;
+  optional int64 bpmnTasks = 9;
 
   optional string message = 10;
 

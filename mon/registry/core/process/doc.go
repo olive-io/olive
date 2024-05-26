@@ -21,4 +21,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // Package processInstance provides Registry interface and it's RESTStorage
 // implementation for storing ProcessInstance api objects.
-package processInstance
+package process

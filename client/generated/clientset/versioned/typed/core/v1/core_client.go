@@ -34,7 +34,7 @@ import (
 type OliveV1Interface interface {
 	RESTClient() rest.Interface
 	DefinitionsGetter
-	ProcessInstancesGetter
+	ProcessesGetter
 }
 
 // OliveV1Client is used to interact with features provided by the olive.io group.
@@ -46,8 +46,8 @@ func (c *OliveV1Client) Definitions(namespace string) DefinitionInterface {
 	return newDefinitions(c, namespace)
 }
 
-func (c *OliveV1Client) ProcessInstances(namespace string) ProcessInstanceInterface {
-	return newProcessInstances(c, namespace)
+func (c *OliveV1Client) Processes(namespace string) ProcessInterface {
+	return newProcesses(c, namespace)
 }
 
 // NewForConfig creates a new OliveV1Client for the given config.

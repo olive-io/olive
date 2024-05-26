@@ -52,10 +52,10 @@ message DefinitionList {
 message DefinitionSpec {
   optional string content = 1;
 
-  optional uint64 version = 2;
+  optional int64 version = 2;
 
   // the id of olive region
-  optional uint64 region = 3;
+  optional int64 region = 3;
 }
 
 message DefinitionStatus {
@@ -78,29 +78,37 @@ message FlowNodeStat {
   optional int64 endTime = 7;
 }
 
-// ProcessInstance is bpmn process instance
-message ProcessInstance {
+// Process is bpmn process instance
+message Process {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional ProcessInstanceSpec spec = 2;
+  optional ProcessSpec spec = 2;
 
-  optional ProcessInstanceStatus status = 3;
+  optional ProcessStatus status = 3;
 }
 
-// ProcessInstanceList is a list of ProcessInstance objects.
-message ProcessInstanceList {
+// ProcessList is a list of Process objects.
+message ProcessList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  // Items is a list of ProcessInstance
-  repeated ProcessInstance items = 2;
+  // Items is a list of Process
+  repeated Process items = 2;
 }
 
-message ProcessInstanceSpec {
+message ProcessRunningState {
+  map<string, string> properties = 1;
+
+  map<string, string> dataObjects = 2;
+
+  map<string, string> variables = 3;
+}
+
+message ProcessSpec {
   // the id of Definition
   optional string definition = 1;
 
   // the version if Definition
-  optional uint64 version = 2;
+  optional int64 version = 2;
 
   // the process id of bpmn Process Element in Definition
   optional string bpmnProcess = 3;
@@ -112,16 +120,16 @@ message ProcessInstanceSpec {
   map<string, string> dataObjects = 6;
 }
 
-// ProcessInstanceStat is stat information of ProcessInstance
-message ProcessInstanceStat {
-  // The id of ProcessInstance
+// ProcessStat is stat information of Process
+message ProcessStat {
+  // The id of Process
   optional string id = 1;
 
   optional string definitionContent = 2;
 
   optional ProcessRunningState processState = 3;
 
-  optional uint64 attempts = 4;
+  optional int64 attempts = 4;
 
   map<string, FlowNodeStat> flowNodes = 5;
 
@@ -130,20 +138,12 @@ message ProcessInstanceStat {
   optional int64 endTime = 7;
 }
 
-message ProcessInstanceStatus {
+message ProcessStatus {
   optional string phase = 1;
 
   optional string message = 2;
 
   // the id of olive region
-  optional uint64 region = 3;
-}
-
-message ProcessRunningState {
-  map<string, string> properties = 1;
-
-  map<string, string> dataObjects = 2;
-
-  map<string, string> variables = 3;
+  optional int64 region = 3;
 }
 
