@@ -31,6 +31,10 @@ type DefinitionListerExpansion interface{}
 // DefinitionNamespaceLister.
 type DefinitionNamespaceListerExpansion interface{}
 
+// NamespaceListerExpansion allows custom methods to be added to
+// NamespaceLister.
+type NamespaceListerExpansion interface{}
+
 // ProcessListerExpansion allows custom methods to be added to
 // ProcessLister.
 type ProcessListerExpansion interface{}

@@ -34,6 +34,7 @@ import (
 type OliveV1Interface interface {
 	RESTClient() rest.Interface
 	DefinitionsGetter
+	NamespacesGetter
 	ProcessesGetter
 }
 
@@ -44,6 +45,10 @@ type OliveV1Client struct {
 
 func (c *OliveV1Client) Definitions(namespace string) DefinitionInterface {
 	return newDefinitions(c, namespace)
+}
+
+func (c *OliveV1Client) Namespaces() NamespaceInterface {
+	return newNamespaces(c)
 }
 
 func (c *OliveV1Client) Processes(namespace string) ProcessInterface {

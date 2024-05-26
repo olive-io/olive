@@ -31,6 +31,8 @@ import (
 type Interface interface {
 	// Definitions returns a DefinitionInformer.
 	Definitions() DefinitionInformer
+	// Namespaces returns a NamespaceInformer.
+	Namespaces() NamespaceInformer
 	// Processes returns a ProcessInformer.
 	Processes() ProcessInformer
 }
@@ -49,6 +51,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Definitions returns a DefinitionInformer.
 func (v *version) Definitions() DefinitionInformer {
 	return &definitionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Namespaces returns a NamespaceInformer.
+func (v *version) Namespaces() NamespaceInformer {
+	return &namespaceInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Processes returns a ProcessInformer.

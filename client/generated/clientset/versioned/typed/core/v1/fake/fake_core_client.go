@@ -37,6 +37,10 @@ func (c *FakeOliveV1) Definitions(namespace string) v1.DefinitionInterface {
 	return &FakeDefinitions{c, namespace}
 }
 
+func (c *FakeOliveV1) Namespaces() v1.NamespaceInterface {
+	return &FakeNamespaces{c}
+}
+
 func (c *FakeOliveV1) Processes(namespace string) v1.ProcessInterface {
 	return &FakeProcesses{c, namespace}
 }

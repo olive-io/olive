@@ -76,6 +76,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=olive.io, Version=v1
 	case corev1.SchemeGroupVersion.WithResource("definitions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Olive().V1().Definitions().Informer()}, nil
+	case corev1.SchemeGroupVersion.WithResource("namespaces"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Olive().V1().Namespaces().Informer()}, nil
 	case corev1.SchemeGroupVersion.WithResource("processes"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Olive().V1().Processes().Informer()}, nil
 

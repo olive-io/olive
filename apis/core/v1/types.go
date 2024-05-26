@@ -234,6 +234,8 @@ type NamespaceCondition struct {
 	Message string `json:"message" protobuf:"bytes,5,opt,name=message"`
 }
 
+// +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Namespace provides a scope for Names.

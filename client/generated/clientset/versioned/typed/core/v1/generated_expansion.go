@@ -25,4 +25,6 @@ package v1
 
 type DefinitionExpansion interface{}
 
+type NamespaceExpansion interface{}
+
 type ProcessExpansion interface{}
