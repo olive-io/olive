@@ -54,6 +54,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":          schema_olive_apis_core_v1_DefinitionSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":        schema_olive_apis_core_v1_DefinitionStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":            schema_olive_apis_core_v1_FlowNodeStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.Namespace":               schema_olive_apis_core_v1_Namespace(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":      schema_olive_apis_core_v1_NamespaceCondition(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceList":           schema_olive_apis_core_v1_NamespaceList(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceSpec":           schema_olive_apis_core_v1_NamespaceSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":         schema_olive_apis_core_v1_NamespaceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.Process":                 schema_olive_apis_core_v1_Process(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessList":             schema_olive_apis_core_v1_ProcessList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":     schema_olive_apis_core_v1_ProcessRunningState(ref),
@@ -304,7 +309,7 @@ func schema_olive_apis_apidiscovery_v1_Edge(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -354,7 +359,7 @@ func schema_olive_apis_apidiscovery_v1_EdgeList(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -448,7 +453,7 @@ func schema_olive_apis_apidiscovery_v1_Endpoint(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -498,7 +503,7 @@ func schema_olive_apis_apidiscovery_v1_EndpointList(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -661,7 +666,7 @@ func schema_olive_apis_apidiscovery_v1_Service(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -711,7 +716,7 @@ func schema_olive_apis_apidiscovery_v1_ServiceList(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -824,7 +829,7 @@ func schema_olive_apis_core_v1_Definition(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -874,7 +879,7 @@ func schema_olive_apis_core_v1_DefinitionList(ref common.ReferenceCallback) comm
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -1017,6 +1022,220 @@ func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common
 	}
 }
 
+func schema_olive_apis_core_v1_Namespace(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Namespace provides a scope for Names. Use of multiple namespaces is optional",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Spec defines the behavior of the Namespace.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/olive-io/olive/apis/core/v1.NamespaceSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status describes the current status of a Namespace",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/olive-io/olive/apis/core/v1.NamespaceStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.NamespaceSpec", "github.com/olive-io/olive/apis/core/v1.NamespaceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_NamespaceCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NamespaceCondition contains details about state of namespace.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type of namespace controller condition.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status of the condition, one of True, False, Unknown.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"type", "status"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_olive_apis_core_v1_NamespaceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NamespaceList is a list of Namespaces.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Namespace"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.Namespace", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_NamespaceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NamespaceSpec describes the attributes on a Namespace",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"finalizers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Finalizers is an opaque list of values that must be empty to permanently remove object from storage",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"finalizers"},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_core_v1_NamespaceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NamespaceStatus is information about the current status of a Namespace.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase is the current lifecycle phase of the namespace.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"conditions": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.NamespaceCondition"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.NamespaceCondition"},
+	}
+}
+
 func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1057,7 +1276,7 @@ func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.Open
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -1107,7 +1326,7 @@ func schema_olive_apis_core_v1_ProcessList(ref common.ReferenceCallback) common.
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -1457,7 +1676,7 @@ func schema_olive_apis_mon_v1_Region(ref common.ReferenceCallback) common.OpenAP
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -1507,7 +1726,7 @@ func schema_olive_apis_mon_v1_RegionList(ref common.ReferenceCallback) common.Op
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{
@@ -1814,7 +2033,7 @@ func schema_olive_apis_mon_v1_Runner(ref common.ReferenceCallback) common.OpenAP
 						},
 					},
 				},
-				Required: []string{"spec", "status"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{
@@ -1864,7 +2083,7 @@ func schema_olive_apis_mon_v1_RunnerList(ref common.ReferenceCallback) common.Op
 						},
 					},
 				},
-				Required: []string{"items"},
+				Required: []string{"metadata", "items"},
 			},
 		},
 		Dependencies: []string{

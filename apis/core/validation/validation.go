@@ -44,6 +44,11 @@ type ValidateNameFunc apimachineryvalidation.ValidateNameFunc
 // trailing dashes are allowed.
 var ValidateDefinitionName = apimachineryvalidation.NameIsDNSSubdomain
 
+// ValidateNamespaceName can be used to check whether the given namespace name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateNamespaceName = apimachineryvalidation.ValidateNamespaceName
+
 // ValidateObjectMeta validates an object's metadata on creation. It expects that name generation has already
 // been performed.
 // It doesn't return an error for rootscoped resources with namespace, because namespace should already be cleared before.
@@ -151,6 +156,48 @@ func ValidateProcessStatusUpdate(processInstance, oldProcess *corev1.Process) fi
 // validateProcessStatus validates a ProcessStatus and returns an ErrorList with any errors.
 func validateProcessStatus(processInstance *corev1.Process, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateNamespace tests if required fields are set.
+func ValidateNamespace(namespace *corev1.Namespace) field.ErrorList {
+	allErrs := ValidateObjectMeta(&namespace.ObjectMeta, false, ValidateNamespaceName, field.NewPath("metadata"))
+	for i := range namespace.Spec.Finalizers {
+		allErrs = append(allErrs, validateFinalizerName(string(namespace.Spec.Finalizers[i]), field.NewPath("spec", "finalizers"))...)
+	}
+	return allErrs
+}
+
+// ValidateNamespaceUpdate tests to make sure a namespace update can be applied.
+func ValidateNamespaceUpdate(newNamespace *corev1.Namespace, oldNamespace *corev1.Namespace) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&newNamespace.ObjectMeta, &oldNamespace.ObjectMeta, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateNamespaceStatusUpdate tests to see if the update is legal for an end user to make.
+func ValidateNamespaceStatusUpdate(newNamespace, oldNamespace *corev1.Namespace) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&newNamespace.ObjectMeta, &oldNamespace.ObjectMeta, field.NewPath("metadata"))
+	if newNamespace.DeletionTimestamp.IsZero() {
+		if newNamespace.Status.Phase != corev1.NamespaceActive {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("status", "Phase"), newNamespace.Status.Phase, "may only be 'Active' if `deletionTimestamp` is empty"))
+		}
+	} else {
+		if newNamespace.Status.Phase != corev1.NamespaceTerminating {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("status", "Phase"), newNamespace.Status.Phase, "may only be 'Terminating' if `deletionTimestamp` is not empty"))
+		}
+	}
+	return allErrs
+}
+
+// ValidateNamespaceFinalizeUpdate tests to see if the update is legal for an end user to make.
+func ValidateNamespaceFinalizeUpdate(newNamespace, oldNamespace *corev1.Namespace) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&newNamespace.ObjectMeta, &oldNamespace.ObjectMeta, field.NewPath("metadata"))
+
+	fldPath := field.NewPath("spec", "finalizers")
+	for i := range newNamespace.Spec.Finalizers {
+		idxPath := fldPath.Index(i)
+		allErrs = append(allErrs, validateFinalizerName(string(newNamespace.Spec.Finalizers[i]), idxPath)...)
+	}
 	return allErrs
 }
 

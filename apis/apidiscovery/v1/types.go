@@ -90,7 +90,7 @@ type Activity struct {
 // Endpoint is an endpoint provided by a service
 type Endpoint struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   EndpointSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status EndpointStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -111,7 +111,7 @@ type EndpointStatus struct {
 // EndpointList is a list of Endpoint objects.
 type EndpointList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Endpoint
 	Items []Endpoint `json:"items" protobuf:"bytes,2,rep,name=items"`
@@ -135,7 +135,7 @@ type Node struct {
 // Service represents a olive service
 type Service struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   ServiceSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status ServiceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -156,7 +156,7 @@ type ServiceStatus struct {
 // ServiceList is a list of Service objects.
 type ServiceList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Service
 	Items []Service `json:"items" protobuf:"bytes,2,rep,name=items"`
@@ -168,7 +168,7 @@ type ServiceList struct {
 // Edge defines the sets of Endpoint
 type Edge struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   EdgeSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status EdgeStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -188,7 +188,7 @@ type EdgeStatus struct {
 // YardList is a list of Yard objects.
 type EdgeList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Edge
 	Items []Edge `json:"items" protobuf:"bytes,2,rep,name=items"`

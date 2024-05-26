@@ -31,6 +31,7 @@ import (
 	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	definitionstore "github.com/olive-io/olive/mon/registry/core/definition/storage"
+	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace/storage"
 	processstore "github.com/olive-io/olive/mon/registry/core/process/storage"
 )
 
@@ -50,6 +51,17 @@ func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstora
 
 func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
+
+	// namespace
+	if resource := "namespaces"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+		namespaceStorage, namespaceStatusStorage, finalizeStorage, err := namespacestore.NewREST(restOptionsGetter)
+		if err != nil {
+			return storage, err
+		}
+		storage[resource] = namespaceStorage
+		storage[resource+"/status"] = namespaceStatusStorage
+		storage[resource+"/finalize"] = finalizeStorage
+	}
 
 	// definition
 	if resource := "definitions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {

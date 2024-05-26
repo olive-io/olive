@@ -53,7 +53,7 @@ const (
 // Runner the olive node
 type Runner struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   RunnerSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status RunnerStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -82,7 +82,7 @@ type RunnerStatus struct {
 // RunnerList is a list of Runner objects.
 type RunnerList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Runner
 	Items []Runner `json:"items" protobuf:"bytes,2,rep,name=items"`
@@ -125,7 +125,7 @@ const (
 // Region the olive node
 type Region struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   RegionSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status RegionStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -162,7 +162,7 @@ type RegionStatus struct {
 // RegionList is a list of Region objects.
 type RegionList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Region
 	Items []Region `json:"items" protobuf:"bytes,2,rep,name=items"`

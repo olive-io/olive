@@ -654,9 +654,6 @@ func (cfg *Config) Validate() error {
 	if err := checkBindURLs(cfg.ListenClientHttpUrls); err != nil {
 		return err
 	}
-	if len(cfg.ListenClientHttpUrls) == 0 {
-		cfg.logger.Warn("Running http and grpc server on single port. This is not recommended for production.")
-	}
 	if err := checkBindURLs(cfg.ListenMetricsUrls); err != nil {
 		return err
 	}

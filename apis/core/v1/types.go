@@ -45,7 +45,7 @@ const (
 // Definition is bpmn definitions
 type Definition struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   DefinitionSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status DefinitionStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -67,7 +67,7 @@ type DefinitionStatus struct {
 // DefinitionList is a list of Definition objects.
 type DefinitionList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Definition
 	Items []Definition `json:"items" protobuf:"bytes,2,rep,name=items"`
@@ -90,7 +90,7 @@ const (
 // Process is bpmn process instance
 type Process struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	Spec   ProcessSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status ProcessStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -120,7 +120,7 @@ type ProcessStatus struct {
 // ProcessList is a list of Process objects.
 type ProcessList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of Process
 	Items []Process `json:"items" protobuf:"bytes,2,rep,name=items"`
@@ -158,4 +158,107 @@ type FlowNodeStat struct {
 	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,5,rep,name=dataObjects"`
 	StartTime   int64             `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
 	EndTime     int64             `json:"endTime" protobuf:"varint,7,opt,name=endTime"`
+}
+
+// The below types are used by olive_client and api_server.
+
+// ConditionStatus defines conditions of resources
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition;
+// "ConditionFalse" means a resource is not in the condition; "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+// NamespaceSpec describes the attributes on a Namespace
+type NamespaceSpec struct {
+	// Finalizers is an opaque list of values that must be empty to permanently remove object from storage
+	Finalizers []FinalizerName `json:"finalizers" protobuf:"bytes,1,rep,name=finalizers,casttype=FinalizerName"`
+}
+
+// FinalizerName is the name identifying a finalizer during namespace lifecycle.
+type FinalizerName string
+
+// FinalizerOlive there are internal finalizer values to Olive, must be qualified name unless defined here or
+// in metav1.
+const (
+	FinalizerOlive FinalizerName = "Olive"
+)
+
+// NamespaceStatus is information about the current status of a Namespace.
+type NamespaceStatus struct {
+	// Phase is the current lifecycle phase of the namespace.
+	// +optional
+	Phase NamespacePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=NamespacePhase"`
+	// +optional
+	Conditions []NamespaceCondition `json:"conditions" protobuf:"bytes,2,rep,name=conditions"`
+}
+
+// NamespacePhase defines the phase in which the namespace is
+type NamespacePhase string
+
+// These are the valid phases of a namespace.
+const (
+	// NamespaceActive means the namespace is available for use in the system
+	NamespaceActive NamespacePhase = "Active"
+	// NamespaceTerminating means the namespace is undergoing graceful termination
+	NamespaceTerminating NamespacePhase = "Terminating"
+)
+
+// NamespaceConditionType defines constants reporting on status during namespace lifetime and deletion progress
+type NamespaceConditionType string
+
+// These are valid conditions of a namespace.
+const (
+	NamespaceDeletionDiscoveryFailure NamespaceConditionType = "NamespaceDeletionDiscoveryFailure"
+	NamespaceDeletionContentFailure   NamespaceConditionType = "NamespaceDeletionContentFailure"
+	NamespaceDeletionGVParsingFailure NamespaceConditionType = "NamespaceDeletionGroupVersionParsingFailure"
+)
+
+// NamespaceCondition contains details about state of namespace.
+type NamespaceCondition struct {
+	// Type of namespace controller condition.
+	Type NamespaceConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NamespaceConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=ConditionStatus"`
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime" protobuf:"bytes,3,opt,name=lastTransitionTime"`
+	// +optional
+	Reason string `json:"reason" protobuf:"bytes,4,opt,name=reason"`
+	// +optional
+	Message string `json:"message" protobuf:"bytes,5,opt,name=message"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Namespace provides a scope for Names.
+// Use of multiple namespaces is optional
+type Namespace struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the behavior of the Namespace.
+	// +optional
+	Spec NamespaceSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+
+	// Status describes the current status of a Namespace
+	// +optional
+	Status NamespaceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NamespaceList is a list of Namespaces.
+type NamespaceList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+
+	Items []Namespace `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

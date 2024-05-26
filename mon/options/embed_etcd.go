@@ -32,18 +32,12 @@ import (
 
 type EmbedEtcdOptions struct {
 	*embed.Config
-
-	ClusterState *flags.SelectiveStringValue
 }
 
 func NewEmbedEtcdOptions() *EmbedEtcdOptions {
 	etcdCfg := embed.NewConfig()
 	options := &EmbedEtcdOptions{
 		Config: etcdCfg,
-		ClusterState: flags.NewSelectiveStringValue(
-			embed.ClusterStateFlagNew,
-			embed.ClusterStateFlagExisting,
-		),
 	}
 	return options
 }
@@ -91,7 +85,7 @@ func (o *EmbedEtcdOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&o.Config.InitialCluster, "initial-cluster", o.Config.InitialCluster,
 		"Initial cluster configuration for bootstrapping.")
-	fs.Var(o.ClusterState, "initial-cluster-state", "Initial cluster state ('new' or 'existing').")
+	fs.StringVar(&o.ClusterState, "initial-cluster-state", o.ClusterState, "Initial cluster state ('new' or 'existing').")
 
 	fs.Uint32Var(&o.Config.MaxConcurrentStreams, "max-concurrent-streams", o.Config.MaxConcurrentStreams,
 		"Maximum concurrent streams that each client can open at a time.")

@@ -78,6 +78,63 @@ message FlowNodeStat {
   optional int64 endTime = 7;
 }
 
+// Namespace provides a scope for Names.
+// Use of multiple namespaces is optional
+message Namespace {
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // Spec defines the behavior of the Namespace.
+  // +optional
+  optional NamespaceSpec spec = 2;
+
+  // Status describes the current status of a Namespace
+  // +optional
+  optional NamespaceStatus status = 3;
+}
+
+// NamespaceCondition contains details about state of namespace.
+message NamespaceCondition {
+  // Type of namespace controller condition.
+  optional string type = 1;
+
+  // Status of the condition, one of True, False, Unknown.
+  optional string status = 2;
+
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
+
+  // +optional
+  optional string reason = 4;
+
+  // +optional
+  optional string message = 5;
+}
+
+// NamespaceList is a list of Namespaces.
+message NamespaceList {
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated Namespace items = 2;
+}
+
+// NamespaceSpec describes the attributes on a Namespace
+message NamespaceSpec {
+  // Finalizers is an opaque list of values that must be empty to permanently remove object from storage
+  repeated string finalizers = 1;
+}
+
+// NamespaceStatus is information about the current status of a Namespace.
+message NamespaceStatus {
+  // Phase is the current lifecycle phase of the namespace.
+  // +optional
+  optional string phase = 1;
+
+  // +optional
+  repeated NamespaceCondition conditions = 2;
+}
+
 // Process is bpmn process instance
 message Process {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;

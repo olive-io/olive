@@ -61,6 +61,8 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		return err
 	}
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Namespace{},
+		&NamespaceList{},
 		&Definition{},
 		&DefinitionList{},
 		&Process{},
