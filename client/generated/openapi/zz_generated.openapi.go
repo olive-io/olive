@@ -65,7 +65,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":             schema_olive_apis_core_v1_ProcessSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessStat":             schema_olive_apis_core_v1_ProcessStat(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":           schema_olive_apis_core_v1_ProcessStatus(ref),
-		"github.com/olive-io/olive/apis/mon/v1.NodeConfig":               schema_olive_apis_mon_v1_NodeConfig(ref),
+		"github.com/olive-io/olive/apis/mon/v1.EtcdCluster":              schema_olive_apis_mon_v1_EtcdCluster(ref),
 		"github.com/olive-io/olive/apis/mon/v1.Region":                   schema_olive_apis_mon_v1_Region(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionList":               schema_olive_apis_mon_v1_RegionList(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionReplica":            schema_olive_apis_mon_v1_RegionReplica(ref),
@@ -1595,7 +1595,7 @@ func schema_olive_apis_core_v1_ProcessStatus(ref common.ReferenceCallback) commo
 	}
 }
 
-func schema_olive_apis_mon_v1_NodeConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_mon_v1_EtcdCluster(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1629,8 +1629,23 @@ func schema_olive_apis_mon_v1_NodeConfig(ref common.ReferenceCallback) common.Op
 							},
 						},
 					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "dial and request timeout",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"maxUnaryRetries": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int32",
+						},
+					},
 				},
-				Required: []string{"endpoints"},
+				Required: []string{"endpoints", "timeout", "maxUnaryRetries"},
 			},
 		},
 	}

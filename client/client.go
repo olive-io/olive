@@ -32,6 +32,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/client-go/tools/clientcmd"
+
+	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
 )
 
 // Client provides and manages an olive-meta client session.
@@ -45,6 +48,9 @@ type Client struct {
 	// the client of etcd server
 	ec *clientv3.Client
 
+	// the client of api server
+	*clientset.Clientset
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -57,23 +63,21 @@ type Client struct {
 	callOpts []grpc.CallOption
 }
 
-func New(cfg Config) (*Client, error) {
-	if len(cfg.Endpoints) == 0 {
+func New(cfg *Config) (*Client, error) {
+	ctx := cfg.etcdCfg.Context
+	if len(cfg.etcdCfg.Endpoints) == 0 {
 		return nil, ErrNoAvailableEndpoints
 	}
 
-	return newClient(&cfg)
-}
-
-func newClient(cfg *Config) (*Client, error) {
-	if cfg.DialOptions == nil {
-		cfg.DialOptions = []grpc.DialOption{}
+	etcdCfg := cfg.etcdCfg
+	if etcdCfg.DialOptions == nil {
+		etcdCfg.DialOptions = []grpc.DialOption{}
 	}
 
 	if ipt := cfg.Interceptor; ipt != nil {
-		cfg.DialOptions = append(cfg.DialOptions, grpc.WithUnaryInterceptor(ipt.Unary()))
+		etcdCfg.DialOptions = append(etcdCfg.DialOptions, grpc.WithUnaryInterceptor(ipt.Unary()))
 	}
-	etcdClient, err := clientv3.New(cfg.Config)
+	etcdClient, err := clientv3.New(etcdCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -81,26 +85,27 @@ func newClient(cfg *Config) (*Client, error) {
 	ctx, cancel := context.WithCancel(etcdClient.Ctx())
 	client := &Client{
 		ec:       etcdClient,
-		conn:     etcdClient.ActiveConnection(),
 		ctx:      ctx,
 		cancel:   cancel,
+		cfg:      cfg,
+		conn:     etcdClient.ActiveConnection(),
 		callOpts: defaultCallOpts,
 	}
 
-	if cfg.MaxCallSendMsgSize > 0 || cfg.MaxCallRecvMsgSize > 0 {
-		if cfg.MaxCallRecvMsgSize > 0 && cfg.MaxCallSendMsgSize > cfg.MaxCallRecvMsgSize {
-			return nil, fmt.Errorf("gRPC message recv limit (%d bytes) must be greater than send limit (%d bytes)", cfg.MaxCallRecvMsgSize, cfg.MaxCallSendMsgSize)
+	if etcdCfg.MaxCallSendMsgSize > 0 || etcdCfg.MaxCallRecvMsgSize > 0 {
+		if etcdCfg.MaxCallRecvMsgSize > 0 && etcdCfg.MaxCallSendMsgSize > etcdCfg.MaxCallRecvMsgSize {
+			return nil, fmt.Errorf("gRPC message recv limit (%d bytes) must be greater than send limit (%d bytes)", etcdCfg.MaxCallRecvMsgSize, etcdCfg.MaxCallSendMsgSize)
 		}
 		callOpts := []grpc.CallOption{
 			defaultWaitForReady,
 			defaultMaxCallSendMsgSize,
 			defaultMaxCallRecvMsgSize,
 		}
-		if cfg.MaxCallSendMsgSize > 0 {
-			callOpts[1] = grpc.MaxCallSendMsgSize(cfg.MaxCallSendMsgSize)
+		if etcdCfg.MaxCallSendMsgSize > 0 {
+			callOpts[1] = grpc.MaxCallSendMsgSize(etcdCfg.MaxCallSendMsgSize)
 		}
-		if cfg.MaxCallRecvMsgSize > 0 {
-			callOpts[2] = grpc.MaxCallRecvMsgSize(cfg.MaxCallRecvMsgSize)
+		if etcdCfg.MaxCallRecvMsgSize > 0 {
+			callOpts[2] = grpc.MaxCallRecvMsgSize(etcdCfg.MaxCallRecvMsgSize)
 		}
 		client.callOpts = callOpts
 	}
@@ -110,6 +115,19 @@ func newClient(cfg *Config) (*Client, error) {
 	client.Watcher = etcdClient.Watcher
 	client.Maintenance = etcdClient.Maintenance
 
+	configOverrides := &clientcmd.ConfigOverrides{}
+
+	kubeConfig := clientcmd.NewDefaultClientConfig(*cfg.apiCfg, configOverrides)
+	clientConfig, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	client.Clientset, err = clientset.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return client, nil
 }
 
@@ -117,7 +135,7 @@ func (c *Client) ActiveEtcdClient() *clientv3.Client {
 	return c.ec
 }
 
-func (c *Client) ActiveConnection() *grpc.ClientConn {
+func (c *Client) ActiveGRPCConn() *grpc.ClientConn {
 	return c.conn
 }
 

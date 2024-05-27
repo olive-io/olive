@@ -27,10 +27,13 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type NodeConfig struct {
+type EtcdCluster struct {
 	metav1.TypeMeta `json:",inline"`
 
 	Endpoints []string `json:"endpoints" protobuf:"bytes,1,rep,name=endpoints"`
+	// dial and request timeout
+	Timeout         string `json:"timeout" protobuf:"bytes,2,opt,name=timeout"`
+	MaxUnaryRetries int32  `json:"maxUnaryRetries" protobuf:"varint,3,opt,name=maxUnaryRetries"`
 }
 
 // RunnerPhase defines the phase in which a runner is in
