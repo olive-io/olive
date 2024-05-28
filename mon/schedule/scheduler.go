@@ -35,9 +35,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
-
 	"github.com/olive-io/olive/mon/leader"
-
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/queue"
 	ort "github.com/olive-io/olive/pkg/runtime"
@@ -49,6 +47,8 @@ const (
 
 	defaultRegionElectionTTL  = 10
 	defaultRegionHeartbeatTTL = 1
+
+	defaultRegionIds = "_olive/id/region"
 )
 
 type Config struct {
@@ -296,11 +296,11 @@ func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
 }
 
 func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
-	idGen, err := idutil.NewGenerator(ctx, ort.DefaultMetaRegionRegistrarId, sc.Client)
+	idGen, err := idutil.NewIncrementer(defaultRegionIds, sc.Client, sc.stopC)
 	if err != nil {
 		return 0, err
 	}
-	return idGen.Next(), nil
+	return idGen.Next(ctx), nil
 }
 
 func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, error) {

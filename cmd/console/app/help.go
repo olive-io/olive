@@ -52,7 +52,7 @@ Gateway:
   --data-dir 'default'
     Set the Path to the data directory.
   --endpoints [` + strings.Join(client.DefaultEndpoints, ",") + `]
-    Set gRPC endpoints to connect the cluster of olive-meta
+    Set gRPC endpoints to connect the cluster of olive-mon
   --listen-url '` + config.DefaultListenURL + `'
     Set the URL to listen on for gRPC traffic.
   --enable-grpc-console

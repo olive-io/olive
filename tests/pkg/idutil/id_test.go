@@ -23,46 +23,47 @@ package idutil
 
 import (
 	"context"
-	"path"
 	"testing"
 
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
+	"github.com/olive-io/olive/pkg/daemon"
 	"github.com/olive-io/olive/pkg/idutil"
-	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
-func TestNewGenerator(t *testing.T) {
+func TestNewIncrement(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(ort.DefaultOlivePrefix, "runner", "id")
+	key := "_olive/ids"
 
-	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	ctx := context.TODO()
+	gen, err := idutil.NewIncrementer(key, v3client.New(etcd.Server), daemon.SetupSignalHandler())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	id := gen.Next()
-	id2 := gen.Next()
+	id := gen.Next(ctx)
+	id2 := gen.Next(ctx)
 	if id == id2 {
 		t.Errorf("generate the same id %x", id)
 	}
 }
 
-func BenchmarkNext(b *testing.B) {
+func BenchmarkIncrementNext(b *testing.B) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(ort.DefaultOlivePrefix, "runner", "id")
+	key := "_olive/ids"
 
-	gen, err := idutil.NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	ctx := context.Background()
+	gen, err := idutil.NewIncrementer(key, v3client.New(etcd.Server), daemon.SetupSignalHandler())
 	if err != nil {
 		panic(err)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		gen.Next()
+		gen.Next(ctx)
 	}
 }

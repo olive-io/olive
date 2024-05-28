@@ -190,7 +190,7 @@ func (edgeStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime
 	return nil
 }
 
-// EdgeSelectableFields returns a field set that represents the object for matching purposes.
+// EdgeToSelectableFields returns a field set that represents the object for matching purposes.
 func EdgeToSelectableFields(edge *apidiscoveryv1.Edge) fields.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&edge.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}

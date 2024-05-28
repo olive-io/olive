@@ -94,31 +94,33 @@ message RegionSpec {
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional int64 id = 1;
+  optional int64 leader = 1;
 
-  optional int64 leader = 2;
+  optional int64 term = 2;
 
-  optional int64 term = 3;
+  optional int32 replicas = 3;
 
-  optional int32 replicas = 4;
+  optional int64 definitions = 4;
 
-  optional int64 definitions = 5;
+  optional int64 runningDefinitions = 5;
 
-  optional int64 runningDefinitions = 6;
+  optional int64 bpmnProcesses = 6;
 
-  optional int64 bpmnProcesses = 7;
+  optional int64 bpmnEvents = 7;
 
-  optional int64 bpmnEvents = 8;
+  optional int64 bpmnTasks = 8;
 
-  optional int64 bpmnTasks = 9;
+  optional string message = 9;
 
-  optional string message = 10;
-
-  optional int64 timestamp = 11;
+  optional int64 timestamp = 10;
 }
 
 message RegionStatus {
   optional string phase = 1;
+
+  optional string message = 2;
+
+  optional RegionStat stat = 3;
 }
 
 // Runner the olive node
@@ -128,6 +130,14 @@ message Runner {
   optional RunnerSpec spec = 2;
 
   optional RunnerStatus status = 3;
+}
+
+message RunnerDynamicStat {
+  optional double cpuUsed = 1;
+
+  optional double memoryUsed = 2;
+
+  optional int64 timestamp = 3;
 }
 
 // RunnerList is a list of Runner objects.
@@ -158,30 +168,30 @@ message RunnerSpec {
 
 // RunnerStat is the stat information of Runner
 message RunnerStat {
-  optional int64 id = 1;
+  optional double cpuTotal = 1;
 
-  optional double cpuPer = 2;
+  optional double memoryTotal = 2;
 
-  optional double memoryPer = 3;
+  repeated int64 regions = 3;
 
-  repeated int64 regions = 4;
+  repeated string leaders = 4;
 
-  repeated string leaders = 5;
+  optional int64 definitions = 5;
 
-  optional int64 definitions = 6;
+  optional int64 bpmnProcesses = 6;
 
-  optional int64 bpmnProcesses = 7;
+  optional int64 bpmnEvents = 7;
 
-  optional int64 bpmnEvents = 8;
+  optional int64 bpmnTasks = 8;
 
-  optional int64 bpmnTasks = 9;
-
-  optional string message = 10;
-
-  optional int64 timestamp = 11;
+  optional RunnerDynamicStat dynamic = 9;
 }
 
 message RunnerStatus {
   optional string phase = 1;
+
+  optional string message = 2;
+
+  optional RunnerStat stat = 3;
 }
 

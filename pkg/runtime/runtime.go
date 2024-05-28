@@ -28,18 +28,16 @@ const (
 )
 
 var (
-	DefaultMetaPrefix            = path.Join(DefaultOlivePrefix, "meta")
-	DefaultUserPrefix            = path.Join(DefaultOlivePrefix, "user")
-	DefaultRolePrefix            = path.Join(DefaultOlivePrefix, "role")
-	DefaultPolicyPrefix          = path.Join(DefaultOlivePrefix, "policy")
-	DefaultMetaRunnerRegistrarId = path.Join(DefaultMetaPrefix, "runnerIds")
-	DefaultMetaRegionRegistrarId = path.Join(DefaultMetaPrefix, "regionsIds")
-	DefaultMetaRunnerPrefix      = path.Join(DefaultMetaPrefix, "runner")
-	DefaultMetaDefinitionPrefix  = path.Join(DefaultMetaPrefix, "definitions")
-	DefaultMetaDefinitionMeta    = path.Join(DefaultMetaDefinitionPrefix, "meta")
-	DefaultMetaRunnerRegistrar   = path.Join(DefaultMetaRunnerPrefix, "registry")
-	DefaultMetaRunnerStat        = path.Join(DefaultMetaRunnerPrefix, "stat")
-	DefaultMetaRegionStat        = path.Join(DefaultMetaRunnerPrefix, "region", "stat")
+	DefaultMetaPrefix           = path.Join(DefaultOlivePrefix, "meta")
+	DefaultUserPrefix           = path.Join(DefaultOlivePrefix, "user")
+	DefaultRolePrefix           = path.Join(DefaultOlivePrefix, "role")
+	DefaultPolicyPrefix         = path.Join(DefaultOlivePrefix, "policy")
+	DefaultMetaRunnerPrefix     = path.Join(DefaultMetaPrefix, "runner")
+	DefaultMetaDefinitionPrefix = path.Join(DefaultMetaPrefix, "definitions")
+	DefaultMetaDefinitionMeta   = path.Join(DefaultMetaDefinitionPrefix, "meta")
+	DefaultMetaRunnerRegistrar  = path.Join(DefaultMetaRunnerPrefix, "registry")
+	DefaultMetaRunnerStat       = path.Join(DefaultMetaRunnerPrefix, "stat")
+	DefaultMetaRegionStat       = path.Join(DefaultMetaRunnerPrefix, "region", "stat")
 )
 
 var (

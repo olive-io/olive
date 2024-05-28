@@ -34,52 +34,58 @@ import (
 	"go.uber.org/zap"
 )
 
-type Generator struct {
-	ctx    context.Context
+// Incrementer defines an auto-increment id generator
+type Incrementer struct {
 	key    string
 	client *clientv3.Client
 	lg     *zap.Logger
 	id     uint64
 	rev    int64
+
+	stopCh <-chan struct{}
 }
 
-func NewGenerator(ctx context.Context, key string, client *clientv3.Client) (*Generator, error) {
-	g := &Generator{
-		ctx:    ctx,
+// NewIncrementer returns an Incrementer
+func NewIncrementer(key string, client *clientv3.Client, stopCh <-chan struct{}) (*Incrementer, error) {
+	in := &Incrementer{
 		key:    key,
 		client: client,
 		lg:     client.GetLogger(),
+		stopCh: stopCh,
 	}
-	err := g.load()
+	err := in.load(context.TODO())
 	if err != nil {
 		return nil, err
 	}
-	return g, nil
+	return in, nil
 }
 
 // Current returns the current id number
-func (g *Generator) Current() uint64 {
-	return atomic.LoadUint64(&g.id)
+func (in *Incrementer) Current() uint64 {
+	return atomic.LoadUint64(&in.id)
 }
 
-func (g *Generator) Next() uint64 {
-	next := atomic.AddUint64(&g.id, 1)
-	err := g.set(next)
+// Next returns next identify
+func (in *Incrementer) Next(ctx context.Context) uint64 {
+	next := atomic.AddUint64(&in.id, 1)
+	err := in.set(ctx, next)
 	if err != nil {
-		g.lg.Error("generate next id", zap.Error(err))
+		in.lg.Error("generate next id", zap.Error(err))
 	}
 	return next
 }
 
-func (g *Generator) Start() {
-	go g.watching()
+func (in *Incrementer) Start() {
+	go in.watching()
 }
 
-func (g *Generator) watching() {
-	wch := g.client.Watch(g.ctx, g.key)
+func (in *Incrementer) watching() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	wch := in.client.Watch(ctx, in.key, clientv3.WithSerializable())
 	for {
 		select {
-		case <-g.ctx.Done():
+		case <-in.stopCh:
 			return
 		case ch := <-wch:
 			if ch.IsProgressNotify() || ch.Canceled {
@@ -87,41 +93,40 @@ func (g *Generator) watching() {
 			}
 
 			for _, event := range ch.Events {
-				if event.Kv.ModRevision > atomic.LoadInt64(&g.rev) {
+				if event.Kv.ModRevision > atomic.LoadInt64(&in.rev) {
 					val := event.Kv.Value[0:8]
-					g.id = binary.LittleEndian.Uint64(val)
-					atomic.StoreInt64(&g.rev, event.Kv.ModRevision)
+					in.id = binary.LittleEndian.Uint64(val)
+					atomic.StoreInt64(&in.rev, event.Kv.ModRevision)
 				}
 			}
 		}
 	}
 }
 
-func (g *Generator) set(id uint64) error {
-	ctx := g.ctx
+func (in *Incrementer) set(ctx context.Context, id uint64) error {
 	val := make([]byte, 8)
 	binary.LittleEndian.PutUint64(val, id)
-	session, err := concurrency.NewSession(g.client)
+	session, err := concurrency.NewSession(in.client)
 	if err != nil {
 		return err
 	}
 	defer session.Close()
-	mu := concurrency.NewMutex(session, path.Join(g.key, "lock"))
+	mu := concurrency.NewMutex(session, path.Join(in.key, "lock"))
 	if err = mu.Lock(ctx); err != nil {
 		return err
 	}
 	defer mu.Unlock(ctx)
-	rsp, err := g.client.Put(ctx, g.key, string(val))
+	rsp, err := in.client.Put(ctx, in.key, string(val))
 	if err != nil {
 		return err
 	}
-	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+	atomic.StoreInt64(&in.rev, rsp.Header.Revision)
 
 	return nil
 }
 
-func (g *Generator) load() error {
-	rsp, err := g.client.Get(g.ctx, g.key)
+func (in *Incrementer) load(ctx context.Context) error {
+	rsp, err := in.client.Get(ctx, in.key, clientv3.WithSerializable())
 	if err != nil && !errors.Is(err, rpctypes.ErrKeyNotFound) {
 		return err
 	}
@@ -129,7 +134,7 @@ func (g *Generator) load() error {
 		return nil
 	}
 	val := rsp.Kvs[0].Value[0:8]
-	g.id = binary.LittleEndian.Uint64(val)
-	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+	in.id = binary.LittleEndian.Uint64(val)
+	atomic.StoreInt64(&in.rev, rsp.Header.Revision)
 	return nil
 }

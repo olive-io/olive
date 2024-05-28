@@ -48,17 +48,17 @@ func (tree *RouteTree) registerCluster() error {
 	}, tonic.Handler(cg.memberList, 200))
 
 	group.POST("/member/add", []fizz.OperationOption{
-		fizz.Summary("adds a new member into the olive-meta cluster."),
+		fizz.Summary("adds a new member into the olive-mon cluster."),
 		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberAdd, 200))
 
 	group.PATCH("/member/update", []fizz.OperationOption{
-		fizz.Summary("updates the peer addresses of the olive-meta member."),
+		fizz.Summary("updates the peer addresses of the olive-mon member."),
 		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberUpdate, 200))
 
 	group.POST("/member/remove", []fizz.OperationOption{
-		fizz.Summary("removes a member from olive-meta cluster."),
+		fizz.Summary("removes a member from olive-mon cluster."),
 		fizz.Security(&openapi.SecurityRequirement{"Bearer": []string{}}),
 	}, tonic.Handler(cg.memberRemove, 200))
 
@@ -68,7 +68,7 @@ func (tree *RouteTree) registerCluster() error {
 func (c *ClusterGroup) Summary() RouteGroupSummary {
 	return RouteGroupSummary{
 		Name:        "Olive.MetaCluster",
-		Description: "the documents of olive-meta cluster",
+		Description: "the documents of olive-mon cluster",
 	}
 }
 

@@ -62,12 +62,18 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationmonv1.RegionReplicaApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("RegionSpec"):
 		return &applyconfigurationmonv1.RegionSpecApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RegionStat"):
+		return &applyconfigurationmonv1.RegionStatApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("RegionStatus"):
 		return &applyconfigurationmonv1.RegionStatusApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("Runner"):
 		return &applyconfigurationmonv1.RunnerApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RunnerDynamicStat"):
+		return &applyconfigurationmonv1.RunnerDynamicStatApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("RunnerSpec"):
 		return &applyconfigurationmonv1.RunnerSpecApplyConfiguration{}
+	case monv1.SchemeGroupVersion.WithKind("RunnerStat"):
+		return &applyconfigurationmonv1.RunnerStatApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("RunnerStatus"):
 		return &applyconfigurationmonv1.RunnerStatusApplyConfiguration{}
 

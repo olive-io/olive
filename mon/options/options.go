@@ -164,8 +164,8 @@ func (o *ServerOptions) Config() (*monserver.Config, error) {
 	return config, nil
 }
 
-// NewMonServer returns a new Server by given ServerOptions
-func (o *ServerOptions) NewMonServer(stopCh <-chan struct{}) error {
+// StartMonServer start a Monitor Server by given ServerOptions
+func (o *ServerOptions) StartMonServer(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
 		return err

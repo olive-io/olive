@@ -23,21 +23,18 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
-	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
 )
 
-// Client provides and manages an olive-meta client session.
+// Client provides and manages an olive-mon client session.
 type Client struct {
 	// embed etcd client
 	clientv3.Cluster
@@ -50,6 +47,7 @@ type Client struct {
 
 	// the client of api server
 	*clientset.Clientset
+	*dynamic.DynamicClient
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -123,7 +121,12 @@ func New(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
+	//TODO: Support to dynamic client Config
 	client.Clientset, err = clientset.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	client.DynamicClient, err = dynamic.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -154,28 +157,28 @@ func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
 	return endpoints, nil
 }
 
-func toErr(ctx context.Context, err error) error {
-	if err == nil {
-		return nil
-	}
-	err = rpctypes.Error(err)
-	var etcdError rpctypes.EtcdError
-	if errors.As(err, &etcdError) {
-		return err
-	}
-	if ev, ok := status.FromError(err); ok {
-		code := ev.Code()
-		switch code {
-		case codes.DeadlineExceeded:
-			fallthrough
-		case codes.Canceled:
-			if ctx.Err() != nil {
-				err = ctx.Err()
-			}
-		}
-	}
-	return err
-}
+//func toErr(ctx context.Context, err error) error {
+//	if err == nil {
+//		return nil
+//	}
+//	err = rpctypes.Error(err)
+//	var etcdError rpctypes.EtcdError
+//	if errors.As(err, &etcdError) {
+//		return err
+//	}
+//	if ev, ok := status.FromError(err); ok {
+//		code := ev.Code()
+//		switch code {
+//		case codes.DeadlineExceeded:
+//			fallthrough
+//		case codes.Canceled:
+//			if ctx.Err() != nil {
+//				err = ctx.Err()
+//			}
+//		}
+//	}
+//	return err
+//}
 
 func (c *Client) Close() error {
 	return c.ec.Close()

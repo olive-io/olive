@@ -23,11 +23,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
@@ -80,13 +82,25 @@ func NewConfigWithContext(ctx context.Context, filename string, lg *zap.Logger) 
 		return nil, fmt.Errorf("etcd cluster extension not found")
 	}
 
-	data, err := yaml.Marshal(etcdExtension)
-	if err != nil {
-		return nil, err
-	}
 	var ec monv1.EtcdCluster
-	if err = yaml.Unmarshal(data, &ec); err != nil {
-		return nil, err
+	if value, ok := etcdExtension.(*krt.Unknown); ok {
+		switch value.ContentType {
+		case "application/json":
+			err = json.Unmarshal(value.Raw, &ec)
+		case "application/yaml":
+			err = yaml.Unmarshal(value.Raw, &ec)
+		}
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		data, err := yaml.Marshal(etcdExtension)
+		if err != nil {
+			return nil, err
+		}
+		if err = yaml.Unmarshal(data, &ec); err != nil {
+			return nil, err
+		}
 	}
 
 	if len(ec.Endpoints) == 0 {

@@ -46,7 +46,7 @@ func NewMonServer(defaults *options.ServerOptions, stopCh <-chan struct{}) *cobr
 			if err := o.Validate(args); err != nil {
 				return err
 			}
-			if err := o.NewMonServer(stopCh); err != nil {
+			if err := o.StartMonServer(stopCh); err != nil {
 				return err
 			}
 			return nil
@@ -69,56 +69,9 @@ func NewMonServer(defaults *options.ServerOptions, stopCh <-chan struct{}) *cobr
 	flags := cmd.Flags()
 	o.EmbedEtcdOptions.AddFlags(flags)
 	o.RecommendedOptions.AddFlags(flags)
-	//utilfeature.DefaultMutableFeatureGate.AddFlag(flags)
 
 	return cmd
 }
-
-//func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
-//	cfg := monserver.NewConfig()
-//	app := &cobra.Command{
-//		Use:     "olive-meta",
-//		Short:   "a component of olive",
-//		Version: version.Version,
-//		RunE: func(cmd *cobra.Command, args []string) error {
-//			if err := cfg.Parse(); err != nil {
-//				return err
-//			}
-//
-//			return setup(*cfg)
-//		},
-//		SilenceErrors: true,
-//		SilenceUsage:  true,
-//	}
-//
-//	app.SetUsageFunc(func(cmd *cobra.Command) error {
-//		if err := PrintUsage(stderr); err != nil {
-//			return err
-//		}
-//
-//		return PrintFlags(stderr)
-//	})
-//
-//	app.ResetFlags()
-//	flags := app.PersistentFlags()
-//	flags.AddFlagSet(cfg.FlagSet())
-//
-//	return app
-//}
-
-//func setup(cfg monserver.Config) error {
-//	stopc := genericdaemon.SetupSignalHandler()
-//	if err := cfg.Validate(); err != nil {
-//		return err
-//	}
-//
-//	ms, err := monserver.NewMonServer(cfg)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return ms.Start(stopc)
-//}
 
 func PrintUsage(out io.Writer) error {
 	_, err := fmt.Fprintln(out, usageline)

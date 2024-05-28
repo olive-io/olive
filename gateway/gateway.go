@@ -77,7 +77,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 	lg := cfg.GetLogger()
 	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
-	lg.Debug("connect to olive-meta",
+	lg.Debug("connect to olive-mon",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
 	oct, err := client.New(cfg.Client)
 	if err != nil {

@@ -28,56 +28,42 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/apis/version"
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
-	"github.com/olive-io/olive/runner"
+	"github.com/olive-io/olive/runner/options"
 )
 
-func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
-	cfg := runner.NewConfig()
-
+func NewRunnerCommand(defaults *options.DefaultOptions, stopCh <-chan struct{}) *cobra.Command {
+	o := *defaults
 	app := &cobra.Command{
 		Use:     "olive-runner",
 		Short:   "bpmn runner of olive cloud",
 		Version: version.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := cfg.Parse(); err != nil {
+			if err := o.Complete(); err != nil {
+				return err
+			}
+			if err := o.Validate(args); err != nil {
 				return err
 			}
 
-			return setup(*cfg)
+			return o.StartRunner(stopCh)
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
 
 	app.SetUsageFunc(func(cmd *cobra.Command) error {
-		if err := PrintUsage(stderr); err != nil {
+		if err := PrintUsage(o.Stdout); err != nil {
 			return err
 		}
 
-		return PrintFlags(stderr)
+		return PrintFlags(o.Stdout)
 	})
 
 	app.ResetFlags()
 	flags := app.PersistentFlags()
-	flags.AddFlagSet(cfg.FlagSet())
+	o.AddFlags(flags)
 
 	return app
-}
-
-func setup(cfg runner.Config) error {
-	var err error
-	stopc := genericdaemon.SetupSignalHandler()
-	if err = cfg.Validate(); err != nil {
-		return err
-	}
-
-	server, err := runner.NewRunner(cfg)
-	if err != nil {
-		return err
-	}
-
-	return server.Start(stopc)
 }
 
 func PrintUsage(out io.Writer) error {

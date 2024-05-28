@@ -44,6 +44,10 @@ import (
 	"github.com/olive-io/olive/runner/raft"
 )
 
+const (
+	defaultRunnerIds = "_olive/ids/runner"
+)
+
 func (r *Runner) register() (*pb.Runner, error) {
 	cfg := r.cfg
 	key := []byte("runner")
@@ -94,11 +98,11 @@ func (r *Runner) register() (*pb.Runner, error) {
 	defer cancel()
 
 	if runner.Id == 0 {
-		idGen, err := idutil.NewGenerator(ctx, ort.DefaultMetaRunnerRegistrarId, r.oct.ActiveEtcdClient())
+		idGen, err := idutil.NewIncrementer(defaultRunnerIds, r.oct.ActiveEtcdClient(), r.StoppingNotify())
 		if err != nil {
 			return nil, errors.Wrap(err, "create new id generator")
 		}
-		runner.Id = idGen.Next()
+		runner.Id = idGen.Next(ctx)
 	}
 
 	tx := r.be.BatchTx()

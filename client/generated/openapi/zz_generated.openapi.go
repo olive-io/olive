@@ -73,6 +73,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/mon/v1.RegionStat":               schema_olive_apis_mon_v1_RegionStat(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RegionStatus":             schema_olive_apis_mon_v1_RegionStatus(ref),
 		"github.com/olive-io/olive/apis/mon/v1.Runner":                   schema_olive_apis_mon_v1_Runner(ref),
+		"github.com/olive-io/olive/apis/mon/v1.RunnerDynamicStat":        schema_olive_apis_mon_v1_RunnerDynamicStat(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RunnerList":               schema_olive_apis_mon_v1_RunnerList(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RunnerSpec":               schema_olive_apis_mon_v1_RunnerSpec(ref),
 		"github.com/olive-io/olive/apis/mon/v1.RunnerStat":               schema_olive_apis_mon_v1_RunnerStat(ref),
@@ -1896,19 +1897,6 @@ func schema_olive_apis_mon_v1_RegionStat(ref common.ReferenceCallback) common.Op
 				Description: "RegionStat is the stat information of Region",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"TypeMeta": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta"),
-						},
-					},
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 					"leader": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -1980,11 +1968,9 @@ func schema_olive_apis_mon_v1_RegionStat(ref common.ReferenceCallback) common.Op
 						},
 					},
 				},
-				Required: []string{"TypeMeta", "id", "leader", "term", "replicas", "definitions", "runningDefinitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "message", "timestamp"},
+				Required: []string{"leader", "term", "replicas", "definitions", "runningDefinitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "message", "timestamp"},
 			},
 		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta"},
 	}
 }
 
@@ -2001,10 +1987,25 @@ func schema_olive_apis_mon_v1_RegionStatus(ref common.ReferenceCallback) common.
 							Format:  "",
 						},
 					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"stat": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RegionStat"),
+						},
+					},
 				},
-				Required: []string{"phase"},
+				Required: []string{"phase", "message", "stat"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/mon/v1.RegionStat"},
 	}
 }
 
@@ -2053,6 +2054,38 @@ func schema_olive_apis_mon_v1_Runner(ref common.ReferenceCallback) common.OpenAP
 		},
 		Dependencies: []string{
 			"github.com/olive-io/olive/apis/mon/v1.RunnerSpec", "github.com/olive-io/olive/apis/mon/v1.RunnerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_olive_apis_mon_v1_RunnerDynamicStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"cpuUsed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"number"},
+							Format: "double",
+						},
+					},
+					"memoryUsed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"number"},
+							Format: "double",
+						},
+					},
+					"timestamp": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+				},
+				Required: []string{"timestamp"},
+			},
+		},
 	}
 }
 
@@ -2180,27 +2213,14 @@ func schema_olive_apis_mon_v1_RunnerStat(ref common.ReferenceCallback) common.Op
 				Description: "RunnerStat is the stat information of Runner",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"TypeMeta": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta"),
-						},
-					},
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"cpuPer": {
+					"cpuTotal": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"number"},
 							Format:  "double",
 						},
 					},
-					"memoryPer": {
+					"memoryTotal": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"number"},
@@ -2263,26 +2283,17 @@ func schema_olive_apis_mon_v1_RunnerStat(ref common.ReferenceCallback) common.Op
 							Format:  "int64",
 						},
 					},
-					"message": {
+					"dynamic": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"timestamp": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Ref: ref("github.com/olive-io/olive/apis/mon/v1.RunnerDynamicStat"),
 						},
 					},
 				},
-				Required: []string{"TypeMeta", "id", "cpuPer", "memoryPer", "regions", "leaders", "definitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "message", "timestamp"},
+				Required: []string{"cpuTotal", "memoryTotal", "regions", "leaders", "definitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "dynamic"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta"},
+			"github.com/olive-io/olive/apis/mon/v1.RunnerDynamicStat"},
 	}
 }
 
@@ -2299,10 +2310,25 @@ func schema_olive_apis_mon_v1_RunnerStatus(ref common.ReferenceCallback) common.
 							Format:  "",
 						},
 					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"stat": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RunnerStat"),
+						},
+					},
 				},
-				Required: []string{"phase"},
+				Required: []string{"phase", "message", "stat"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/mon/v1.RunnerStat"},
 	}
 }
 

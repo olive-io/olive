@@ -30,7 +30,9 @@ import (
 // RunnerStatusApplyConfiguration represents an declarative configuration of the RunnerStatus type for use
 // with apply.
 type RunnerStatusApplyConfiguration struct {
-	Phase *v1.RunnerPhase `json:"phase,omitempty"`
+	Phase   *v1.RunnerPhase               `json:"phase,omitempty"`
+	Message *string                       `json:"message,omitempty"`
+	Stat    *RunnerStatApplyConfiguration `json:"stat,omitempty"`
 }
 
 // RunnerStatusApplyConfiguration constructs an declarative configuration of the RunnerStatus type for use with
@@ -44,5 +46,21 @@ func RunnerStatus() *RunnerStatusApplyConfiguration {
 // If called multiple times, the Phase field is set to the value of the last call.
 func (b *RunnerStatusApplyConfiguration) WithPhase(value v1.RunnerPhase) *RunnerStatusApplyConfiguration {
 	b.Phase = &value
+	return b
+}
+
+// WithMessage sets the Message field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Message field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithMessage(value string) *RunnerStatusApplyConfiguration {
+	b.Message = &value
+	return b
+}
+
+// WithStat sets the Stat field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Stat field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithStat(value *RunnerStatApplyConfiguration) *RunnerStatusApplyConfiguration {
+	b.Stat = value
 	return b
 }

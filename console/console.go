@@ -70,7 +70,7 @@ func NewConsole(cfg *config.Config) (*Console, error) {
 	lg := cfg.GetLogger()
 	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
-	lg.Debug("connect to olive-meta",
+	lg.Debug("connect to olive-mon",
 		zap.String("endpoints", strings.Join(cfg.Client.Endpoints, ",")))
 
 	mode := gin.ReleaseMode

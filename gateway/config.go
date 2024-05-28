@@ -90,7 +90,7 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("gateway", pflag.ExitOnError)
 
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
-		"Set gRPC endpoints to connect the cluster of olive-meta")
+		"Set gRPC endpoints to connect the cluster of olive-mon")
 	fs.StringVar(&cfg.Id, "id", cfg.Id, "Set Gateway Id.")
 	fs.StringVar(&cfg.OpenAPI, "openapiv3", "", "Set Path of openapi v3 docs")
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")

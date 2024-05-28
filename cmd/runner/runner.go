@@ -26,9 +26,13 @@ import (
 
 	"github.com/olive-io/olive/cmd/runner/app"
 	"github.com/olive-io/olive/pkg/cliutil"
+	"github.com/olive-io/olive/pkg/daemon"
+	"github.com/olive-io/olive/runner/options"
 )
 
 func main() {
-	command := app.NewRunnerCommand(os.Stdout, os.Stderr)
+	stopCh := daemon.SetupSignalHandler()
+	defaultOptions := options.NewRunnerOptions(os.Stdout, os.Stderr)
+	command := app.NewRunnerCommand(defaultOptions, stopCh)
 	os.Exit(cliutil.Run(command))
 }

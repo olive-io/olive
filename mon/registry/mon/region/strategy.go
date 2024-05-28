@@ -190,7 +190,7 @@ func (regionStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runti
 	return nil
 }
 
-// RegionSelectableFields returns a field set that represents the object for matching purposes.
+// RegionToSelectableFields returns a field set that represents the object for matching purposes.
 func RegionToSelectableFields(region *monv1.Region) fields.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&region.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}

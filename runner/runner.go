@@ -57,7 +57,7 @@ type Runner struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	cfg Config
+	cfg *Config
 
 	gLock *flock.Flock
 
@@ -72,7 +72,7 @@ type Runner struct {
 	pr         *pb.Runner
 }
 
-func NewRunner(cfg Config) (*Runner, error) {
+func NewRunner(cfg *Config) (*Runner, error) {
 	lg := cfg.GetLogger()
 
 	gLock, err := cfg.LockDataDir()
@@ -81,13 +81,13 @@ func NewRunner(cfg Config) (*Runner, error) {
 	}
 	lg.Debug("protected directory: " + cfg.DataDir)
 
-	oct, err := client.New(cfg.Client)
+	oct, err := client.New(cfg.clientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	be := newBackend(&cfg)
+	be := newBackend(cfg)
 
 	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 	runner := &Runner{

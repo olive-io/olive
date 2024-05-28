@@ -64,10 +64,8 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		&EtcdCluster{},
 		&Runner{},
 		&RunnerList{},
-		&RunnerStat{},
 		&Region{},
 		&RegionList{},
-		&RegionStat{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

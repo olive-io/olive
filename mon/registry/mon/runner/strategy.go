@@ -190,7 +190,7 @@ func (runnerStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runti
 	return nil
 }
 
-// RunnerSelectableFields returns a field set that represents the object for matching purposes.
+// RunnerToSelectableFields returns a field set that represents the object for matching purposes.
 func RunnerToSelectableFields(runner *monv1.Runner) fields.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&runner.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}

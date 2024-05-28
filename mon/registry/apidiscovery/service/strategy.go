@@ -190,7 +190,7 @@ func (serviceStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runt
 	return nil
 }
 
-// ServiceSelectableFields returns a field set that represents the object for matching purposes.
+// ServiceToSelectableFields returns a field set that represents the object for matching purposes.
 func ServiceToSelectableFields(service *apidiscoveryv1.Service) fields.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&service.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}

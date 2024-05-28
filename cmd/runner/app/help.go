@@ -22,9 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package app
 
 import (
-	"strings"
-
-	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/runner"
 )
 
@@ -48,8 +45,8 @@ var (
 Runner:
   --data-dir 'default'
     Path to the data directory.
-  --endpoints [` + strings.Join(client.DefaultEndpoints, ",") + `]
-    Set gRPC endpoints to connect the cluster of olive-meta
+  --oliveconfig '` + runner.DefaultConfigPath + `'
+    Set the file path from configuration the cluster of olive-mon
   --listen-client-urls '` + runner.DefaultListenClientURL + `'
     List of URLs to listen on for client traffic.
   --advertise-client-url

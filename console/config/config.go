@@ -76,7 +76,7 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	fs := pflag.NewFlagSet("console", pflag.ExitOnError)
 
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints,
-		"Set gRPC endpoints to connect the cluster of olive-meta")
+		"Set gRPC endpoints to connect the cluster of olive-mon")
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for http traffic.")
 	fs.BoolVar(&cfg.EnableOpenAPI, "enable-openapi", cfg.EnableOpenAPI, "EnableOpenAPI enables openapi swagger.")
 
