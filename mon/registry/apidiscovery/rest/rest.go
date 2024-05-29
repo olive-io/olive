@@ -30,14 +30,19 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/apidiscovery"
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	edgestore "github.com/olive-io/olive/mon/registry/apidiscovery/edge/storage"
-	endpointstore "github.com/olive-io/olive/mon/registry/apidiscovery/endpoint/storage"
-	servicestore "github.com/olive-io/olive/mon/registry/apidiscovery/service/storage"
+	edgestore "github.com/olive-io/olive/mon/registry/apidiscovery/edge"
+	endpointstore "github.com/olive-io/olive/mon/registry/apidiscovery/endpoint"
+	servicestore "github.com/olive-io/olive/mon/registry/apidiscovery/service"
 )
 
-type RESTStorageProvider struct{}
+type APIRESTStorageProvider struct{}
 
-func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
+func NewRESTStorageProvider() (*APIRESTStorageProvider, error) {
+	provider := &APIRESTStorageProvider{}
+	return provider, nil
+}
+
+func (p *APIRESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(apidiscoveryv1.GroupName, apis.Scheme, apis.ParameterCodec, apis.Codecs)
 
 	if storageMap, err := p.v1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
@@ -49,7 +54,7 @@ func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstora
 	return apiGroupInfo, nil
 }
 
-func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
+func (p *APIRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
 
 	// endpoint
@@ -85,6 +90,6 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	return storage, nil
 }
 
-func (p *RESTStorageProvider) GroupName() string {
+func (p *APIRESTStorageProvider) GroupName() string {
 	return apidiscovery.GroupName
 }

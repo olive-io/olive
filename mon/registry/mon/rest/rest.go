@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package rest
 
 import (
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -30,13 +31,25 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/mon"
 	monv1 "github.com/olive-io/olive/apis/mon/v1"
-	regionstore "github.com/olive-io/olive/mon/registry/mon/region/storage"
-	runnerstore "github.com/olive-io/olive/mon/registry/mon/runner/storage"
+	regionstore "github.com/olive-io/olive/mon/registry/mon/region"
+	runnerstore "github.com/olive-io/olive/mon/registry/mon/runner"
 )
 
-type RESTStorageProvider struct{}
+type MonRestStorageProvider struct {
+	v3cli  *clientv3.Client
+	stopCh <-chan struct{}
+}
 
-func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
+func NewRESTStorageProvider(v3cli *clientv3.Client, stopCh <-chan struct{}) (*MonRestStorageProvider, error) {
+	provider := &MonRestStorageProvider{
+		v3cli:  v3cli,
+		stopCh: stopCh,
+	}
+
+	return provider, nil
+}
+
+func (p *MonRestStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(monv1.GroupName, apis.Scheme, apis.ParameterCodec, apis.Codecs)
 
 	if storageMap, err := p.v1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
@@ -48,12 +61,15 @@ func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstora
 	return apiGroupInfo, nil
 }
 
-func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
+func (p *MonRestStorageProvider) v1Storage(
+	apiResourceConfigSource serverstorage.APIResourceConfigSource,
+	restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
+
 	storage := map[string]rest.Storage{}
 
 	// runner
 	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(monv1.SchemeGroupVersion.WithResource(resource)) {
-		runnersStorage, runnersStatusStorage, err := runnerstore.NewREST(restOptionsGetter)
+		runnersStorage, runnersStatusStorage, err := runnerstore.NewREST(p.v3cli, restOptionsGetter, p.stopCh)
 		if err != nil {
 			return storage, err
 		}
@@ -74,6 +90,6 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	return storage, nil
 }
 
-func (p *RESTStorageProvider) GroupName() string {
+func (p *MonRestStorageProvider) GroupName() string {
 	return mon.GroupName
 }

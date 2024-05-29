@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage
+package endpoint
 
 import (
 	"testing"
@@ -23,18 +23,17 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
-func newStorage(t *testing.T) (*DefinitionStorage, *etcd3testing.EtcdTestServer) {
-	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
+func newStorage(t *testing.T) (*EndpointStorage, *etcd3testing.EtcdTestServer) {
+	etcdStorage, server := registrytest.NewEtcdStorage(t, apidiscoveryv1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,
 		DeleteCollectionWorkers: 1,
-		ResourcePrefix:          "definitions",
+		ResourcePrefix:          "endpoints",
 	}
 	jobStorage, err := NewStorage(restOptions)
 	if err != nil {
@@ -43,12 +42,12 @@ func newStorage(t *testing.T) (*DefinitionStorage, *etcd3testing.EtcdTestServer)
 	return &jobStorage, server
 }
 
-func validNewDefinition() *corev1.Definition {
-	return &corev1.Definition{
+func validNewEndpoint() *apidiscoveryv1.Endpoint {
+	return &apidiscoveryv1.Endpoint{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: corev1.DefinitionSpec{},
+		Spec: apidiscoveryv1.EndpointSpec{},
 	}
 }

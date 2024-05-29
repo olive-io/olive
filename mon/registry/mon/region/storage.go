@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package region
 
 import (
 	"context"
@@ -33,63 +33,62 @@ import (
 	"k8s.io/apiserver/pkg/warning"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	"github.com/olive-io/olive/mon/registry/apidiscovery/service"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// ServiceStorage includes dummy storage for Service.
-type ServiceStorage struct {
-	Service *REST
-	Status  *StatusREST
+// RegionStorage includes dummy storage for Region.
+type RegionStorage struct {
+	Region *REST
+	Status *StatusREST
 }
 
-// NewStorage creates a new ServiceStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (ServiceStorage, error) {
-	serviceRest, serviceStatusRest, err := NewREST(optsGetter)
+// NewStorage creates a new RegionStorage against etcd.
+func NewStorage(optsGetter generic.RESTOptionsGetter) (RegionStorage, error) {
+	regionRest, regionStatusRest, err := NewREST(optsGetter)
 	if err != nil {
-		return ServiceStorage{}, err
+		return RegionStorage{}, err
 	}
 
-	return ServiceStorage{
-		Service: serviceRest,
-		Status:  serviceStatusRest,
+	return RegionStorage{
+		Region: regionRest,
+		Status: regionStatusRest,
 	}, nil
 }
 
 var deleteOptionWarnings = ""
 
-// REST implements a RESTStorage for services against etcd
+// REST implements a RESTStorage for regions against etcd
 type REST struct {
 	*genericregistry.Store
 }
 
-// NewREST returns a RESTStorage object that will work against Services.
+// NewREST returns a RESTStorage object that will work against Regions.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.Service{} },
-		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.ServiceList{} },
-		PredicateFunc:             service.MatchService,
-		DefaultQualifiedResource:  apidiscoveryv1.Resource("services"),
-		SingularQualifiedResource: apidiscoveryv1.Resource("service"),
+		NewFunc:                   func() runtime.Object { return &monv1.Region{} },
+		NewListFunc:               func() runtime.Object { return &monv1.RegionList{} },
+		PredicateFunc:             MatchRegion,
+		DefaultQualifiedResource:  monv1.Resource("regions"),
+		SingularQualifiedResource: monv1.Resource("region"),
 
-		CreateStrategy:      service.Strategy,
-		UpdateStrategy:      service.Strategy,
-		DeleteStrategy:      service.Strategy,
-		ResetFieldsStrategy: service.Strategy,
+		CreateStrategy:      Strategy,
+		UpdateStrategy:      Strategy,
+		DeleteStrategy:      Strategy,
+		ResetFieldsStrategy: Strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: service.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = service.StatusStrategy
-	statusStore.ResetFieldsStrategy = service.StatusStrategy
+	statusStore.UpdateStrategy = StatusStrategy
+	statusStore.ResetFieldsStrategy = StatusStrategy
 
 	return &REST{store}, &StatusREST{store: &statusStore}, nil
 }
@@ -106,8 +105,8 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		service.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as Service deletion strategy by default is orphaning
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		// Throw a warning if delete options are not explicitly set as Region deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
@@ -116,18 +115,10 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		service.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
-}
-
-// Implement ShortNamesProvider
-var _ rest.ShortNamesProvider = &REST{}
-
-// ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
-func (r *REST) ShortNames() []string {
-	return []string{"svc"}
 }
 
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.
@@ -135,9 +126,9 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
-// New creates a new Service object.
+// New creates a new Region object.
 func (r *StatusREST) New() runtime.Object {
-	return &apidiscoveryv1.Service{}
+	return &monv1.Region{}
 }
 
 // Destroy cleans up resources on shutdown.

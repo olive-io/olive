@@ -19,11 +19,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package runner
 
 import (
 	"context"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,65 +34,80 @@ import (
 	"k8s.io/apiserver/pkg/warning"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	"github.com/olive-io/olive/mon/registry/apidiscovery/edge"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// EdgeStorage includes dummy storage for Edge.
-type EdgeStorage struct {
-	Edge   *REST
+// RunnerStorage includes dummy storage for Runner.
+type RunnerStorage struct {
+	Runner *REST
 	Status *StatusREST
 }
 
-// NewStorage creates a new EdgeStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (EdgeStorage, error) {
-	edgeRest, edgeStatusRest, err := NewREST(optsGetter)
+// NewStorage creates a new RunnerStorage against etcd.
+func NewStorage(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (RunnerStorage, error) {
+	runnerRest, runnerStatusRest, err := NewREST(v3cli, optsGetter, stopCh)
 	if err != nil {
-		return EdgeStorage{}, err
+		return RunnerStorage{}, err
 	}
 
-	return EdgeStorage{
-		Edge:   edgeRest,
-		Status: edgeStatusRest,
+	return RunnerStorage{
+		Runner: runnerRest,
+		Status: runnerStatusRest,
 	}, nil
 }
 
+const (
+	defaultRegionPrefix = "/olive/ring/ids/runner"
+)
+
 var deleteOptionWarnings = ""
 
-// REST implements a RESTStorage for edges against etcd
+// REST implements a RESTStorage for runners against etcd
 type REST struct {
 	*genericregistry.Store
+
+	strategy *runnerStrategy
 }
 
-// NewREST returns a RESTStorage object that will work against Edges.
-func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
-	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.Edge{} },
-		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.EdgeList{} },
-		PredicateFunc:             edge.MatchEdge,
-		DefaultQualifiedResource:  apidiscoveryv1.Resource("edges"),
-		SingularQualifiedResource: apidiscoveryv1.Resource("edge"),
+// NewREST returns a RESTStorage object that will work against Runners.
+func NewREST(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (*REST, *StatusREST, error) {
+	ring, err := idutil.NewRing(defaultRegionPrefix, v3cli)
+	if err != nil {
+		return nil, nil, err
+	}
+	ring.Start(stopCh)
 
-		CreateStrategy:      edge.Strategy,
-		UpdateStrategy:      edge.Strategy,
-		DeleteStrategy:      edge.Strategy,
-		ResetFieldsStrategy: edge.Strategy,
+	strategy := createStrategy(ring)
+	statusStrategy := createStatusStrategy(strategy)
+
+	store := &genericregistry.Store{
+		NewFunc:                   func() runtime.Object { return &monv1.Runner{} },
+		NewListFunc:               func() runtime.Object { return &monv1.RunnerList{} },
+		PredicateFunc:             MatchRunner,
+		DefaultQualifiedResource:  monv1.Resource("runners"),
+		SingularQualifiedResource: monv1.Resource("runner"),
+
+		CreateStrategy:      strategy,
+		UpdateStrategy:      strategy,
+		DeleteStrategy:      strategy,
+		ResetFieldsStrategy: strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: edge.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = edge.StatusStrategy
-	statusStore.ResetFieldsStrategy = edge.StatusStrategy
+	statusStore.UpdateStrategy = statusStrategy
+	statusStore.ResetFieldsStrategy = statusStrategy
 
-	return &REST{store}, &StatusREST{store: &statusStore}, nil
+	return &REST{store, strategy}, &StatusREST{store: &statusStore}, nil
 }
 
 // Implement CategoriesProvider
@@ -106,20 +122,37 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		edge.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as Edge deletion strategy by default is orphaning
+		r.strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		// Throw a warning if delete options are not explicitly set as Runner deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
+	}
+
+	runner, err := r.Store.Get(ctx, name, &metav1.GetOptions{})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if err = r.strategy.PrepareForDelete(ctx, runner); err != nil {
+		return nil, false, err
 	}
 	return r.Store.Delete(ctx, name, deleteValidation, options)
 }
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		edge.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		r.strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
+}
+
+// Implement ShortNamesProvider
+var _ rest.ShortNamesProvider = &REST{}
+
+// ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
+func (r *REST) ShortNames() []string {
+	return []string{"rt"}
 }
 
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.
@@ -127,9 +160,9 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
-// New creates a new Edge object.
+// New creates a new Runner object.
 func (r *StatusREST) New() runtime.Object {
-	return &apidiscoveryv1.Edge{}
+	return &monv1.Runner{}
 }
 
 // Destroy cleans up resources on shutdown.

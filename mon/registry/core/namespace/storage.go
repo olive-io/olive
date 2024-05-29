@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package namespace
 
 import (
 	"context"
@@ -41,13 +41,12 @@ import (
 
 	api "github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/mon/registry/core/namespace"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// rest implements a RESTStorage for namespaces
+// REST implements a RESTStorage for namespaces
 type REST struct {
 	store  *genericregistry.Store
 	status *genericregistry.Store
@@ -68,32 +67,32 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, *Finaliz
 	store := &genericregistry.Store{
 		NewFunc:                   func() runtime.Object { return &corev1.Namespace{} },
 		NewListFunc:               func() runtime.Object { return &corev1.NamespaceList{} },
-		PredicateFunc:             namespace.MatchNamespace,
+		PredicateFunc:             MatchNamespace,
 		DefaultQualifiedResource:  api.Resource("namespaces"),
 		SingularQualifiedResource: api.Resource("namespace"),
 
-		CreateStrategy:      namespace.Strategy,
-		UpdateStrategy:      namespace.Strategy,
-		DeleteStrategy:      namespace.Strategy,
-		ResetFieldsStrategy: namespace.Strategy,
+		CreateStrategy:      Strategy,
+		UpdateStrategy:      Strategy,
+		DeleteStrategy:      Strategy,
+		ResetFieldsStrategy: Strategy,
 		ReturnDeletedObject: true,
 
 		ShouldDeleteDuringUpdate: ShouldDeleteNamespaceDuringUpdate,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: namespace.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = namespace.StatusStrategy
-	statusStore.ResetFieldsStrategy = namespace.StatusStrategy
+	statusStore.UpdateStrategy = StatusStrategy
+	statusStore.ResetFieldsStrategy = StatusStrategy
 
 	finalizeStore := *store
-	finalizeStore.UpdateStrategy = namespace.FinalizeStrategy
-	finalizeStore.ResetFieldsStrategy = namespace.FinalizeStrategy
+	finalizeStore.UpdateStrategy = FinalizeStrategy
+	finalizeStore.ResetFieldsStrategy = FinalizeStrategy
 
 	return &REST{store: store, status: &statusStore}, &StatusREST{store: &statusStore}, &FinalizeREST{store: &finalizeStore}, nil
 }

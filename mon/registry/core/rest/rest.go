@@ -30,14 +30,19 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	definitionstore "github.com/olive-io/olive/mon/registry/core/definition/storage"
-	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace/storage"
-	processstore "github.com/olive-io/olive/mon/registry/core/process/storage"
+	definitionstore "github.com/olive-io/olive/mon/registry/core"
+	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace"
+	processstore "github.com/olive-io/olive/mon/registry/core/process"
 )
 
-type RESTStorageProvider struct{}
+type CoreRESTStorageProvider struct{}
 
-func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
+func NewRESTStorageProvider() (*CoreRESTStorageProvider, error) {
+	provider := &CoreRESTStorageProvider{}
+	return provider, nil
+}
+
+func (p *CoreRESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(corev1.GroupName, apis.Scheme, apis.ParameterCodec, apis.Codecs)
 
 	if storageMap, err := p.v1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
@@ -49,7 +54,7 @@ func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstora
 	return apiGroupInfo, nil
 }
 
-func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
+func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
 
 	// namespace
@@ -86,6 +91,6 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 	return storage, nil
 }
 
-func (p *RESTStorageProvider) GroupName() string {
+func (p *CoreRESTStorageProvider) GroupName() string {
 	return core.GroupName
 }

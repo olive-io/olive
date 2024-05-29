@@ -14,20 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage
+package runner_test
 
 import (
 	"testing"
 
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
 	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	"github.com/olive-io/olive/mon/registry/mon/runner"
 	"github.com/olive-io/olive/mon/registry/registrytest"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
-func newStorage(t *testing.T) (*RunnerStorage, *etcd3testing.EtcdTestServer) {
+func newStorage(t *testing.T) (*runner.RunnerStorage, *etcd3testing.EtcdTestServer) {
 	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
@@ -35,7 +38,13 @@ func newStorage(t *testing.T) (*RunnerStorage, *etcd3testing.EtcdTestServer) {
 		DeleteCollectionWorkers: 1,
 		ResourcePrefix:          "runners",
 	}
-	jobStorage, err := NewStorage(restOptions)
+
+	etcd, cancel := registrytest.StartTestEmbedEtcd()
+	defer cancel()
+	v3cli := v3client.New(etcd.Server)
+	stopCh := genericdaemon.SetupSignalHandler()
+
+	jobStorage, err := runner.NewStorage(v3cli, restOptions, stopCh)
 	if err != nil {
 		t.Fatalf("unexpected error from REST storage: %v", err)
 	}

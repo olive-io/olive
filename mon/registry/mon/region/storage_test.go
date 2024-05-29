@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage
+package region
 
 import (
 	"testing"
@@ -23,18 +23,17 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
-func newStorage(t *testing.T) (*ServiceStorage, *etcd3testing.EtcdTestServer) {
+func newStorage(t *testing.T) (*RegionStorage, *etcd3testing.EtcdTestServer) {
 	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,
 		DeleteCollectionWorkers: 1,
-		ResourcePrefix:          "services",
+		ResourcePrefix:          "runners",
 	}
 	jobStorage, err := NewStorage(restOptions)
 	if err != nil {
@@ -43,12 +42,12 @@ func newStorage(t *testing.T) (*ServiceStorage, *etcd3testing.EtcdTestServer) {
 	return &jobStorage, server
 }
 
-func validNewRunner() *apidiscoveryv1.Service {
-	return &apidiscoveryv1.Service{
+func validNewRegion() *monv1.Region {
+	return &monv1.Region{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: apidiscoveryv1.ServiceSpec{},
+		Spec: monv1.RegionSpec{},
 	}
 }

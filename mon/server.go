@@ -62,8 +62,7 @@ type RESTStorageProvider interface {
 type MonitorServer struct {
 	genericdaemon.IDaemon
 
-	etcdConfig    *embed.Config
-	genericConfig *genericapiserver.RecommendedConfig
+	etcdConfig *embed.Config
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -149,6 +148,7 @@ func (s *MonitorServer) InstallAPIs(apiResourceConfigSource serverstorage.APIRes
 }
 
 func (s *MonitorServer) Start(stopc <-chan struct{}) error {
+
 	shutdownTimeout := time.Second * 10
 	preparedServer := s.genericAPIServer.PrepareRun()
 	stoppedCh, listenerStoppedCh, err := preparedServer.NonBlockingRun(stopc, shutdownTimeout)
@@ -168,10 +168,6 @@ func (s *MonitorServer) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	//if err = authRPC.Prepare(s.ctx); err != nil {
-	//	return err
-	//}
-
 	s.IDaemon.OnDestroy(s.destroy)
 
 	<-stoppedCh
@@ -186,7 +182,7 @@ func (s *MonitorServer) stop() error {
 }
 
 func (s *MonitorServer) destroy() {
+	s.cancel()
 	s.etcd.Server.HardStop()
 	<-s.etcd.Server.StopNotify()
-	s.cancel()
 }

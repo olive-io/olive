@@ -25,6 +25,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 
 	"github.com/olive-io/olive/pkg/daemon"
@@ -48,6 +49,31 @@ func TestNewIncrement(t *testing.T) {
 	if id == id2 {
 		t.Errorf("generate the same id %x", id)
 	}
+}
+
+func TestNewRing(t *testing.T) {
+	etcd, cancel := newEtcd()
+	defer cancel()
+
+	key := "_olive/ids"
+
+	ctx := context.TODO()
+	gen, err := idutil.NewRing(key, v3client.New(etcd.Server), daemon.SetupSignalHandler())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id := gen.Next(ctx)
+	id2 := gen.Next(ctx)
+	if id == id2 {
+		t.Errorf("generate the same id %x", id)
+	}
+
+	gen.Recycle(ctx, id2)
+
+	id3 := gen.Next(ctx)
+
+	assert.Equal(t, id2, id3)
 }
 
 func BenchmarkIncrementNext(b *testing.B) {

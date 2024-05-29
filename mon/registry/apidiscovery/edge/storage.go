@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package edge
 
 import (
 	"context"
@@ -33,63 +33,62 @@ import (
 	"k8s.io/apiserver/pkg/warning"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
-	"github.com/olive-io/olive/mon/registry/mon/region"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// RegionStorage includes dummy storage for Region.
-type RegionStorage struct {
-	Region *REST
+// EdgeStorage includes dummy storage for Edge.
+type EdgeStorage struct {
+	Edge   *REST
 	Status *StatusREST
 }
 
-// NewStorage creates a new RegionStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (RegionStorage, error) {
-	regionRest, regionStatusRest, err := NewREST(optsGetter)
+// NewStorage creates a new EdgeStorage against etcd.
+func NewStorage(optsGetter generic.RESTOptionsGetter) (EdgeStorage, error) {
+	edgeRest, edgeStatusRest, err := NewREST(optsGetter)
 	if err != nil {
-		return RegionStorage{}, err
+		return EdgeStorage{}, err
 	}
 
-	return RegionStorage{
-		Region: regionRest,
-		Status: regionStatusRest,
+	return EdgeStorage{
+		Edge:   edgeRest,
+		Status: edgeStatusRest,
 	}, nil
 }
 
 var deleteOptionWarnings = ""
 
-// REST implements a RESTStorage for regions against etcd
+// REST implements a RESTStorage for edges against etcd
 type REST struct {
 	*genericregistry.Store
 }
 
-// NewREST returns a RESTStorage object that will work against Regions.
+// NewREST returns a RESTStorage object that will work against Edges.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &monv1.Region{} },
-		NewListFunc:               func() runtime.Object { return &monv1.RegionList{} },
-		PredicateFunc:             region.MatchRegion,
-		DefaultQualifiedResource:  monv1.Resource("regions"),
-		SingularQualifiedResource: monv1.Resource("region"),
+		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.Edge{} },
+		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.EdgeList{} },
+		PredicateFunc:             MatchEdge,
+		DefaultQualifiedResource:  apidiscoveryv1.Resource("edges"),
+		SingularQualifiedResource: apidiscoveryv1.Resource("edge"),
 
-		CreateStrategy:      region.Strategy,
-		UpdateStrategy:      region.Strategy,
-		DeleteStrategy:      region.Strategy,
-		ResetFieldsStrategy: region.Strategy,
+		CreateStrategy:      Strategy,
+		UpdateStrategy:      Strategy,
+		DeleteStrategy:      Strategy,
+		ResetFieldsStrategy: Strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: region.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = region.StatusStrategy
-	statusStore.ResetFieldsStrategy = region.StatusStrategy
+	statusStore.UpdateStrategy = StatusStrategy
+	statusStore.ResetFieldsStrategy = StatusStrategy
 
 	return &REST{store}, &StatusREST{store: &statusStore}, nil
 }
@@ -106,8 +105,8 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		region.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as Region deletion strategy by default is orphaning
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		// Throw a warning if delete options are not explicitly set as Edge deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
@@ -116,7 +115,7 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		region.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
@@ -127,9 +126,9 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
-// New creates a new Region object.
+// New creates a new Edge object.
 func (r *StatusREST) New() runtime.Object {
-	return &monv1.Region{}
+	return &apidiscoveryv1.Edge{}
 }
 
 // Destroy cleans up resources on shutdown.

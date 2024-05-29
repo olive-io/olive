@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package runner
+package runner_test
 
 import (
 	"github.com/google/go-cmp/cmp/cmpopts"

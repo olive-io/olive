@@ -29,10 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
@@ -42,41 +40,52 @@ import (
 	"github.com/olive-io/olive/apis"
 	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	monvalidation "github.com/olive-io/olive/apis/mon/validation"
+	"github.com/olive-io/olive/pkg/idutil"
 )
 
 // runnerStrategy implements verification logic for Runner.
 type runnerStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
+
+	ring *idutil.Ring
 }
 
-// Strategy is the default logic that applies when creating and updating Runner objects.
-var Strategy = runnerStrategy{apis.Scheme, names.SimpleNameGenerator}
+func createStrategy(ring *idutil.Ring) *runnerStrategy {
+	strategy := &runnerStrategy{
+		ObjectTyper:   apis.Scheme,
+		NameGenerator: names.SimpleNameGenerator,
+		ring:          ring,
+	}
+
+	return strategy
+}
 
 // DefaultGarbageCollectionPolicy returns OrphanDependents for mon/v1 for backwards compatibility,
 // and DeleteDependents for all other versions.
-func (runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
-	var groupVersion schema.GroupVersion
-	if requestInfo, found := genericapirequest.RequestInfoFrom(ctx); found {
-		groupVersion = schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
-	}
-	switch groupVersion {
-	case monv1.SchemeGroupVersion:
-		// for back compatibility
-		return rest.OrphanDependents
-	default:
-		return rest.DeleteDependents
-	}
+func (rs *runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
+	//var groupVersion schema.GroupVersion
+	//if requestInfo, found := genericapirequest.RequestInfoFrom(ctx); found {
+	//	groupVersion = schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
+	//}
+	//switch groupVersion {
+	//case monv1.SchemeGroupVersion:
+	//	// for back compatibility
+	//	return rest.OrphanDependents
+	//default:
+	//	return rest.DeleteDependents
+	//}
+	return rest.DeleteDependents
 }
 
 // NamespaceScoped returns true because all runners need to be within a namespace.
-func (runnerStrategy) NamespaceScoped() bool {
+func (rs *runnerStrategy) NamespaceScoped() bool {
 	return false
 }
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
-func (runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (rs *runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
 		"mon/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
@@ -87,18 +96,24 @@ func (runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 }
 
 // PrepareForCreate clears the status of a runner before creation.
-func (runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+func (rs *runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 	runner := obj.(*monv1.Runner)
-	runner.Status = monv1.RunnerStatus{}
+
+	nextId := rs.ring.Next(ctx)
+	runner.Name = fmt.Sprintf("runner%d", nextId)
+	runner.Spec.ID = int64(nextId)
+	runner.Status = monv1.RunnerStatus{
+		Phase: monv1.RunnerPending,
+	}
 
 	runner.Generation = 1
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+func (rs *runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newRunner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
-	newRunner.Status = oldRunner.Status
+	newRunner.Spec.DeepCopyInto(&oldRunner.Spec)
 
 	// See metav1.ObjectMeta description for more information on Generation.
 	if !apiequality.Semantic.DeepEqual(newRunner.Spec, oldRunner.Spec) {
@@ -107,14 +122,20 @@ func (runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Obj
 
 }
 
+func (rs *runnerStrategy) PrepareForDelete(ctx context.Context, obj runtime.Object) error {
+	runner := obj.(*monv1.Runner)
+	rs.ring.Recycle(ctx, uint64(runner.Spec.ID))
+	return nil
+}
+
 // Validate validates a new runner.
-func (runnerStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
+func (rs *runnerStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	runner := obj.(*monv1.Runner)
 	return monvalidation.ValidateRunner(runner)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
-func (runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
+func (rs *runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	newRunner := obj.(*monv1.Runner)
 	var warnings []string
 	if msgs := utilvalidation.IsDNS1123Label(newRunner.Name); len(msgs) != 0 {
@@ -124,20 +145,20 @@ func (runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) 
 }
 
 // Canonicalize normalizes the object after validation.
-func (runnerStrategy) Canonicalize(obj runtime.Object) {
+func (rs *runnerStrategy) Canonicalize(obj runtime.Object) {
 }
 
-func (runnerStrategy) AllowUnconditionalUpdate() bool {
+func (rs *runnerStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
 // AllowCreateOnUpdate is false for runners; this means a POST is needed to create one.
-func (runnerStrategy) AllowCreateOnUpdate() bool {
+func (rs *runnerStrategy) AllowCreateOnUpdate() bool {
 	return false
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+func (rs *runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	runner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
 
@@ -147,7 +168,7 @@ func (runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Objec
 }
 
 // WarningsOnUpdate returns warnings for the given update.
-func (runnerStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+func (rs *runnerStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
 	newRunner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
@@ -157,14 +178,16 @@ func (runnerStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Obj
 }
 
 type runnerStatusStrategy struct {
-	runnerStrategy
+	*runnerStrategy
 }
 
-var StatusStrategy = runnerStatusStrategy{Strategy}
+func createStatusStrategy(strategy *runnerStrategy) *runnerStatusStrategy {
+	return &runnerStatusStrategy{strategy}
+}
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
-func (runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (rs *runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
 		"mon/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("spec"),
@@ -172,13 +195,13 @@ func (runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath
 	}
 }
 
-func (runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+func (rs *runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newRunner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
-	newRunner.Spec = oldRunner.Spec
+	newRunner.Status.DeepCopyInto(&oldRunner.Status)
 }
 
-func (runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+func (rs *runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	newRunner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
 
@@ -186,7 +209,7 @@ func (runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime
 }
 
 // WarningsOnUpdate returns warnings for the given update.
-func (runnerStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+func (rs *runnerStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	return nil
 }
 

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage
+package core
 
 import (
 	"testing"
@@ -23,17 +23,18 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
-func newStorage(t *testing.T) (*EdgeStorage, *etcd3testing.EtcdTestServer) {
-	etcdStorage, server := registrytest.NewEtcdStorage(t, apidiscoveryv1.GroupName)
+func newStorage(t *testing.T) (*DefinitionStorage, *etcd3testing.EtcdTestServer) {
+	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,
 		DeleteCollectionWorkers: 1,
-		ResourcePrefix:          "edges",
+		ResourcePrefix:          "definitions",
 	}
 	jobStorage, err := NewStorage(restOptions)
 	if err != nil {
@@ -42,12 +43,12 @@ func newStorage(t *testing.T) (*EdgeStorage, *etcd3testing.EtcdTestServer) {
 	return &jobStorage, server
 }
 
-func validNewEdge() *apidiscoveryv1.Edge {
-	return &apidiscoveryv1.Edge{
+func validNewDefinition() *corev1.Definition {
+	return &corev1.Definition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: apidiscoveryv1.EdgeSpec{},
+		Spec: corev1.DefinitionSpec{},
 	}
 }

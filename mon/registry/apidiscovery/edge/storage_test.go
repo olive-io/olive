@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storage
+package edge
 
 import (
 	"testing"
@@ -23,18 +23,17 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
-	apidiscoveryv1 "github.com/olive-io/olive/apis/mon/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
-func newStorage(t *testing.T) (*ProcessInstanceStorage, *etcd3testing.EtcdTestServer) {
+func newStorage(t *testing.T) (*EdgeStorage, *etcd3testing.EtcdTestServer) {
 	etcdStorage, server := registrytest.NewEtcdStorage(t, apidiscoveryv1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,
 		DeleteCollectionWorkers: 1,
-		ResourcePrefix:          "processInstances",
+		ResourcePrefix:          "edges",
 	}
 	jobStorage, err := NewStorage(restOptions)
 	if err != nil {
@@ -43,12 +42,12 @@ func newStorage(t *testing.T) (*ProcessInstanceStorage, *etcd3testing.EtcdTestSe
 	return &jobStorage, server
 }
 
-func validNewProcessInstance() *corev1.ProcessInstance {
-	return &corev1.ProcessInstance{
+func validNewEdge() *apidiscoveryv1.Edge {
+	return &apidiscoveryv1.Edge{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: corev1.ProcessInstanceSpec{},
+		Spec: apidiscoveryv1.EdgeSpec{},
 	}
 }

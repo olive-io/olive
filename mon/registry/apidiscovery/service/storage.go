@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package service
 
 import (
 	"context"
@@ -33,63 +33,62 @@ import (
 	"k8s.io/apiserver/pkg/warning"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
-	"github.com/olive-io/olive/mon/registry/mon/runner"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
 )
 
-// RunnerStorage includes dummy storage for Runner.
-type RunnerStorage struct {
-	Runner *REST
-	Status *StatusREST
+// ServiceStorage includes dummy storage for Service.
+type ServiceStorage struct {
+	Service *REST
+	Status  *StatusREST
 }
 
-// NewStorage creates a new RunnerStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (RunnerStorage, error) {
-	runnerRest, runnerStatusRest, err := NewREST(optsGetter)
+// NewStorage creates a new ServiceStorage against etcd.
+func NewStorage(optsGetter generic.RESTOptionsGetter) (ServiceStorage, error) {
+	serviceRest, serviceStatusRest, err := NewREST(optsGetter)
 	if err != nil {
-		return RunnerStorage{}, err
+		return ServiceStorage{}, err
 	}
 
-	return RunnerStorage{
-		Runner: runnerRest,
-		Status: runnerStatusRest,
+	return ServiceStorage{
+		Service: serviceRest,
+		Status:  serviceStatusRest,
 	}, nil
 }
 
 var deleteOptionWarnings = ""
 
-// REST implements a RESTStorage for runners against etcd
+// REST implements a RESTStorage for services against etcd
 type REST struct {
 	*genericregistry.Store
 }
 
-// NewREST returns a RESTStorage object that will work against Runners.
+// NewREST returns a RESTStorage object that will work against Services.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &monv1.Runner{} },
-		NewListFunc:               func() runtime.Object { return &monv1.RunnerList{} },
-		PredicateFunc:             runner.MatchRunner,
-		DefaultQualifiedResource:  monv1.Resource("runners"),
-		SingularQualifiedResource: monv1.Resource("runner"),
+		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.Service{} },
+		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.ServiceList{} },
+		PredicateFunc:             MatchService,
+		DefaultQualifiedResource:  apidiscoveryv1.Resource("services"),
+		SingularQualifiedResource: apidiscoveryv1.Resource("service"),
 
-		CreateStrategy:      runner.Strategy,
-		UpdateStrategy:      runner.Strategy,
-		DeleteStrategy:      runner.Strategy,
-		ResetFieldsStrategy: runner.Strategy,
+		CreateStrategy:      Strategy,
+		UpdateStrategy:      Strategy,
+		DeleteStrategy:      Strategy,
+		ResetFieldsStrategy: Strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: runner.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = runner.StatusStrategy
-	statusStore.ResetFieldsStrategy = runner.StatusStrategy
+	statusStore.UpdateStrategy = StatusStrategy
+	statusStore.ResetFieldsStrategy = StatusStrategy
 
 	return &REST{store}, &StatusREST{store: &statusStore}, nil
 }
@@ -106,8 +105,8 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		runner.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
-		// Throw a warning if delete options are not explicitly set as Runner deletion strategy by default is orphaning
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		// Throw a warning if delete options are not explicitly set as Service deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
@@ -116,7 +115,7 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		runner.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
@@ -127,7 +126,7 @@ var _ rest.ShortNamesProvider = &REST{}
 
 // ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
 func (r *REST) ShortNames() []string {
-	return []string{"rt"}
+	return []string{"svc"}
 }
 
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.
@@ -135,9 +134,9 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
-// New creates a new Runner object.
+// New creates a new Service object.
 func (r *StatusREST) New() runtime.Object {
-	return &monv1.Runner{}
+	return &apidiscoveryv1.Service{}
 }
 
 // Destroy cleans up resources on shutdown.

@@ -137,6 +137,8 @@ func (c completedConfig) New() (*MonitorServer, error) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	etcdClient := v3client.New(etcd.Server)
+
 	monServer := &MonitorServer{
 		IDaemon: embedDaemon,
 
@@ -145,17 +147,30 @@ func (c completedConfig) New() (*MonitorServer, error) {
 
 		lg:       lg,
 		etcd:     etcd,
-		v3cli:    v3client.New(etcd.Server),
+		v3cli:    etcdClient,
 		idGen:    idutil.NewGenerator(uint16(etcd.Server.ID()), time.Now()),
 		notifier: leader.NewNotify(etcd.Server),
 
 		genericAPIServer: genericServer,
 	}
 
+	monRestStorageProvider, err := monrest.NewRESTStorageProvider(etcdClient, monServer.StoppingNotify())
+	if err != nil {
+		return nil, err
+	}
+	apiDiscoveryRestStorageProvider, err := apidiscoveryrest.NewRESTStorageProvider()
+	if err != nil {
+		return nil, err
+	}
+	coreRestStorageProvider, err := corerest.NewRESTStorageProvider()
+	if err != nil {
+		return nil, err
+	}
+
 	restStorageProviders := []RESTStorageProvider{
-		&apidiscoveryrest.RESTStorageProvider{},
-		&corerest.RESTStorageProvider{},
-		&monrest.RESTStorageProvider{},
+		monRestStorageProvider,
+		apiDiscoveryRestStorageProvider,
+		coreRestStorageProvider,
 	}
 
 	if err = monServer.InstallAPIs(
