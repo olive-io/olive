@@ -906,14 +906,28 @@ func schema_olive_apis_core_v1_DefinitionSpec(ref common.ReferenceCallback) comm
 							Format: "int64",
 						},
 					},
-					"region": {
+					"regionName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "the id of olive region",
-							Type:        []string{"integer"},
-							Format:      "int64",
+							Description: "the name of olive region",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"schedulerName": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
+				Required: []string{"schedulerName"},
 			},
 		},
 	}
@@ -1860,20 +1874,6 @@ func schema_olive_apis_mon_v1_RegionSpec(ref common.ReferenceCallback) common.Op
 							Format:  "int64",
 						},
 					},
-					"leader": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"definitions": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 					"definitionsLimit": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -1882,7 +1882,7 @@ func schema_olive_apis_mon_v1_RegionSpec(ref common.ReferenceCallback) common.Op
 						},
 					},
 				},
-				Required: []string{"id", "deploymentId", "replicas", "electionRTT", "heartbeatRTT", "leader", "definitions", "definitionsLimit"},
+				Required: []string{"id", "deploymentId", "replicas", "electionRTT", "heartbeatRTT", "definitionsLimit"},
 			},
 		},
 		Dependencies: []string{
@@ -1994,14 +1994,27 @@ func schema_olive_apis_mon_v1_RegionStatus(ref common.ReferenceCallback) common.
 							Format:  "",
 						},
 					},
+					"leader": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"definitions": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
 					"stat": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RegionStat"),
+							Ref: ref("github.com/olive-io/olive/apis/mon/v1.RegionStat"),
 						},
 					},
 				},
-				Required: []string{"phase", "message", "stat"},
+				Required: []string{"phase", "message", "leader", "definitions", "stat"},
 			},
 		},
 		Dependencies: []string{
@@ -2063,6 +2076,27 @@ func schema_olive_apis_mon_v1_RunnerDynamicStat(ref common.ReferenceCallback) co
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"bpmnProcesses": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"bpmnEvents": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"bpmnTasks": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
 					"cpuUsed": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"number"},
@@ -2083,7 +2117,7 @@ func schema_olive_apis_mon_v1_RunnerDynamicStat(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"timestamp"},
+				Required: []string{"bpmnProcesses", "bpmnEvents", "bpmnTasks", "timestamp"},
 			},
 		},
 	}
@@ -2162,34 +2196,20 @@ func schema_olive_apis_mon_v1_RunnerSpec(ref common.ReferenceCallback) common.Op
 							Format:      "",
 						},
 					},
-					"peerURLs": {
+					"peerURL": {
 						SchemaProps: spec.SchemaProps{
 							Description: "peerURLs is the list of URLs the member exposes to the cluster for communication.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"clientURLs": {
+					"clientURL": {
 						SchemaProps: spec.SchemaProps{
 							Description: "clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"isLearner": {
@@ -2199,8 +2219,16 @@ func schema_olive_apis_mon_v1_RunnerSpec(ref common.ReferenceCallback) common.Op
 							Format:      "",
 						},
 					},
+					"versionRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "version information, generated during build",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"id", "name", "peerURLs", "clientURLs", "isLearner"},
+				Required: []string{"id", "name", "peerURL", "clientURL", "isLearner", "versionRef"},
 			},
 		},
 	}
@@ -2262,34 +2290,14 @@ func schema_olive_apis_mon_v1_RunnerStat(ref common.ReferenceCallback) common.Op
 							Format:  "int64",
 						},
 					},
-					"bpmnProcesses": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnEvents": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnTasks": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 					"dynamic": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/mon/v1.RunnerDynamicStat"),
+							Description: "dynamic statistic, don't save to storage",
+							Ref:         ref("github.com/olive-io/olive/apis/mon/v1.RunnerDynamicStat"),
 						},
 					},
 				},
-				Required: []string{"cpuTotal", "memoryTotal", "regions", "leaders", "definitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "dynamic"},
+				Required: []string{"cpuTotal", "memoryTotal", "regions", "leaders", "definitions", "dynamic"},
 			},
 		},
 		Dependencies: []string{
@@ -2319,8 +2327,7 @@ func schema_olive_apis_mon_v1_RunnerStatus(ref common.ReferenceCallback) common.
 					},
 					"stat": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/mon/v1.RunnerStat"),
+							Ref: ref("github.com/olive-io/olive/apis/mon/v1.RunnerStat"),
 						},
 					},
 				},

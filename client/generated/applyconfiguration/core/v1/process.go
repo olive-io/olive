@@ -45,7 +45,7 @@ func Process(name, namespace string) *ProcessApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Process")
-	b.WithAPIVersion("olive.io/v1")
+	b.WithAPIVersion("core.olive.io/v1")
 	return b
 }
 

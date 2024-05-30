@@ -26,15 +26,42 @@ package v1
 // RunnerDynamicStatApplyConfiguration represents an declarative configuration of the RunnerDynamicStat type for use
 // with apply.
 type RunnerDynamicStatApplyConfiguration struct {
-	CpuUsed    *float64 `json:"cpuUsed,omitempty"`
-	MemoryUsed *float64 `json:"memoryUsed,omitempty"`
-	Timestamp  *int64   `json:"timestamp,omitempty"`
+	BpmnProcesses *int64   `json:"bpmnProcesses,omitempty"`
+	BpmnEvents    *int64   `json:"bpmnEvents,omitempty"`
+	BpmnTasks     *int64   `json:"bpmnTasks,omitempty"`
+	CpuUsed       *float64 `json:"cpuUsed,omitempty"`
+	MemoryUsed    *float64 `json:"memoryUsed,omitempty"`
+	Timestamp     *int64   `json:"timestamp,omitempty"`
 }
 
 // RunnerDynamicStatApplyConfiguration constructs an declarative configuration of the RunnerDynamicStat type for use with
 // apply.
 func RunnerDynamicStat() *RunnerDynamicStatApplyConfiguration {
 	return &RunnerDynamicStatApplyConfiguration{}
+}
+
+// WithBpmnProcesses sets the BpmnProcesses field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the BpmnProcesses field is set to the value of the last call.
+func (b *RunnerDynamicStatApplyConfiguration) WithBpmnProcesses(value int64) *RunnerDynamicStatApplyConfiguration {
+	b.BpmnProcesses = &value
+	return b
+}
+
+// WithBpmnEvents sets the BpmnEvents field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the BpmnEvents field is set to the value of the last call.
+func (b *RunnerDynamicStatApplyConfiguration) WithBpmnEvents(value int64) *RunnerDynamicStatApplyConfiguration {
+	b.BpmnEvents = &value
+	return b
+}
+
+// WithBpmnTasks sets the BpmnTasks field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the BpmnTasks field is set to the value of the last call.
+func (b *RunnerDynamicStatApplyConfiguration) WithBpmnTasks(value int64) *RunnerDynamicStatApplyConfiguration {
+	b.BpmnTasks = &value
+	return b
 }
 
 // WithCpuUsed sets the CpuUsed field in the declarative configuration to the given value

@@ -39,7 +39,7 @@ import (
 
 // FakeNamespaces implements NamespaceInterface
 type FakeNamespaces struct {
-	Fake *FakeOliveV1
+	Fake *FakeCoreV1
 }
 
 var namespacesResource = v1.SchemeGroupVersion.WithResource("namespaces")

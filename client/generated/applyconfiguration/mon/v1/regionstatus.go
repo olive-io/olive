@@ -30,9 +30,11 @@ import (
 // RegionStatusApplyConfiguration represents an declarative configuration of the RegionStatus type for use
 // with apply.
 type RegionStatusApplyConfiguration struct {
-	Phase   *v1.RegionPhase               `json:"phase,omitempty"`
-	Message *string                       `json:"message,omitempty"`
-	Stat    *RegionStatApplyConfiguration `json:"stat,omitempty"`
+	Phase       *v1.RegionPhase               `json:"phase,omitempty"`
+	Message     *string                       `json:"message,omitempty"`
+	Leader      *int64                        `json:"leader,omitempty"`
+	Definitions *int64                        `json:"definitions,omitempty"`
+	Stat        *RegionStatApplyConfiguration `json:"stat,omitempty"`
 }
 
 // RegionStatusApplyConfiguration constructs an declarative configuration of the RegionStatus type for use with
@@ -54,6 +56,22 @@ func (b *RegionStatusApplyConfiguration) WithPhase(value v1.RegionPhase) *Region
 // If called multiple times, the Message field is set to the value of the last call.
 func (b *RegionStatusApplyConfiguration) WithMessage(value string) *RegionStatusApplyConfiguration {
 	b.Message = &value
+	return b
+}
+
+// WithLeader sets the Leader field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Leader field is set to the value of the last call.
+func (b *RegionStatusApplyConfiguration) WithLeader(value int64) *RegionStatusApplyConfiguration {
+	b.Leader = &value
+	return b
+}
+
+// WithDefinitions sets the Definitions field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Definitions field is set to the value of the last call.
+func (b *RegionStatusApplyConfiguration) WithDefinitions(value int64) *RegionStatusApplyConfiguration {
+	b.Definitions = &value
 	return b
 }
 

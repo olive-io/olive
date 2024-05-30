@@ -44,7 +44,7 @@ func Namespace(name string) *NamespaceApplyConfiguration {
 	b := &NamespaceApplyConfiguration{}
 	b.WithName(name)
 	b.WithKind("Namespace")
-	b.WithAPIVersion("olive.io/v1")
+	b.WithAPIVersion("core.olive.io/v1")
 	return b
 }
 

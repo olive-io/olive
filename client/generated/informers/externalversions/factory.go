@@ -261,7 +261,7 @@ type SharedInformerFactory interface {
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
 	Apidiscovery() apidiscovery.Interface
-	Olive() core.Interface
+	Core() core.Interface
 	Mon() mon.Interface
 }
 
@@ -269,7 +269,7 @@ func (f *sharedInformerFactory) Apidiscovery() apidiscovery.Interface {
 	return apidiscovery.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Olive() core.Interface {
+func (f *sharedInformerFactory) Core() core.Interface {
 	return core.New(f, f.namespace, f.tweakListOptions)
 }
 

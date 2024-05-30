@@ -27,8 +27,8 @@ import (
 	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
 	apidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
 	fakeapidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1/fake"
-	olivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
-	fakeolivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1/fake"
+	corev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
+	fakecorev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1/fake"
 	monv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1"
 	fakemonv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -93,9 +93,9 @@ func (c *Clientset) ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface {
 	return &fakeapidiscoveryv1.FakeApidiscoveryV1{Fake: &c.Fake}
 }
 
-// OliveV1 retrieves the OliveV1Client
-func (c *Clientset) OliveV1() olivev1.OliveV1Interface {
-	return &fakeolivev1.FakeOliveV1{Fake: &c.Fake}
+// CoreV1 retrieves the CoreV1Client
+func (c *Clientset) CoreV1() corev1.CoreV1Interface {
+	return &fakecorev1.FakeCoreV1{Fake: &c.Fake}
 }
 
 // MonV1 retrieves the MonV1Client

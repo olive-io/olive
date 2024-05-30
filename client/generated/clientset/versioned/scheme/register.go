@@ -25,7 +25,7 @@ package scheme
 
 import (
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	olivev1 "github.com/olive-io/olive/apis/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -39,7 +39,7 @@ var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	apidiscoveryv1.AddToScheme,
-	olivev1.AddToScheme,
+	corev1.AddToScheme,
 	monv1.AddToScheme,
 }
 

@@ -66,7 +66,7 @@ type namespaces struct {
 }
 
 // newNamespaces returns a Namespaces
-func newNamespaces(c *OliveV1Client) *namespaces {
+func newNamespaces(c *CoreV1Client) *namespaces {
 	return &namespaces{
 		client: c.RESTClient(),
 	}

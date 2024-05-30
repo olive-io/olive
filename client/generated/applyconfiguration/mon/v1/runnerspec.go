@@ -26,11 +26,12 @@ package v1
 // RunnerSpecApplyConfiguration represents an declarative configuration of the RunnerSpec type for use
 // with apply.
 type RunnerSpecApplyConfiguration struct {
-	ID         *int64   `json:"id,omitempty"`
-	Name       *string  `json:"name,omitempty"`
-	PeerURLs   []string `json:"peerURLs,omitempty"`
-	ClientURLs []string `json:"clientURLs,omitempty"`
-	IsLearner  *bool    `json:"isLearner,omitempty"`
+	ID         *int64  `json:"id,omitempty"`
+	Name       *string `json:"name,omitempty"`
+	PeerURL    *string `json:"peerURL,omitempty"`
+	ClientURL  *string `json:"clientURL,omitempty"`
+	IsLearner  *bool   `json:"isLearner,omitempty"`
+	VersionRef *string `json:"versionRef,omitempty"`
 }
 
 // RunnerSpecApplyConfiguration constructs an declarative configuration of the RunnerSpec type for use with
@@ -55,23 +56,19 @@ func (b *RunnerSpecApplyConfiguration) WithName(value string) *RunnerSpecApplyCo
 	return b
 }
 
-// WithPeerURLs adds the given value to the PeerURLs field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the PeerURLs field.
-func (b *RunnerSpecApplyConfiguration) WithPeerURLs(values ...string) *RunnerSpecApplyConfiguration {
-	for i := range values {
-		b.PeerURLs = append(b.PeerURLs, values[i])
-	}
+// WithPeerURL sets the PeerURL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PeerURL field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithPeerURL(value string) *RunnerSpecApplyConfiguration {
+	b.PeerURL = &value
 	return b
 }
 
-// WithClientURLs adds the given value to the ClientURLs field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the ClientURLs field.
-func (b *RunnerSpecApplyConfiguration) WithClientURLs(values ...string) *RunnerSpecApplyConfiguration {
-	for i := range values {
-		b.ClientURLs = append(b.ClientURLs, values[i])
-	}
+// WithClientURL sets the ClientURL field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ClientURL field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithClientURL(value string) *RunnerSpecApplyConfiguration {
+	b.ClientURL = &value
 	return b
 }
 
@@ -80,5 +77,13 @@ func (b *RunnerSpecApplyConfiguration) WithClientURLs(values ...string) *RunnerS
 // If called multiple times, the IsLearner field is set to the value of the last call.
 func (b *RunnerSpecApplyConfiguration) WithIsLearner(value bool) *RunnerSpecApplyConfiguration {
 	b.IsLearner = &value
+	return b
+}
+
+// WithVersionRef sets the VersionRef field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the VersionRef field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithVersionRef(value string) *RunnerSpecApplyConfiguration {
+	b.VersionRef = &value
 	return b
 }

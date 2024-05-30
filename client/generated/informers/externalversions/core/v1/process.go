@@ -67,13 +67,13 @@ func NewFilteredProcessInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OliveV1().Processes(namespace).List(context.TODO(), options)
+				return client.CoreV1().Processes(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OliveV1().Processes(namespace).Watch(context.TODO(), options)
+				return client.CoreV1().Processes(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&corev1.Process{},

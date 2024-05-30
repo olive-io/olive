@@ -190,13 +190,19 @@ func createStatusStrategy(strategy *runnerStrategy) *runnerStatusStrategy {
 func (rs *runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
 		"mon/v1": fieldpath.NewSet(
-			fieldpath.MakePathOrDie("spec"),
+			fieldpath.MakePathOrDie("status"),
 		),
 	}
 }
 
 func (rs *runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newRunner := obj.(*monv1.Runner)
+	if newRunner.Status.Stat != nil && newRunner.Status.Stat.Dynamic != nil {
+		dynamicStat := newRunner.Status.Stat.Dynamic.DeepCopy()
+		newRunner.Status.Stat.Dynamic = nil
+		_ = dynamicStat
+	}
+	newRunner.Status.Stat.Dynamic = nil
 	oldRunner := old.(*monv1.Runner)
 	newRunner.Status.DeepCopyInto(&oldRunner.Status)
 }
@@ -204,7 +210,6 @@ func (rs *runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old r
 func (rs *runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	newRunner := obj.(*monv1.Runner)
 	oldRunner := old.(*monv1.Runner)
-
 	return monvalidation.ValidateRunnerUpdateStatus(newRunner, oldRunner)
 }
 

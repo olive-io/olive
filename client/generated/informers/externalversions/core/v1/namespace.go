@@ -66,13 +66,13 @@ func NewFilteredNamespaceInformer(client versioned.Interface, resyncPeriod time.
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OliveV1().Namespaces().List(context.TODO(), options)
+				return client.CoreV1().Namespaces().List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.OliveV1().Namespaces().Watch(context.TODO(), options)
+				return client.CoreV1().Namespaces().Watch(context.TODO(), options)
 			},
 		},
 		&corev1.Namespace{},

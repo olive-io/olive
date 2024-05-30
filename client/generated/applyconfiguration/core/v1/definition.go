@@ -45,7 +45,7 @@ func Definition(name, namespace string) *DefinitionApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Definition")
-	b.WithAPIVersion("olive.io/v1")
+	b.WithAPIVersion("core.olive.io/v1")
 	return b
 }
 

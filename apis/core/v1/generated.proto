@@ -26,6 +26,7 @@ syntax = "proto2";
 package github.com.olive_io.olive.apis.core.v1;
 
 import "github.com/olive-io/olive/apis/apidiscovery/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/api/resource/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
@@ -54,8 +55,12 @@ message DefinitionSpec {
 
   optional int64 version = 2;
 
-  // the id of olive region
-  optional int64 region = 3;
+  // the name of olive region
+  optional string regionName = 3;
+
+  optional int64 priority = 4;
+
+  optional string schedulerName = 5;
 }
 
 message DefinitionStatus {

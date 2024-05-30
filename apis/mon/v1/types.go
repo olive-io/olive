@@ -69,40 +69,42 @@ type RunnerSpec struct {
 	// name is the human-readable name of the member. If the member is not started, the name will be an empty string.
 	Name string `json:"name" protobuf:"bytes,2,opt,name=name"`
 	// peerURLs is the list of URLs the member exposes to the cluster for communication.
-	PeerURLs []string `json:"peerURLs" protobuf:"bytes,3,rep,name=peerURLs"`
+	PeerURL string `json:"peerURL" protobuf:"bytes,3,opt,name=peerURL"`
 	// clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
-	ClientURLs []string `json:"clientURLs" protobuf:"bytes,4,rep,name=clientURLs"`
+	ClientURL string `json:"clientURL" protobuf:"bytes,4,opt,name=clientURL"`
 	// isLearner indicates if the member is raft learner.
 	IsLearner *bool `json:"isLearner" protobuf:"varint,5,opt,name=isLearner"`
+	// version information, generated during build
+	VersionRef string `json:"versionRef" protobuf:"bytes,6,opt,name=versionRef"`
 }
 
 type RunnerStatus struct {
 	Phase   RunnerPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RunnerPhase"`
 	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
 
-	Stat RunnerStat `json:"stat" protobuf:"bytes,3,opt,name=stat"`
+	Stat *RunnerStat `json:"stat" protobuf:"bytes,3,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:true
 
 // RunnerStat is the stat information of Runner
 type RunnerStat struct {
-	CpuTotal      float64  `json:"cpuTotal" protobuf:"fixed64,1,opt,name=cpuTotal"`
-	MemoryTotal   float64  `json:"memoryTotal" protobuf:"fixed64,2,opt,name=memoryTotal"`
-	Regions       []int64  `json:"regions" protobuf:"varint,3,rep,name=regions"`
-	Leaders       []string `json:"leaders" protobuf:"bytes,4,rep,name=leaders"`
-	Definitions   int64    `json:"definitions" protobuf:"varint,5,opt,name=definitions"`
-	BpmnProcesses int64    `json:"bpmnProcesses" protobuf:"varint,6,opt,name=bpmnProcesses"`
-	BpmnEvents    int64    `json:"bpmnEvents" protobuf:"varint,7,opt,name=bpmnEvents"`
-	BpmnTasks     int64    `json:"bpmnTasks" protobuf:"varint,8,opt,name=bpmnTasks"`
-
-	Dynamic *RunnerDynamicStat `json:"dynamic" protobuf:"bytes,9,opt,name=dynamic"`
+	CpuTotal    float64  `json:"cpuTotal" protobuf:"fixed64,1,opt,name=cpuTotal"`
+	MemoryTotal float64  `json:"memoryTotal" protobuf:"fixed64,2,opt,name=memoryTotal"`
+	Regions     []int64  `json:"regions" protobuf:"varint,3,rep,name=regions"`
+	Leaders     []string `json:"leaders" protobuf:"bytes,4,rep,name=leaders"`
+	Definitions int64    `json:"definitions" protobuf:"varint,5,opt,name=definitions"`
+	// dynamic statistic, don't save to storage
+	Dynamic *RunnerDynamicStat `json:"dynamic" protobuf:"bytes,6,opt,name=dynamic"`
 }
 
 type RunnerDynamicStat struct {
-	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,1,opt,name=cpuUsed"`
-	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,2,opt,name=memoryUsed"`
-	Timestamp  int64   `json:"timestamp" protobuf:"varint,3,opt,name=timestamp"`
+	BpmnProcesses int64   `json:"bpmnProcesses" protobuf:"varint,1,opt,name=bpmnProcesses"`
+	BpmnEvents    int64   `json:"bpmnEvents" protobuf:"varint,2,opt,name=bpmnEvents"`
+	BpmnTasks     int64   `json:"bpmnTasks" protobuf:"varint,3,opt,name=bpmnTasks"`
+	CpuUsed       float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,4,opt,name=cpuUsed"`
+	MemoryUsed    float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,5,opt,name=memoryUsed"`
+	Timestamp     int64   `json:"timestamp" protobuf:"varint,6,opt,name=timestamp"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -147,9 +149,7 @@ type RegionSpec struct {
 	Replicas         []RegionReplica `json:"replicas" protobuf:"bytes,3,rep,name=replicas"`
 	ElectionRTT      int64           `json:"electionRTT" protobuf:"varint,4,opt,name=electionRTT"`
 	HeartbeatRTT     int64           `json:"heartbeatRTT" protobuf:"varint,5,opt,name=heartbeatRTT"`
-	Leader           int64           `json:"leader" protobuf:"varint,6,opt,name=leader"`
-	Definitions      int64           `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
-	DefinitionsLimit int64           `json:"definitionsLimit" protobuf:"varint,8,opt,name=definitionsLimit"`
+	DefinitionsLimit int64           `json:"definitionsLimit" protobuf:"varint,6,opt,name=definitionsLimit"`
 }
 
 type RegionReplica struct {
@@ -166,7 +166,10 @@ type RegionStatus struct {
 	Phase   RegionPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RegionPhase"`
 	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
 
-	Stat RegionStat `json:"stat" protobuf:"bytes,3,opt,name=stat"`
+	Leader      int64 `json:"leader" protobuf:"varint,3,opt,name=leader"`
+	Definitions int64 `json:"definitions" protobuf:"varint,4,opt,name=definitions"`
+
+	Stat *RegionStat `json:"stat" protobuf:"bytes,5,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:true

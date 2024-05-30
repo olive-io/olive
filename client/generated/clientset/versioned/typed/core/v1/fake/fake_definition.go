@@ -39,7 +39,7 @@ import (
 
 // FakeDefinitions implements DefinitionInterface
 type FakeDefinitions struct {
-	Fake *FakeOliveV1
+	Fake *FakeCoreV1
 	ns   string
 }
 

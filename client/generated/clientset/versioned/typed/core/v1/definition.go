@@ -67,7 +67,7 @@ type definitions struct {
 }
 
 // newDefinitions returns a Definitions
-func newDefinitions(c *OliveV1Client, namespace string) *definitions {
+func newDefinitions(c *CoreV1Client, namespace string) *definitions {
 	return &definitions{
 		client: c.RESTClient(),
 		ns:     namespace,

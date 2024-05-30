@@ -39,7 +39,7 @@ import (
 
 // FakeProcesses implements ProcessInterface
 type FakeProcesses struct {
-	Fake *FakeOliveV1
+	Fake *FakeCoreV1
 	ns   string
 }
 

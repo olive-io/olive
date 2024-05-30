@@ -31,8 +31,6 @@ type RegionSpecApplyConfiguration struct {
 	Replicas         []RegionReplicaApplyConfiguration `json:"replicas,omitempty"`
 	ElectionRTT      *int64                            `json:"electionRTT,omitempty"`
 	HeartbeatRTT     *int64                            `json:"heartbeatRTT,omitempty"`
-	Leader           *int64                            `json:"leader,omitempty"`
-	Definitions      *int64                            `json:"definitions,omitempty"`
 	DefinitionsLimit *int64                            `json:"definitionsLimit,omitempty"`
 }
 
@@ -84,22 +82,6 @@ func (b *RegionSpecApplyConfiguration) WithElectionRTT(value int64) *RegionSpecA
 // If called multiple times, the HeartbeatRTT field is set to the value of the last call.
 func (b *RegionSpecApplyConfiguration) WithHeartbeatRTT(value int64) *RegionSpecApplyConfiguration {
 	b.HeartbeatRTT = &value
-	return b
-}
-
-// WithLeader sets the Leader field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Leader field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithLeader(value int64) *RegionSpecApplyConfiguration {
-	b.Leader = &value
-	return b
-}
-
-// WithDefinitions sets the Definitions field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Definitions field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithDefinitions(value int64) *RegionSpecApplyConfiguration {
-	b.Definitions = &value
 	return b
 }
 

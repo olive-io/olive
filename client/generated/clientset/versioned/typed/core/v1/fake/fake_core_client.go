@@ -29,25 +29,25 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeOliveV1 struct {
+type FakeCoreV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeOliveV1) Definitions(namespace string) v1.DefinitionInterface {
+func (c *FakeCoreV1) Definitions(namespace string) v1.DefinitionInterface {
 	return &FakeDefinitions{c, namespace}
 }
 
-func (c *FakeOliveV1) Namespaces() v1.NamespaceInterface {
+func (c *FakeCoreV1) Namespaces() v1.NamespaceInterface {
 	return &FakeNamespaces{c}
 }
 
-func (c *FakeOliveV1) Processes(namespace string) v1.ProcessInterface {
+func (c *FakeCoreV1) Processes(namespace string) v1.ProcessInterface {
 	return &FakeProcesses{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeOliveV1) RESTClient() rest.Interface {
+func (c *FakeCoreV1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

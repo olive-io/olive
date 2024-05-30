@@ -75,7 +75,7 @@ func HugePageSizeFromResourceName(name core.ResourceName) (resource.Quantity, er
 }
 
 // Semantic can do semantic deep equality checks for core objects.
-// Example: apiequality.Semantic.DeepEqual(aPod, aPodWithNonNilButEmptyMaps) == true
+// Example: apiequality.Semantic.DeepEqual(aDefinition, aPodWithNonNilButEmptyMaps) == true
 var Semantic = conversion.EqualitiesOrDie(
 	func(a, b resource.Quantity) bool {
 		// Ignore formatting, only care that numeric value stayed the same.

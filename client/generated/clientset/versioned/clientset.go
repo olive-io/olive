@@ -28,7 +28,7 @@ import (
 	"net/http"
 
 	apidiscoveryv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/apidiscovery/v1"
-	olivev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
+	corev1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/core/v1"
 	monv1 "github.com/olive-io/olive/client/generated/clientset/versioned/typed/mon/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -38,7 +38,7 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface
-	OliveV1() olivev1.OliveV1Interface
+	CoreV1() corev1.CoreV1Interface
 	MonV1() monv1.MonV1Interface
 }
 
@@ -46,7 +46,7 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	apidiscoveryV1 *apidiscoveryv1.ApidiscoveryV1Client
-	oliveV1        *olivev1.OliveV1Client
+	coreV1         *corev1.CoreV1Client
 	monV1          *monv1.MonV1Client
 }
 
@@ -55,9 +55,9 @@ func (c *Clientset) ApidiscoveryV1() apidiscoveryv1.ApidiscoveryV1Interface {
 	return c.apidiscoveryV1
 }
 
-// OliveV1 retrieves the OliveV1Client
-func (c *Clientset) OliveV1() olivev1.OliveV1Interface {
-	return c.oliveV1
+// CoreV1 retrieves the CoreV1Client
+func (c *Clientset) CoreV1() corev1.CoreV1Interface {
+	return c.coreV1
 }
 
 // MonV1 retrieves the MonV1Client
@@ -113,7 +113,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
-	cs.oliveV1, err = olivev1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.coreV1, err = corev1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.apidiscoveryV1 = apidiscoveryv1.New(c)
-	cs.oliveV1 = olivev1.New(c)
+	cs.coreV1 = corev1.New(c)
 	cs.monV1 = monv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

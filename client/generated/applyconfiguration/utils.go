@@ -55,6 +55,28 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	case v1.SchemeGroupVersion.WithKind("ServiceSpec"):
 		return &apidiscoveryv1.ServiceSpecApplyConfiguration{}
 
+		// Group=core.olive.io, Version=v1
+	case corev1.SchemeGroupVersion.WithKind("Definition"):
+		return &applyconfigurationcorev1.DefinitionApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("DefinitionSpec"):
+		return &applyconfigurationcorev1.DefinitionSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("DefinitionStatus"):
+		return &applyconfigurationcorev1.DefinitionStatusApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("Namespace"):
+		return &applyconfigurationcorev1.NamespaceApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("NamespaceCondition"):
+		return &applyconfigurationcorev1.NamespaceConditionApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("NamespaceSpec"):
+		return &applyconfigurationcorev1.NamespaceSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("NamespaceStatus"):
+		return &applyconfigurationcorev1.NamespaceStatusApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("Process"):
+		return &applyconfigurationcorev1.ProcessApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessSpec"):
+		return &applyconfigurationcorev1.ProcessSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessStatus"):
+		return &applyconfigurationcorev1.ProcessStatusApplyConfiguration{}
+
 		// Group=mon.olive.io, Version=v1
 	case monv1.SchemeGroupVersion.WithKind("Region"):
 		return &applyconfigurationmonv1.RegionApplyConfiguration{}
@@ -76,28 +98,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationmonv1.RunnerStatApplyConfiguration{}
 	case monv1.SchemeGroupVersion.WithKind("RunnerStatus"):
 		return &applyconfigurationmonv1.RunnerStatusApplyConfiguration{}
-
-		// Group=olive.io, Version=v1
-	case corev1.SchemeGroupVersion.WithKind("Definition"):
-		return &applyconfigurationcorev1.DefinitionApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("DefinitionSpec"):
-		return &applyconfigurationcorev1.DefinitionSpecApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("DefinitionStatus"):
-		return &applyconfigurationcorev1.DefinitionStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("Namespace"):
-		return &applyconfigurationcorev1.NamespaceApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("NamespaceCondition"):
-		return &applyconfigurationcorev1.NamespaceConditionApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("NamespaceSpec"):
-		return &applyconfigurationcorev1.NamespaceSpecApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("NamespaceStatus"):
-		return &applyconfigurationcorev1.NamespaceStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("Process"):
-		return &applyconfigurationcorev1.ProcessApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessSpec"):
-		return &applyconfigurationcorev1.ProcessSpecApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessStatus"):
-		return &applyconfigurationcorev1.ProcessStatusApplyConfiguration{}
 
 	}
 	return nil

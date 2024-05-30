@@ -67,7 +67,7 @@ type processes struct {
 }
 
 // newProcesses returns a Processes
-func newProcesses(c *OliveV1Client, namespace string) *processes {
+func newProcesses(c *CoreV1Client, namespace string) *processes {
 	return &processes{
 		client: c.RESTClient(),
 		ns:     namespace,

@@ -30,49 +30,84 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/dustin/go-humanize"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
+	pscpu "github.com/shirou/gopsutil/v3/cpu"
+	psmem "github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	pb "github.com/olive-io/olive/apis/pb/olive"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/apis/version"
-
-	"github.com/olive-io/olive/pkg/idutil"
 	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
 
-const (
-	defaultRunnerIds = "_olive/ids/runner"
-)
+func (r *Runner) getRunner() *monv1.Runner {
+	r.prMu.RLock()
+	defer r.prMu.RUnlock()
+	return r.pr.DeepCopy()
+}
 
-func (r *Runner) register() (*pb.Runner, error) {
+func (r *Runner) setRunner(runner *monv1.Runner) {
+	r.prMu.Lock()
+	r.pr = runner
+	r.prMu.Unlock()
+}
+
+func (r *Runner) persistRunner(runner *monv1.Runner) {
+	r.setRunner(runner)
+
+	key := []byte("runner")
+	bucket := buckets.Meta
+
+	tx := r.be.BatchTx()
+	tx.Lock()
+	defer tx.Unlock()
+	data, _ := runner.Marshal()
+	_ = tx.UnsafePut(bucket, key, data)
+}
+
+func (r *Runner) register() (*monv1.Runner, error) {
 	cfg := r.cfg
 	key := []byte("runner")
 	bucket := buckets.Meta
-	runner := new(pb.Runner)
+	runner := &monv1.Runner{}
+	r.scheme.Default(runner)
+
+	ctx, cancel := context.WithCancel(r.ctx)
+	defer cancel()
 
 	readTx := r.be.ReadTx()
 	readTx.RLock()
 	data, _ := readTx.UnsafeGet(bucket, key)
 	readTx.RUnlock()
 	if len(data) != 0 {
-		_ = proto.Unmarshal(data, runner)
+		if e1 := runner.Unmarshal(data); e1 != nil {
+			r.Logger().Error("Unmarshal runner", zap.Error(e1))
+		}
+		latest, err := r.oct.MonV1().Runners().Get(ctx, runner.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("sync runner: %w", err)
+		}
+		if latest.Spec.ID == 0 {
+			runner.ResourceVersion = latest.ResourceVersion
+		} else {
+			runner = latest
+		}
 	}
 
-	cpuTotal := uint64(0)
-	cpus, err := cpu.Counts(false)
+	cpuTotal := float64(0)
+	cpus, err := pscpu.Counts(false)
 	if err != nil {
 		return nil, errors.Wrap(err, "read system cpu")
 	}
-	cpuInfos, _ := cpu.Info()
+	cpuInfos, _ := pscpu.Info()
 	if len(cpuInfos) > 0 {
-		cpuTotal = uint64(cpus) * uint64(cpuInfos[0].Mhz)
+		cpuTotal = float64(cpus) * cpuInfos[0].Mhz
 	}
 
-	vm, err := mem.VirtualMemory()
+	vm, err := psmem.VirtualMemory()
 	if err != nil {
 		return nil, errors.Wrap(err, "read system memory")
 	}
@@ -86,30 +121,22 @@ func (r *Runner) register() (*pb.Runner, error) {
 		listenClientURL = cfg.ListenClientURL
 	}
 
-	runner.ListenPeerURL = listenPeerURL
-	runner.ListenClientURL = listenClientURL
-	runner.HeartbeatMs = cfg.HeartbeatMs
-	runner.Hostname, _ = os.Hostname()
-	runner.Cpu = cpuTotal
-	runner.Memory = vm.Total
-	runner.Version = version.Version
+	runner.Spec.PeerURL = listenPeerURL
+	runner.Spec.ClientURL = listenClientURL
+	runner.Spec.Name, _ = os.Hostname()
+	runner.Spec.VersionRef = version.Version
+	runner.Status.Stat.CpuTotal = cpuTotal
+	runner.Status.Stat.MemoryTotal = float64(vm.Total)
 
-	ctx, cancel := context.WithCancel(r.ctx)
-	defer cancel()
-
-	if runner.Id == 0 {
-		idGen, err := idutil.NewIncrementer(defaultRunnerIds, r.oct.ActiveEtcdClient(), r.StoppingNotify())
-		if err != nil {
-			return nil, errors.Wrap(err, "create new id generator")
-		}
-		runner.Id = idGen.Next(ctx)
+	if runner.Spec.ID == 0 {
+		runner.Name = "runner_default" // runner not be empty
+		runner, err = r.oct.MonV1().Runners().Create(ctx, runner, metav1.CreateOptions{})
+	} else {
+		runner, err = r.oct.MonV1().Runners().Update(ctx, runner, metav1.UpdateOptions{})
 	}
-
-	tx := r.be.BatchTx()
-	tx.Lock()
-	defer tx.Unlock()
-	data, _ = proto.Marshal(runner)
-	_ = tx.UnsafePut(bucket, key, data)
+	if err != nil {
+		return nil, fmt.Errorf("register runner: %w", err)
+	}
 
 	return runner, nil
 }
@@ -117,24 +144,24 @@ func (r *Runner) register() (*pb.Runner, error) {
 func (r *Runner) process() {
 
 	ctx := r.ctx
-	runner := r.pr
+	runner := r.getRunner()
 	lg := r.Logger()
 	cfg := r.cfg
 
-	rKey := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Id))
-	data, _ := proto.Marshal(runner)
+	rKey := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Spec.ID))
+	data, _ := runner.Marshal()
 	_, err := r.oct.Put(ctx, rKey, string(data))
 	if err != nil {
 		lg.Panic("olive-runner register", zap.Error(err))
 	}
 
 	lg.Info("olive-runner registered",
-		zap.Uint64("id", runner.Id),
-		zap.String("listen-client-url", runner.ListenClientURL),
-		zap.String("listen-peer-url", runner.ListenPeerURL),
-		zap.Uint64("cpu-total", runner.Cpu),
-		zap.String("memory", humanize.IBytes(runner.Memory)),
-		zap.String("version", runner.Version))
+		zap.Int64("id", runner.Spec.ID),
+		zap.String("listen-client-url", runner.Spec.ClientURL),
+		zap.String("listen-peer-url", runner.Spec.PeerURL),
+		zap.Float64("cpu-total", runner.Status.Stat.CpuTotal),
+		zap.String("memory", humanize.IBytes(uint64(runner.Status.Stat.MemoryTotal))),
+		zap.String("version", runner.Spec.VersionRef))
 
 	ticker := time.NewTicker(time.Duration(cfg.HeartbeatMs) * time.Millisecond)
 	defer ticker.Stop()
@@ -156,46 +183,67 @@ func (r *Runner) process() {
 				}
 			}
 		case <-ticker.C:
-			stat := r.processRunnerStat()
-			stat.Timestamp = time.Now().Unix()
+			applied, updateOptions := r.updateRunnerStat()
 
-			lg.Debug("update runner stat", zap.Stringer("stat", stat))
-			key := path.Join(ort.DefaultMetaRunnerStat, fmt.Sprintf("%d", stat.Id))
-			data, _ = proto.Marshal(stat)
-			_, err = r.oct.Put(ctx, key, string(data))
+			lg.Debug("update runner stat", zap.Stringer("stat", applied.Status.Stat))
+			runner, err = r.oct.MonV1().Runners().UpdateStatus(ctx, applied, updateOptions)
 			if err != nil {
 				lg.Error("olive-runner update runner stat", zap.Error(err))
+			} else {
+				r.setRunner(runner)
 			}
 		}
 	}
 }
 
-func (r *Runner) processRunnerStat() *pb.RunnerStat {
+func (r *Runner) updateRunnerStat() (*monv1.Runner, metav1.UpdateOptions) {
 	lg := r.Logger()
-	stat := &pb.RunnerStat{
-		Id:            r.pr.Id,
-		Definitions:   uint64(raft.DefinitionsCounter.Get()),
-		BpmnProcesses: uint64(raft.ProcessCounter.Get()),
-		BpmnEvents:    uint64(raft.EventCounter.Get()),
-		BpmnTasks:     uint64(raft.TaskCounter.Get()),
-	}
-	interval := time.Millisecond * 300
-	percents, err := cpu.Percent(interval, false)
-	if err != nil {
-		lg.Error("current cpu percent", zap.Error(err))
-	}
-	if len(percents) > 0 {
-		stat.CpuPer = percents[0]
+	runner := r.getRunner()
+	stat := runner.Status.Stat
+
+	updateOptions := metav1.UpdateOptions{}
+
+	validChanged := false
+	definitions := int64(raft.DefinitionsCounter.Get())
+	if stat.Definitions != definitions {
+		validChanged = true
+		stat.Definitions = definitions
 	}
 
-	vm, err := mem.VirtualMemory()
-	if err != nil {
-		lg.Error("current memory percent", zap.Error(err))
+	regions, leaders := r.controller.RunnerStat()
+	if !sliceEqual[int64](stat.Regions, regions) ||
+		!sliceEqual[string](stat.Leaders, leaders) {
+		validChanged = true
+		stat.Regions = regions
+		stat.Leaders = leaders
 	}
-	if vm != nil {
-		stat.MemoryPer = vm.UsedPercent
-	}
-	stat.Regions, stat.Leaders = r.controller.RunnerStat()
 
-	return stat
+	if !validChanged {
+		dynamicStat := &monv1.RunnerDynamicStat{}
+		dynamicStat.BpmnProcesses = int64(raft.ProcessCounter.Get())
+		dynamicStat.BpmnEvents = int64(raft.EventCounter.Get())
+		dynamicStat.BpmnTasks = int64(raft.TaskCounter.Get())
+
+		interval := time.Millisecond * 500
+		percents, err := pscpu.Percent(interval, false)
+		if err != nil {
+			lg.Error("current cpu percent", zap.Error(err))
+		}
+		if len(percents) > 0 {
+			dynamicStat.CpuUsed = percents[0] * stat.CpuTotal
+		}
+
+		vm, err := psmem.VirtualMemory()
+		if err != nil {
+			lg.Error("current memory percent", zap.Error(err))
+		}
+		if vm != nil {
+			dynamicStat.MemoryUsed = float64(vm.Used)
+		}
+		dynamicStat.Timestamp = time.Now().Unix()
+		stat.Dynamic = dynamicStat
+		updateOptions.DryRun = []string{metav1.DryRunAll}
+	}
+
+	return runner, updateOptions
 }

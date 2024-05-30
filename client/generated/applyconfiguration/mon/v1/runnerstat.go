@@ -26,15 +26,12 @@ package v1
 // RunnerStatApplyConfiguration represents an declarative configuration of the RunnerStat type for use
 // with apply.
 type RunnerStatApplyConfiguration struct {
-	CpuTotal      *float64                             `json:"cpuTotal,omitempty"`
-	MemoryTotal   *float64                             `json:"memoryTotal,omitempty"`
-	Regions       []int64                              `json:"regions,omitempty"`
-	Leaders       []string                             `json:"leaders,omitempty"`
-	Definitions   *int64                               `json:"definitions,omitempty"`
-	BpmnProcesses *int64                               `json:"bpmnProcesses,omitempty"`
-	BpmnEvents    *int64                               `json:"bpmnEvents,omitempty"`
-	BpmnTasks     *int64                               `json:"bpmnTasks,omitempty"`
-	Dynamic       *RunnerDynamicStatApplyConfiguration `json:"dynamic,omitempty"`
+	CpuTotal    *float64                             `json:"cpuTotal,omitempty"`
+	MemoryTotal *float64                             `json:"memoryTotal,omitempty"`
+	Regions     []int64                              `json:"regions,omitempty"`
+	Leaders     []string                             `json:"leaders,omitempty"`
+	Definitions *int64                               `json:"definitions,omitempty"`
+	Dynamic     *RunnerDynamicStatApplyConfiguration `json:"dynamic,omitempty"`
 }
 
 // RunnerStatApplyConfiguration constructs an declarative configuration of the RunnerStat type for use with
@@ -84,30 +81,6 @@ func (b *RunnerStatApplyConfiguration) WithLeaders(values ...string) *RunnerStat
 // If called multiple times, the Definitions field is set to the value of the last call.
 func (b *RunnerStatApplyConfiguration) WithDefinitions(value int64) *RunnerStatApplyConfiguration {
 	b.Definitions = &value
-	return b
-}
-
-// WithBpmnProcesses sets the BpmnProcesses field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the BpmnProcesses field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithBpmnProcesses(value int64) *RunnerStatApplyConfiguration {
-	b.BpmnProcesses = &value
-	return b
-}
-
-// WithBpmnEvents sets the BpmnEvents field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the BpmnEvents field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithBpmnEvents(value int64) *RunnerStatApplyConfiguration {
-	b.BpmnEvents = &value
-	return b
-}
-
-// WithBpmnTasks sets the BpmnTasks field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the BpmnTasks field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithBpmnTasks(value int64) *RunnerStatApplyConfiguration {
-	b.BpmnTasks = &value
 	return b
 }
 

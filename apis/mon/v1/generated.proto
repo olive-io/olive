@@ -85,11 +85,7 @@ message RegionSpec {
 
   optional int64 heartbeatRTT = 5;
 
-  optional int64 leader = 6;
-
-  optional int64 definitions = 7;
-
-  optional int64 definitionsLimit = 8;
+  optional int64 definitionsLimit = 6;
 }
 
 // RegionStat is the stat information of Region
@@ -120,7 +116,11 @@ message RegionStatus {
 
   optional string message = 2;
 
-  optional RegionStat stat = 3;
+  optional int64 leader = 3;
+
+  optional int64 definitions = 4;
+
+  optional RegionStat stat = 5;
 }
 
 // Runner the olive node
@@ -133,11 +133,17 @@ message Runner {
 }
 
 message RunnerDynamicStat {
-  optional double cpuUsed = 1;
+  optional int64 bpmnProcesses = 1;
 
-  optional double memoryUsed = 2;
+  optional int64 bpmnEvents = 2;
 
-  optional int64 timestamp = 3;
+  optional int64 bpmnTasks = 3;
+
+  optional double cpuUsed = 4;
+
+  optional double memoryUsed = 5;
+
+  optional int64 timestamp = 6;
 }
 
 // RunnerList is a list of Runner objects.
@@ -157,13 +163,16 @@ message RunnerSpec {
   optional string name = 2;
 
   // peerURLs is the list of URLs the member exposes to the cluster for communication.
-  repeated string peerURLs = 3;
+  optional string peerURL = 3;
 
   // clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
-  repeated string clientURLs = 4;
+  optional string clientURL = 4;
 
   // isLearner indicates if the member is raft learner.
   optional bool isLearner = 5;
+
+  // version information, generated during build
+  optional string versionRef = 6;
 }
 
 // RunnerStat is the stat information of Runner
@@ -178,13 +187,8 @@ message RunnerStat {
 
   optional int64 definitions = 5;
 
-  optional int64 bpmnProcesses = 6;
-
-  optional int64 bpmnEvents = 7;
-
-  optional int64 bpmnTasks = 8;
-
-  optional RunnerDynamicStat dynamic = 9;
+  // dynamic statistic, don't save to storage
+  optional RunnerDynamicStat dynamic = 6;
 }
 
 message RunnerStatus {

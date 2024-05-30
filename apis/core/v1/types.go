@@ -22,9 +22,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+)
+
+const (
+	LabelTopologyZone   = "topology.olive.io/zone"
+	LabelTopologyRegion = "topology.olive.io/region"
 )
 
 // DefPhase defines the phase in which a definition is in
@@ -36,6 +42,10 @@ const (
 	DefPending DefPhase = "Pending"
 	// DefTerminated means the node has been removed from the cluster.
 	DefTerminated DefPhase = "Terminated"
+	// DefSucceeded means definition binding with region
+	DefSucceeded DefPhase = "Succeeded"
+	// DefFailed means that region is not ok
+	DefFailed DefPhase = "Failed"
 )
 
 // +genclient
@@ -54,8 +64,10 @@ type Definition struct {
 type DefinitionSpec struct {
 	Content string `json:"content,omitempty" protobuf:"bytes,1,opt,name=content"`
 	Version int64  `json:"version,omitempty" protobuf:"varint,2,opt,name=version"`
-	// the id of olive region
-	Region int64 `json:"region,omitempty" protobuf:"varint,3,opt,name=region"`
+	// the name of olive region
+	RegionName    string `json:"regionName,omitempty" protobuf:"bytes,3,opt,name=regionName"`
+	Priority      *int64 `json:"priority,omitempty" protobuf:"varint,4,opt,name=priority"`
+	SchedulerName string `json:"schedulerName" protobuf:"bytes,5,opt,name=schedulerName"`
 }
 
 type DefinitionStatus struct {
@@ -264,3 +276,25 @@ type NamespaceList struct {
 
 	Items []Namespace `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
+
+// ResourceName is the name identifying various resources in a ResourceList.
+type ResourceName string
+
+// Resource names must be not more than 63 characters, consisting of upper- or lower-case alphanumeric characters,
+// with the -, _, and . characters allowed anywhere, except the first or last character.
+// The default convention, matching that for annotations, is to use lower-case names, with dashes, rather than
+// camel case, separating compound words.
+// Fully-qualified resource typenames are constructed from a DNS-style subdomain, followed by a slash `/` and a name.
+const (
+	// CPU, in cores. (500m = .5 cores)
+	ResourceCPU ResourceName = "cpu"
+	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	ResourceMemory ResourceName = "memory"
+	// Volume size, in bytes (e,g. 5Gi = 5GiB = 5 * 1024 * 1024 * 1024)
+	ResourceStorage ResourceName = "storage"
+	// Local ephemeral storage, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+	ResourceEphemeralStorage ResourceName = "ephemeral-storage"
+)
+
+// ResourceList is a set of (resource name, quantity) pairs.
+type ResourceList map[ResourceName]resource.Quantity

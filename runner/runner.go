@@ -28,8 +28,10 @@ import (
 	"net/http"
 	urlpkg "net/url"
 	"strings"
+	"sync"
 
 	"github.com/cockroachdb/errors"
+	"github.com/go-logr/zapr"
 	"github.com/gofrs/flock"
 	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olive-io/bpmn/tracing"
@@ -38,9 +40,12 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	krt "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 
+	"github.com/olive-io/olive/apis"
+	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
-
 	"github.com/olive-io/olive/client"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -52,7 +57,6 @@ import (
 
 type Runner struct {
 	genericdaemon.IDaemon
-	pb.UnsafeRunnerRPCServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -61,19 +65,24 @@ type Runner struct {
 
 	gLock *flock.Flock
 
-	oct *client.Client
+	scheme *krt.Scheme
 
-	be backend.IBackend
-
+	oct   *client.Client
+	be    backend.IBackend
 	serve *http.Server
 
 	controller *raft.Controller
 	traces     <-chan tracing.ITrace
-	pr         *pb.Runner
+
+	// rw locker for local *monv1.Runner
+	prMu sync.RWMutex
+	pr   *monv1.Runner
 }
 
 func NewRunner(cfg *Config) (*Runner, error) {
 	lg := cfg.GetLogger()
+	// set klog by zap Logger
+	klog.SetLogger(zapr.NewLogger(lg))
 
 	gLock, err := cfg.LockDataDir()
 	if err != nil {
@@ -96,9 +105,9 @@ func NewRunner(cfg *Config) (*Runner, error) {
 		cancel:  cancel,
 		cfg:     cfg,
 		gLock:   gLock,
-
-		oct: oct,
-		be:  be,
+		scheme:  apis.Scheme,
+		oct:     oct,
+		be:      be,
 	}
 
 	return runner, nil
@@ -139,10 +148,11 @@ func (r *Runner) start() error {
 		r.Logger().Error("pebble commit", zap.Error(err))
 	}
 
-	r.pr, err = r.register()
+	runner, err := r.register()
 	if err != nil {
 		return err
 	}
+	r.persistRunner(runner)
 
 	r.controller, r.traces, err = r.startRaftController()
 	if err != nil {
@@ -169,9 +179,7 @@ func (r *Runner) startGRPCServer() error {
 
 	r.cfg.ListenClientURL = scheme + ts.Addr().String()
 
-	gs := r.buildGRPCServer()
-
-	gwmux, err := r.buildGRPCGateway()
+	gs, gwmux, err := r.buildGRPCServer()
 	if err != nil {
 		return err
 	}
@@ -208,20 +216,18 @@ func (r *Runner) createListener() (string, net.Listener, error) {
 	return url.Scheme + "://", listener, nil
 }
 
-func (r *Runner) buildGRPCServer() *grpc.Server {
+func (r *Runner) buildGRPCServer() (*grpc.Server, *gw.ServeMux, error) {
 	sopts := []grpc.ServerOption{}
 	gs := grpc.NewServer(sopts...)
-	pb.RegisterRunnerRPCServer(gs, r)
+	mux := gw.NewServeMux()
 
-	return gs
-}
-
-func (r *Runner) buildGRPCGateway() (*gw.ServeMux, error) {
-	gwmux := gw.NewServeMux()
-	if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, r); err != nil {
-		return nil, err
+	runnerGRPC := &runnerImpl{controller: r.controller}
+	pb.RegisterRunnerRPCServer(gs, runnerGRPC)
+	if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, mux, runnerGRPC); err != nil {
+		return nil, nil, err
 	}
-	return gwmux, nil
+
+	return gs, mux, nil
 }
 
 func (r *Runner) buildUserHandler() http.Handler {
@@ -282,7 +288,8 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 	cc.RaftRTTMillisecond = cfg.RaftRTTMillisecond
 	cc.Logger = lg
 
-	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
+	pr := r.getRunner()
+	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, pr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -315,7 +322,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		key := string(kv.Value)
 		switch {
 		case strings.HasPrefix(key, ort.DefaultRunnerRegion):
-			region, match, err := parseRegionKV(kv, r.pr.Id)
+			region, match, err := parseRegionKV(kv, uint64(pr.Spec.ID))
 			if err != nil || !match {
 				continue
 			}
@@ -445,7 +452,8 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 		return
 	}
 
-	region, match, err := parseRegionKV(kv, r.pr.Id)
+	pr := r.getRunner()
+	region, match, err := parseRegionKV(kv, uint64(pr.Spec.ID))
 	if err != nil {
 		lg.Error("parse region data", zap.Error(err))
 		return

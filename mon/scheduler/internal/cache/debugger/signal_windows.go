@@ -19,4 +19,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package storage
+package debugger
+
+import "os"
+
+// compareSignal is the signal to trigger cache compare. For windows,
+// it's SIGINT.
+var compareSignal = os.Interrupt
