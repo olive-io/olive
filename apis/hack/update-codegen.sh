@@ -24,8 +24,8 @@ if [[ -n "${API_KNOWN_VIOLATIONS_DIR:-}" ]]; then
 fi
 
 kube::codegen::gen_openapi \
-    --output-dir "${SCRIPT_ROOT}/../client/generated/openapi" \
-    --output-pkg "${THIS_PKG}/client/generated/openapi" \
+    --output-dir "${SCRIPT_ROOT}/../client-go/generated/openapi" \
+    --output-pkg "${THIS_PKG}/client-go/generated/openapi" \
     --report-filename "${report_filename:-"/dev/null"}" \
     ${update_report:+"${update_report}"} \
     --boilerplate "${SCRIPT_ROOT}/../hack/boilerplate.go.txt" \
@@ -34,8 +34,8 @@ kube::codegen::gen_openapi \
 kube::codegen::gen_client \
     --with-watch \
     --with-applyconfig \
-    --output-dir "${SCRIPT_ROOT}/../client/generated" \
-    --output-pkg "${THIS_PKG}/client/generated" \
+    --output-dir "${SCRIPT_ROOT}/../client-go/generated" \
+    --output-pkg "${THIS_PKG}/client-go/generated" \
     --boilerplate "${SCRIPT_ROOT}/../hack/boilerplate.go.txt" \
     "${SCRIPT_ROOT}/"
 

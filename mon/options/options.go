@@ -34,7 +34,7 @@ import (
 
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/version"
-	"github.com/olive-io/olive/client/generated/openapi"
+	"github.com/olive-io/olive/client-go/generated/openapi"
 	monserver "github.com/olive-io/olive/mon"
 	"github.com/olive-io/olive/mon/embed"
 )

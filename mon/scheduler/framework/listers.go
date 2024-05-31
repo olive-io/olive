@@ -25,23 +25,15 @@ package framework
 type RunnerInfoLister interface {
 	// List returns the list of RunnerInfos.
 	List() ([]*RunnerInfo, error)
-	// HaveDefinitionsWithAffinityList returns the list of RunnerInfos of nodes with definitions with affinity terms.
-	HaveDefinitionsWithAffinityList() ([]*RunnerInfo, error)
-	// HaveDefinitionsWithRequiredAntiAffinityList returns the list of RunnerInfos of nodes with definitions with required anti-affinity terms.
-	HaveDefinitionsWithRequiredAntiAffinityList() ([]*RunnerInfo, error)
+	// HaveRegionsWithAffinityList returns the list of RunnerInfos of nodes with regions with affinity terms.
+	HaveRegionsWithAffinityList() ([]*RunnerInfo, error)
+	// HaveRegionsWithRequiredAntiAffinityList returns the list of RunnerInfos of nodes with regions with required anti-affinity terms.
+	HaveRegionsWithRequiredAntiAffinityList() ([]*RunnerInfo, error)
 	// Get returns the RunnerInfo of the given node name.
 	Get(nodeName string) (*RunnerInfo, error)
-}
-
-// StorageInfoLister interface represents anything that handles storage-related operations and resources.
-type StorageInfoLister interface {
-	// IsPVCUsedByDefinitions returns true/false on whether the PVC is used by one or more scheduled definitions,
-	// keyed in the format "namespace/name".
-	IsPVCUsedByDefinitions(key string) bool
 }
 
 // SharedLister groups scheduler-specific listers.
 type SharedLister interface {
 	RunnerInfos() RunnerInfoLister
-	StorageInfos() StorageInfoLister
 }

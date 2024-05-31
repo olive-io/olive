@@ -47,8 +47,8 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/component-base/featuregate"
 
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
 	"github.com/olive-io/olive/mon/admission/initializer"
 )
 

@@ -74,6 +74,6 @@ require (
 
 replace (
 	github.com/olive-io/olive/apis => ../apis
-	github.com/olive-io/olive/client => ../client
+	github.com/olive-io/olive/client-go => ../client-go
 	github.com/olive-io/olive/pkg => ../pkg
 )

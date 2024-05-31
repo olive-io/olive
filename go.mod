@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/olive-io/olive/apis v0.1.1
-	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/client-go v0.1.1
 	github.com/olive-io/olive/console v0.1.1
 	github.com/olive-io/olive/gateway v0.1.1
 	github.com/olive-io/olive/mon v0.1.1
@@ -203,7 +203,7 @@ require (
 
 replace (
 	github.com/olive-io/olive/apis => ./apis
-	github.com/olive-io/olive/client => ./client
+	github.com/olive-io/olive/client-go => ./client-go
 	github.com/olive-io/olive/console => ./console
 	github.com/olive-io/olive/gateway => ./gateway
 	github.com/olive-io/olive/mon => ./mon

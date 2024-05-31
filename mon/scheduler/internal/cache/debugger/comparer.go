@@ -29,9 +29,7 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
-	corelisters "github.com/olive-io/olive/client/generated/listers/core/v1"
-	monlisters "github.com/olive-io/olive/client/generated/listers/mon/v1"
+	corelisters "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	internalcache "github.com/olive-io/olive/mon/scheduler/internal/cache"
 	internalqueue "github.com/olive-io/olive/mon/scheduler/internal/queue"
@@ -39,10 +37,10 @@ import (
 
 // CacheComparer is an implementation of the Scheduler's cache comparer.
 type CacheComparer struct {
-	RunnerLister     monlisters.RunnerLister
-	DefinitionLister corelisters.DefinitionLister
-	Cache            internalcache.Cache
-	DefinitionQueue  internalqueue.SchedulingQueue
+	RunnerLister corelisters.RunnerLister
+	RegionLister corelisters.RegionLister
+	Cache        internalcache.Cache
+	RegionQueue  internalqueue.SchedulingQueue
 }
 
 // Compare compares the runners and pods of RunnerLister with Cache.Snapshot.
@@ -55,28 +53,28 @@ func (c *CacheComparer) Compare(logger klog.Logger) error {
 		return err
 	}
 
-	pods, err := c.DefinitionLister.List(labels.Everything())
+	pods, err := c.RegionLister.List(labels.Everything())
 	if err != nil {
 		return err
 	}
 
 	dump := c.Cache.Dump()
 
-	pendingDefinitions, _ := c.DefinitionQueue.PendingDefinitions()
+	pendingRegions, _ := c.RegionQueue.PendingRegions()
 
 	if missed, redundant := c.CompareRunners(runners, dump.Runners); len(missed)+len(redundant) != 0 {
 		logger.Info("Cache mismatch", "missedRunners", missed, "redundantRunners", redundant)
 	}
 
-	if missed, redundant := c.CompareDefinitions(pods, pendingDefinitions, dump.Runners); len(missed)+len(redundant) != 0 {
-		logger.Info("Cache mismatch", "missedDefinitions", missed, "redundantDefinitions", redundant)
+	if missed, redundant := c.CompareRegions(pods, pendingRegions, dump.Runners); len(missed)+len(redundant) != 0 {
+		logger.Info("Cache mismatch", "missedRegions", missed, "redundantRegions", redundant)
 	}
 
 	return nil
 }
 
 // CompareRunners compares actual runners with cached runners.
-func (c *CacheComparer) CompareRunners(runners []*monv1.Runner, runnerinfos map[string]*framework.RunnerInfo) (missed, redundant []string) {
+func (c *CacheComparer) CompareRunners(runners []*corev1.Runner, runnerinfos map[string]*framework.RunnerInfo) (missed, redundant []string) {
 	actual := []string{}
 	for _, runner := range runners {
 		actual = append(actual, runner.Name)
@@ -90,8 +88,8 @@ func (c *CacheComparer) CompareRunners(runners []*monv1.Runner, runnerinfos map[
 	return compareStrings(actual, cached)
 }
 
-// CompareDefinitions compares actual pods with cached pods.
-func (c *CacheComparer) CompareDefinitions(pods, waitingDefinitions []*corev1.Definition, runnerinfos map[string]*framework.RunnerInfo) (missed, redundant []string) {
+// CompareRegions compares actual pods with cached pods.
+func (c *CacheComparer) CompareRegions(pods, waitingRegions []*corev1.Region, runnerinfos map[string]*framework.RunnerInfo) (missed, redundant []string) {
 	actual := []string{}
 	for _, pod := range pods {
 		actual = append(actual, string(pod.UID))
@@ -99,11 +97,11 @@ func (c *CacheComparer) CompareDefinitions(pods, waitingDefinitions []*corev1.De
 
 	cached := []string{}
 	for _, runnerinfo := range runnerinfos {
-		for _, p := range runnerinfo.Definitions {
-			cached = append(cached, string(p.Definition.UID))
+		for _, p := range runnerinfo.Regions {
+			cached = append(cached, string(p.Region.UID))
 		}
 	}
-	for _, pod := range waitingDefinitions {
+	for _, pod := range waitingRegions {
 		cached = append(cached, string(pod.UID))
 	}
 

@@ -36,26 +36,26 @@ import (
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/apis/version"
 	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
 
-func (r *Runner) getRunner() *monv1.Runner {
+func (r *Runner) getRunner() *corev1.Runner {
 	r.prMu.RLock()
 	defer r.prMu.RUnlock()
 	return r.pr.DeepCopy()
 }
 
-func (r *Runner) setRunner(runner *monv1.Runner) {
+func (r *Runner) setRunner(runner *corev1.Runner) {
 	r.prMu.Lock()
 	r.pr = runner
 	r.prMu.Unlock()
 }
 
-func (r *Runner) persistRunner(runner *monv1.Runner) {
+func (r *Runner) persistRunner(runner *corev1.Runner) {
 	r.setRunner(runner)
 
 	key := []byte("runner")
@@ -68,11 +68,11 @@ func (r *Runner) persistRunner(runner *monv1.Runner) {
 	_ = tx.UnsafePut(bucket, key, data)
 }
 
-func (r *Runner) register() (*monv1.Runner, error) {
+func (r *Runner) register() (*corev1.Runner, error) {
 	cfg := r.cfg
 	key := []byte("runner")
 	bucket := buckets.Meta
-	runner := &monv1.Runner{}
+	runner := &corev1.Runner{}
 	r.scheme.Default(runner)
 
 	ctx, cancel := context.WithCancel(r.ctx)
@@ -86,7 +86,7 @@ func (r *Runner) register() (*monv1.Runner, error) {
 		if e1 := runner.Unmarshal(data); e1 != nil {
 			r.Logger().Error("Unmarshal runner", zap.Error(e1))
 		}
-		latest, err := r.oct.MonV1().Runners().Get(ctx, runner.Name, metav1.GetOptions{})
+		latest, err := r.oct.CoreV1().Runners().Get(ctx, runner.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("sync runner: %w", err)
 		}
@@ -125,14 +125,17 @@ func (r *Runner) register() (*monv1.Runner, error) {
 	runner.Spec.ClientURL = listenClientURL
 	runner.Spec.Name, _ = os.Hostname()
 	runner.Spec.VersionRef = version.Version
+	if runner.Status.Stat == nil {
+		runner.Status.Stat = &corev1.RunnerStat{}
+	}
 	runner.Status.Stat.CpuTotal = cpuTotal
 	runner.Status.Stat.MemoryTotal = float64(vm.Total)
 
 	if runner.Spec.ID == 0 {
 		runner.Name = "runner_default" // runner not be empty
-		runner, err = r.oct.MonV1().Runners().Create(ctx, runner, metav1.CreateOptions{})
+		runner, err = r.oct.CoreV1().Runners().Create(ctx, runner, metav1.CreateOptions{})
 	} else {
-		runner, err = r.oct.MonV1().Runners().Update(ctx, runner, metav1.UpdateOptions{})
+		runner, err = r.oct.CoreV1().Runners().Update(ctx, runner, metav1.UpdateOptions{})
 	}
 	if err != nil {
 		return nil, fmt.Errorf("register runner: %w", err)
@@ -159,7 +162,7 @@ func (r *Runner) process() {
 		zap.Int64("id", runner.Spec.ID),
 		zap.String("listen-client-url", runner.Spec.ClientURL),
 		zap.String("listen-peer-url", runner.Spec.PeerURL),
-		zap.Float64("cpu-total", runner.Status.Stat.CpuTotal),
+		zap.Float64("cpu", runner.Status.Stat.CpuTotal),
 		zap.String("memory", humanize.IBytes(uint64(runner.Status.Stat.MemoryTotal))),
 		zap.String("version", runner.Spec.VersionRef))
 
@@ -186,7 +189,7 @@ func (r *Runner) process() {
 			applied, updateOptions := r.updateRunnerStat()
 
 			lg.Debug("update runner stat", zap.Stringer("stat", applied.Status.Stat))
-			runner, err = r.oct.MonV1().Runners().UpdateStatus(ctx, applied, updateOptions)
+			runner, err = r.oct.CoreV1().Runners().UpdateStatus(ctx, applied, updateOptions)
 			if err != nil {
 				lg.Error("olive-runner update runner stat", zap.Error(err))
 			} else {
@@ -196,7 +199,7 @@ func (r *Runner) process() {
 	}
 }
 
-func (r *Runner) updateRunnerStat() (*monv1.Runner, metav1.UpdateOptions) {
+func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 	lg := r.Logger()
 	runner := r.getRunner()
 	stat := runner.Status.Stat
@@ -219,7 +222,7 @@ func (r *Runner) updateRunnerStat() (*monv1.Runner, metav1.UpdateOptions) {
 	}
 
 	if !validChanged {
-		dynamicStat := &monv1.RunnerDynamicStat{}
+		dynamicStat := &corev1.RunnerDynamicStat{}
 		dynamicStat.BpmnProcesses = int64(raft.ProcessCounter.Get())
 		dynamicStat.BpmnEvents = int64(raft.EventCounter.Get())
 		dynamicStat.BpmnTasks = int64(raft.TaskCounter.Get())

@@ -37,7 +37,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/olive-io/olive/apis/version"
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/interceptor"
 	"github.com/olive-io/olive/console/routes"

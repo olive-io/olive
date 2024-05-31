@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package resources provides a metrics collector that reports the
-// resource consumption (requests and limits) of the definitions in the cluster
+// resource consumption (requests and limits) of the regions in the cluster
 // as the scheduler and olive-runner would interpret it.
 package resources
 
@@ -33,7 +33,7 @@ import (
 	"k8s.io/component-base/metrics"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	corelisters "github.com/olive-io/olive/client/generated/listers/core/v1"
+	corelisters "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	v1resource "github.com/olive-io/olive/pkg/api/v1/resource"
 )
 
@@ -55,70 +55,70 @@ func (d resourceMetricsDescriptors) Describe(ch chan<- *metrics.Desc) {
 	d.limits.Describe(ch)
 }
 
-var definitionResourceDesc = resourceMetricsDescriptors{
+var regionResourceDesc = resourceMetricsDescriptors{
 	requests: resourceLifecycleDescriptors{
-		total: metrics.NewDesc("olive_definition_resource_request",
-			"Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.",
-			[]string{"namespace", "definition", "runner", "scheduler", "priority", "resource", "unit"},
+		total: metrics.NewDesc("olive_region_resource_request",
+			"Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.",
+			[]string{"namespace", "region", "runner", "scheduler", "priority", "resource", "unit"},
 			nil,
 			metrics.STABLE,
 			""),
 	},
 	limits: resourceLifecycleDescriptors{
-		total: metrics.NewDesc("olive_definition_resource_limit",
-			"Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.",
-			[]string{"namespace", "definition", "runner", "scheduler", "priority", "resource", "unit"},
+		total: metrics.NewDesc("olive_region_resource_limit",
+			"Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.",
+			[]string{"namespace", "region", "runner", "scheduler", "priority", "resource", "unit"},
 			nil,
 			metrics.STABLE,
 			""),
 	},
 }
 
-// Handler creates a collector from the provided definitionLister and returns an http.Handler that
+// Handler creates a collector from the provided regionLister and returns an http.Handler that
 // will report the requested metrics in the prometheus format. It does not include any other
 // metrics.
-func Handler(definitionLister corelisters.DefinitionLister) http.Handler {
-	collector := NewDefinitionResourcesMetricsCollector(definitionLister)
+func Handler(regionLister corelisters.RegionLister) http.Handler {
+	collector := NewRegionResourcesMetricsCollector(regionLister)
 	registry := metrics.NewKubeRegistry()
 	registry.CustomMustRegister(collector)
 	return metrics.HandlerWithReset(registry, metrics.HandlerOpts{})
 }
 
 // Check if resourceMetricsCollector implements necessary interface
-var _ metrics.StableCollector = &definitionResourceCollector{}
+var _ metrics.StableCollector = &regionResourceCollector{}
 
-// NewDefinitionResourcesMetricsCollector registers a O(definitions) cardinality metric that
-// reports the current resources requested by all definitions on the cluster within
-// the Kubernetes resource model. Metrics are broken down by definition, runner, resource,
-// and phase of lifecycle. Each definition returns two series per resource - one for
+// NewRegionResourcesMetricsCollector registers a O(regions) cardinality metric that
+// reports the current resources requested by all regions on the cluster within
+// the olive resource model. Metrics are broken down by region, runner, resource,
+// and phase of lifecycle. Each region returns two series per resource - one for
 // their aggregate usage (required to schedule) and one for their phase specific
 // usage. This allows admins to assess the cost per resource at different phases
 // of startup and compare to actual resource usage.
-func NewDefinitionResourcesMetricsCollector(definitionLister corelisters.DefinitionLister) metrics.StableCollector {
-	return &definitionResourceCollector{
-		lister: definitionLister,
+func NewRegionResourcesMetricsCollector(regionLister corelisters.RegionLister) metrics.StableCollector {
+	return &regionResourceCollector{
+		lister: regionLister,
 	}
 }
 
-type definitionResourceCollector struct {
+type regionResourceCollector struct {
 	metrics.BaseStableCollector
-	lister corelisters.DefinitionLister
+	lister corelisters.RegionLister
 }
 
-func (c *definitionResourceCollector) DescribeWithStability(ch chan<- *metrics.Desc) {
-	definitionResourceDesc.Describe(ch)
+func (c *regionResourceCollector) DescribeWithStability(ch chan<- *metrics.Desc) {
+	regionResourceDesc.Describe(ch)
 }
 
-func (c *definitionResourceCollector) CollectWithStability(ch chan<- metrics.Metric) {
-	definitions, err := c.lister.List(labels.Everything())
+func (c *regionResourceCollector) CollectWithStability(ch chan<- metrics.Metric) {
+	regions, err := c.lister.List(labels.Everything())
 	if err != nil {
 		return
 	}
 	reuseReqs, reuseLimits := make(corev1.ResourceList, 4), make(corev1.ResourceList, 4)
-	for _, p := range definitions {
-		reqs, limits, terminal := definitionRequestsAndLimitsByLifecycle(p, reuseReqs, reuseLimits)
+	for _, p := range regions {
+		reqs, limits, terminal := regionRequestsAndLimitsByLifecycle(p, reuseReqs, reuseLimits)
 		if terminal {
-			// terminal definitions are excluded from resource usage calculations
+			// terminal regions are excluded from resource usage calculations
 			continue
 		}
 		for _, t := range []struct {
@@ -126,11 +126,11 @@ func (c *definitionResourceCollector) CollectWithStability(ch chan<- metrics.Met
 			total corev1.ResourceList
 		}{
 			{
-				desc:  definitionResourceDesc.requests,
+				desc:  regionResourceDesc.requests,
 				total: reqs,
 			},
 			{
-				desc:  definitionResourceDesc.limits,
+				desc:  regionResourceDesc.limits,
 				total: limits,
 			},
 		} {
@@ -149,9 +149,9 @@ func (c *definitionResourceCollector) CollectWithStability(ch chan<- metrics.Met
 				}
 				var priority string
 				if p.Spec.Priority != nil {
-					priority = strconv.FormatInt(*p.Spec.Priority, 10)
+					priority = strconv.FormatInt(int64(*p.Spec.Priority), 10)
 				}
-				recordMetricWithUnit(ch, t.desc.total, p.Namespace, p.Name, p.Spec.RegionName, priority, resourceName, unitName, val)
+				recordMetricWithUnit(ch, t.desc.total, p.Namespace, p.Name, priority, resourceName, unitName, val)
 			}
 		}
 	}
@@ -160,7 +160,7 @@ func (c *definitionResourceCollector) CollectWithStability(ch chan<- metrics.Met
 func recordMetricWithUnit(
 	ch chan<- metrics.Metric,
 	desc *metrics.Desc,
-	namespace, name, runnerName, priority string,
+	namespace, name, priority string,
 	resourceName corev1.ResourceName,
 	unit string,
 	val resource.Quantity,
@@ -170,29 +170,27 @@ func recordMetricWithUnit(
 	}
 	ch <- metrics.NewLazyConstMetric(desc, metrics.GaugeValue,
 		val.AsApproximateFloat64(),
-		namespace, name, runnerName, priority, string(resourceName), unit,
+		namespace, name, priority, string(resourceName), unit,
 	)
 }
 
-// definitionRequestsAndLimitsByLifecycle returns a dictionary of all defined resources summed up for all
-// containers of the definition. Definition overhead is added to the
+// regionRequestsAndLimitsByLifecycle returns a dictionary of all defined resources summed up for all
+// containers of the region. Region overhead is added to the
 // total container resource requests and to the total container limits which have a
 // non-zero quantity. The caller may avoid allocations of resource lists by passing
 // a requests and limits list to the function, which will be cleared before use.
-// This method is the same as v1resource.DefinitionRequestsAndLimits but avoids allocating in several
+// This method is the same as v1resource.RegionRequestsAndLimits but avoids allocating in several
 // scenarios for efficiency.
-func definitionRequestsAndLimitsByLifecycle(def *corev1.Definition, reuseReqs, reuseLimits corev1.ResourceList) (reqs, limits corev1.ResourceList, terminal bool) {
+func regionRequestsAndLimitsByLifecycle(def *corev1.Region, reuseReqs, reuseLimits corev1.ResourceList) (reqs, limits corev1.ResourceList, terminal bool) {
 	switch {
-	case len(def.Spec.RegionName) == 0:
-		// unscheduled definitions cannot be terminal
-	case def.Status.Phase == corev1.DefSucceeded, def.Status.Phase == corev1.DefFailed:
+	case def.Status.Phase == corev1.RegionSucceeded, def.Status.Phase == corev1.RegionFailed:
 		terminal = true
 	}
 	if terminal {
 		return
 	}
 
-	reqs = v1resource.DefinitionRequests(def, v1resource.DefinitionResourcesOptions{Reuse: reuseReqs})
-	limits = v1resource.DefinitionLimits(def, v1resource.DefinitionResourcesOptions{Reuse: reuseLimits})
+	reqs = v1resource.RegionRequests(def, v1resource.RegionResourcesOptions{Reuse: reuseReqs})
+	limits = v1resource.RegionLimits(def, v1resource.RegionResourcesOptions{Reuse: reuseLimits})
 	return
 }

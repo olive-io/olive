@@ -44,20 +44,20 @@ const (
 
 // Below are possible values for the extension_point label.
 const (
-	PreFilter                          = "PreFilter"
-	Filter                             = "Filter"
-	PreFilterExtensionAddDefinition    = "PreFilterExtensionAddDefinition"
-	PreFilterExtensionRemoveDefinition = "PreFilterExtensionRemoveDefinition"
-	PostFilter                         = "PostFilter"
-	PreScore                           = "PreScore"
-	Score                              = "Score"
-	ScoreExtensionNormalize            = "ScoreExtensionNormalize"
-	PreBind                            = "PreBind"
-	Bind                               = "Bind"
-	PostBind                           = "PostBind"
-	Reserve                            = "Reserve"
-	Unreserve                          = "Unreserve"
-	Permit                             = "Permit"
+	PreFilter                      = "PreFilter"
+	Filter                         = "Filter"
+	PreFilterExtensionAddRegion    = "PreFilterExtensionAddRegion"
+	PreFilterExtensionRemoveRegion = "PreFilterExtensionRemoveRegion"
+	PostFilter                     = "PostFilter"
+	PreScore                       = "PreScore"
+	Score                          = "Score"
+	ScoreExtensionNormalize        = "ScoreExtensionNormalize"
+	PreBind                        = "PreBind"
+	Bind                           = "Bind"
+	PostBind                       = "PostBind"
+	Reserve                        = "Reserve"
+	Unreserve                      = "Unreserve"
+	Permit                         = "Permit"
 )
 
 // All the histogram based metrics have 1ms as size for the smallest bucket.
@@ -66,7 +66,7 @@ var (
 		&metrics.CounterOpts{
 			Subsystem:      SchedulerSubsystem,
 			Name:           "schedule_attempts_total",
-			Help:           "Number of attempts to schedule definitions, by the result. 'unschedulable' means a definition could not be scheduled, while 'error' means an internal scheduler problem.",
+			Help:           "Number of attempts to schedule regions, by the result. 'unschedulable' means a region could not be scheduled, while 'error' means an internal scheduler problem.",
 			StabilityLevel: metrics.STABLE,
 		}, []string{"result", "profile"})
 
@@ -103,11 +103,11 @@ var (
 			Help:           "Total preemption attempts in the cluster till now",
 			StabilityLevel: metrics.STABLE,
 		})
-	pendingDefinitions = metrics.NewGaugeVec(
+	pendingRegions = metrics.NewGaugeVec(
 		&metrics.GaugeOpts{
 			Subsystem:      SchedulerSubsystem,
-			Name:           "pending_definitions",
-			Help:           "Number of pending definitions, by the queue type. 'active' means number of definitions in activeQ; 'backoff' means number of definitions in backoffQ; 'unschedulable' means number of definitions in unschedulableDefinitions that the scheduler attempted to schedule and failed; 'gated' is the number of unschedulable definitions that the scheduler never attempted to schedule because they are gated.",
+			Name:           "pending_regions",
+			Help:           "Number of pending regions, by the queue type. 'active' means number of regions in activeQ; 'backoff' means number of regions in backoffQ; 'unschedulable' means number of regions in unschedulableRegions that the scheduler attempted to schedule and failed; 'gated' is the number of unschedulable regions that the scheduler never attempted to schedule because they are gated.",
 			StabilityLevel: metrics.STABLE,
 		}, []string{"queue"})
 	Goroutines = metrics.NewGaugeVec(
@@ -118,36 +118,22 @@ var (
 			StabilityLevel: metrics.ALPHA,
 		}, []string{"operation"})
 
-	// DefinitionSchedulingDuration is deprecated as of Kubernetes v1.28, and will be removed
-	// in v1.31. Please use DefinitionSchedulingSLIDuration instead.
-	DefinitionSchedulingDuration = metrics.NewHistogramVec(
+	RegionSchedulingSLIDuration = metrics.NewHistogramVec(
 		&metrics.HistogramOpts{
 			Subsystem: SchedulerSubsystem,
-			Name:      "definition_scheduling_duration_seconds",
-			Help:      "E2e latency for a definition being scheduled which may include multiple scheduling attempts.",
-			// Start with 10ms with the last bucket being [~88m, Inf).
-			Buckets:           metrics.ExponentialBuckets(0.01, 2, 20),
-			StabilityLevel:    metrics.STABLE,
-			DeprecatedVersion: "1.29.0",
-		},
-		[]string{"attempts"})
-
-	DefinitionSchedulingSLIDuration = metrics.NewHistogramVec(
-		&metrics.HistogramOpts{
-			Subsystem: SchedulerSubsystem,
-			Name:      "definition_scheduling_sli_duration_seconds",
-			Help:      "E2e latency for a definition being scheduled, from the time the definition enters the scheduling queue an d might involve multiple scheduling attempts.",
+			Name:      "region_scheduling_sli_duration_seconds",
+			Help:      "E2e latency for a region being scheduled, from the time the region enters the scheduling queue an d might involve multiple scheduling attempts.",
 			// Start with 10ms with the last bucket being [~88m, Inf).
 			Buckets:        metrics.ExponentialBuckets(0.01, 2, 20),
 			StabilityLevel: metrics.BETA,
 		},
 		[]string{"attempts"})
 
-	DefinitionSchedulingAttempts = metrics.NewHistogram(
+	RegionSchedulingAttempts = metrics.NewHistogram(
 		&metrics.HistogramOpts{
 			Subsystem:      SchedulerSubsystem,
-			Name:           "definition_scheduling_attempts",
-			Help:           "Number of attempts to successfully schedule a definition.",
+			Name:           "region_scheduling_attempts",
+			Help:           "Number of attempts to successfully schedule a region.",
 			Buckets:        metrics.ExponentialBuckets(1, 2, 5),
 			StabilityLevel: metrics.STABLE,
 		})
@@ -175,11 +161,11 @@ var (
 		},
 		[]string{"plugin", "extension_point", "status"})
 
-	SchedulerQueueIncomingDefinitions = metrics.NewCounterVec(
+	SchedulerQueueIncomingRegions = metrics.NewCounterVec(
 		&metrics.CounterOpts{
 			Subsystem:      SchedulerSubsystem,
-			Name:           "queue_incoming_definitions_total",
-			Help:           "Number of definitions added to scheduling queues by event and queue type.",
+			Name:           "queue_incoming_regions_total",
+			Help:           "Number of regions added to scheduling queues by event and queue type.",
 			StabilityLevel: metrics.STABLE,
 		}, []string{"queue", "event"})
 
@@ -197,15 +183,15 @@ var (
 		&metrics.GaugeOpts{
 			Subsystem:      SchedulerSubsystem,
 			Name:           "scheduler_cache_size",
-			Help:           "Number of nodes, definitions, and assumed (bound) definitions in the scheduler cache.",
+			Help:           "Number of nodes, regions, and assumed (bound) regions in the scheduler cache.",
 			StabilityLevel: metrics.ALPHA,
 		}, []string{"type"})
 
 	unschedulableReasons = metrics.NewGaugeVec(
 		&metrics.GaugeOpts{
 			Subsystem:      SchedulerSubsystem,
-			Name:           "unschedulable_definitions",
-			Help:           "The number of unschedulable definitions broken down by plugin name. A definition will increment the gauge for all plugins that caused it to not schedule and so this metric have meaning only when broken down by plugin.",
+			Name:           "unschedulable_regions",
+			Help:           "The number of unschedulable regions broken down by plugin name. A region will increment the gauge for all plugins that caused it to not schedule and so this metric have meaning only when broken down by plugin.",
 			StabilityLevel: metrics.ALPHA,
 		}, []string{"plugin", "profile"})
 
@@ -213,7 +199,7 @@ var (
 		&metrics.CounterOpts{
 			Subsystem:      SchedulerSubsystem,
 			Name:           "plugin_evaluation_total",
-			Help:           "Number of attempts to schedule definitions by each plugin and the extension point (available only in PreFilter, Filter, PreScore, and Score).",
+			Help:           "Number of attempts to schedule regions by each plugin and the extension point (available only in PreFilter, Filter, PreScore, and Score).",
 			StabilityLevel: metrics.ALPHA,
 		}, []string{"plugin", "extension_point", "profile"})
 
@@ -223,13 +209,12 @@ var (
 		SchedulingAlgorithmLatency,
 		PreemptionVictims,
 		PreemptionAttempts,
-		pendingDefinitions,
-		DefinitionSchedulingDuration,
-		DefinitionSchedulingSLIDuration,
-		DefinitionSchedulingAttempts,
+		pendingRegions,
+		RegionSchedulingSLIDuration,
+		RegionSchedulingAttempts,
 		FrameworkExtensionPointDuration,
 		PluginExecutionDuration,
-		SchedulerQueueIncomingDefinitions,
+		SchedulerQueueIncomingRegions,
 		Goroutines,
 		PermitWaitDuration,
 		CacheSize,
@@ -261,24 +246,24 @@ func GetGather() metrics.Gatherer {
 	return legacyregistry.DefaultGatherer
 }
 
-// ActiveDefinitions returns the pending definitions metrics with the label active
-func ActiveDefinitions() metrics.GaugeMetric {
-	return pendingDefinitions.With(metrics.Labels{"queue": "active"})
+// ActiveRegions returns the pending regions metrics with the label active
+func ActiveRegions() metrics.GaugeMetric {
+	return pendingRegions.With(metrics.Labels{"queue": "active"})
 }
 
-// BackoffDefinitions returns the pending definitions metrics with the label backoff
-func BackoffDefinitions() metrics.GaugeMetric {
-	return pendingDefinitions.With(metrics.Labels{"queue": "backoff"})
+// BackoffRegions returns the pending regions metrics with the label backoff
+func BackoffRegions() metrics.GaugeMetric {
+	return pendingRegions.With(metrics.Labels{"queue": "backoff"})
 }
 
-// UnschedulableDefinitions returns the pending definitions metrics with the label unschedulable
-func UnschedulableDefinitions() metrics.GaugeMetric {
-	return pendingDefinitions.With(metrics.Labels{"queue": "unschedulable"})
+// UnschedulableRegions returns the pending regions metrics with the label unschedulable
+func UnschedulableRegions() metrics.GaugeMetric {
+	return pendingRegions.With(metrics.Labels{"queue": "unschedulable"})
 }
 
-// GatedDefinitions returns the pending definitions metrics with the label gated
-func GatedDefinitions() metrics.GaugeMetric {
-	return pendingDefinitions.With(metrics.Labels{"queue": "gated"})
+// GatedRegions returns the pending regions metrics with the label gated
+func GatedRegions() metrics.GaugeMetric {
+	return pendingRegions.With(metrics.Labels{"queue": "gated"})
 }
 
 // SinceInSeconds gets the time since the specified start in seconds.

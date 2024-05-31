@@ -1,17 +1,22 @@
 /*
-Copyright 2015 The Kubernetes Authors.
+Copyright 2024 The olive Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package cache
@@ -27,7 +32,6 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	"github.com/olive-io/olive/mon/scheduler/metrics"
 )
@@ -37,8 +41,8 @@ var (
 )
 
 // New returns a Cache implementation.
-// It automatically starts a go routine that manages expiration of assumed definitions.
-// "ttl" is how long the assumed definition will get expired.
+// It automatically starts a go routine that manages expiration of assumed regions.
+// "ttl" is how long the assumed region will get expired.
 // "ctx" is the context that would close the background goroutine.
 func New(ctx context.Context, ttl time.Duration) Cache {
 	logger := klog.FromContext(ctx)
@@ -63,12 +67,12 @@ type cacheImpl struct {
 
 	// This mutex guards all fields within this cache struct.
 	mu sync.RWMutex
-	// a set of assumed definition keys.
-	// The key could further be used to get an entry in definitionStates.
-	assumedDefinitions sets.Set[string]
-	// a map from definition key to definitionState.
-	definitionStates map[string]*definitionState
-	runners          map[string]*runnerInfoListItem
+	// a set of assumed region keys.
+	// The key could further be used to get an entry in regionStates.
+	assumedRegions sets.Set[string]
+	// a map from region key to regionState.
+	regionStates map[string]*regionState
+	runners      map[string]*runnerInfoListItem
 	// headRunner points to the most recently updated RunnerInfo in "runners". It is the
 	// head of the linked list.
 	headRunner *runnerInfoListItem
@@ -77,12 +81,12 @@ type cacheImpl struct {
 	imageStates map[string]*framework.ImageStateSummary
 }
 
-type definitionState struct {
-	definition *corev1.Definition
-	// Used by assumedDefinition to determinate expiration.
-	// If deadline is nil, assumedDefinition will never expire.
+type regionState struct {
+	region *corev1.Region
+	// Used by assumedRegion to determinate expiration.
+	// If deadline is nil, assumedRegion will never expire.
 	deadline *time.Time
-	// Used to block cache from expiring assumedDefinition if binding still runs
+	// Used to block cache from expiring assumedRegion if binding still runs
 	bindingFinished bool
 }
 
@@ -93,11 +97,11 @@ func newCache(ctx context.Context, ttl, period time.Duration) *cacheImpl {
 		period: period,
 		stop:   ctx.Done(),
 
-		runners:            make(map[string]*runnerInfoListItem),
-		runnerTree:         newRunnerTree(logger, nil),
-		assumedDefinitions: sets.New[string](),
-		definitionStates:   make(map[string]*definitionState),
-		imageStates:        make(map[string]*framework.ImageStateSummary),
+		runners:        make(map[string]*runnerInfoListItem),
+		runnerTree:     newRunnerTree(logger, nil),
+		assumedRegions: sets.New[string](),
+		regionStates:   make(map[string]*regionState),
+		imageStates:    make(map[string]*framework.ImageStateSummary),
 	}
 }
 
@@ -173,8 +177,8 @@ func (cache *cacheImpl) Dump() *Dump {
 	}
 
 	return &Dump{
-		Runners:            runners,
-		AssumedDefinitions: cache.assumedDefinitions.Union(nil),
+		Runners:        runners,
+		AssumedRegions: cache.assumedRegions.Union(nil),
 	}
 }
 
@@ -191,17 +195,17 @@ func (cache *cacheImpl) UpdateSnapshot(logger klog.Logger, runnerSnapshot *Snaps
 	// Get the last generation of the snapshot.
 	snapshotGeneration := runnerSnapshot.generation
 
-	// RunnerInfoList and HaveDefinitionsWithAffinityRunnerInfoList must be re-created if a runner was added
+	// RunnerInfoList and HaveRegionsWithAffinityRunnerInfoList must be re-created if a runner was added
 	// or removed from the cache.
 	updateAllLists := false
-	// HaveDefinitionsWithAffinityRunnerInfoList must be re-created if a runner changed its
-	// status from having definitions with affinity to NOT having definitions with affinity or the other
+	// HaveRegionsWithAffinityRunnerInfoList must be re-created if a runner changed its
+	// status from having regions with affinity to NOT having regions with affinity or the other
 	// way around.
-	updateRunnersHaveDefinitionsWithAffinity := false
-	// HaveDefinitionsWithRequiredAntiAffinityRunnerInfoList must be re-created if a runner changed its
-	// status from having definitions with required anti-affinity to NOT having definitions with required
+	updateRunnersHaveRegionsWithAffinity := false
+	// HaveRegionsWithRequiredAntiAffinityRunnerInfoList must be re-created if a runner changed its
+	// status from having regions with required anti-affinity to NOT having regions with required
 	// anti-affinity or the other way around.
-	updateRunnersHaveDefinitionsWithRequiredAntiAffinity := false
+	updateRunnersHaveRegionsWithRequiredAntiAffinity := false
 	// usedPVCSet must be re-created whenever the head runner generation is greater than
 	// last snapshot generation.
 	updateUsedPVCSet := false
@@ -221,14 +225,14 @@ func (cache *cacheImpl) UpdateSnapshot(logger klog.Logger, runnerSnapshot *Snaps
 				runnerSnapshot.runnerInfoMap[np.Name] = existing
 			}
 			clone := runner.info.Snapshot()
-			// We track runners that have definitions with affinity, here we check if this runner changed its
-			// status from having definitions with affinity to NOT having definitions with affinity or the other
+			// We track runners that have regions with affinity, here we check if this runner changed its
+			// status from having regions with affinity to NOT having regions with affinity or the other
 			// way around.
-			if (len(existing.DefinitionsWithAffinity) > 0) != (len(clone.DefinitionsWithAffinity) > 0) {
-				updateRunnersHaveDefinitionsWithAffinity = true
+			if (len(existing.RegionsWithAffinity) > 0) != (len(clone.RegionsWithAffinity) > 0) {
+				updateRunnersHaveRegionsWithAffinity = true
 			}
-			if (len(existing.DefinitionsWithRequiredAntiAffinity) > 0) != (len(clone.DefinitionsWithRequiredAntiAffinity) > 0) {
-				updateRunnersHaveDefinitionsWithRequiredAntiAffinity = true
+			if (len(existing.RegionsWithRequiredAntiAffinity) > 0) != (len(clone.RegionsWithRequiredAntiAffinity) > 0) {
+				updateRunnersHaveRegionsWithRequiredAntiAffinity = true
 			}
 			if !updateUsedPVCSet {
 				if len(existing.PVCRefCounts) != len(clone.PVCRefCounts) {
@@ -252,15 +256,15 @@ func (cache *cacheImpl) UpdateSnapshot(logger klog.Logger, runnerSnapshot *Snaps
 		runnerSnapshot.generation = cache.headRunner.info.Generation
 	}
 
-	// Comparing to definitions in runnerTree.
+	// Comparing to regions in runnerTree.
 	// Deleted runners get removed from the tree, but they might remain in the runners map
-	// if they still have non-deleted Definitions.
+	// if they still have non-deleted Regions.
 	if len(runnerSnapshot.runnerInfoMap) > cache.runnerTree.numRunners {
 		cache.removeDeletedRunnersFromSnapshot(runnerSnapshot)
 		updateAllLists = true
 	}
 
-	if updateAllLists || updateRunnersHaveDefinitionsWithAffinity || updateRunnersHaveDefinitionsWithRequiredAntiAffinity || updateUsedPVCSet {
+	if updateAllLists || updateRunnersHaveRegionsWithAffinity || updateRunnersHaveRegionsWithRequiredAntiAffinity || updateUsedPVCSet {
 		cache.updateRunnerInfoSnapshotList(logger, runnerSnapshot, updateAllLists)
 	}
 
@@ -281,9 +285,8 @@ func (cache *cacheImpl) UpdateSnapshot(logger klog.Logger, runnerSnapshot *Snaps
 }
 
 func (cache *cacheImpl) updateRunnerInfoSnapshotList(logger klog.Logger, snapshot *Snapshot, updateAll bool) {
-	snapshot.haveDefinitionsWithAffinityRunnerInfoList = make([]*framework.RunnerInfo, 0, cache.runnerTree.numRunners)
-	snapshot.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList = make([]*framework.RunnerInfo, 0, cache.runnerTree.numRunners)
-	snapshot.usedPVCSet = sets.New[string]()
+	snapshot.haveRegionsWithAffinityRunnerInfoList = make([]*framework.RunnerInfo, 0, cache.runnerTree.numRunners)
+	snapshot.haveRegionsWithRequiredAntiAffinityRunnerInfoList = make([]*framework.RunnerInfo, 0, cache.runnerTree.numRunners)
 	if updateAll {
 		// Take a snapshot of the runners order in the tree
 		snapshot.runnerInfoList = make([]*framework.RunnerInfo, 0, cache.runnerTree.numRunners)
@@ -294,14 +297,13 @@ func (cache *cacheImpl) updateRunnerInfoSnapshotList(logger klog.Logger, snapsho
 		for _, runnerName := range runnersList {
 			if runnerInfo := snapshot.runnerInfoMap[runnerName]; runnerInfo != nil {
 				snapshot.runnerInfoList = append(snapshot.runnerInfoList, runnerInfo)
-				if len(runnerInfo.DefinitionsWithAffinity) > 0 {
-					snapshot.haveDefinitionsWithAffinityRunnerInfoList = append(snapshot.haveDefinitionsWithAffinityRunnerInfoList, runnerInfo)
+				if len(runnerInfo.RegionsWithAffinity) > 0 {
+					snapshot.haveRegionsWithAffinityRunnerInfoList = append(snapshot.haveRegionsWithAffinityRunnerInfoList, runnerInfo)
 				}
-				if len(runnerInfo.DefinitionsWithRequiredAntiAffinity) > 0 {
-					snapshot.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList = append(snapshot.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList, runnerInfo)
+				if len(runnerInfo.RegionsWithRequiredAntiAffinity) > 0 {
+					snapshot.haveRegionsWithRequiredAntiAffinityRunnerInfoList = append(snapshot.haveRegionsWithRequiredAntiAffinityRunnerInfoList, runnerInfo)
 				}
 				for key := range runnerInfo.PVCRefCounts {
-					snapshot.usedPVCSet.Insert(key)
 				}
 			} else {
 				logger.Error(nil, "Runner exists in runnerTree but not in RunnerInfoMap, this should not happen", "runner", klog.KRef("", runnerName))
@@ -309,11 +311,11 @@ func (cache *cacheImpl) updateRunnerInfoSnapshotList(logger klog.Logger, snapsho
 		}
 	} else {
 		for _, runnerInfo := range snapshot.runnerInfoList {
-			if len(runnerInfo.DefinitionsWithAffinity) > 0 {
-				snapshot.haveDefinitionsWithAffinityRunnerInfoList = append(snapshot.haveDefinitionsWithAffinityRunnerInfoList, runnerInfo)
+			if len(runnerInfo.RegionsWithAffinity) > 0 {
+				snapshot.haveRegionsWithAffinityRunnerInfoList = append(snapshot.haveRegionsWithAffinityRunnerInfoList, runnerInfo)
 			}
-			if len(runnerInfo.DefinitionsWithRequiredAntiAffinity) > 0 {
-				snapshot.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList = append(snapshot.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList, runnerInfo)
+			if len(runnerInfo.RegionsWithRequiredAntiAffinity) > 0 {
+				snapshot.haveRegionsWithRequiredAntiAffinityRunnerInfoList = append(snapshot.haveRegionsWithRequiredAntiAffinityRunnerInfoList, runnerInfo)
 			}
 			for key := range runnerInfo.PVCRefCounts {
 				snapshot.usedPVCSet.Insert(key)
@@ -344,43 +346,43 @@ func (cache *cacheImpl) RunnerCount() int {
 	return len(cache.runners)
 }
 
-// DefinitionCount returns the number of definitions in the cache (including those from deleted runners).
+// RegionCount returns the number of regions in the cache (including those from deleted runners).
 // DO NOT use outside of tests.
-func (cache *cacheImpl) DefinitionCount() (int, error) {
+func (cache *cacheImpl) RegionCount() (int, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
-	// definitionFilter is expected to return true for most or all of the definitions. We
+	// regionFilter is expected to return true for most or all of the regions. We
 	// can avoid expensive array growth without wasting too much memory by
 	// pre-allocating capacity.
 	count := 0
 	for _, n := range cache.runners {
-		count += len(n.info.Definitions)
+		count += len(n.info.Regions)
 	}
 	return count, nil
 }
 
-func (cache *cacheImpl) AssumeDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) AssumeRegion(logger klog.Logger, region *corev1.Region) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
-	if _, ok := cache.definitionStates[key]; ok {
-		return fmt.Errorf("definition %v(%v) is in the cache, so can't be assumed", key, klog.KObj(definition))
+	if _, ok := cache.regionStates[key]; ok {
+		return fmt.Errorf("region %v(%v) is in the cache, so can't be assumed", key, klog.KObj(region))
 	}
 
-	return cache.addDefinition(logger, definition, true)
+	return cache.addRegion(logger, region, true)
 }
 
-func (cache *cacheImpl) FinishBinding(logger klog.Logger, definition *corev1.Definition) error {
-	return cache.finishBinding(logger, definition, time.Now())
+func (cache *cacheImpl) FinishBinding(logger klog.Logger, region *corev1.Region) error {
+	return cache.finishBinding(logger, region, time.Now())
 }
 
 // finishBinding exists to make tests deterministic by injecting now as an argument
-func (cache *cacheImpl) finishBinding(logger klog.Logger, definition *corev1.Definition, now time.Time) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) finishBinding(logger klog.Logger, region *corev1.Region, now time.Time) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
@@ -388,9 +390,9 @@ func (cache *cacheImpl) finishBinding(logger klog.Logger, definition *corev1.Def
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	logger.V(5).Info("Finished binding for definition, can be expired", "definitionKey", key, "definition", klog.KObj(definition))
-	currState, ok := cache.definitionStates[key]
-	if ok && cache.assumedDefinitions.Has(key) {
+	logger.V(5).Info("Finished binding for region, can be expired", "regionKey", key, "region", klog.KObj(region))
+	currState, ok := cache.regionStates[key]
+	if ok && cache.assumedRegions.Has(key) {
 		if cache.ttl == time.Duration(0) {
 			currState.deadline = nil
 		} else {
@@ -402,8 +404,8 @@ func (cache *cacheImpl) finishBinding(logger klog.Logger, definition *corev1.Def
 	return nil
 }
 
-func (cache *cacheImpl) ForgetDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) ForgetRegion(logger klog.Logger, region *corev1.Region) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
@@ -411,81 +413,81 @@ func (cache *cacheImpl) ForgetDefinition(logger klog.Logger, definition *corev1.
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	currState, ok := cache.definitionStates[key]
+	currState, ok := cache.regionStates[key]
 	_ = currState.deadline
-	//if ok && currState.definition.Spec.RunnerName != definition.Spec.RunnerName {
-	//	return fmt.Errorf("definition %v(%v) was assumed on %v but assigned to %v", key, klog.KObj(definition), definition.Spec.RunnerName, currState.definition.Spec.RunnerName)
+	//if ok && currState.region.Spec.RunnerName != region.Spec.RunnerName {
+	//	return fmt.Errorf("region %v(%v) was assumed on %v but assigned to %v", key, klog.KObj(region), region.Spec.RunnerName, currState.region.Spec.RunnerName)
 	//}
 
-	// Only assumed definition can be forgotten.
-	if ok && cache.assumedDefinitions.Has(key) {
-		return cache.removeDefinition(logger, definition)
+	// Only assumed region can be forgotten.
+	if ok && cache.assumedRegions.Has(key) {
+		return cache.removeRegion(logger, region)
 	}
-	return fmt.Errorf("definition %v(%v) wasn't assumed so cannot be forgotten", key, klog.KObj(definition))
+	return fmt.Errorf("region %v(%v) wasn't assumed so cannot be forgotten", key, klog.KObj(region))
 }
 
 // Assumes that lock is already acquired.
-func (cache *cacheImpl) addDefinition(logger klog.Logger, definition *corev1.Definition, assumeDefinition bool) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) addRegion(logger klog.Logger, region *corev1.Region, assumeRegion bool) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
-	//n, ok := cache.runners[definition.Spec.RunnerName]
+	//n, ok := cache.runners[region.Spec.RunnerName]
 	//if !ok {
 	//	n = newRunnerInfoListItem(framework.NewRunnerInfo())
-	//	cache.runners[definition.Spec.RunnerName] = n
+	//	cache.runners[region.Spec.RunnerName] = n
 	//}
-	//n.info.AddDefinition(definition)
-	//cache.moveRunnerInfoToHead(logger, definition.Spec.RunnerName)
-	ps := &definitionState{
-		definition: definition,
+	//n.info.AddRegion(region)
+	//cache.moveRunnerInfoToHead(logger, region.Spec.RunnerName)
+	ps := &regionState{
+		region: region,
 	}
-	cache.definitionStates[key] = ps
-	if assumeDefinition {
-		cache.assumedDefinitions.Insert(key)
+	cache.regionStates[key] = ps
+	if assumeRegion {
+		cache.assumedRegions.Insert(key)
 	}
 	return nil
 }
 
 // Assumes that lock is already acquired.
-func (cache *cacheImpl) updateDefinition(logger klog.Logger, oldDefinition, newDefinition *corev1.Definition) error {
-	if err := cache.removeDefinition(logger, oldDefinition); err != nil {
+func (cache *cacheImpl) updateRegion(logger klog.Logger, oldRegion, newRegion *corev1.Region) error {
+	if err := cache.removeRegion(logger, oldRegion); err != nil {
 		return err
 	}
-	return cache.addDefinition(logger, newDefinition, false)
+	return cache.addRegion(logger, newRegion, false)
 }
 
 // Assumes that lock is already acquired.
-// Removes a definition from the cached runner info. If the runner information was already
-// removed and there are no more definitions left in the runner, cleans up the runner from
+// Removes a region from the cached runner info. If the runner information was already
+// removed and there are no more regions left in the runner, cleans up the runner from
 // the cache.
-func (cache *cacheImpl) removeDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) removeRegion(logger klog.Logger, region *corev1.Region) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
 
-	//n, ok := cache.runners[definition.Spec.RunnerName]
+	//n, ok := cache.runners[region.Spec.RunnerName]
 	//if !ok {
-	//	logger.Error(nil, "Runner not found when trying to remove definition", "runner", klog.KRef("", definition.Spec.RunnerName), "definitionKey", key, "definition", klog.KObj(definition))
+	//	logger.Error(nil, "Runner not found when trying to remove region", "runner", klog.KRef("", region.Spec.RunnerName), "regionKey", key, "region", klog.KObj(region))
 	//} else {
-	//	if err := n.info.RemoveDefinition(logger, definition); err != nil {
+	//	if err := n.info.RemoveRegion(logger, region); err != nil {
 	//		return err
 	//	}
-	//	if len(n.info.Definitions) == 0 && n.info.Runner() == nil {
-	//		cache.removeRunnerInfoFromList(logger, definition.Spec.RunnerName)
+	//	if len(n.info.Regions) == 0 && n.info.Runner() == nil {
+	//		cache.removeRunnerInfoFromList(logger, region.Spec.RunnerName)
 	//	} else {
-	//		cache.moveRunnerInfoToHead(logger, definition.Spec.RunnerName)
+	//		cache.moveRunnerInfoToHead(logger, region.Spec.RunnerName)
 	//	}
 	//}
 
-	delete(cache.definitionStates, key)
-	delete(cache.assumedDefinitions, key)
+	delete(cache.regionStates, key)
+	delete(cache.assumedRegions, key)
 	return nil
 }
 
-func (cache *cacheImpl) AddDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) AddRegion(logger klog.Logger, region *corev1.Region) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
@@ -493,32 +495,32 @@ func (cache *cacheImpl) AddDefinition(logger klog.Logger, definition *corev1.Def
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	currState, ok := cache.definitionStates[key]
+	currState, ok := cache.regionStates[key]
 	switch {
-	case ok && cache.assumedDefinitions.Has(key):
-		// When assuming, we've already added the Definition to cache,
-		// Just update here to make sure the Definition's status is up-to-date.
-		if err = cache.updateDefinition(logger, currState.definition, definition); err != nil {
-			logger.Error(err, "Error occurred while updating definition")
+	case ok && cache.assumedRegions.Has(key):
+		// When assuming, we've already added the Region to cache,
+		// Just update here to make sure the Region's status is up-to-date.
+		if err = cache.updateRegion(logger, currState.region, region); err != nil {
+			logger.Error(err, "Error occurred while updating region")
 		}
-		//if currState.definition.Spec.RunnerName != definition.Spec.RunnerName {
-		//	// The definition was added to a different runner than it was assumed to.
-		//	logger.Info("Definition was added to a different runner than it was assumed", "definitionKey", key, "definition", klog.KObj(definition), "assumedRunner", klog.KRef("", definition.Spec.RunnerName), "currentRunner", klog.KRef("", currState.definition.Spec.RunnerName))
+		//if currState.region.Spec.RunnerName != region.Spec.RunnerName {
+		//	// The region was added to a different runner than it was assumed to.
+		//	logger.Info("Region was added to a different runner than it was assumed", "regionKey", key, "region", klog.KObj(region), "assumedRunner", klog.KRef("", region.Spec.RunnerName), "currentRunner", klog.KRef("", currState.region.Spec.RunnerName))
 		//	return nil
 		//}
 	case !ok:
-		// Definition was expired. We should add it back.
-		if err = cache.addDefinition(logger, definition, false); err != nil {
-			logger.Error(err, "Error occurred while adding definition")
+		// Region was expired. We should add it back.
+		if err = cache.addRegion(logger, region, false); err != nil {
+			logger.Error(err, "Error occurred while adding region")
 		}
 	default:
-		return fmt.Errorf("definition %v(%v) was already in added state", key, klog.KObj(definition))
+		return fmt.Errorf("region %v(%v) was already in added state", key, klog.KObj(region))
 	}
 	return nil
 }
 
-func (cache *cacheImpl) UpdateDefinition(logger klog.Logger, oldDefinition, newDefinition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(oldDefinition)
+func (cache *cacheImpl) UpdateRegion(logger klog.Logger, oldRegion, newRegion *corev1.Region) error {
+	key, err := framework.GetRegionKey(oldRegion)
 	if err != nil {
 		return err
 	}
@@ -526,28 +528,28 @@ func (cache *cacheImpl) UpdateDefinition(logger klog.Logger, oldDefinition, newD
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	currState, ok := cache.definitionStates[key]
+	currState, ok := cache.regionStates[key]
 	if !ok {
-		return fmt.Errorf("definition %v(%v) is not added to scheduler cache, so cannot be updated", key, klog.KObj(oldDefinition))
+		return fmt.Errorf("region %v(%v) is not added to scheduler cache, so cannot be updated", key, klog.KObj(oldRegion))
 	}
 
-	// An assumed definition won't have Update/Remove event. It needs to have Add event
+	// An assumed region won't have Update/Remove event. It needs to have Add event
 	// before Update event, in which case the state would change from Assumed to Added.
-	if cache.assumedDefinitions.Has(key) {
-		return fmt.Errorf("assumed definition %v(%v) should not be updated", key, klog.KObj(oldDefinition))
+	if cache.assumedRegions.Has(key) {
+		return fmt.Errorf("assumed region %v(%v) should not be updated", key, klog.KObj(oldRegion))
 	}
 
 	_ = currState
-	//if currState.definition.Spec.RunnerName != newDefinition.Spec.RunnerName {
-	//	logger.Error(nil, "Definition updated on a different runner than previously added to", "definitionKey", key, "definition", klog.KObj(oldDefinition))
+	//if currState.region.Spec.RunnerName != newRegion.Spec.RunnerName {
+	//	logger.Error(nil, "Region updated on a different runner than previously added to", "regionKey", key, "region", klog.KObj(oldRegion))
 	//	logger.Error(nil, "scheduler cache is corrupted and can badly affect scheduling decisions")
 	//	klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	//}
-	return cache.updateDefinition(logger, oldDefinition, newDefinition)
+	return cache.updateRegion(logger, oldRegion, newRegion)
 }
 
-func (cache *cacheImpl) RemoveDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) RemoveRegion(logger klog.Logger, region *corev1.Region) error {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return err
 	}
@@ -555,24 +557,24 @@ func (cache *cacheImpl) RemoveDefinition(logger klog.Logger, definition *corev1.
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	currState, ok := cache.definitionStates[key]
+	currState, ok := cache.regionStates[key]
 	if !ok {
-		return fmt.Errorf("definition %v(%v) is not found in scheduler cache, so cannot be removed from it", key, klog.KObj(definition))
+		return fmt.Errorf("region %v(%v) is not found in scheduler cache, so cannot be removed from it", key, klog.KObj(region))
 	}
-	//if currState.definition.Spec.RunnerName != definition.Spec.RunnerName {
-	//	logger.Error(nil, "Definition was added to a different runner than it was assumed", "definitionKey", key, "definition", klog.KObj(definition), "assumedRunner", klog.KRef("", definition.Spec.RunnerName), "currentRunner", klog.KRef("", currState.definition.Spec.RunnerName))
-	//	if definition.Spec.RunnerName != "" {
+	//if currState.region.Spec.RunnerName != region.Spec.RunnerName {
+	//	logger.Error(nil, "Region was added to a different runner than it was assumed", "regionKey", key, "region", klog.KObj(region), "assumedRunner", klog.KRef("", region.Spec.RunnerName), "currentRunner", klog.KRef("", currState.region.Spec.RunnerName))
+	//	if region.Spec.RunnerName != "" {
 	//		// An empty RunnerName is possible when the scheduler misses a Delete
 	//		// event and it gets the last known state from the informer cache.
 	//		logger.Error(nil, "scheduler cache is corrupted and can badly affect scheduling decisions")
 	//		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	//	}
 	//}
-	return cache.removeDefinition(logger, currState.definition)
+	return cache.removeRegion(logger, currState.region)
 }
 
-func (cache *cacheImpl) IsAssumedDefinition(definition *corev1.Definition) (bool, error) {
-	key, err := framework.GetDefinitionKey(definition)
+func (cache *cacheImpl) IsAssumedRegion(region *corev1.Region) (bool, error) {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return false, err
 	}
@@ -580,13 +582,13 @@ func (cache *cacheImpl) IsAssumedDefinition(definition *corev1.Definition) (bool
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	return cache.assumedDefinitions.Has(key), nil
+	return cache.assumedRegions.Has(key), nil
 }
 
-// GetDefinition might return a definition for which its runner has already been deleted from
-// the main cache. This is useful to properly process definition update events.
-func (cache *cacheImpl) GetDefinition(definition *corev1.Definition) (*corev1.Definition, error) {
-	key, err := framework.GetDefinitionKey(definition)
+// GetRegion might return a region for which its runner has already been deleted from
+// the main cache. This is useful to properly process region update events.
+func (cache *cacheImpl) GetRegion(region *corev1.Region) (*corev1.Region, error) {
+	key, err := framework.GetRegionKey(region)
 	if err != nil {
 		return nil, err
 	}
@@ -594,15 +596,15 @@ func (cache *cacheImpl) GetDefinition(definition *corev1.Definition) (*corev1.De
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	definitionState, ok := cache.definitionStates[key]
+	regionState, ok := cache.regionStates[key]
 	if !ok {
-		return nil, fmt.Errorf("definition %v(%v) does not exist in scheduler cache", key, klog.KObj(definition))
+		return nil, fmt.Errorf("region %v(%v) does not exist in scheduler cache", key, klog.KObj(region))
 	}
 
-	return definitionState.definition, nil
+	return regionState.region, nil
 }
 
-func (cache *cacheImpl) AddRunner(logger klog.Logger, runner *monv1.Runner) *framework.RunnerInfo {
+func (cache *cacheImpl) AddRunner(logger klog.Logger, runner *corev1.Runner) *framework.RunnerInfo {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -619,7 +621,7 @@ func (cache *cacheImpl) AddRunner(logger klog.Logger, runner *monv1.Runner) *fra
 	return n.info.Snapshot()
 }
 
-func (cache *cacheImpl) UpdateRunner(logger klog.Logger, oldRunner, newRunner *monv1.Runner) *framework.RunnerInfo {
+func (cache *cacheImpl) UpdateRunner(logger klog.Logger, oldRunner, newRunner *corev1.Runner) *framework.RunnerInfo {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 	n, ok := cache.runners[newRunner.Name]
@@ -637,12 +639,12 @@ func (cache *cacheImpl) UpdateRunner(logger klog.Logger, oldRunner, newRunner *m
 }
 
 // RemoveRunner removes a runner from the cache's tree.
-// The runner might still have definitions because their deletion events didn't arrive
-// yet. Those definitions are considered removed from the cache, being the runner tree
+// The runner might still have regions because their deletion events didn't arrive
+// yet. Those regions are considered removed from the cache, being the runner tree
 // the source of truth.
-// However, we keep a ghost runner with the list of definitions until all definition deletion
+// However, we keep a ghost runner with the list of regions until all region deletion
 // events have arrived. A ghost runner is skipped from snapshots.
-func (cache *cacheImpl) RemoveRunner(logger klog.Logger, runner *monv1.Runner) error {
+func (cache *cacheImpl) RemoveRunner(logger klog.Logger, runner *corev1.Runner) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -651,11 +653,11 @@ func (cache *cacheImpl) RemoveRunner(logger klog.Logger, runner *monv1.Runner) e
 		return fmt.Errorf("runner %v is not found", runner.Name)
 	}
 	n.info.RemoveRunner()
-	// We remove RunnerInfo for this runner only if there aren't any definitions on this runner.
-	// We can't do it unconditionally, because notifications about definitions are delivered
+	// We remove RunnerInfo for this runner only if there aren't any regions on this runner.
+	// We can't do it unconditionally, because notifications about regions are delivered
 	// in a different watch, and thus can potentially be observed later, even though
 	// they happened before runner removal.
-	if len(n.info.Definitions) == 0 {
+	if len(n.info.Regions) == 0 {
 		cache.removeRunnerInfoFromList(logger, runner.Name)
 	} else {
 		cache.moveRunnerInfoToHead(logger, runner.Name)
@@ -668,40 +670,40 @@ func (cache *cacheImpl) RemoveRunner(logger klog.Logger, runner *monv1.Runner) e
 
 func (cache *cacheImpl) run(logger klog.Logger) {
 	go wait.Until(func() {
-		cache.cleanupAssumedDefinitions(logger, time.Now())
+		cache.cleanupAssumedRegions(logger, time.Now())
 	}, cache.period, cache.stop)
 }
 
-// cleanupAssumedDefinitions exists for making test deterministic by taking time as input argument.
-// It also reports metrics on the cache size for runners, definitions, and assumed definitions.
-func (cache *cacheImpl) cleanupAssumedDefinitions(logger klog.Logger, now time.Time) {
+// cleanupAssumedRegions exists for making test deterministic by taking time as input argument.
+// It also reports metrics on the cache size for runners, regions, and assumed regions.
+func (cache *cacheImpl) cleanupAssumedRegions(logger klog.Logger, now time.Time) {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 	defer cache.updateMetrics()
 
-	// The size of assumedDefinitions should be small
-	for key := range cache.assumedDefinitions {
-		ps, ok := cache.definitionStates[key]
+	// The size of assumedRegions should be small
+	for key := range cache.assumedRegions {
+		ps, ok := cache.regionStates[key]
 		if !ok {
-			logger.Error(nil, "Key found in assumed set but not in definitionStates, potentially a logical error")
+			logger.Error(nil, "Key found in assumed set but not in regionStates, potentially a logical error")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 		if !ps.bindingFinished {
-			logger.V(5).Info("Could not expire cache for definition as binding is still in progress", "definitionKey", key, "definition", klog.KObj(ps.definition))
+			logger.V(5).Info("Could not expire cache for region as binding is still in progress", "regionKey", key, "region", klog.KObj(ps.region))
 			continue
 		}
 		if cache.ttl != 0 && now.After(*ps.deadline) {
-			logger.Info("Definition expired", "definitionKey", key, "definition", klog.KObj(ps.definition))
-			if err := cache.removeDefinition(logger, ps.definition); err != nil {
-				logger.Error(err, "ExpireDefinition failed", "definitionKey", key, "definition", klog.KObj(ps.definition))
+			logger.Info("Region expired", "regionKey", key, "region", klog.KObj(ps.region))
+			if err := cache.removeRegion(logger, ps.region); err != nil {
+				logger.Error(err, "ExpireRegion failed", "regionKey", key, "region", klog.KObj(ps.region))
 			}
 		}
 	}
 }
 
-// updateMetrics updates cache size metric values for definitions, assumed definitions, and runners
+// updateMetrics updates cache size metric values for regions, assumed regions, and runners
 func (cache *cacheImpl) updateMetrics() {
-	metrics.CacheSize.WithLabelValues("assumed_definitions").Set(float64(len(cache.assumedDefinitions)))
-	metrics.CacheSize.WithLabelValues("definitions").Set(float64(len(cache.definitionStates)))
+	metrics.CacheSize.WithLabelValues("assumed_regions").Set(float64(len(cache.assumedRegions)))
+	metrics.CacheSize.WithLabelValues("regions").Set(float64(len(cache.regionStates)))
 	metrics.CacheSize.WithLabelValues("runners").Set(float64(len(cache.runners)))
 }

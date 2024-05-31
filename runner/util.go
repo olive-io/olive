@@ -33,7 +33,7 @@ import (
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 	ort "github.com/olive-io/olive/pkg/runtime"
 )
 

@@ -31,8 +31,6 @@ import (
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	_ "github.com/olive-io/olive/apis/core/install"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	_ "github.com/olive-io/olive/apis/mon/install"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 )
 
 var Codec runtime.Codec
@@ -41,7 +39,6 @@ func init() {
 	Codec = apis.Codecs.LegacyCodec(
 		schema.GroupVersion{Group: "", Version: "v1"},
 		metav1.Unversioned,
-		monv1.SchemeGroupVersion,
 		apidiscoveryv1.SchemeGroupVersion,
 		corev1.SchemeGroupVersion,
 	)

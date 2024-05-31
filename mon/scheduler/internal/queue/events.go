@@ -26,31 +26,31 @@ import (
 )
 
 const (
-	// DefinitionAdd is the event when a new pod is added to API server.
-	DefinitionAdd = "DefinitionAdd"
+	// RegionAdd is the event when a new pod is added to API server.
+	RegionAdd = "RegionAdd"
 	// ScheduleAttemptFailure is the event when a schedule attempt fails.
 	ScheduleAttemptFailure = "ScheduleAttemptFailure"
 	// BackoffComplete is the event when a pod finishes backoff.
 	BackoffComplete = "BackoffComplete"
-	// ForceActivate is the event when a pod is moved from unschedulableDefinitions/backoffQ
+	// ForceActivate is the event when a pod is moved from unschedulableRegions/backoffQ
 	// to activeQ. Usually it's triggered by plugin implementations.
 	ForceActivate = "ForceActivate"
-	// DefinitionUpdate is the event when a pod is updated
-	DefinitionUpdate = "DefinitionUpdate"
+	// RegionUpdate is the event when a pod is updated
+	RegionUpdate = "RegionUpdate"
 )
 
 var (
-	// AssignedDefinitionAdd is the event when a pod is added that causes pods with matching affinity terms
+	// AssignedRegionAdd is the event when a pod is added that causes pods with matching affinity terms
 	// to be more schedulable.
-	AssignedDefinitionAdd = framework.ClusterEvent{Resource: framework.Definition, ActionType: framework.Add, Label: "AssignedDefinitionAdd"}
+	AssignedRegionAdd = framework.ClusterEvent{Resource: framework.Region, ActionType: framework.Add, Label: "AssignedRegionAdd"}
 	// RunnerAdd is the event when a new node is added to the cluster.
 	RunnerAdd = framework.ClusterEvent{Resource: framework.Runner, ActionType: framework.Add, Label: "RunnerAdd"}
-	// AssignedDefinitionUpdate is the event when a pod is updated that causes pods with matching affinity
+	// AssignedRegionUpdate is the event when a pod is updated that causes pods with matching affinity
 	// terms to be more schedulable.
-	AssignedDefinitionUpdate = framework.ClusterEvent{Resource: framework.Definition, ActionType: framework.Update, Label: "AssignedDefinitionUpdate"}
-	// AssignedDefinitionDelete is the event when a pod is deleted that causes pods with matching affinity
+	AssignedRegionUpdate = framework.ClusterEvent{Resource: framework.Region, ActionType: framework.Update, Label: "AssignedRegionUpdate"}
+	// AssignedRegionDelete is the event when a pod is deleted that causes pods with matching affinity
 	// terms to be more schedulable.
-	AssignedDefinitionDelete = framework.ClusterEvent{Resource: framework.Definition, ActionType: framework.Delete, Label: "AssignedDefinitionDelete"}
+	AssignedRegionDelete = framework.ClusterEvent{Resource: framework.Region, ActionType: framework.Delete, Label: "AssignedRegionDelete"}
 	// RunnerSpecUnschedulableChange is the event when unschedulable node spec is changed.
 	RunnerSpecUnschedulableChange = framework.ClusterEvent{Resource: framework.Runner, ActionType: framework.UpdateRunnerTaint, Label: "RunnerSpecUnschedulableChange"}
 	// RunnerAllocatableChange is the event when node allocatable is changed.

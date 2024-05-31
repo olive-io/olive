@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 )
 
@@ -73,9 +72,9 @@ func TestCompareRunners(t *testing.T) {
 
 func testCompareRunners(actual, cached, missing, redundant []string, t *testing.T) {
 	compare := CacheComparer{}
-	runners := []*monv1.Runner{}
+	runners := []*corev1.Runner{}
 	for _, runnerName := range actual {
-		runner := &monv1.Runner{}
+		runner := &corev1.Runner{}
 		runner.Name = runnerName
 		runners = append(runners, runner)
 	}
@@ -96,7 +95,7 @@ func testCompareRunners(actual, cached, missing, redundant []string, t *testing.
 	}
 }
 
-func TestCompareDefinitions(t *testing.T) {
+func TestCompareRegions(t *testing.T) {
 	tests := []struct {
 		name      string
 		actual    []string
@@ -157,30 +156,30 @@ func TestCompareDefinitions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testCompareDefinitions(test.actual, test.cached, test.queued, test.missing, test.redundant, t)
+			testCompareRegions(test.actual, test.cached, test.queued, test.missing, test.redundant, t)
 		})
 	}
 }
 
-func testCompareDefinitions(actual, cached, queued, missing, redundant []string, t *testing.T) {
+func testCompareRegions(actual, cached, queued, missing, redundant []string, t *testing.T) {
 	compare := CacheComparer{}
-	pods := []*corev1.Definition{}
+	pods := []*corev1.Region{}
 	for _, uid := range actual {
-		pod := &corev1.Definition{}
+		pod := &corev1.Region{}
 		pod.UID = types.UID(uid)
 		pods = append(pods, pod)
 	}
 
-	queuedDefinitions := []*corev1.Definition{}
+	queuedRegions := []*corev1.Region{}
 	for _, uid := range queued {
-		pod := &corev1.Definition{}
+		pod := &corev1.Region{}
 		pod.UID = types.UID(uid)
-		queuedDefinitions = append(queuedDefinitions, pod)
+		queuedRegions = append(queuedRegions, pod)
 	}
 
 	runnerInfo := make(map[string]*framework.RunnerInfo)
 	for _, uid := range cached {
-		pod := &corev1.Definition{}
+		pod := &corev1.Region{}
 		pod.UID = types.UID(uid)
 		pod.Namespace = "ns"
 		pod.Name = uid
@@ -188,7 +187,7 @@ func testCompareDefinitions(actual, cached, queued, missing, redundant []string,
 		runnerInfo[uid] = framework.NewRunnerInfo(pod)
 	}
 
-	m, r := compare.CompareDefinitions(pods, queuedDefinitions, runnerInfo)
+	m, r := compare.CompareRegions(pods, queuedRegions, runnerInfo)
 
 	if diff := cmp.Diff(missing, m); diff != "" {
 		t.Errorf("Unexpected missing (-want, +got):\n%s", diff)

@@ -25,7 +25,6 @@ package feature
 // This struct allows us to break the dependency of the plugins on
 // the internal olive features pkg.
 type Features struct {
-	EnableDynamicResourceAllocation        bool
-	EnableDefinitionDisruptionConditions   bool
-	EnableInPlaceDefinitionVerticalScaling bool
+	EnableRegionDisruptionConditions   bool
+	EnableInPlaceRegionVerticalScaling bool
 }

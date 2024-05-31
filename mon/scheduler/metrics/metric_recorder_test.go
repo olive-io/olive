@@ -27,26 +27,26 @@ import (
 	"testing"
 )
 
-var _ MetricRecorder = &fakeDefinitionsRecorder{}
+var _ MetricRecorder = &fakeRegionsRecorder{}
 
-type fakeDefinitionsRecorder struct {
+type fakeRegionsRecorder struct {
 	counter int64
 }
 
-func (r *fakeDefinitionsRecorder) Inc() {
+func (r *fakeRegionsRecorder) Inc() {
 	atomic.AddInt64(&r.counter, 1)
 }
 
-func (r *fakeDefinitionsRecorder) Dec() {
+func (r *fakeRegionsRecorder) Dec() {
 	atomic.AddInt64(&r.counter, -1)
 }
 
-func (r *fakeDefinitionsRecorder) Clear() {
+func (r *fakeRegionsRecorder) Clear() {
 	atomic.StoreInt64(&r.counter, 0)
 }
 
 func TestInc(t *testing.T) {
-	fakeRecorder := fakeDefinitionsRecorder{}
+	fakeRecorder := fakeRegionsRecorder{}
 	var wg sync.WaitGroup
 	loops := 100
 	wg.Add(loops)
@@ -63,7 +63,7 @@ func TestInc(t *testing.T) {
 }
 
 func TestDec(t *testing.T) {
-	fakeRecorder := fakeDefinitionsRecorder{counter: 100}
+	fakeRecorder := fakeRegionsRecorder{counter: 100}
 	var wg sync.WaitGroup
 	loops := 100
 	wg.Add(loops)
@@ -80,7 +80,7 @@ func TestDec(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	fakeRecorder := fakeDefinitionsRecorder{}
+	fakeRecorder := fakeRegionsRecorder{}
 	var wg sync.WaitGroup
 	incLoops, decLoops := 100, 80
 	wg.Add(incLoops + decLoops)

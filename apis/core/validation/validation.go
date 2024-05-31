@@ -26,11 +26,18 @@ import (
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/olive-io/olive/apis/core/helper"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
+
+const isNegativeErrorMsg string = apimachineryvalidation.IsNegativeErrorMsg
+const isInvalidQuotaResource string = `must be a standard resource for quota`
+const fieldImmutableErrorMsg string = apimachineryvalidation.FieldImmutableErrorMsg
+const isNotIntegerErrorMsg string = `must be an integer`
+const isNotPositiveErrorMsg string = `must be greater than zero`
 
 // ValidateNameFunc validates that the provided name is valid for a given resource type.
 // Not all resources have the same validation rules for names. Prefix is true
@@ -48,6 +55,11 @@ var ValidateDefinitionName = apimachineryvalidation.NameIsDNSSubdomain
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
 var ValidateNamespaceName = apimachineryvalidation.ValidateNamespaceName
+
+// ValidateRunnerName can be used to check whether the given runner name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateRunnerName = apimachineryvalidation.NameIsDNSSubdomain
 
 // ValidateObjectMeta validates an object's metadata on creation. It expects that name generation has already
 // been performed.
@@ -69,6 +81,102 @@ func ValidateObjectMetaUpdate(newMeta, oldMeta *metav1.ObjectMeta, fldPath *fiel
 		allErrs = append(allErrs, validateKubeFinalizerName(string(newMeta.Finalizers[i]), fldPath.Child("finalizers").Index(i))...)
 	}
 
+	return allErrs
+}
+
+// ValidateQualifiedName validates if name is what Kubernetes calls a "qualified name".
+func ValidateQualifiedName(value string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	for _, msg := range validation.IsQualifiedName(value) {
+		allErrs = append(allErrs, field.Invalid(fldPath, value, msg))
+	}
+	return allErrs
+}
+
+// ValidateRunner tests if required fields are set.
+func ValidateRunner(runner *corev1.Runner) field.ErrorList {
+	allErrs := ValidateObjectMeta(&runner.ObjectMeta, false, ValidateRunnerName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateRunnerUpdate validates an update to a Runner and returns an ErrorList with any errors.
+func ValidateRunnerUpdate(runner, oldRunner *corev1.Runner) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&runner.ObjectMeta, &oldRunner.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRunnerSpecUpdate(runner.Spec, oldRunner.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateRunnerSpecUpdate validates an update to a RunnerSpec and returns an ErrorList with any errors.
+func ValidateRunnerSpecUpdate(spec, oldSpec corev1.RunnerSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateRunnerUpdateStatus validates an update to the status of a Runner and returns an ErrorList with any errors.
+func ValidateRunnerUpdateStatus(runner, oldRunner *corev1.Runner) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&runner.ObjectMeta, &oldRunner.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRunnerStatusUpdate(runner, oldRunner)...)
+	return allErrs
+}
+
+// ValidateRunnerStatusUpdate validates an update to a RunnerStatus and returns an ErrorList with any errors.
+func ValidateRunnerStatusUpdate(runner, oldRunner *corev1.Runner) field.ErrorList {
+	allErrs := field.ErrorList{}
+	statusFld := field.NewPath("status")
+	allErrs = append(allErrs, validateRunnerStatus(runner, statusFld)...)
+
+	return allErrs
+}
+
+// validateRunnerStatus validates a RunnerStatus and returns an ErrorList with any errors.
+func validateRunnerStatus(runner *corev1.Runner, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateRegionName can be used to check whether the given region name is valid.
+// Prefix indicates this name will be used as part of generation, in which case
+// trailing dashes are allowed.
+var ValidateRegionName = apimachineryvalidation.NameIsDNSSubdomain
+
+// ValidateRegion tests if required fields are set.
+func ValidateRegion(region *corev1.Region) field.ErrorList {
+	allErrs := ValidateObjectMeta(&region.ObjectMeta, false, ValidateRegionName, field.NewPath("metadata"))
+	return allErrs
+}
+
+// ValidateRegionUpdate validates an update to a Region and returns an ErrorList with any errors.
+func ValidateRegionUpdate(region, oldRegion *corev1.Region) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRegionSpecUpdate(region.Spec, oldRegion.Spec, field.NewPath("spec"))...)
+	return allErrs
+}
+
+// ValidateRegionSpecUpdate validates an update to a RegionSpec and returns an ErrorList with any errors.
+func ValidateRegionSpecUpdate(spec, oldSpec corev1.RegionSpec, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	return allErrs
+}
+
+// ValidateRegionUpdateStatus validates an update to the status of a Region and returns an ErrorList with any errors.
+func ValidateRegionUpdateStatus(region, oldRegion *corev1.Region) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateRegionStatusUpdate(region, oldRegion)...)
+	return allErrs
+}
+
+// ValidateRegionStatusUpdate validates an update to a RegionStatus and returns an ErrorList with any errors.
+func ValidateRegionStatusUpdate(region, oldRegion *corev1.Region) field.ErrorList {
+	allErrs := field.ErrorList{}
+	statusFld := field.NewPath("status")
+	allErrs = append(allErrs, validateRegionStatus(region, statusFld)...)
+
+	return allErrs
+}
+
+// validateRegionStatus validates a RegionStatus and returns an ErrorList with any errors.
+func validateRegionStatus(region *corev1.Region, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
 	return allErrs
 }
 
@@ -197,6 +305,19 @@ func ValidateNamespaceFinalizeUpdate(newNamespace, oldNamespace *corev1.Namespac
 	for i := range newNamespace.Spec.Finalizers {
 		idxPath := fldPath.Index(i)
 		allErrs = append(allErrs, validateFinalizerName(string(newNamespace.Spec.Finalizers[i]), idxPath)...)
+	}
+	return allErrs
+}
+
+func ValidateImmutableField(newVal, oldVal interface{}, fldPath *field.Path) field.ErrorList {
+	return apimachineryvalidation.ValidateImmutableField(newVal, oldVal, fldPath)
+}
+
+func ValidateImmutableAnnotation(newVal string, oldVal string, annotation string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if oldVal != newVal {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("annotations", annotation), newVal, fieldImmutableErrorMsg))
 	}
 	return allErrs
 }

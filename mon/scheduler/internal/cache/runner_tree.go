@@ -28,7 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
 // runnerTree is a tree-like data structure that holds runner names in each zone. Zone names are
@@ -42,7 +42,7 @@ type runnerTree struct {
 }
 
 // newRunnerTree creates a RunnerTree from runners.
-func newRunnerTree(logger klog.Logger, runners []*monv1.Runner) *runnerTree {
+func newRunnerTree(logger klog.Logger, runners []*corev1.Runner) *runnerTree {
 	nt := &runnerTree{
 		tree: make(map[string][]string, len(runners)),
 	}
@@ -54,7 +54,7 @@ func newRunnerTree(logger klog.Logger, runners []*monv1.Runner) *runnerTree {
 
 // addRunner adds a runner and its corresponding zone to the tree. If the zone already exists, the runner
 // is added to the array of runners in that zone.
-func (nt *runnerTree) addRunner(logger klog.Logger, n *monv1.Runner) {
+func (nt *runnerTree) addRunner(logger klog.Logger, n *corev1.Runner) {
 	zone := GetZoneKey(n)
 	if na, ok := nt.tree[zone]; ok {
 		for _, runnerName := range na {
@@ -73,7 +73,7 @@ func (nt *runnerTree) addRunner(logger klog.Logger, n *monv1.Runner) {
 }
 
 // removeRunner removes a runner from the RunnerTree.
-func (nt *runnerTree) removeRunner(logger klog.Logger, n *monv1.Runner) error {
+func (nt *runnerTree) removeRunner(logger klog.Logger, n *corev1.Runner) error {
 	zone := GetZoneKey(n)
 	if na, ok := nt.tree[zone]; ok {
 		for i, runnerName := range na {
@@ -105,7 +105,7 @@ func (nt *runnerTree) removeZone(zone string) {
 }
 
 // updateRunner updates a runner in the RunnerTree.
-func (nt *runnerTree) updateRunner(logger klog.Logger, old, new *monv1.Runner) {
+func (nt *runnerTree) updateRunner(logger klog.Logger, old, new *corev1.Runner) {
 	var oldZone string
 	if old != nil {
 		oldZone = GetZoneKey(old)
@@ -156,7 +156,7 @@ func (nt *runnerTree) list() ([]string, error) {
 //
 // GetZoneKey will first check failure-domain.beta.olive.io/zone and if not exists, will then check
 // topology.olive.io/zone
-func GetZoneKey(runner *monv1.Runner) string {
+func GetZoneKey(runner *corev1.Runner) string {
 	labels := runner.Labels
 	if labels == nil {
 		return ""

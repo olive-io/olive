@@ -35,53 +35,53 @@ type MetricRecorder interface {
 	Clear()
 }
 
-var _ MetricRecorder = &PendingDefinitionsRecorder{}
+var _ MetricRecorder = &PendingRegionsRecorder{}
 
-// PendingDefinitionsRecorder is an implementation of MetricRecorder
-type PendingDefinitionsRecorder struct {
+// PendingRegionsRecorder is an implementation of MetricRecorder
+type PendingRegionsRecorder struct {
 	recorder metrics.GaugeMetric
 }
 
-// NewActiveDefinitionsRecorder returns ActiveDefinitions in a Prometheus metric fashion
-func NewActiveDefinitionsRecorder() *PendingDefinitionsRecorder {
-	return &PendingDefinitionsRecorder{
-		recorder: ActiveDefinitions(),
+// NewActiveRegionsRecorder returns ActiveRegions in a Prometheus metric fashion
+func NewActiveRegionsRecorder() *PendingRegionsRecorder {
+	return &PendingRegionsRecorder{
+		recorder: ActiveRegions(),
 	}
 }
 
-// NewUnschedulableDefinitionsRecorder returns UnschedulableDefinitions in a Prometheus metric fashion
-func NewUnschedulableDefinitionsRecorder() *PendingDefinitionsRecorder {
-	return &PendingDefinitionsRecorder{
-		recorder: UnschedulableDefinitions(),
+// NewUnschedulableRegionsRecorder returns UnschedulableRegions in a Prometheus metric fashion
+func NewUnschedulableRegionsRecorder() *PendingRegionsRecorder {
+	return &PendingRegionsRecorder{
+		recorder: UnschedulableRegions(),
 	}
 }
 
-// NewBackoffDefinitionsRecorder returns BackoffDefinitions in a Prometheus metric fashion
-func NewBackoffDefinitionsRecorder() *PendingDefinitionsRecorder {
-	return &PendingDefinitionsRecorder{
-		recorder: BackoffDefinitions(),
+// NewBackoffRegionsRecorder returns BackoffRegions in a Prometheus metric fashion
+func NewBackoffRegionsRecorder() *PendingRegionsRecorder {
+	return &PendingRegionsRecorder{
+		recorder: BackoffRegions(),
 	}
 }
 
-// NewGatedDefinitionsRecorder returns GatedDefinitions in a Prometheus metric fashion
-func NewGatedDefinitionsRecorder() *PendingDefinitionsRecorder {
-	return &PendingDefinitionsRecorder{
-		recorder: GatedDefinitions(),
+// NewGatedRegionsRecorder returns GatedRegions in a Prometheus metric fashion
+func NewGatedRegionsRecorder() *PendingRegionsRecorder {
+	return &PendingRegionsRecorder{
+		recorder: GatedRegions(),
 	}
 }
 
 // Inc increases a metric counter by 1, in an atomic way
-func (r *PendingDefinitionsRecorder) Inc() {
+func (r *PendingRegionsRecorder) Inc() {
 	r.recorder.Inc()
 }
 
 // Dec decreases a metric counter by 1, in an atomic way
-func (r *PendingDefinitionsRecorder) Dec() {
+func (r *PendingRegionsRecorder) Dec() {
 	r.recorder.Dec()
 }
 
 // Clear set a metric counter to 0, in an atomic way
-func (r *PendingDefinitionsRecorder) Clear() {
+func (r *PendingRegionsRecorder) Clear() {
 	r.recorder.Set(float64(0))
 }
 

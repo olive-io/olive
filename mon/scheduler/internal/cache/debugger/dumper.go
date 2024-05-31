@@ -36,8 +36,8 @@ import (
 // CacheDumper writes some information from the scheduler cache and the scheduling queue to the
 // scheduler logs for debugging purposes.
 type CacheDumper struct {
-	cache           internalcache.Cache
-	definitionQueue queue.SchedulingQueue
+	cache       internalcache.Cache
+	regionQueue queue.SchedulingQueue
 }
 
 // DumpAll writes cached nodes and scheduling queue information to the scheduler logs.
@@ -57,37 +57,37 @@ func (d *CacheDumper) dumpRunners(logger klog.Logger) {
 	logger.Info("Dump of cached RunnerInfo", "nodes", strings.Join(nodeInfos, "\n\n"))
 }
 
-// dumpSchedulingQueue writes definitions in the scheduling queue to the scheduler logs.
+// dumpSchedulingQueue writes regions in the scheduling queue to the scheduler logs.
 func (d *CacheDumper) dumpSchedulingQueue(logger klog.Logger) {
-	pendingDefinitions, s := d.definitionQueue.PendingDefinitions()
-	var definitionData strings.Builder
-	for _, p := range pendingDefinitions {
-		definitionData.WriteString(printDefinition(p))
+	pendingRegions, s := d.regionQueue.PendingRegions()
+	var regionData strings.Builder
+	for _, p := range pendingRegions {
+		regionData.WriteString(printRegion(p))
 	}
-	logger.Info("Dump of scheduling queue", "summary", s, "definitions", definitionData.String())
+	logger.Info("Dump of scheduling queue", "summary", s, "regions", regionData.String())
 }
 
 // printRunnerInfo writes parts of RunnerInfo to a string.
 func (d *CacheDumper) printRunnerInfo(name string, n *framework.RunnerInfo) string {
 	var nodeData strings.Builder
-	nodeData.WriteString(fmt.Sprintf("Runner name: %s\nDeleted: %t\nRequested Resources: %+v\nAllocatable Resources:%+v\nScheduled Definitions(number: %v):\n",
-		name, n.Runner() == nil, n.Requested, n.Allocatable, len(n.Definitions)))
-	// Dumping Definition Info
-	for _, p := range n.Definitions {
-		nodeData.WriteString(printDefinition(p.Definition))
+	nodeData.WriteString(fmt.Sprintf("Runner name: %s\nDeleted: %t\nRequested Resources: %+v\nAllocatable Resources:%+v\nScheduled Regions(number: %v):\n",
+		name, n.Runner() == nil, n.Requested, n.Allocatable, len(n.Regions)))
+	// Dumping Region Info
+	for _, p := range n.Regions {
+		nodeData.WriteString(printRegion(p.Region))
 	}
-	// Dumping nominated definitions info on the node
-	nominatedDefinitionInfos := d.definitionQueue.NominatedDefinitionsForRunner(name)
-	if len(nominatedDefinitionInfos) != 0 {
-		nodeData.WriteString(fmt.Sprintf("Nominated Definitions(number: %v):\n", len(nominatedDefinitionInfos)))
-		for _, pi := range nominatedDefinitionInfos {
-			nodeData.WriteString(printDefinition(pi.Definition))
+	// Dumping nominated regions info on the node
+	nominatedRegionInfos := d.regionQueue.NominatedRegionsForRunner(name)
+	if len(nominatedRegionInfos) != 0 {
+		nodeData.WriteString(fmt.Sprintf("Nominated Regions(number: %v):\n", len(nominatedRegionInfos)))
+		for _, pi := range nominatedRegionInfos {
+			nodeData.WriteString(printRegion(pi.Region))
 		}
 	}
 	return nodeData.String()
 }
 
-// printDefinition writes parts of a Definition object to a string.
-func printDefinition(p *corev1.Definition) string {
+// printRegion writes parts of a Region object to a string.
+func printRegion(p *corev1.Region) string {
 	return fmt.Sprintf("name: %v, namespace: %v, uid: %v, phase: %v, nominated region: %v\n", p.Name, p.Namespace, p.UID, p.Status.Phase, "")
 }

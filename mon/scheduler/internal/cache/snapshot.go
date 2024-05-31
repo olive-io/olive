@@ -24,10 +24,7 @@ package cache
 import (
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 )
 
@@ -38,14 +35,13 @@ type Snapshot struct {
 	runnerInfoMap map[string]*framework.RunnerInfo
 	// runnerInfoList is the list of runners as ordered in the cache's runnerTree.
 	runnerInfoList []*framework.RunnerInfo
-	// haveDefinitionsWithAffinityRunnerInfoList is the list of runners with at least one definition declaring affinity terms.
-	haveDefinitionsWithAffinityRunnerInfoList []*framework.RunnerInfo
-	// haveDefinitionsWithRequiredAntiAffinityRunnerInfoList is the list of runners with at least one definition declaring
+	// haveRegionsWithAffinityRunnerInfoList is the list of runners with at least one region declaring affinity terms.
+	haveRegionsWithAffinityRunnerInfoList []*framework.RunnerInfo
+	// haveRegionsWithRequiredAntiAffinityRunnerInfoList is the list of runners with at least one region declaring
 	// required anti-affinity terms.
-	haveDefinitionsWithRequiredAntiAffinityRunnerInfoList []*framework.RunnerInfo
-	// usedPVCSet contains a set of PVC names that have one or more scheduled definitions using them,
+	haveRegionsWithRequiredAntiAffinityRunnerInfoList []*framework.RunnerInfo
+	// usedPVCSet contains a set of PVC names that have one or more scheduled regions using them,
 	// keyed in the format "namespace/name".
-	usedPVCSet sets.Set[string]
 	generation int64
 }
 
@@ -55,47 +51,45 @@ var _ framework.SharedLister = &Snapshot{}
 func NewEmptySnapshot() *Snapshot {
 	return &Snapshot{
 		runnerInfoMap: make(map[string]*framework.RunnerInfo),
-		usedPVCSet:    sets.New[string](),
 	}
 }
 
 // NewSnapshot initializes a Snapshot struct and returns it.
-func NewSnapshot(definitions []*corev1.Definition, runners []*monv1.Runner) *Snapshot {
-	runnerInfoMap := createRunnerInfoMap(definitions, runners)
+func NewSnapshot(regions []*corev1.Region, runners []*corev1.Runner) *Snapshot {
+	runnerInfoMap := createRunnerInfoMap(regions, runners)
 	runnerInfoList := make([]*framework.RunnerInfo, 0, len(runnerInfoMap))
-	haveDefinitionsWithAffinityRunnerInfoList := make([]*framework.RunnerInfo, 0, len(runnerInfoMap))
-	haveDefinitionsWithRequiredAntiAffinityRunnerInfoList := make([]*framework.RunnerInfo, 0, len(runnerInfoMap))
+	haveRegionsWithAffinityRunnerInfoList := make([]*framework.RunnerInfo, 0, len(runnerInfoMap))
+	haveRegionsWithRequiredAntiAffinityRunnerInfoList := make([]*framework.RunnerInfo, 0, len(runnerInfoMap))
 	for _, v := range runnerInfoMap {
 		runnerInfoList = append(runnerInfoList, v)
-		if len(v.DefinitionsWithAffinity) > 0 {
-			haveDefinitionsWithAffinityRunnerInfoList = append(haveDefinitionsWithAffinityRunnerInfoList, v)
+		if len(v.RegionsWithAffinity) > 0 {
+			haveRegionsWithAffinityRunnerInfoList = append(haveRegionsWithAffinityRunnerInfoList, v)
 		}
-		if len(v.DefinitionsWithRequiredAntiAffinity) > 0 {
-			haveDefinitionsWithRequiredAntiAffinityRunnerInfoList = append(haveDefinitionsWithRequiredAntiAffinityRunnerInfoList, v)
+		if len(v.RegionsWithRequiredAntiAffinity) > 0 {
+			haveRegionsWithRequiredAntiAffinityRunnerInfoList = append(haveRegionsWithRequiredAntiAffinityRunnerInfoList, v)
 		}
 	}
 
 	s := NewEmptySnapshot()
 	s.runnerInfoMap = runnerInfoMap
 	s.runnerInfoList = runnerInfoList
-	s.haveDefinitionsWithAffinityRunnerInfoList = haveDefinitionsWithAffinityRunnerInfoList
-	s.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList = haveDefinitionsWithRequiredAntiAffinityRunnerInfoList
-	s.usedPVCSet = createUsedPVCSet(definitions)
+	s.haveRegionsWithAffinityRunnerInfoList = haveRegionsWithAffinityRunnerInfoList
+	s.haveRegionsWithRequiredAntiAffinityRunnerInfoList = haveRegionsWithRequiredAntiAffinityRunnerInfoList
 
 	return s
 }
 
-// createRunnerInfoMap obtains a list of definitions and pivots that list into a map
+// createRunnerInfoMap obtains a list of regions and pivots that list into a map
 // where the keys are runner names and the values are the aggregated information
 // for that runner.
-func createRunnerInfoMap(definitions []*corev1.Definition, runners []*monv1.Runner) map[string]*framework.RunnerInfo {
+func createRunnerInfoMap(regions []*corev1.Region, runners []*corev1.Runner) map[string]*framework.RunnerInfo {
 	runnerNameToInfo := make(map[string]*framework.RunnerInfo)
-	//for _, definition := range definitions {
-	//	runnerName := definition.Spec.RunnerName
+	//for _, region := range regions {
+	//	runnerName := region.Spec.RunnerName
 	//	if _, ok := runnerNameToInfo[runnerName]; !ok {
 	//		runnerNameToInfo[runnerName] = framework.NewRunnerInfo()
 	//	}
-	//	runnerNameToInfo[runnerName].AddDefinition(definition)
+	//	runnerNameToInfo[runnerName].AddRegion(region)
 	//}
 	////imageExistenceMap := createImageExistenceMap(runners)
 	//
@@ -110,24 +104,8 @@ func createRunnerInfoMap(definitions []*corev1.Definition, runners []*monv1.Runn
 	return runnerNameToInfo
 }
 
-func createUsedPVCSet(definitions []*corev1.Definition) sets.Set[string] {
-	usedPVCSet := sets.New[string]()
-	for _, definition := range definitions {
-		if definition.Spec.RegionName == "" {
-			continue
-		}
-
-	}
-	return usedPVCSet
-}
-
 // RunnerInfos returns a RunnerInfoLister.
 func (s *Snapshot) RunnerInfos() framework.RunnerInfoLister {
-	return s
-}
-
-// StorageInfos returns a StorageInfoLister.
-func (s *Snapshot) StorageInfos() framework.StorageInfoLister {
 	return s
 }
 
@@ -141,15 +119,15 @@ func (s *Snapshot) List() ([]*framework.RunnerInfo, error) {
 	return s.runnerInfoList, nil
 }
 
-// HaveDefinitionsWithAffinityList returns the list of runners with at least one definition with inter-definition affinity
-func (s *Snapshot) HaveDefinitionsWithAffinityList() ([]*framework.RunnerInfo, error) {
-	return s.haveDefinitionsWithAffinityRunnerInfoList, nil
+// HaveRegionsWithAffinityList returns the list of runners with at least one region with inter-region affinity
+func (s *Snapshot) HaveRegionsWithAffinityList() ([]*framework.RunnerInfo, error) {
+	return s.haveRegionsWithAffinityRunnerInfoList, nil
 }
 
-// HaveDefinitionsWithRequiredAntiAffinityList returns the list of runners with at least one definition with
-// required inter-definition anti-affinity
-func (s *Snapshot) HaveDefinitionsWithRequiredAntiAffinityList() ([]*framework.RunnerInfo, error) {
-	return s.haveDefinitionsWithRequiredAntiAffinityRunnerInfoList, nil
+// HaveRegionsWithRequiredAntiAffinityList returns the list of runners with at least one region with
+// required inter-region anti-affinity
+func (s *Snapshot) HaveRegionsWithRequiredAntiAffinityList() ([]*framework.RunnerInfo, error) {
+	return s.haveRegionsWithRequiredAntiAffinityRunnerInfoList, nil
 }
 
 // Get returns the RunnerInfo of the given runner name.
@@ -158,8 +136,4 @@ func (s *Snapshot) Get(runnerName string) (*framework.RunnerInfo, error) {
 		return v, nil
 	}
 	return nil, fmt.Errorf("runnerinfo not found for runner name %q", runnerName)
-}
-
-func (s *Snapshot) IsPVCUsedByDefinitions(key string) bool {
-	return s.usedPVCSet.Has(key)
 }

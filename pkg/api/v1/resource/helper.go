@@ -25,24 +25,24 @@ import (
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// DefinitionResourcesOptions controls the behavior of DefinitionRequests and DefinitionLimits.
-type DefinitionResourcesOptions struct {
-	// Reuse, if provided will be reused to accumulate resources and returned by the DefinitionRequests or DefinitionLimits
+// RegionResourcesOptions controls the behavior of RegionRequests and RegionLimits.
+type RegionResourcesOptions struct {
+	// Reuse, if provided will be reused to accumulate resources and returned by the RegionRequests or RegionLimits
 	// functions. All existing values in Reuse will be lost.
 	Reuse corev1.ResourceList
-	// InPlaceDefinitionVerticalScalingEnabled indicates that the in-place definition vertical scaling feature gate is enabled.
-	InPlaceDefinitionVerticalScalingEnabled bool
-	// ExcludeOverhead controls if definition overhead is excluded from the calculation.
+	// InPlaceRegionVerticalScalingEnabled indicates that the in-place region vertical scaling feature gate is enabled.
+	InPlaceRegionVerticalScalingEnabled bool
+	// ExcludeOverhead controls if region overhead is excluded from the calculation.
 	ExcludeOverhead bool
 	// NonMissingRegionRequests if provided will replace any missing container level requests for the specified resources
 	// with the given values.  If the requests for those resources are explicitly set, even if zero, they will not be modified.
 	NonMissingRegionRequests corev1.ResourceList
 }
 
-// DefinitionRequests computes the definition requests per the DefinitionResourcesOptions supplied. If DefinitionResourcesOptions is nil, then
-// the requests are returned including definition overhead. The computation is part of the API and must be reviewed
+// RegionRequests computes the region requests per the RegionResourcesOptions supplied. If RegionResourcesOptions is nil, then
+// the requests are returned including region overhead. The computation is part of the API and must be reviewed
 // as an API change.
-func DefinitionRequests(definition *corev1.Definition, opts DefinitionResourcesOptions) corev1.ResourceList {
+func RegionRequests(region *corev1.Region, opts RegionResourcesOptions) corev1.ResourceList {
 	// attempt to reuse the maps if passed, or allocate otherwise
 	reqs := reuseOrClearResourceList(opts.Reuse)
 
@@ -66,10 +66,10 @@ func applyNonMissing(reqs corev1.ResourceList, nonMissing corev1.ResourceList) c
 	return cp
 }
 
-// DefinitionLimits computes the definition limits per the DefinitionResourcesOptions supplied. If DefinitionResourcesOptions is nil, then
-// the limits are returned including definition overhead for any non-zero limits. The computation is part of the API and must be reviewed
+// RegionLimits computes the region limits per the RegionResourcesOptions supplied. If RegionResourcesOptions is nil, then
+// the limits are returned including region overhead for any non-zero limits. The computation is part of the API and must be reviewed
 // as an API change.
-func DefinitionLimits(definition *corev1.Definition, opts DefinitionResourcesOptions) corev1.ResourceList {
+func RegionLimits(region *corev1.Region, opts RegionResourcesOptions) corev1.ResourceList {
 	// attempt to reuse the maps if passed, or allocate otherwise
 	limits := reuseOrClearResourceList(opts.Reuse)
 

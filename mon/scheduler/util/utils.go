@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,61 +38,61 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	extenderv1 "github.com/olive-io/olive/mon/scheduler/extender/v1"
 )
 
-// GetDefinitionFullName returns a name that uniquely identifies a definition.
-func GetDefinitionFullName(definition *corev1.Definition) string {
-	// Use underscore as the delimiter because it is not allowed in definition name
+// GetRegionFullName returns a name that uniquely identifies a region.
+func GetRegionFullName(region *corev1.Region) string {
+	// Use underscore as the delimiter because it is not allowed in region name
 	// (DNS subdomain format).
-	return definition.Name + "_" + definition.Namespace
+	return region.Name + "_" + region.Namespace
 }
 
-// GetDefinitionStartTime returns start time of the given definition or current timestamp
+// GetRegionStartTime returns start time of the given region or current timestamp
 // if it hasn't started yet.
-func GetDefinitionStartTime(definition *corev1.Definition) *metav1.Time {
-	// Assumed definitions and bound definitions that haven't started don't have a StartTime yet.
+func GetRegionStartTime(region *corev1.Region) *metav1.Time {
+	// Assumed regions and bound regions that haven't started don't have a StartTime yet.
 	return &metav1.Time{Time: time.Now()}
 }
 
-// GetEarliestDefinitionStartTime returns the earliest start time of all definitions that
+// GetEarliestRegionStartTime returns the earliest start time of all regions that
 // have the highest priority among all victims.
-func GetEarliestDefinitionStartTime(victims *extenderv1.Victims) *metav1.Time {
-	if len(victims.Definitions) == 0 {
+func GetEarliestRegionStartTime(victims *extenderv1.Victims) *metav1.Time {
+	if len(victims.Regions) == 0 {
 		// should not reach here.
-		klog.Background().Error(nil, "victims.Definitions is empty. Should not reach here")
+		klog.Background().Error(nil, "victims.Regions is empty. Should not reach here")
 		return nil
 	}
 
-	earliestDefinitionStartTime := GetDefinitionStartTime(victims.Definitions[0])
-	maxPriority := DefinitionPriority(victims.Definitions[0])
+	earliestRegionStartTime := GetRegionStartTime(victims.Regions[0])
+	maxPriority := RegionPriority(victims.Regions[0])
 
-	for _, definition := range victims.Definitions {
-		if definitionPriority := DefinitionPriority(definition); definitionPriority == maxPriority {
-			if definitionStartTime := GetDefinitionStartTime(definition); definitionStartTime.Before(earliestDefinitionStartTime) {
-				earliestDefinitionStartTime = definitionStartTime
+	for _, region := range victims.Regions {
+		if regionPriority := RegionPriority(region); regionPriority == maxPriority {
+			if regionStartTime := GetRegionStartTime(region); regionStartTime.Before(earliestRegionStartTime) {
+				earliestRegionStartTime = regionStartTime
 			}
-		} else if definitionPriority > maxPriority {
-			maxPriority = definitionPriority
-			earliestDefinitionStartTime = GetDefinitionStartTime(definition)
+		} else if regionPriority > maxPriority {
+			maxPriority = regionPriority
+			earliestRegionStartTime = GetRegionStartTime(region)
 		}
 	}
 
-	return earliestDefinitionStartTime
+	return earliestRegionStartTime
 }
 
-// MoreImportantDefinition return true when priority of the first definition is higher than
-// the second one. If two definitions' priorities are equal, compare their StartTime.
+// MoreImportantRegion return true when priority of the first region is higher than
+// the second one. If two regions' priorities are equal, compare their StartTime.
 // It takes arguments of the type "interface{}" to be used with SortableList,
-// but expects those arguments to be *v1.Definition.
-func MoreImportantDefinition(definition1, definition2 *corev1.Definition) bool {
-	p1 := DefinitionPriority(definition1)
-	p2 := DefinitionPriority(definition2)
+// but expects those arguments to be *v1.Region.
+func MoreImportantRegion(region1, region2 *corev1.Region) bool {
+	p1 := RegionPriority(region1)
+	p2 := RegionPriority(region2)
 	if p1 != p2 {
 		return p1 > p2
 	}
-	return GetDefinitionStartTime(definition1).Before(GetDefinitionStartTime(definition2))
+	return GetRegionStartTime(region1).Before(GetRegionStartTime(region2))
 }
 
 // Retriable defines the retriable errors during a scheduling cycle.
@@ -102,25 +101,25 @@ func Retriable(err error) bool {
 		net.IsConnectionRefused(err)
 }
 
-// PatchDefinitionStatus calculates the delta bytes change from <old.Status> to <newStatus>,
-// and then submit a request to API server to patch the definition changes.
-func PatchDefinitionStatus(ctx context.Context, cs clientset.Interface, old *corev1.Definition, newStatus *corev1.DefinitionStatus) error {
+// PatchRegionStatus calculates the delta bytes change from <old.Status> to <newStatus>,
+// and then submit a request to API server to patch the region changes.
+func PatchRegionStatus(ctx context.Context, cs clientset.Interface, old *corev1.Region, newStatus *corev1.RegionStatus) error {
 	if newStatus == nil {
 		return nil
 	}
 
-	oldData, err := json.Marshal(corev1.Definition{Status: old.Status})
+	oldData, err := json.Marshal(corev1.Region{Status: old.Status})
 	if err != nil {
 		return err
 	}
 
-	newData, err := json.Marshal(corev1.Definition{Status: *newStatus})
+	newData, err := json.Marshal(corev1.Region{Status: *newStatus})
 	if err != nil {
 		return err
 	}
-	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, &corev1.Definition{})
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, &corev1.Region{})
 	if err != nil {
-		return fmt.Errorf("failed to create merge patch for definition %q/%q: %v", old.Namespace, old.Name, err)
+		return fmt.Errorf("failed to create merge patch for region %q/%q: %v", old.Namespace, old.Name, err)
 	}
 
 	if "{}" == string(patchBytes) {
@@ -128,25 +127,25 @@ func PatchDefinitionStatus(ctx context.Context, cs clientset.Interface, old *cor
 	}
 
 	patchFn := func() error {
-		_, err := cs.CoreV1().Definitions(old.Namespace).Patch(ctx, old.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{}, "status")
+		_, err := cs.CoreV1().Regions().Patch(ctx, old.Name, types.StrategicMergePatchType, patchBytes, metav1.PatchOptions{}, "status")
 		return err
 	}
 
 	return retry.OnError(retry.DefaultBackoff, Retriable, patchFn)
 }
 
-// DeleteDefinition deletes the given <definition> from API server
-func DeleteDefinition(ctx context.Context, cs clientset.Interface, definition *corev1.Definition) error {
-	return cs.CoreV1().Definitions(definition.Namespace).Delete(ctx, definition.Name, metav1.DeleteOptions{})
+// DeleteRegion deletes the given <region> from API server
+func DeleteRegion(ctx context.Context, cs clientset.Interface, region *corev1.Region) error {
+	return cs.CoreV1().Regions().Delete(ctx, region.Name, metav1.DeleteOptions{})
 }
 
 // ClearNominatedNodeName internally submit a patch request to API server
-// to set each definitions[*].Status.NominatedNodeName> to "".
-func ClearNominatedNodeName(ctx context.Context, cs clientset.Interface, definitions ...*corev1.Definition) utilerrors.Aggregate {
+// to set each regions[*].Status.NominatedNodeName> to "".
+func ClearNominatedNodeName(ctx context.Context, cs clientset.Interface, regions ...*corev1.Region) utilerrors.Aggregate {
 	var errs []error
-	for _, p := range definitions {
-		definitionStatusCopy := p.Status.DeepCopy()
-		if err := PatchDefinitionStatus(ctx, cs, p, definitionStatusCopy); err != nil {
+	for _, p := range regions {
+		regionStatusCopy := p.Status.DeepCopy()
+		if err := PatchRegionStatus(ctx, cs, p, regionStatusCopy); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -154,7 +153,7 @@ func ClearNominatedNodeName(ctx context.Context, cs clientset.Interface, definit
 }
 
 // IsScalarResourceName validates the resource for Extended, Hugepages, Native and AttachableVolume resources
-func IsScalarResourceName(name v1.ResourceName) bool {
+func IsScalarResourceName(name corev1.ResourceName) bool {
 	return true
 }
 
@@ -186,13 +185,13 @@ func As[T any](oldObj, newobj interface{}) (T, T, error) {
 	return oldTyped, newTyped, nil
 }
 
-// DefinitionPriority returns priority of the given definition.
-func DefinitionPriority(definition *corev1.Definition) int64 {
-	if definition.Spec.Priority != nil {
-		return *definition.Spec.Priority
+// RegionPriority returns priority of the given region.
+func RegionPriority(region *corev1.Region) int32 {
+	if region.Spec.Priority != nil {
+		return *region.Spec.Priority
 	}
-	// When priority of a running definition is nil, it means it was created at a time
+	// When priority of a running region is nil, it means it was created at a time
 	// that there was no global default priority class and the priority class
-	// name of the definition was empty. So, we resolve to the static default priority.
+	// name of the region was empty. So, we resolve to the static default priority.
 	return 0
 }

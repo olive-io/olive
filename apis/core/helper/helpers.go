@@ -31,19 +31,21 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/olive-io/olive/apis/core"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
 // IsHugePageResourceName returns true if the resource name has the huge page
 // resource prefix.
-func IsHugePageResourceName(name core.ResourceName) bool {
-	return strings.HasPrefix(string(name), core.ResourceHugePagesPrefix)
+func IsHugePageResourceName(name corev1.ResourceName) bool {
+	return strings.HasPrefix(string(name), corev1.ResourceHugePagesPrefix)
 }
 
 // IsHugePageResourceValueDivisible returns true if the resource value of storage is
 // integer multiple of page size.
-func IsHugePageResourceValueDivisible(name core.ResourceName, quantity resource.Quantity) bool {
+func IsHugePageResourceValueDivisible(name corev1.ResourceName, quantity resource.Quantity) bool {
 	pageSize, err := HugePageSizeFromResourceName(name)
 	if err != nil {
 		return false
@@ -66,7 +68,7 @@ func HugePageResourceName(pageSize resource.Quantity) core.ResourceName {
 // HugePageSizeFromResourceName returns the page size for the specified huge page
 // resource name.  If the specified input is not a valid huge page resource name
 // an error is returned.
-func HugePageSizeFromResourceName(name core.ResourceName) (resource.Quantity, error) {
+func HugePageSizeFromResourceName(name corev1.ResourceName) (resource.Quantity, error) {
 	if !IsHugePageResourceName(name) {
 		return resource.Quantity{}, fmt.Errorf("resource name: %s is an invalid hugepage name", name)
 	}
@@ -99,28 +101,28 @@ var Semantic = conversion.EqualitiesOrDie(
 )
 
 var standardContainerResources = sets.New(
-	core.ResourceCPU,
-	core.ResourceMemory,
-	core.ResourceEphemeralStorage,
+	corev1.ResourceCPU,
+	corev1.ResourceMemory,
+	corev1.ResourceEphemeralStorage,
 )
 
 // IsStandardContainerResourceName returns true if the container can make a resource request
 // for the specified resource
-func IsStandardContainerResourceName(name core.ResourceName) bool {
+func IsStandardContainerResourceName(name corev1.ResourceName) bool {
 	return standardContainerResources.Has(name) || IsHugePageResourceName(name)
 }
 
 // IsNativeResource returns true if the resource name is in the
 // *kubernetes.io/ namespace. Partially-qualified (unprefixed) names are
 // implicitly in the kubernetes.io/ namespace.
-func IsNativeResource(name core.ResourceName) bool {
+func IsNativeResource(name corev1.ResourceName) bool {
 	return !strings.Contains(string(name), "/") ||
 		strings.Contains(string(name), core.ResourceDefaultNamespacePrefix)
 }
 
 // IsOvercommitAllowed returns true if the resource is in the default
 // namespace and is not hugepages.
-func IsOvercommitAllowed(name core.ResourceName) bool {
+func IsOvercommitAllowed(name corev1.ResourceName) bool {
 	return IsNativeResource(name) &&
 		!IsHugePageResourceName(name)
 }
@@ -140,4 +142,21 @@ var standardFinalizers = sets.New(
 // IsStandardFinalizerName checks if the input string is a standard finalizer name
 func IsStandardFinalizerName(str string) bool {
 	return standardFinalizers.Has(str)
+}
+
+// IsExtendedResourceName returns true if:
+// 1. the resource name is not in the default namespace;
+// 2. resource name does not have "requests." prefix,
+// to avoid confusion with the convention in quota
+// 3. it satisfies the rules in IsQualifiedName() after converted into quota resource name
+func IsExtendedResourceName(name corev1.ResourceName) bool {
+	if IsNativeResource(name) || strings.HasPrefix(string(name), corev1.DefaultResourceRequestsPrefix) {
+		return false
+	}
+	// Ensure it satisfies the rules in IsQualifiedName() after converted into quota resource name
+	nameForQuota := fmt.Sprintf("%s%s", corev1.DefaultResourceRequestsPrefix, string(name))
+	if errs := validation.IsQualifiedName(nameForQuota); len(errs) != 0 {
+		return false
+	}
+	return true
 }

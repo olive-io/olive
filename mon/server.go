@@ -37,7 +37,6 @@ import (
 
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
 	"github.com/olive-io/olive/mon/schedule"
@@ -49,7 +48,6 @@ var (
 	stableAPIGroupVersionsEnabledByDefault = []schema.GroupVersion{
 		apidiscoveryv1.SchemeGroupVersion,
 		corev1.SchemeGroupVersion,
-		monv1.SchemeGroupVersion,
 	}
 )
 

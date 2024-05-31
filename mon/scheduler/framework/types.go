@@ -35,7 +35,6 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 )
 
 var generation int64
@@ -66,70 +65,70 @@ type GVK string
 
 // Constants for GVKs.
 const (
-	// There are a couple of notes about how the scheduler notifies the events of Definitions:
-	// - Add: add events could be triggered by either a newly created Definition or an existing Definition that is scheduled to a Runner.
+	// There are a couple of notes about how the scheduler notifies the events of Regions:
+	// - Add: add events could be triggered by either a newly created Region or an existing Region that is scheduled to a Runner.
 	// - Delete: delete events could be triggered by:
-	//           - a Definition that is deleted
-	//           - a Definition that was assumed, but gets un-assumed due to some errors in the binding cycle.
-	//           - an existing Definition that was unscheduled but gets scheduled to a Runner.
-	Definition GVK = "Definition"
+	//           - a Region that is deleted
+	//           - a Region that was assumed, but gets un-assumed due to some errors in the binding cycle.
+	//           - an existing Region that was unscheduled but gets scheduled to a Runner.
+	Region GVK = "Region"
 	// A note about RunnerAdd event and UpdateRunnerTaint event:
 	// RunnerAdd QueueingHint isn't always called because of the internal feature called preCheck.
 	// It's definitely not something expected for plugin developers,
 	// and registering UpdateRunnerTaint event is the only mitigation for now.
 	// So, kube-scheduler registers UpdateRunnerTaint event for plugins that has RunnerAdded event, but don't have UpdateRunnerTaint event.
-	// It has a bad impact for the requeuing efficiency though, a lot better than some Definitions being stuck in the
-	// unschedulable definition pool.
+	// It has a bad impact for the requeuing efficiency though, a lot better than some Regions being stuck in the
+	// unschedulable region pool.
 	// This behavior will be removed when we remove the preCheck feature.
 	// See: https://github.com/kubernetes/kubernetes/issues/110175
-	Runner                      GVK = "Runner"
-	DefinitionSchedulingContext GVK = "DefinitionSchedulingContext"
-	ResourceClaim               GVK = "ResourceClaim"
-	ResourceClass               GVK = "ResourceClass"
-	ResourceClaimParameters     GVK = "ResourceClaimParameters"
-	ResourceClassParameters     GVK = "ResourceClassParameters"
+	Runner                  GVK = "Runner"
+	RegionSchedulingContext GVK = "RegionSchedulingContext"
+	ResourceClaim           GVK = "ResourceClaim"
+	ResourceClass           GVK = "ResourceClass"
+	ResourceClaimParameters GVK = "ResourceClaimParameters"
+	ResourceClassParameters GVK = "ResourceClassParameters"
 
 	// WildCard is a special GVK to match all resources.
 	// e.g., If you register `{Resource: "*", ActionType: All}` in EventsToRegister,
 	// all coming clusterEvents will be admitted. Be careful to register it, it will
 	// increase the computing pressure in requeueing unless you really need it.
 	//
-	// Meanwhile, if the coming clusterEvent is a wildcard one, all definitions
-	// will be moved from unschedulableDefinition pool to activeQ/backoffQ forcibly.
+	// Meanwhile, if the coming clusterEvent is a wildcard one, all regions
+	// will be moved from unschedulableRegion pool to activeQ/backoffQ forcibly.
 	WildCard GVK = "*"
 )
 
 type ClusterEventWithHint struct {
 	Event ClusterEvent
 	// QueueingHintFn is executed for the plugin rejected by this plugin when the above Event happens,
-	// and filters out events to reduce useless retry of Definition's scheduling.
+	// and filters out events to reduce useless retry of Region's scheduling.
 	// It's an optional field. If not set,
-	// the scheduling of Definitions will be always retried with backoff when this Event happens.
+	// the scheduling of Regions will be always retried with backoff when this Event happens.
 	// (the same as Queue)
 	QueueingHintFn QueueingHintFn
 }
 
-// QueueingHintFn returns a hint that signals whether the event can make a Definition,
+// QueueingHintFn returns a hint that signals whether the event can make a Region,
 // which was rejected by this plugin in the past scheduling cycle, schedulable or not.
-// It's called before a Definition gets moved from unschedulableQ to backoffQ or activeQ.
+// It's called before a Region gets moved from unschedulableQ to backoffQ or activeQ.
 // If it returns an error, we'll take the returned QueueingHint as `Queue` at the caller whatever we returned here so that
-// we can prevent the Definition from being stuck in the unschedulable definition pool.
+// we can prevent the Region from being stuck in the unschedulable region pool.
 //
-// - `definition`: the Definition to be enqueued, which is rejected by this plugin in the past.
+// - `region`: the Region to be enqueued, which is rejected by this plugin in the past.
 // - `oldObj` `newObj`: the object involved in that event.
 //   - For example, the given event is "Runner deleted", the `oldObj` will be that deleted Runner.
 //   - `oldObj` is nil if the event is add event.
 //   - `newObj` is nil if the event is delete event.
-type QueueingHintFn func(logger klog.Logger, definition *corev1.Definition, oldObj, newObj interface{}) (QueueingHint, error)
+type QueueingHintFn func(logger klog.Logger, region *corev1.Region, oldObj, newObj interface{}) (QueueingHint, error)
 
 type QueueingHint int
 
 const (
 	// QueueSkip implies that the cluster event has no impact on
-	// scheduling of the definition.
+	// scheduling of the region.
 	QueueSkip QueueingHint = iota
 
-	// Queue implies that the Definition may be schedulable by the event.
+	// Queue implies that the Region may be schedulable by the event.
 	Queue
 )
 
@@ -144,7 +143,7 @@ func (s QueueingHint) String() string {
 }
 
 // ClusterEvent abstracts how a system resource's state gets changed.
-// Resource represents the standard API resources such as Definition, Runner, etc.
+// Resource represents the standard API resources such as Region, Runner, etc.
 // ActionType denotes the specific change such as Add, Update or Delete.
 type ClusterEvent struct {
 	Resource   GVK
@@ -162,7 +161,7 @@ func (ce ClusterEvent) IsWildCard() bool {
 // Contrarily, if the coming event's Resource is "*", the ce.Resource should only be "*".
 //
 // Note: we have a special case here when the coming event is a wildcard event,
-// it will force all Definitions to move to activeQ/backoffQ,
+// it will force all Regions to move to activeQ/backoffQ,
 // but we take it as an unmatched event unless the ce is also a wildcard one.
 func (ce ClusterEvent) Match(event ClusterEvent) bool {
 	return ce.IsWildCard() || (ce.Resource == WildCard || ce.Resource == event.Resource) && ce.ActionType&event.ActionType != 0
@@ -170,9 +169,9 @@ func (ce ClusterEvent) Match(event ClusterEvent) bool {
 
 func UnrollWildCardResource() []ClusterEventWithHint {
 	return []ClusterEventWithHint{
-		{Event: ClusterEvent{Resource: Definition, ActionType: All}},
+		{Event: ClusterEvent{Resource: Region, ActionType: All}},
 		{Event: ClusterEvent{Resource: Runner, ActionType: All}},
-		{Event: ClusterEvent{Resource: DefinitionSchedulingContext, ActionType: All}},
+		{Event: ClusterEvent{Resource: RegionSchedulingContext, ActionType: All}},
 		{Event: ClusterEvent{Resource: ResourceClaim, ActionType: All}},
 		{Event: ClusterEvent{Resource: ResourceClass, ActionType: All}},
 		{Event: ClusterEvent{Resource: ResourceClaimParameters, ActionType: All}},
@@ -180,34 +179,34 @@ func UnrollWildCardResource() []ClusterEventWithHint {
 	}
 }
 
-// QueuedDefinitionInfo is a Definition wrapper with additional information related to
-// the definition's status in the scheduling queue, such as the timestamp when
+// QueuedRegionInfo is a Region wrapper with additional information related to
+// the region's status in the scheduling queue, such as the timestamp when
 // it's added to the queue.
-type QueuedDefinitionInfo struct {
-	*DefinitionInfo
-	// The time definition added to the scheduling queue.
+type QueuedRegionInfo struct {
+	*RegionInfo
+	// The time region added to the scheduling queue.
 	Timestamp time.Time
 	// Number of schedule attempts before successfully scheduled.
 	// It's used to record the # attempts metric.
 	Attempts int
-	// The time when the definition is added to the queue for the first time. The definition may be added
+	// The time when the region is added to the queue for the first time. The region may be added
 	// back to the queue multiple times before it's successfully scheduled.
 	// It shouldn't be updated once initialized. It's used to record the e2e scheduling
-	// latency for a definition.
+	// latency for a region.
 	InitialAttemptTimestamp *time.Time
-	// UnschedulablePlugins records the plugin names that the Definition failed with Unschedulable or UnschedulableAndUnresolvable status.
-	// It's registered only when the Definition is rejected in PreFilter, Filter, Reserve, or Permit (WaitOnPermit).
+	// UnschedulablePlugins records the plugin names that the Region failed with Unschedulable or UnschedulableAndUnresolvable status.
+	// It's registered only when the Region is rejected in PreFilter, Filter, Reserve, or Permit (WaitOnPermit).
 	UnschedulablePlugins sets.Set[string]
-	// PendingPlugins records the plugin names that the Definition failed with Pending status.
+	// PendingPlugins records the plugin names that the Region failed with Pending status.
 	PendingPlugins sets.Set[string]
-	// Whether the Definition is scheduling gated (by PreEnqueuePlugins) or not.
+	// Whether the Region is scheduling gated (by PreEnqueuePlugins) or not.
 	Gated bool
 }
 
-// DeepCopy returns a deep copy of the QueuedDefinitionInfo object.
-func (pqi *QueuedDefinitionInfo) DeepCopy() *QueuedDefinitionInfo {
-	return &QueuedDefinitionInfo{
-		DefinitionInfo:          pqi.DefinitionInfo.DeepCopy(),
+// DeepCopy returns a deep copy of the QueuedRegionInfo object.
+func (pqi *QueuedRegionInfo) DeepCopy() *QueuedRegionInfo {
+	return &QueuedRegionInfo{
+		RegionInfo:              pqi.RegionInfo.DeepCopy(),
 		Timestamp:               pqi.Timestamp,
 		Attempts:                pqi.Attempts,
 		InitialAttemptTimestamp: pqi.InitialAttemptTimestamp,
@@ -216,21 +215,21 @@ func (pqi *QueuedDefinitionInfo) DeepCopy() *QueuedDefinitionInfo {
 	}
 }
 
-// DefinitionInfo is a wrapper to a Definition with additional pre-computed information to
+// RegionInfo is a wrapper to a Region with additional pre-computed information to
 // accelerate processing. This information is typically immutable (e.g., pre-processed
-// inter-definition affinity selectors).
-type DefinitionInfo struct {
-	Definition                 *corev1.Definition
+// inter-region affinity selectors).
+type RegionInfo struct {
+	Region                     *corev1.Region
 	RequiredAffinityTerms      []AffinityTerm
 	RequiredAntiAffinityTerms  []AffinityTerm
 	PreferredAffinityTerms     []WeightedAffinityTerm
 	PreferredAntiAffinityTerms []WeightedAffinityTerm
 }
 
-// DeepCopy returns a deep copy of the DefinitionInfo object.
-func (pi *DefinitionInfo) DeepCopy() *DefinitionInfo {
-	return &DefinitionInfo{
-		Definition:                 pi.Definition.DeepCopy(),
+// DeepCopy returns a deep copy of the RegionInfo object.
+func (pi *RegionInfo) DeepCopy() *RegionInfo {
+	return &RegionInfo{
+		Region:                     pi.Region.DeepCopy(),
 		RequiredAffinityTerms:      pi.RequiredAffinityTerms,
 		RequiredAntiAffinityTerms:  pi.RequiredAntiAffinityTerms,
 		PreferredAffinityTerms:     pi.PreferredAffinityTerms,
@@ -238,23 +237,23 @@ func (pi *DefinitionInfo) DeepCopy() *DefinitionInfo {
 	}
 }
 
-// Update creates a full new DefinitionInfo by default. And only updates the definition when the DefinitionInfo
-// has been instantiated and the passed definition is the exact same one as the original definition.
-func (pi *DefinitionInfo) Update(definition *corev1.Definition) error {
-	if definition != nil && pi.Definition != nil && pi.Definition.UID == definition.UID {
-		// DefinitionInfo includes immutable information, and so it is safe to update the definition in place if it is
-		// the exact same definition
-		pi.Definition = definition
+// Update creates a full new RegionInfo by default. And only updates the region when the RegionInfo
+// has been instantiated and the passed region is the exact same one as the original region.
+func (pi *RegionInfo) Update(region *corev1.Region) error {
+	if region != nil && pi.Region != nil && pi.Region.UID == region.UID {
+		// RegionInfo includes immutable information, and so it is safe to update the region in place if it is
+		// the exact same region
+		pi.Region = region
 		return nil
 	}
 	// Attempt to parse the affinity terms
 	var parseErrs []error
 
-	pi.Definition = definition
+	pi.Region = region
 	return utilerrors.NewAggregate(parseErrs)
 }
 
-// AffinityTerm is a processed version of corev1.DefinitionAffinityTerm.
+// AffinityTerm is a processed version of corev1.RegionAffinityTerm.
 type AffinityTerm struct {
 	Namespaces        sets.Set[string]
 	Selector          labels.Selector
@@ -262,10 +261,10 @@ type AffinityTerm struct {
 	NamespaceSelector labels.Selector
 }
 
-// Matches returns true if the definition matches the label selector and namespaces or namespace selector.
-func (at *AffinityTerm) Matches(definition *corev1.Definition, nsLabels labels.Set) bool {
-	if at.Namespaces.Has(definition.Namespace) || at.NamespaceSelector.Matches(nsLabels) {
-		return at.Selector.Matches(labels.Set(definition.Labels))
+// Matches returns true if the region matches the label selector and namespaces or namespace selector.
+func (at *AffinityTerm) Matches(region *corev1.Region, nsLabels labels.Set) bool {
+	if at.Namespaces.Has(region.Namespace) || at.NamespaceSelector.Matches(nsLabels) {
+		return at.Selector.Matches(labels.Set(region.Labels))
 	}
 	return false
 }
@@ -295,9 +294,9 @@ type Diagnosis struct {
 	PostFilterMsg string
 }
 
-// FitError describes a fit error of a definition.
+// FitError describes a fit error of a region.
 type FitError struct {
-	Definition    *corev1.Definition
+	Region        *corev1.Region
 	NumAllRunners int
 	Diagnosis     Diagnosis
 }
@@ -325,7 +324,7 @@ func (d *Diagnosis) AddPluginStatus(sts *Status) {
 	}
 }
 
-// Error returns detailed information of why the definition failed to fit on each node.
+// Error returns detailed information of why the region failed to fit on each node.
 // A message format is "0/X nodes are available: <PreFilterMsg>. <FilterMsg>. <PostFilterMsg>."
 func (f *FitError) Error() string {
 	reasonMsg := fmt.Sprintf(NoRunnerAvailableMsg+":", f.NumAllRunners)
@@ -397,37 +396,28 @@ func (iss *ImageStateSummary) Snapshot() *ImageStateSummary {
 // RunnerInfo is node level aggregated information.
 type RunnerInfo struct {
 	// Overall node information.
-	node *monv1.Runner
+	node *corev1.Runner
 
-	// Definitions running on the node.
-	Definitions []*DefinitionInfo
+	// Regions running on the node.
+	Regions []*RegionInfo
 
-	// The subset of definitions with affinity.
-	DefinitionsWithAffinity []*DefinitionInfo
+	// The subset of regions with affinity.
+	RegionsWithAffinity []*RegionInfo
 
-	// The subset of definitions with required anti-affinity.
-	DefinitionsWithRequiredAntiAffinity []*DefinitionInfo
+	// The subset of regions with required anti-affinity.
+	RegionsWithRequiredAntiAffinity []*RegionInfo
 
-	// Total requested resources of all definitions on this node. This includes assumed
-	// definitions, which scheduler has sent for binding, but may not be scheduled yet.
+	// Total requested resources of all regions on this node. This includes assumed
+	// regions, which scheduler has sent for binding, but may not be scheduled yet.
 	Requested *Resource
-	// Total requested resources of all definitions on this node with a minimum value
+	// Total requested resources of all regions on this node with a minimum value
 	// applied to each container's CPU and memory requests. This does not reflect
 	// the actual resource requests for this node, but is used to avoid scheduling
-	// many zero-request definitions onto one node.
+	// many zero-request regions onto one node.
 	NonZeroRequested *Resource
 	// We store allocatedResources (which is Runner.Status.Allocatable.*) explicitly
 	// as int64, to avoid conversions and accessing map.
 	Allocatable *Resource
-
-	// ImageStates holds the entry of an image if and only if this image is on the node. The entry can be used for
-	// checking an image's existence and advanced usage (e.g., image locality scheduling policy) based on the image
-	// state information.
-	ImageStates map[string]*ImageStateSummary
-
-	// PVCRefCounts contains a mapping of PVC names to the number of definitions on the node using it.
-	// Keys are in the format "namespace/name".
-	PVCRefCounts map[string]int
 
 	// Whenever RunnerInfo changes, generation is bumped.
 	// This is used to avoid cloning it if the object didn't change.
@@ -447,9 +437,9 @@ type Resource struct {
 	MilliCPU         int64
 	Memory           int64
 	EphemeralStorage int64
-	// We store allowedDefinitionNumber (which is Runner.Status.Allocatable.Definitions().Value())
+	// We store allowedRegionNumber (which is Runner.Status.Allocatable.Regions().Value())
 	// explicitly as int, to avoid conversions and improve performance.
-	AllowedDefinitionNumber int
+	AllowedRegionNumber int
 	// ScalarResources
 	ScalarResources map[corev1.ResourceName]int64
 }
@@ -481,10 +471,10 @@ func (r *Resource) Add(rl corev1.ResourceList) {
 // Clone returns a copy of this resource.
 func (r *Resource) Clone() *Resource {
 	res := &Resource{
-		MilliCPU:                r.MilliCPU,
-		Memory:                  r.Memory,
-		AllowedDefinitionNumber: r.AllowedDefinitionNumber,
-		EphemeralStorage:        r.EphemeralStorage,
+		MilliCPU:            r.MilliCPU,
+		Memory:              r.Memory,
+		AllowedRegionNumber: r.AllowedRegionNumber,
+		EphemeralStorage:    r.EphemeralStorage,
 	}
 	if r.ScalarResources != nil {
 		res.ScalarResources = make(map[corev1.ResourceName]int64, len(r.ScalarResources))
@@ -529,25 +519,23 @@ func (r *Resource) SetMaxResource(rl corev1.ResourceList) {
 }
 
 // NewRunnerInfo returns a ready to use empty RunnerInfo object.
-// If any definitions are given in arguments, their information will be aggregated in
+// If any regions are given in arguments, their information will be aggregated in
 // the returned object.
-func NewRunnerInfo(definitions ...*corev1.Definition) *RunnerInfo {
+func NewRunnerInfo(regions ...*corev1.Region) *RunnerInfo {
 	ni := &RunnerInfo{
 		Requested:        &Resource{},
 		NonZeroRequested: &Resource{},
 		Allocatable:      &Resource{},
 		Generation:       nextGeneration(),
-		ImageStates:      make(map[string]*ImageStateSummary),
-		PVCRefCounts:     make(map[string]int),
 	}
-	for _, definition := range definitions {
-		ni.AddDefinition(definition)
+	for _, region := range regions {
+		ni.AddRegion(region)
 	}
 	return ni
 }
 
 // Runner returns overall information about this node.
-func (n *RunnerInfo) Runner() *monv1.Runner {
+func (n *RunnerInfo) Runner() *corev1.Runner {
 	if n == nil {
 		return nil
 	}
@@ -561,84 +549,72 @@ func (n *RunnerInfo) Snapshot() *RunnerInfo {
 		Requested:        n.Requested.Clone(),
 		NonZeroRequested: n.NonZeroRequested.Clone(),
 		Allocatable:      n.Allocatable.Clone(),
-		ImageStates:      make(map[string]*ImageStateSummary),
-		PVCRefCounts:     make(map[string]int),
 		Generation:       n.Generation,
 	}
-	if len(n.Definitions) > 0 {
-		clone.Definitions = append([]*DefinitionInfo(nil), n.Definitions...)
+	if len(n.Regions) > 0 {
+		clone.Regions = append([]*RegionInfo(nil), n.Regions...)
 	}
-	if len(n.DefinitionsWithAffinity) > 0 {
-		clone.DefinitionsWithAffinity = append([]*DefinitionInfo(nil), n.DefinitionsWithAffinity...)
+	if len(n.RegionsWithAffinity) > 0 {
+		clone.RegionsWithAffinity = append([]*RegionInfo(nil), n.RegionsWithAffinity...)
 	}
-	if len(n.DefinitionsWithRequiredAntiAffinity) > 0 {
-		clone.DefinitionsWithRequiredAntiAffinity = append([]*DefinitionInfo(nil), n.DefinitionsWithRequiredAntiAffinity...)
-	}
-	if len(n.ImageStates) > 0 {
-		state := make(map[string]*ImageStateSummary, len(n.ImageStates))
-		for imageName, imageState := range n.ImageStates {
-			state[imageName] = imageState.Snapshot()
-		}
-		clone.ImageStates = state
-	}
-	for key, value := range n.PVCRefCounts {
-		clone.PVCRefCounts[key] = value
+	if len(n.RegionsWithRequiredAntiAffinity) > 0 {
+		clone.RegionsWithRequiredAntiAffinity = append([]*RegionInfo(nil), n.RegionsWithRequiredAntiAffinity...)
 	}
 	return clone
 }
 
 // String returns representation of human readable format of this RunnerInfo.
 func (n *RunnerInfo) String() string {
-	definitionKeys := make([]string, len(n.Definitions))
-	for i, p := range n.Definitions {
-		definitionKeys[i] = p.Definition.Name
+	regionKeys := make([]string, len(n.Regions))
+	for i, p := range n.Regions {
+		regionKeys[i] = p.Region.Name
 	}
-	return fmt.Sprintf("&RunnerInfo{Definitions:%v, RequestedResource:%#v, NonZeroRequest: %#v, AllocatableResource:%#v}",
-		definitionKeys, n.Requested, n.NonZeroRequested, n.Allocatable)
+	return fmt.Sprintf("&RunnerInfo{Regions:%v, RequestedResource:%#v, NonZeroRequest: %#v, AllocatableResource:%#v}",
+		regionKeys, n.Requested, n.NonZeroRequested, n.Allocatable)
 }
 
-// AddDefinitionInfo adds definition information to this RunnerInfo.
-// Consider using this instead of AddDefinition if a DefinitionInfo is already computed.
-func (n *RunnerInfo) AddDefinitionInfo(definitionInfo *DefinitionInfo) {
-	n.Definitions = append(n.Definitions, definitionInfo)
-	if definitionWithAffinity(definitionInfo.Definition) {
-		n.DefinitionsWithAffinity = append(n.DefinitionsWithAffinity, definitionInfo)
+// AddRegionInfo adds region information to this RunnerInfo.
+// Consider using this instead of AddRegion if a RegionInfo is already computed.
+func (n *RunnerInfo) AddRegionInfo(regionInfo *RegionInfo) {
+	n.Regions = append(n.Regions, regionInfo)
+	if regionWithAffinity(regionInfo.Region) {
+		n.RegionsWithAffinity = append(n.RegionsWithAffinity, regionInfo)
 	}
-	if definitionWithRequiredAntiAffinity(definitionInfo.Definition) {
-		n.DefinitionsWithRequiredAntiAffinity = append(n.DefinitionsWithRequiredAntiAffinity, definitionInfo)
+	if regionWithRequiredAntiAffinity(regionInfo.Region) {
+		n.RegionsWithRequiredAntiAffinity = append(n.RegionsWithRequiredAntiAffinity, regionInfo)
 	}
-	n.update(definitionInfo.Definition, 1)
+	n.update(regionInfo.Region, 1)
 }
 
-// NewDefinitionInfo returns a new DefinitionInfo.
-func NewDefinitionInfo(definition *corev1.Definition) (*DefinitionInfo, error) {
-	pInfo := &DefinitionInfo{}
-	err := pInfo.Update(definition)
+// NewRegionInfo returns a new RegionInfo.
+func NewRegionInfo(region *corev1.Region) (*RegionInfo, error) {
+	pInfo := &RegionInfo{}
+	err := pInfo.Update(region)
 	return pInfo, err
 }
 
-// AddDefinition is a wrapper around AddDefinitionInfo.
-func (n *RunnerInfo) AddDefinition(definition *corev1.Definition) {
+// AddRegion is a wrapper around AddRegionInfo.
+func (n *RunnerInfo) AddRegion(region *corev1.Region) {
 	// ignore this err since apiserver doesn't properly validate affinity terms
 	// and we can't fix the validation for backwards compatibility.
-	definitionInfo, _ := NewDefinitionInfo(definition)
-	n.AddDefinitionInfo(definitionInfo)
+	regionInfo, _ := NewRegionInfo(region)
+	n.AddRegionInfo(regionInfo)
 }
 
-func definitionWithAffinity(p *corev1.Definition) bool {
+func regionWithAffinity(p *corev1.Region) bool {
 	return true
 }
 
-func definitionWithRequiredAntiAffinity(p *corev1.Definition) bool {
+func regionWithRequiredAntiAffinity(p *corev1.Region) bool {
 	return true
 }
 
-func removeFromSlice(logger klog.Logger, s []*DefinitionInfo, k string) ([]*DefinitionInfo, bool) {
+func removeFromSlice(logger klog.Logger, s []*RegionInfo, k string) ([]*RegionInfo, bool) {
 	var removed bool
 	for i := range s {
-		tmpKey, err := GetDefinitionKey(s[i].Definition)
+		tmpKey, err := GetRegionKey(s[i].Region)
 		if err != nil {
-			logger.Error(err, "Cannot get definition key", "definition", klog.KObj(s[i].Definition))
+			logger.Error(err, "Cannot get region key", "region", klog.KObj(s[i].Region))
 			continue
 		}
 		if k == tmpKey {
@@ -656,31 +632,31 @@ func removeFromSlice(logger klog.Logger, s []*DefinitionInfo, k string) ([]*Defi
 	return s, removed
 }
 
-// RemoveDefinition subtracts definition information from this RunnerInfo.
-func (n *RunnerInfo) RemoveDefinition(logger klog.Logger, definition *corev1.Definition) error {
-	k, err := GetDefinitionKey(definition)
+// RemoveRegion subtracts region information from this RunnerInfo.
+func (n *RunnerInfo) RemoveRegion(logger klog.Logger, region *corev1.Region) error {
+	k, err := GetRegionKey(region)
 	if err != nil {
 		return err
 	}
-	if definitionWithAffinity(definition) {
-		n.DefinitionsWithAffinity, _ = removeFromSlice(logger, n.DefinitionsWithAffinity, k)
+	if regionWithAffinity(region) {
+		n.RegionsWithAffinity, _ = removeFromSlice(logger, n.RegionsWithAffinity, k)
 	}
-	if definitionWithRequiredAntiAffinity(definition) {
-		n.DefinitionsWithRequiredAntiAffinity, _ = removeFromSlice(logger, n.DefinitionsWithRequiredAntiAffinity, k)
+	if regionWithRequiredAntiAffinity(region) {
+		n.RegionsWithRequiredAntiAffinity, _ = removeFromSlice(logger, n.RegionsWithRequiredAntiAffinity, k)
 	}
 
 	var removed bool
-	if n.Definitions, removed = removeFromSlice(logger, n.Definitions, k); removed {
-		n.update(definition, -1)
+	if n.Regions, removed = removeFromSlice(logger, n.Regions, k); removed {
+		n.update(region, -1)
 		return nil
 	}
-	return fmt.Errorf("no corresponding definition %s in definitions of node %s", definition.Name, n.node.Name)
+	return fmt.Errorf("no corresponding region %s in regions of node %s", region.Name, n.node.Name)
 }
 
-// update node info based on the definition and sign.
-// The sign will be set to `+1` when AddDefinition and to `-1` when RemoveDefinition.
-func (n *RunnerInfo) update(definition *corev1.Definition, sign int64) {
-	res, non0CPU, non0Mem := calculateResource(definition)
+// update node info based on the region and sign.
+// The sign will be set to `+1` when AddRegion and to `-1` when RemoveRegion.
+func (n *RunnerInfo) update(region *corev1.Region, sign int64) {
+	res, non0CPU, non0Mem := calculateResource(region)
 	n.Requested.MilliCPU += sign * res.MilliCPU
 	n.Requested.Memory += sign * res.Memory
 	n.Requested.EphemeralStorage += sign * res.EphemeralStorage
@@ -696,14 +672,14 @@ func (n *RunnerInfo) update(definition *corev1.Definition, sign int64) {
 	n.Generation = nextGeneration()
 }
 
-func calculateResource(definition *corev1.Definition) (Resource, int64, int64) {
+func calculateResource(region *corev1.Region) (Resource, int64, int64) {
 	var non0CPU, non0Mem int64
 	var res Resource
 	return res, non0CPU, non0Mem
 }
 
 // SetRunner sets the overall node information.
-func (n *RunnerInfo) SetRunner(node *monv1.Runner) {
+func (n *RunnerInfo) SetRunner(node *corev1.Runner) {
 	n.node = node
 	n.Generation = nextGeneration()
 }
@@ -714,11 +690,11 @@ func (n *RunnerInfo) RemoveRunner() {
 	n.Generation = nextGeneration()
 }
 
-// GetDefinitionKey returns the string key of a definition.
-func GetDefinitionKey(definition *corev1.Definition) (string, error) {
-	uid := string(definition.UID)
+// GetRegionKey returns the string key of a region.
+func GetRegionKey(region *corev1.Region) (string, error) {
+	uid := string(region.UID)
 	if len(uid) == 0 {
-		return "", errors.New("cannot get cache key for definition with empty UID")
+		return "", errors.New("cannot get cache key for region with empty UID")
 	}
 	return uid, nil
 }

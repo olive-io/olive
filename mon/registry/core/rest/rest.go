@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package rest
 
 import (
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -33,12 +34,21 @@ import (
 	definitionstore "github.com/olive-io/olive/mon/registry/core"
 	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace"
 	processstore "github.com/olive-io/olive/mon/registry/core/process"
+	regionstore "github.com/olive-io/olive/mon/registry/core/region"
+	runnerstore "github.com/olive-io/olive/mon/registry/core/runner"
 )
 
-type CoreRESTStorageProvider struct{}
+type CoreRESTStorageProvider struct {
+	v3cli  *clientv3.Client
+	stopCh <-chan struct{}
+}
 
-func NewRESTStorageProvider() (*CoreRESTStorageProvider, error) {
-	provider := &CoreRESTStorageProvider{}
+func NewRESTStorageProvider(v3cli *clientv3.Client, stopCh <-chan struct{}) (*CoreRESTStorageProvider, error) {
+	provider := &CoreRESTStorageProvider{
+		v3cli:  v3cli,
+		stopCh: stopCh,
+	}
+
 	return provider, nil
 }
 
@@ -56,6 +66,26 @@ func (p *CoreRESTStorageProvider) NewRESTStorage(apiResourceConfigSource servers
 
 func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
+
+	// runner
+	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+		runnersStorage, runnersStatusStorage, err := runnerstore.NewREST(p.v3cli, restOptionsGetter, p.stopCh)
+		if err != nil {
+			return storage, err
+		}
+		storage[resource] = runnersStorage
+		storage[resource+"/status"] = runnersStatusStorage
+	}
+
+	// region
+	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+		regionsStorage, regionsStatusStorage, err := regionstore.NewREST(restOptionsGetter)
+		if err != nil {
+			return storage, err
+		}
+		storage[resource] = regionsStorage
+		storage[resource+"/status"] = regionsStatusStorage
+	}
 
 	// namespace
 	if resource := "namespaces"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {

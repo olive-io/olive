@@ -61,6 +61,12 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		return err
 	}
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&EtcdCluster{},
+		&Binding{},
+		&Runner{},
+		&RunnerList{},
+		&Region{},
+		&RegionList{},
 		&Namespace{},
 		&NamespaceList{},
 		&Definition{},

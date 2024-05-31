@@ -1,17 +1,22 @@
 /*
-Copyright 2020 The Kubernetes Authors.
+Copyright 2024 The olive Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package v1
@@ -28,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 )
 
 // TestCompatibility verifies that the types in extender/v1 can be successfully encoded to json and decoded back, even when lowercased,
@@ -43,32 +47,32 @@ func TestCompatibility(t *testing.T) {
 		{
 			emptyObj: &ExtenderPreemptionResult{},
 			obj: &ExtenderPreemptionResult{
-				RunnerNameToMetaVictims: map[string]*MetaVictims{"foo": {Definitions: []*MetaDefinition{{UID: "myuid"}}, NumPDBViolations: 1}},
+				RunnerNameToMetaVictims: map[string]*MetaVictims{"foo": {Regions: []*MetaRegion{{UID: "myuid"}}, NumPDBViolations: 1}},
 			},
-			expectJSON: `{"RunnerNameToMetaVictims":{"foo":{"Definitions":[{"UID":"myuid"}],"NumPDBViolations":1}}}`,
+			expectJSON: `{"RunnerNameToMetaVictims":{"foo":{"Regions":[{"UID":"myuid"}],"NumPDBViolations":1}}}`,
 		},
 		{
 			emptyObj: &ExtenderPreemptionArgs{},
 			obj: &ExtenderPreemptionArgs{
-				Definition:              &corev1.Definition{ObjectMeta: metav1.ObjectMeta{Name: "podname"}},
-				RunnerNameToVictims:     map[string]*Victims{"foo": {Definitions: []*corev1.Definition{{ObjectMeta: metav1.ObjectMeta{Name: "podname"}}}, NumPDBViolations: 1}},
-				RunnerNameToMetaVictims: map[string]*MetaVictims{"foo": {Definitions: []*MetaDefinition{{UID: "myuid"}}, NumPDBViolations: 1}},
+				Region:                  &corev1.Region{ObjectMeta: metav1.ObjectMeta{Name: "podname"}},
+				RunnerNameToVictims:     map[string]*Victims{"foo": {Regions: []*corev1.Region{{ObjectMeta: metav1.ObjectMeta{Name: "podname"}}}, NumPDBViolations: 1}},
+				RunnerNameToMetaVictims: map[string]*MetaVictims{"foo": {Regions: []*MetaRegion{{UID: "myuid"}}, NumPDBViolations: 1}},
 			},
-			expectJSON: `{"Definition":{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}},"RunnerNameToVictims":{"foo":{"Definitions":[{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}}],"NumPDBViolations":1}},"RunnerNameToMetaVictims":{"foo":{"Definitions":[{"UID":"myuid"}],"NumPDBViolations":1}}}`,
+			expectJSON: `{"Region":{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}},"RunnerNameToVictims":{"foo":{"Regions":[{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}}],"NumPDBViolations":1}},"RunnerNameToMetaVictims":{"foo":{"Regions":[{"UID":"myuid"}],"NumPDBViolations":1}}}`,
 		},
 		{
 			emptyObj: &ExtenderArgs{},
 			obj: &ExtenderArgs{
-				Definition:  &corev1.Definition{ObjectMeta: metav1.ObjectMeta{Name: "podname"}},
-				Runners:     &monv1.RunnerList{Items: []monv1.Runner{{ObjectMeta: metav1.ObjectMeta{Name: "nodename"}}}},
+				Region:      &corev1.Region{ObjectMeta: metav1.ObjectMeta{Name: "podname"}},
+				Runners:     &corev1.RunnerList{Items: []corev1.Runner{{ObjectMeta: metav1.ObjectMeta{Name: "nodename"}}}},
 				RunnerNames: &[]string{"node1"},
 			},
-			expectJSON: `{"Definition":{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}},"Runners":{"metadata":{},"items":[{"metadata":{"name":"nodename","creationTimestamp":null},"spec":{},"status":{"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}]},"RunnerNames":["node1"]}`,
+			expectJSON: `{"Region":{"metadata":{"name":"podname","creationTimestamp":null},"spec":{"containers":null},"status":{}},"Runners":{"metadata":{},"items":[{"metadata":{"name":"nodename","creationTimestamp":null},"spec":{},"status":{"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}]},"RunnerNames":["node1"]}`,
 		},
 		{
 			emptyObj: &ExtenderFilterResult{},
 			obj: &ExtenderFilterResult{
-				Runners:                      &monv1.RunnerList{Items: []monv1.Runner{{ObjectMeta: metav1.ObjectMeta{Name: "nodename"}}}},
+				Runners:                      &corev1.RunnerList{Items: []corev1.Runner{{ObjectMeta: metav1.ObjectMeta{Name: "nodename"}}}},
 				RunnerNames:                  &[]string{"node1"},
 				FailedRunners:                FailedRunnersMap{"foo": "bar"},
 				FailedAndUnresolvableRunners: FailedRunnersMap{"baz": "qux"},
@@ -79,12 +83,12 @@ func TestCompatibility(t *testing.T) {
 		{
 			emptyObj: &ExtenderBindingArgs{},
 			obj: &ExtenderBindingArgs{
-				DefinitionName:      "mypodname",
-				DefinitionNamespace: "mypodnamespace",
-				DefinitionUID:       types.UID("mypoduid"),
-				Runner:              "mynode",
+				RegionName:      "mypodname",
+				RegionNamespace: "mypodnamespace",
+				RegionUID:       types.UID("mypoduid"),
+				Runner:          "mynode",
 			},
-			expectJSON: `{"DefinitionName":"mypodname","DefinitionNamespace":"mypodnamespace","DefinitionUID":"mypoduid","Runner":"mynode"}`,
+			expectJSON: `{"RegionName":"mypodname","RegionNamespace":"mypodnamespace","RegionUID":"mypoduid","Runner":"mynode"}`,
 		},
 		{
 			emptyObj:   &ExtenderBindingResult{},

@@ -31,7 +31,6 @@ import (
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	api "github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/pkg/printers"
 )
 
@@ -110,7 +109,7 @@ func AddHandlers(h printers.PrintHandler) {
 	_ = h.TableHandler(processColumnDefinitions, printProcessList)
 }
 
-func printRunner(obj *monv1.Runner, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printRunner(obj *corev1.Runner, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	row := metav1.TableRow{
 		Object: krt.RawExtension{Object: obj},
 	}
@@ -120,7 +119,7 @@ func printRunner(obj *monv1.Runner, options printers.GenerateOptions) ([]metav1.
 	return []metav1.TableRow{row}, nil
 }
 
-func printRunnerList(list *monv1.RunnerList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printRunnerList(list *corev1.RunnerList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	rows := make([]metav1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
 		r, err := printRunner(&list.Items[i], options)
@@ -132,7 +131,7 @@ func printRunnerList(list *monv1.RunnerList, options printers.GenerateOptions) (
 	return rows, nil
 }
 
-func printRegion(obj *monv1.Region, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printRegion(obj *corev1.Region, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	row := metav1.TableRow{
 		Object: krt.RawExtension{Object: obj},
 	}
@@ -142,7 +141,7 @@ func printRegion(obj *monv1.Region, options printers.GenerateOptions) ([]metav1.
 	return []metav1.TableRow{row}, nil
 }
 
-func printRegionList(list *monv1.RegionList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printRegionList(list *corev1.RegionList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	rows := make([]metav1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
 		r, err := printRegion(&list.Items[i], options)

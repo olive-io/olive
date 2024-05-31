@@ -28,8 +28,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	corelisters "github.com/olive-io/olive/client/generated/listers/core/v1"
-	monlisters "github.com/olive-io/olive/client/generated/listers/mon/v1"
+	corelisters "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	internalcache "github.com/olive-io/olive/mon/scheduler/internal/cache"
 	internalqueue "github.com/olive-io/olive/mon/scheduler/internal/queue"
 )
@@ -42,21 +41,21 @@ type CacheDebugger struct {
 
 // New creates a CacheDebugger.
 func New(
-	runnerLister monlisters.RunnerLister,
-	definitionLister corelisters.DefinitionLister,
+	runnerLister corelisters.RunnerLister,
+	regionLister corelisters.RegionLister,
 	cache internalcache.Cache,
-	definitionQueue internalqueue.SchedulingQueue,
+	regionQueue internalqueue.SchedulingQueue,
 ) *CacheDebugger {
 	return &CacheDebugger{
 		Comparer: CacheComparer{
-			RunnerLister:     runnerLister,
-			DefinitionLister: definitionLister,
-			Cache:            cache,
-			DefinitionQueue:  definitionQueue,
+			RunnerLister: runnerLister,
+			RegionLister: regionLister,
+			Cache:        cache,
+			RegionQueue:  regionQueue,
 		},
 		Dumper: CacheDumper{
-			cache:           cache,
-			definitionQueue: definitionQueue,
+			cache:       cache,
+			regionQueue: regionQueue,
 		},
 	}
 }

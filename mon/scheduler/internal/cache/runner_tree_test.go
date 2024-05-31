@@ -31,10 +31,9 @@ import (
 	"k8s.io/klog/v2/ktesting"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 )
 
-var allRunners = []*monv1.Runner{
+var allRunners = []*corev1.Runner{
 	// Runner 0: a runner without any region-zone label
 	{
 		ObjectMeta: metav1.ObjectMeta{
@@ -167,7 +166,7 @@ func verifyRunnerTree(t *testing.T, nt *runnerTree, expectedTree map[string][]st
 func TestRunnerTree_AddRunner(t *testing.T) {
 	tests := []struct {
 		name         string
-		runnersToAdd []*monv1.Runner
+		runnersToAdd []*corev1.Runner
 		expectedTree map[string][]string
 	}{
 		{
@@ -177,7 +176,7 @@ func TestRunnerTree_AddRunner(t *testing.T) {
 		},
 		{
 			name:         "same runner specified twice",
-			runnersToAdd: []*monv1.Runner{allRunners[0], allRunners[0]},
+			runnersToAdd: []*corev1.Runner{allRunners[0], allRunners[0]},
 			expectedTree: map[string][]string{"": {"runner-0"}},
 		},
 		{
@@ -227,8 +226,8 @@ func TestRunnerTree_AddRunner(t *testing.T) {
 func TestRunnerTree_RemoveRunner(t *testing.T) {
 	tests := []struct {
 		name            string
-		existingRunners []*monv1.Runner
-		runnersToRemove []*monv1.Runner
+		existingRunners []*corev1.Runner
+		runnersToRemove []*corev1.Runner
 		expectedTree    map[string][]string
 		expectError     bool
 	}{
@@ -288,14 +287,14 @@ func TestRunnerTree_RemoveRunner(t *testing.T) {
 func TestRunnerTree_UpdateRunner(t *testing.T) {
 	tests := []struct {
 		name            string
-		existingRunners []*monv1.Runner
-		runnerToUpdate  *monv1.Runner
+		existingRunners []*corev1.Runner
+		runnerToUpdate  *corev1.Runner
 		expectedTree    map[string][]string
 	}{
 		{
 			name:            "update a runner without label",
 			existingRunners: allRunners[:7],
-			runnerToUpdate: &monv1.Runner{
+			runnerToUpdate: &corev1.Runner{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "runner-0",
 					Labels: map[string]string{
@@ -315,7 +314,7 @@ func TestRunnerTree_UpdateRunner(t *testing.T) {
 		{
 			name:            "update the only existing runner",
 			existingRunners: allRunners[:1],
-			runnerToUpdate: &monv1.Runner{
+			runnerToUpdate: &corev1.Runner{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "runner-0",
 					Labels: map[string]string{
@@ -331,7 +330,7 @@ func TestRunnerTree_UpdateRunner(t *testing.T) {
 		{
 			name:            "update non-existing runner",
 			existingRunners: allRunners[:1],
-			runnerToUpdate: &monv1.Runner{
+			runnerToUpdate: &corev1.Runner{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "runner-new",
 					Labels: map[string]string{
@@ -351,7 +350,7 @@ func TestRunnerTree_UpdateRunner(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger, _ := ktesting.NewTestContext(t)
 			nt := newRunnerTree(logger, test.existingRunners)
-			var oldRunner *monv1.Runner
+			var oldRunner *corev1.Runner
 			for _, n := range allRunners {
 				if n.Name == test.runnerToUpdate.Name {
 					oldRunner = n
@@ -359,7 +358,7 @@ func TestRunnerTree_UpdateRunner(t *testing.T) {
 				}
 			}
 			if oldRunner == nil {
-				oldRunner = &monv1.Runner{ObjectMeta: metav1.ObjectMeta{Name: "nonexisting-runner"}}
+				oldRunner = &corev1.Runner{ObjectMeta: metav1.ObjectMeta{Name: "nonexisting-runner"}}
 			}
 			nt.updateRunner(logger, oldRunner, test.runnerToUpdate)
 			verifyRunnerTree(t, nt, test.expectedTree)
@@ -370,7 +369,7 @@ func TestRunnerTree_UpdateRunner(t *testing.T) {
 func TestRunnerTree_List(t *testing.T) {
 	tests := []struct {
 		name           string
-		runnersToAdd   []*monv1.Runner
+		runnersToAdd   []*corev1.Runner
 		expectedOutput []string
 	}{
 		{
@@ -424,8 +423,8 @@ func TestRunnerTree_List_Exhausted(t *testing.T) {
 func TestRunnerTreeMultiOperations(t *testing.T) {
 	tests := []struct {
 		name            string
-		runnersToAdd    []*monv1.Runner
-		runnersToRemove []*monv1.Runner
+		runnersToAdd    []*corev1.Runner
+		runnersToRemove []*corev1.Runner
 		operations      []string
 		expectedOutput  []string
 	}{

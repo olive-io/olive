@@ -44,9 +44,9 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/olive-io/olive/apis"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	ort "github.com/olive-io/olive/pkg/runtime"
@@ -76,7 +76,7 @@ type Runner struct {
 
 	// rw locker for local *monv1.Runner
 	prMu sync.RWMutex
-	pr   *monv1.Runner
+	pr   *corev1.Runner
 }
 
 func NewRunner(cfg *Config) (*Runner, error) {

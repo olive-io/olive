@@ -88,18 +88,18 @@ func (c *CycleState) Clone() *CycleState {
 	if c == nil {
 		return nil
 	}
-	copy := NewCycleState()
+	cp := NewCycleState()
 	// Safe copy storage in case of overwriting.
 	c.storage.Range(func(k, v interface{}) bool {
-		copy.storage.Store(k, v.(StateData).Clone())
+		cp.storage.Store(k, v.(StateData).Clone())
 		return true
 	})
 	// The below are not mutated, so we don't have to safe copy.
-	copy.recordPluginMetrics = c.recordPluginMetrics
-	copy.SkipFilterPlugins = c.SkipFilterPlugins
-	copy.SkipScorePlugins = c.SkipScorePlugins
+	cp.recordPluginMetrics = c.recordPluginMetrics
+	cp.SkipFilterPlugins = c.SkipFilterPlugins
+	cp.SkipScorePlugins = c.SkipScorePlugins
 
-	return copy
+	return cp
 }
 
 // Read retrieves data with the given "key" from CycleState. If the key is not

@@ -29,21 +29,21 @@ var (
 	ErrorResult         = "error"
 )
 
-// DefinitionScheduled can records a successful scheduling attempt and the duration
+// RegionScheduled can records a successful scheduling attempt and the duration
 // since `start`.
-func DefinitionScheduled(profile string, duration float64) {
+func RegionScheduled(profile string, duration float64) {
 	observeScheduleAttemptAndLatency(ScheduledResult, profile, duration)
 }
 
-// DefinitionUnschedulable can records a scheduling attempt for an unschedulable pod
+// RegionUnschedulable can records a scheduling attempt for an unschedulable pod
 // and the duration since `start`.
-func DefinitionUnschedulable(profile string, duration float64) {
+func RegionUnschedulable(profile string, duration float64) {
 	observeScheduleAttemptAndLatency(UnschedulableResult, profile, duration)
 }
 
-// DefinitionScheduleError can records a scheduling attempt that had an error and the
+// RegionScheduleError can records a scheduling attempt that had an error and the
 // duration since `start`.
-func DefinitionScheduleError(profile string, duration float64) {
+func RegionScheduleError(profile string, duration float64) {
 	observeScheduleAttemptAndLatency(ErrorResult, profile, duration)
 }
 

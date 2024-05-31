@@ -41,7 +41,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -67,7 +67,7 @@ type Controller struct {
 	reqId *idutil.Generator
 	reqW  wait.Wait
 
-	pr *monv1.Runner
+	pr *corev1.Runner
 
 	rmu     sync.RWMutex
 	regions map[uint64]*Region
@@ -76,7 +76,7 @@ type Controller struct {
 	done     chan struct{}
 }
 
-func NewController(ctx context.Context, cfg Config, be backend.IBackend, discovery dsy.IDiscovery, pr *monv1.Runner) (*Controller, error) {
+func NewController(ctx context.Context, cfg Config, be backend.IBackend, discovery dsy.IDiscovery, pr *corev1.Runner) (*Controller, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = zap.NewExample()
 	}

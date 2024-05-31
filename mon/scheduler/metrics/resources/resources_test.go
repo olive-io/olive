@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // Package resources provides a metrics collector that reports the
-// resource consumption (requests and limits) of the definitions in the cluster
+// resource consumption (requests and limits) of the regions in the cluster
 // as the scheduler and olive-runner would interpret it.
 package resources
 
@@ -36,27 +36,26 @@ import (
 	"k8s.io/component-base/metrics/testutil"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	corelisters "github.com/olive-io/olive/client/generated/listers/core/v1"
 )
 
-type fakeDefinitionLister struct {
-	definitions []*corev1.Definition
+type fakeRegionLister struct {
+	regions []*corev1.Region
 }
 
-func (l *fakeDefinitionLister) List(selector labels.Selector) (ret []*corev1.Definition, err error) {
-	return l.definitions, nil
+func (l *fakeRegionLister) List(selector labels.Selector) (ret []*corev1.Region, err error) {
+	return l.regions, nil
 }
 
-func (l *fakeDefinitionLister) Definitions(namespace string) corelisters.DefinitionNamespaceLister {
-	panic("not implemented")
+func (l *fakeRegionLister) Get(name string) (*corev1.Region, error) {
+	panic("implement me")
 }
 
-func Test_definitionResourceCollector_Handler(t *testing.T) {
-	h := Handler(&fakeDefinitionLister{definitions: []*corev1.Definition{
+func Test_regionResourceCollector_Handler(t *testing.T) {
+	h := Handler(&fakeRegionLister{regions: []*corev1.Region{
 		{
 			ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-			Spec:       corev1.DefinitionSpec{},
-			Status:     corev1.DefinitionStatus{},
+			Spec:       corev1.RegionSpec{},
+			Status:     corev1.RegionStatus{},
 		},
 	}})
 
@@ -67,14 +66,14 @@ func Test_definitionResourceCollector_Handler(t *testing.T) {
 	}
 	h.ServeHTTP(r, req)
 
-	expected := `# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-# TYPE olive_definition_resource_limit gauge
-olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 6
-olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2.68435456e+09
-# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-# TYPE olive_definition_resource_request gauge
-olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
-olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 3
+	expected := `# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+# TYPE olive_region_resource_limit gauge
+olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 6
+olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2.68435456e+09
+# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+# TYPE olive_region_resource_request gauge
+olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
+olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 3
 `
 	out := r.Body.String()
 	if expected != out {
@@ -82,17 +81,17 @@ olive_definition_resource_request{namespace="test",node="node-one",definition="f
 	}
 }
 
-func Test_definitionResourceCollector_CollectWithStability(t *testing.T) {
+func Test_regionResourceCollector_CollectWithStability(t *testing.T) {
 	tests := []struct {
 		name string
 
-		definitions []*corev1.Definition
-		expected    string
+		regions  []*corev1.Region
+		expected string
 	}{
 		{},
 		{
 			name: "no containers",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
 				},
@@ -100,202 +99,202 @@ func Test_definitionResourceCollector_CollectWithStability(t *testing.T) {
 		},
 		{
 			name: "no resources",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 		},
 		{
 			name: "request only",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1
 				`,
 		},
 		{
 			name: "limits only",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `      
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1
 				`,
 		},
 		{
-			name: "terminal definitions are excluded",
-			definitions: []*corev1.Definition{
+			name: "terminal regions are excluded",
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo-unscheduled-succeeded"},
-					Spec:       corev1.DefinitionSpec{},
-					// until node name is set, phase is ignored
-					Status: corev1.DefinitionStatus{Phase: corev1.DefSucceeded},
+					Spec:       corev1.RegionSpec{},
+					// until runner name is set, phase is ignored
+					Status: corev1.RegionStatus{Phase: corev1.RegionSucceeded},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo-succeeded"},
-					Spec:       corev1.DefinitionSpec{},
-					Status:     corev1.DefinitionStatus{Phase: corev1.DefSucceeded},
+					Spec:       corev1.RegionSpec{},
+					Status:     corev1.RegionStatus{Phase: corev1.RegionSucceeded},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo-failed"},
-					Spec:       corev1.DefinitionSpec{},
-					Status:     corev1.DefinitionStatus{Phase: corev1.DefFailed},
+					Spec:       corev1.RegionSpec{},
+					Status:     corev1.RegionStatus{Phase: corev1.RegionFailed},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo-pending"},
-					Spec:       corev1.DefinitionSpec{},
-					Status:     corev1.DefinitionStatus{},
+					Spec:       corev1.RegionSpec{},
+					Status:     corev1.RegionStatus{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="",definition="foo-unscheduled-succeeded",priority="",resource="cpu",scheduler="",unit="cores"} 1
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo-pending",priority="",resource="cpu",scheduler="",unit="cores"} 1
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo-unknown",priority="",resource="cpu",scheduler="",unit="cores"} 1
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="",region="foo-unscheduled-succeeded",priority="",resource="cpu",scheduler="",unit="cores"} 1
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo-pending",priority="",resource="cpu",scheduler="",unit="cores"} 1
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo-unknown",priority="",resource="cpu",scheduler="",unit="cores"} 1
 				`,
 		},
 		{
 			name: "zero resource should be excluded",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: ``,
 		},
 		{
 			name: "optional field labels",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="0",resource="cpu",scheduler="default-scheduler",unit="cores"} 1
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="0",resource="cpu",scheduler="default-scheduler",unit="cores"} 1
 				`,
 		},
 		{
 			name: "init containers and regular containers when initialized",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
-					Status:     corev1.DefinitionStatus{},
+					Spec:       corev1.RegionSpec{},
+					Status:     corev1.RegionStatus{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 6
-				olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2e+09
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 3
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 6
+				olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2e+09
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 3
 				`,
 		},
 		{
 			name: "init containers and regular containers when initializing",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
-					Status:     corev1.DefinitionStatus{},
+					Spec:       corev1.RegionSpec{},
+					Status:     corev1.RegionStatus{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 6
-				olive_definition_resource_limit{namespace="test",node="node-one",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2e+09
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
-				olive_definition_resource_request{namespace="test",node="node-one",definition="foo",priority="",resource="custom",scheduler="",unit=""} 3
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 6
+				olive_region_resource_limit{namespace="test",runner="runner-one",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2e+09
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2
+				olive_region_resource_request{namespace="test",runner="runner-one",region="foo",priority="",resource="custom",scheduler="",unit=""} 3
 				`,
 		},
 		{
 			name: "aggregate container requests and limits",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `            
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 3.25
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 4e+09
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1.5
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 1e+09
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 3.25
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 4e+09
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 1.5
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 1e+09
 				`,
 		},
 		{
 			name: "overhead added to requests and limits",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="custom",scheduler="",unit=""} 6.5
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2.75e+09
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2.25
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="custom",scheduler="",unit=""} 3.5
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="memory",scheduler="",unit="bytes"} 7.5e+08
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="custom",scheduler="",unit=""} 6.5
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 2.75e+09
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="cpu",scheduler="",unit="cores"} 2.25
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="custom",scheduler="",unit=""} 3.5
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="memory",scheduler="",unit="bytes"} 7.5e+08
 				`,
 		},
 		{
 			name: "units for standard resources",
-			definitions: []*corev1.Definition{
+			regions: []*corev1.Region{
 				{
 					ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "foo"},
-					Spec:       corev1.DefinitionSpec{},
+					Spec:       corev1.RegionSpec{},
 				},
 			},
 			expected: `
-				# HELP olive_definition_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_limit gauge
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="attachable-volumes-",scheduler="",unit="integer"} 4
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="attachable-volumes-aws",scheduler="",unit="integer"} 3
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="hugepages-",scheduler="",unit="bytes"} 2
-				olive_definition_resource_limit{namespace="test",node="",definition="foo",priority="",resource="hugepages-x",scheduler="",unit="bytes"} 1
-				# HELP olive_definition_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by definition. This shows the resource usage the scheduler and olivelet expect per definition for resources along with the unit for the resource if any.
-				# TYPE olive_definition_resource_request gauge
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="ephemeral-storage",scheduler="",unit="bytes"} 6
-				olive_definition_resource_request{namespace="test",node="",definition="foo",priority="",resource="storage",scheduler="",unit="bytes"} 5
+				# HELP olive_region_resource_limit [STABLE] Resources limit for workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_limit gauge
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="attachable-volumes-",scheduler="",unit="integer"} 4
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="attachable-volumes-aws",scheduler="",unit="integer"} 3
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="hugepages-",scheduler="",unit="bytes"} 2
+				olive_region_resource_limit{namespace="test",runner="",region="foo",priority="",resource="hugepages-x",scheduler="",unit="bytes"} 1
+				# HELP olive_region_resource_request [STABLE] Resources requested by workloads on the cluster, broken down by region. This shows the resource usage the scheduler and olivelet expect per region for resources along with the unit for the resource if any.
+				# TYPE olive_region_resource_request gauge
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="ephemeral-storage",scheduler="",unit="bytes"} 6
+				olive_region_resource_request{namespace="test",runner="",region="foo",priority="",resource="storage",scheduler="",unit="bytes"} 5
 				`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewDefinitionResourcesMetricsCollector(&fakeDefinitionLister{definitions: tt.definitions})
+			c := NewRegionResourcesMetricsCollector(&fakeRegionLister{regions: tt.regions})
 			registry := metrics.NewKubeRegistry()
 			registry.CustomMustRegister(c)
 			err := testutil.GatherAndCompare(registry, strings.NewReader(tt.expected))

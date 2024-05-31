@@ -33,7 +33,7 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	corelisters "github.com/olive-io/olive/client/generated/listers/core/v1"
+	corelisters "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	extendercorev1 "github.com/olive-io/olive/mon/scheduler/extender/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	"github.com/olive-io/olive/mon/scheduler/framework/parallelize"
@@ -44,7 +44,7 @@ import (
 // Candidate represents a nominated runner on which the preemptor can be scheduled,
 // along with the list of victims that should be evicted for the preemptor to fit the runner.
 type Candidate interface {
-	// Victims wraps a list of to-be-preempted Definitions and the number of PDB violation.
+	// Victims wraps a list of to-be-preempted Regions and the number of PDB violation.
 	Victims() *extendercorev1.Victims
 	// Name returns the target runner name where the preemptor gets nominated to run.
 	Name() string
@@ -105,16 +105,16 @@ type Interface interface {
 	// GetOffsetAndNumCandidates chooses a random offset and calculates the number of candidates that should be
 	// shortlisted for dry running preemption.
 	GetOffsetAndNumCandidates(runners int32) (int32, int32)
-	// CandidatesToVictimsMap builds a map from the target runner to a list of to-be-preempted Definitions and the number of PDB violation.
+	// CandidatesToVictimsMap builds a map from the target runner to a list of to-be-preempted Regions and the number of PDB violation.
 	CandidatesToVictimsMap(candidates []Candidate) map[string]*extendercorev1.Victims
-	// DefinitionEligibleToPreemptOthers returns one bool and one string. The bool indicates whether this definition should be considered for
-	// preempting other definitions or not. The string includes the reason if this definition isn't eligible.
-	DefinitionEligibleToPreemptOthers(definition *corev1.Definition, nominatedRunnerStatus *framework.Status) (bool, string)
-	// SelectVictimsOnRunner finds minimum set of definitions on the given runner that should be preempted in order to make enough room
-	// for "definition" to be scheduled.
+	// RegionEligibleToPreemptOthers returns one bool and one string. The bool indicates whether this region should be considered for
+	// preempting other regions or not. The string includes the reason if this region isn't eligible.
+	RegionEligibleToPreemptOthers(region *corev1.Region, nominatedRunnerStatus *framework.Status) (bool, string)
+	// SelectVictimsOnRunner finds minimum set of regions on the given runner that should be preempted in order to make enough room
+	// for "region" to be scheduled.
 	// Note that both `state` and `runnerInfo` are deep copied.
 	SelectVictimsOnRunner(ctx context.Context, state *framework.CycleState,
-		definition *corev1.Definition, runnerInfo *framework.RunnerInfo) ([]*corev1.Definition, int, *framework.Status)
+		region *corev1.Region, runnerInfo *framework.RunnerInfo) ([]*corev1.Region, int, *framework.Status)
 	// OrderedScoreFuncs returns a list of ordered score functions to select preferable runner where victims will be preempted.
 	// The ordered score functions will be processed one by one iff we find more than one runner with the highest score.
 	// Default score functions will be processed if nil returned here for backwards-compatibility.
@@ -122,10 +122,10 @@ type Interface interface {
 }
 
 type Evaluator struct {
-	PluginName       string
-	Handler          framework.Handle
-	DefinitionLister corelisters.DefinitionLister
-	State            *framework.CycleState
+	PluginName   string
+	Handler      framework.Handle
+	RegionLister corelisters.RegionLister
+	State        *framework.CycleState
 	Interface
 }
 
@@ -137,56 +137,56 @@ type Evaluator struct {
 //   - <nil, Unschedulable>. This status is mostly as expected like the preemptor is waiting for the
 //     victims to be fully terminated.
 //
-//   - In both cases above, a nil PostFilterResult is returned to keep the definition's nominatedRunnerName unchanged.
+//   - In both cases above, a nil PostFilterResult is returned to keep the region's nominatedRunnerName unchanged.
 //
-//   - <non-nil PostFilterResult, Unschedulable>. It indicates the definition cannot be scheduled even with preemption.
+//   - <non-nil PostFilterResult, Unschedulable>. It indicates the region cannot be scheduled even with preemption.
 //     In this case, a non-nil PostFilterResult is returned and result.NominatingMode instructs how to deal with
 //     the nominatedRunnerName.
 //
 //   - <non-nil PostFilterResult, Success>. It's the regular happy path
-//     and the non-empty nominatedRunnerName will be applied to the preemptor definition.
-func (ev *Evaluator) Preempt(ctx context.Context, definition *corev1.Definition, m framework.RunnerToStatusMap) (*framework.PostFilterResult, *framework.Status) {
+//     and the non-empty nominatedRunnerName will be applied to the preemptor region.
+func (ev *Evaluator) Preempt(ctx context.Context, region *corev1.Region, m framework.RunnerToStatusMap) (*framework.PostFilterResult, *framework.Status) {
 	logger := klog.FromContext(ctx)
 
-	// 0) Fetch the latest version of <definition>.
-	// It's safe to directly fetch definition here. Because the informer cache has already been
+	// 0) Fetch the latest version of <region>.
+	// It's safe to directly fetch region here. Because the informer cache has already been
 	// initialized when creating the Scheduler obj.
-	// However, tests may need to manually initialize the shared definition informer.
-	definitionNamespace, definitionName := definition.Namespace, definition.Name
-	definition, err := ev.DefinitionLister.Definitions(definition.Namespace).Get(definition.Name)
+	// However, tests may need to manually initialize the shared region informer.
+	regionNamespace, regionName := region.Namespace, region.Name
+	region, err := ev.RegionLister.Get(region.Name)
 	if err != nil {
-		logger.Error(err, "Could not get the updated preemptor definition object", "definition", klog.KRef(definitionNamespace, definitionName))
+		logger.Error(err, "Could not get the updated preemptor region object", "region", klog.KRef(regionNamespace, regionName))
 		return nil, framework.AsStatus(err)
 	}
 
-	// 1) Ensure the preemptor is eligible to preempt other definitions.
-	//if ok, msg := ev.DefinitionEligibleToPreemptOthers(definition, m[definition.Status.NominatedRunnerName]); !ok {
-	//	logger.V(5).Info("Definition is not eligible for preemption", "definition", klog.KObj(definition), "reason", msg)
+	// 1) Ensure the preemptor is eligible to preempt other regions.
+	//if ok, msg := ev.RegionEligibleToPreemptOthers(region, m[region.Status.NominatedRunnerName]); !ok {
+	//	logger.V(5).Info("Region is not eligible for preemption", "region", klog.KObj(region), "reason", msg)
 	//	return nil, framework.NewStatus(framework.Unschedulable, msg)
 	//}
 
 	// 2) Find all preemption candidates.
-	candidates, runnerToStatusMap, err := ev.findCandidates(ctx, definition, m)
+	candidates, runnerToStatusMap, err := ev.findCandidates(ctx, region, m)
 	if err != nil && len(candidates) == 0 {
 		return nil, framework.AsStatus(err)
 	}
 
-	// Return a FitError only when there are no candidates that fit the definition.
+	// Return a FitError only when there are no candidates that fit the region.
 	if len(candidates) == 0 {
 		fitError := &framework.FitError{
-			Definition:    definition,
+			Region:        region,
 			NumAllRunners: len(runnerToStatusMap),
 			Diagnosis: framework.Diagnosis{
 				RunnerToStatusMap: runnerToStatusMap,
-				// Leave UnschedulablePlugins or PendingPlugins as nil as it won't be used on moving Definitions.
+				// Leave UnschedulablePlugins or PendingPlugins as nil as it won't be used on moving Regions.
 			},
 		}
-		// Specify nominatedRunnerName to clear the definition's nominatedRunnerName status, if applicable.
+		// Specify nominatedRunnerName to clear the region's nominatedRunnerName status, if applicable.
 		return framework.NewPostFilterResultWithNominatedRunner(""), framework.NewStatus(framework.Unschedulable, fitError.Error())
 	}
 
 	// 3) Interact with registered Extenders to filter out some candidates if needed.
-	candidates, status := ev.callExtenders(logger, definition, candidates)
+	candidates, status := ev.callExtenders(logger, region, candidates)
 	if !status.IsSuccess() {
 		return nil, status
 	}
@@ -198,7 +198,7 @@ func (ev *Evaluator) Preempt(ctx context.Context, definition *corev1.Definition,
 	}
 
 	// 5) Perform preparation work before nominating the selected candidate.
-	if status := ev.prepareCandidate(ctx, bestCandidate, definition, ev.PluginName); !status.IsSuccess() {
+	if status := ev.prepareCandidate(ctx, bestCandidate, region, ev.PluginName); !status.IsSuccess() {
 		return nil, status
 	}
 
@@ -206,8 +206,8 @@ func (ev *Evaluator) Preempt(ctx context.Context, definition *corev1.Definition,
 }
 
 // FindCandidates calculates a slice of preemption candidates.
-// Each candidate is executable to make the given <definition> schedulable.
-func (ev *Evaluator) findCandidates(ctx context.Context, definition *corev1.Definition, m framework.RunnerToStatusMap) ([]Candidate, framework.RunnerToStatusMap, error) {
+// Each candidate is executable to make the given <region> schedulable.
+func (ev *Evaluator) findCandidates(ctx context.Context, region *corev1.Region, m framework.RunnerToStatusMap) ([]Candidate, framework.RunnerToStatusMap, error) {
 	allRunners, err := ev.Handler.SnapshotSharedLister().RunnerInfos().List()
 	if err != nil {
 		return nil, nil, err
@@ -218,16 +218,16 @@ func (ev *Evaluator) findCandidates(ctx context.Context, definition *corev1.Defi
 	logger := klog.FromContext(ctx)
 	potentialRunners, unschedulableRunnerStatus := runnersWherePreemptionMightHelp(allRunners, m)
 	if len(potentialRunners) == 0 {
-		logger.V(3).Info("Preemption will not help schedule definition on any runner", "definition", klog.KObj(definition))
-		// In this case, we should clean-up any existing nominated runner name of the definition.
-		//if err := util.ClearNominatedRunnerName(ctx, ev.Handler.ClientSet(), definition); err != nil {
-		//	logger.Error(err, "Could not clear the nominatedRunnerName field of definition", "definition", klog.KObj(definition))
+		logger.V(3).Info("Preemption will not help schedule region on any runner", "region", klog.KObj(region))
+		// In this case, we should clean-up any existing nominated runner name of the region.
+		//if err := util.ClearNominatedRunnerName(ctx, ev.Handler.ClientSet(), region); err != nil {
+		//	logger.Error(err, "Could not clear the nominatedRunnerName field of region", "region", klog.KObj(region))
 		//	// We do not return as this error is not critical.
 		//}
 		return nil, unschedulableRunnerStatus, nil
 	}
 
-	//pdbs, err := getDefinitionDisruptionBudgets(ev.PdbLister)
+	//pdbs, err := getRegionDisruptionBudgets(ev.PdbLister)
 	//if err != nil {
 	//	return nil, nil, err
 	//}
@@ -240,7 +240,7 @@ func (ev *Evaluator) findCandidates(ctx context.Context, definition *corev1.Defi
 		}
 		loggerV.Info("Selected candidates from a pool of runners", "potentialRunnersCount", len(potentialRunners), "offset", offset, "sampleLength", len(sample), "sample", sample, "candidates", numCandidates)
 	}
-	candidates, runnerStatuses, err := ev.DryRunPreemption(ctx, definition, potentialRunners, offset, numCandidates)
+	candidates, runnerStatuses, err := ev.DryRunPreemption(ctx, region, potentialRunners, offset, numCandidates)
 	for runner, runnerStatus := range unschedulableRunnerStatus {
 		runnerStatuses[runner] = runnerStatus
 	}
@@ -251,7 +251,7 @@ func (ev *Evaluator) findCandidates(ctx context.Context, definition *corev1.Defi
 // We will only check <candidates> with extenders that support preemption.
 // Extenders which do not support preemption may later prevent preemptor from being scheduled on the nominated
 // runner. In that case, scheduler will find a different host for the preemptor in subsequent scheduling cycles.
-func (ev *Evaluator) callExtenders(logger klog.Logger, definition *corev1.Definition, candidates []Candidate) ([]Candidate, *framework.Status) {
+func (ev *Evaluator) callExtenders(logger klog.Logger, region *corev1.Region, candidates []Candidate) ([]Candidate, *framework.Status) {
 	extenders := ev.Handler.Extenders()
 	runnerLister := ev.Handler.SnapshotSharedLister().RunnerInfos()
 	if len(extenders) == 0 {
@@ -265,10 +265,10 @@ func (ev *Evaluator) callExtenders(logger klog.Logger, definition *corev1.Defini
 		return candidates, nil
 	}
 	for _, extender := range extenders {
-		if !extender.SupportsPreemption() || !extender.IsInterested(definition) {
+		if !extender.SupportsPreemption() || !extender.IsInterested(region) {
 			continue
 		}
-		runnerNameToVictims, err := extender.ProcessPreemption(definition, victimsMap, runnerLister)
+		runnerNameToVictims, err := extender.ProcessPreemption(region, victimsMap, runnerLister)
 		if err != nil {
 			if extender.IsIgnorable() {
 				logger.Info("Skipped extender as it returned error and has ignorable flag set",
@@ -279,13 +279,13 @@ func (ev *Evaluator) callExtenders(logger klog.Logger, definition *corev1.Defini
 		}
 		// Check if the returned victims are valid.
 		for runnerName, victims := range runnerNameToVictims {
-			if victims == nil || len(victims.Definitions) == 0 {
+			if victims == nil || len(victims.Regions) == 0 {
 				if extender.IsIgnorable() {
 					delete(runnerNameToVictims, runnerName)
 					logger.Info("Ignored runner for which the extender didn't report victims", "runner", klog.KRef("", runnerName), "extender", extender.Name())
 					continue
 				}
-				return nil, framework.AsStatus(fmt.Errorf("expected at least one victim definition on runner %q", runnerName))
+				return nil, framework.AsStatus(fmt.Errorf("expected at least one victim region on runner %q", runnerName))
 			}
 		}
 
@@ -341,10 +341,10 @@ func (ev *Evaluator) SelectCandidate(ctx context.Context, candidates []Candidate
 }
 
 // prepareCandidate does some preparation work before nominating the selected candidate:
-// - Evict the victim definitions
-// - Reject the victim definitions if they are in waitingDefinition map
-// - Clear the low-priority definitions' nominatedRunnerName status if needed
-func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, definition *corev1.Definition, pluginName string) *framework.Status {
+// - Evict the victim regions
+// - Reject the victim regions if they are in waitingRegion map
+// - Clear the low-priority regions' nominatedRunnerName status if needed
+func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, region *corev1.Region, pluginName string) *framework.Status {
 	fh := ev.Handler
 	//cs := ev.Handler.ClientSet()
 
@@ -352,56 +352,56 @@ func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, definiti
 	defer cancel()
 	logger := klog.FromContext(ctx)
 	errCh := parallelize.NewErrorChannel()
-	preemptDefinition := func(index int) {
-		victim := c.Victims().Definitions[index]
-		// If the victim is a WaitingDefinition, send a reject message to the PermitPlugin.
+	preemptRegion := func(index int) {
+		victim := c.Victims().Regions[index]
+		// If the victim is a WaitingRegion, send a reject message to the PermitPlugin.
 		// Otherwise we should delete the victim.
-		if waitingDefinition := fh.GetWaitingDefinition(victim.UID); waitingDefinition != nil {
-			waitingDefinition.Reject(pluginName, "preempted")
-			logger.V(2).Info("Preemptor definition rejected a waiting definition", "preemptor", klog.KObj(definition), "waitingDefinition", klog.KObj(victim), "runner", c.Name())
+		if waitingRegion := fh.GetWaitingRegion(victim.UID); waitingRegion != nil {
+			waitingRegion.Reject(pluginName, "preempted")
+			logger.V(2).Info("Preemptor region rejected a waiting region", "preemptor", klog.KObj(region), "waitingRegion", klog.KObj(victim), "runner", c.Name())
 		} else {
-			//if feature.DefaultFeatureGate.Enabled(features.DefinitionDisruptionConditions) {
-			//	condition := &corev1.DefinitionCondition{
+			//if feature.DefaultFeatureGate.Enabled(features.RegionDisruptionConditions) {
+			//	condition := &corev1.RegionCondition{
 			//		Type:    corev1.DisruptionTarget,
 			//		Status:  corev1.ConditionTrue,
-			//		Reason:  corev1.DefinitionReasonPreemptionByScheduler,
-			//		Message: fmt.Sprintf("%s: preempting to accommodate a higher priority definition", definition.Spec.SchedulerName),
+			//		Reason:  corev1.RegionReasonPreemptionByScheduler,
+			//		Message: fmt.Sprintf("%s: preempting to accommodate a higher priority region", region.Spec.SchedulerName),
 			//	}
-			//	newStatus := definition.Status.DeepCopy()
-			//	updated := apidefinition.UpdateDefinitionCondition(newStatus, condition)
+			//	newStatus := region.Status.DeepCopy()
+			//	updated := apiregion.UpdateRegionCondition(newStatus, condition)
 			//	if updated {
-			//		if err := util.PatchDefinitionStatus(ctx, cs, victim, newStatus); err != nil {
-			//			logger.Error(err, "Could not add DisruptionTarget condition due to preemption", "definition", klog.KObj(victim), "preemptor", klog.KObj(definition))
+			//		if err := util.PatchRegionStatus(ctx, cs, victim, newStatus); err != nil {
+			//			logger.Error(err, "Could not add DisruptionTarget condition due to preemption", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
 			//			errCh.SendErrorWithCancel(err, cancel)
 			//			return
 			//		}
 			//	}
 			//}
-			//if err := util.DeleteDefinition(ctx, cs, victim); err != nil {
-			//	logger.Error(err, "Preempted definition", "definition", klog.KObj(victim), "preemptor", klog.KObj(definition))
+			//if err := util.DeleteRegion(ctx, cs, victim); err != nil {
+			//	logger.Error(err, "Preempted region", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
 			//	errCh.SendErrorWithCancel(err, cancel)
 			//	return
 			//}
-			//logger.V(2).Info("Preemptor Definition preempted victim Definition", "preemptor", klog.KObj(definition), "victim", klog.KObj(victim), "runner", c.Name())
+			//logger.V(2).Info("Preemptor Region preempted victim Region", "preemptor", klog.KObj(region), "victim", klog.KObj(victim), "runner", c.Name())
 		}
 
 		// corev1.EventTypeNormal
-		fh.EventRecorder().Eventf(victim, definition, "", "Preempted", "Preempting", "Preempted by definition %v on runner %v", definition.UID, c.Name())
+		fh.EventRecorder().Eventf(victim, region, "", "Preempted", "Preempting", "Preempted by region %v on runner %v", region.UID, c.Name())
 	}
 
-	fh.Parallelizer().Until(ctx, len(c.Victims().Definitions), preemptDefinition, ev.PluginName)
+	fh.Parallelizer().Until(ctx, len(c.Victims().Regions), preemptRegion, ev.PluginName)
 	if err := errCh.ReceiveError(); err != nil {
 		return framework.AsStatus(err)
 	}
 
-	metrics.PreemptionVictims.Observe(float64(len(c.Victims().Definitions)))
+	metrics.PreemptionVictims.Observe(float64(len(c.Victims().Regions)))
 
-	// Lower priority definitions nominated to run on this runner, may no longer fit on
+	// Lower priority regions nominated to run on this runner, may no longer fit on
 	// this runner. So, we should remove their nomination. Removing their
-	// nomination updates these definitions and moves them to the active queue. It
+	// nomination updates these regions and moves them to the active queue. It
 	// lets scheduler find another place for them.
-	//nominatedDefinitions := getLowerPriorityNominatedDefinitions(logger, fh, definition, c.Name())
-	//if err := util.ClearNominatedRunnerName(ctx, cs, nominatedDefinitions...); err != nil {
+	//nominatedRegions := getLowerPriorityNominatedRegions(logger, fh, region, c.Name())
+	//if err := util.ClearNominatedRunnerName(ctx, cs, nominatedRegions...); err != nil {
 	//	logger.Error(err, "Cannot clear 'NominatedRunnerName' field")
 	//	// We do not return as this error is not critical.
 	//}
@@ -410,7 +410,7 @@ func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, definiti
 }
 
 // runnersWherePreemptionMightHelp returns a list of runners with failed predicates
-// that may be satisfied by removing definitions from the runner.
+// that may be satisfied by removing regions from the runner.
 func runnersWherePreemptionMightHelp(runners []*framework.RunnerInfo, m framework.RunnerToStatusMap) ([]*framework.RunnerInfo, framework.RunnerToStatusMap) {
 	var potentialRunners []*framework.RunnerInfo
 	runnerStatuses := make(framework.RunnerToStatusMap)
@@ -427,7 +427,7 @@ func runnersWherePreemptionMightHelp(runners []*framework.RunnerInfo, m framewor
 	return potentialRunners, runnerStatuses
 }
 
-//func getDefinitionDisruptionBudgets(pdbLister policylisters.DefinitionDisruptionBudgetLister) ([]*policy.DefinitionDisruptionBudget, error) {
+//func getRegionDisruptionBudgets(pdbLister policylisters.RegionDisruptionBudgetLister) ([]*policy.RegionDisruptionBudget, error) {
 //	if pdbLister != nil {
 //		return pdbLister.List(labels.Everything())
 //	}
@@ -435,7 +435,7 @@ func runnersWherePreemptionMightHelp(runners []*framework.RunnerInfo, m framewor
 //}
 
 // pickOneRunnerForPreemption chooses one runner among the given runners.
-// It assumes definitions in each map entry are ordered by decreasing priority.
+// It assumes regions in each map entry are ordered by decreasing priority.
 // If the scoreFuns is not empty, It picks a runner based on score scoreFuns returns.
 // If the scoreFuns is empty,
 // It picks a runner based on the following criteria:
@@ -463,33 +463,33 @@ func pickOneRunnerForPreemption(logger klog.Logger, runnersToVictims map[string]
 			return -runnersToVictims[runner].NumPDBViolations
 		}
 		minHighestPriorityScoreFunc := func(runner string) int64 {
-			// highestDefinitionPriority is the highest priority among the victims on this runner.
-			//highestDefinitionPriority := corev1helpers.DefinitionPriority(runnersToVictims[runner].Definitions[0])
-			highestDefinitionPriority := 100
-			// The smaller the highestDefinitionPriority, the higher the score.
-			return -int64(highestDefinitionPriority)
+			// highestRegionPriority is the highest priority among the victims on this runner.
+			//highestRegionPriority := corev1helpers.RegionPriority(runnersToVictims[runner].Regions[0])
+			highestRegionPriority := 100
+			// The smaller the highestRegionPriority, the higher the score.
+			return -int64(highestRegionPriority)
 		}
 		minSumPrioritiesScoreFunc := func(runner string) int64 {
 			var sumPriorities int64
-			for _, definition := range runnersToVictims[runner].Definitions {
+			for _, region := range runnersToVictims[runner].Regions {
 				// We add MaxInt32+1 to all priorities to make all of them >= 0. This is
-				// needed so that a runner with a few definitions with negative priority is not
-				// picked over a runner with a smaller number of definitions with the same negative
+				// needed so that a runner with a few regions with negative priority is not
+				// picked over a runner with a smaller number of regions with the same negative
 				// priority (and similar scenarios).
-				//sumPriorities += int64(corev1helpers.DefinitionPriority(definition)) + int64(math.MaxInt32+1)
-				_ = definition
+				//sumPriorities += int64(corev1helpers.RegionPriority(region)) + int64(math.MaxInt32+1)
+				_ = region
 				sumPriorities += int64(math.MaxInt32 + 1)
 			}
 			// The smaller the sumPriorities, the higher the score.
 			return -sumPriorities
 		}
-		minNumDefinitionsScoreFunc := func(runner string) int64 {
-			// The smaller the length of definitions, the higher the score.
-			return -int64(len(runnersToVictims[runner].Definitions))
+		minNumRegionsScoreFunc := func(runner string) int64 {
+			// The smaller the length of regions, the higher the score.
+			return -int64(len(runnersToVictims[runner].Regions))
 		}
 		latestStartTimeScoreFunc := func(runner string) int64 {
-			// Get the earliest start time of all definitions on the current runner.
-			earliestStartTimeOnRunner := util.GetEarliestDefinitionStartTime(runnersToVictims[runner])
+			// Get the earliest start time of all regions on the current runner.
+			earliestStartTimeOnRunner := util.GetEarliestRegionStartTime(runnersToVictims[runner])
 			if earliestStartTimeOnRunner == nil {
 				logger.Error(errors.New("earliestStartTime is nil for runner"), "Should not reach here", "runner", runner)
 				return int64(math.MinInt64)
@@ -508,8 +508,8 @@ func pickOneRunnerForPreemption(logger klog.Logger, runnersToVictims map[string]
 			minHighestPriorityScoreFunc,
 			// A runner with the smallest sum of priorities is preferable.
 			minSumPrioritiesScoreFunc,
-			// A runner with the minimum number of definitions is preferable.
-			minNumDefinitionsScoreFunc,
+			// A runner with the minimum number of regions is preferable.
+			minNumRegionsScoreFunc,
 			// A runner with the latest start time of all highest priority victims is preferable.
 			latestStartTimeScoreFunc,
 			// If there are still ties, then the first Runner in the list is selected.
@@ -538,28 +538,28 @@ func pickOneRunnerForPreemption(logger klog.Logger, runnersToVictims map[string]
 	return allCandidates[0]
 }
 
-// getLowerPriorityNominatedDefinitions returns definitions whose priority is smaller than the
-// priority of the given "definition" and are nominated to run on the given runner.
-// Note: We could possibly check if the nominated lower priority definitions still fit
+// getLowerPriorityNominatedRegions returns regions whose priority is smaller than the
+// priority of the given "region" and are nominated to run on the given runner.
+// Note: We could possibly check if the nominated lower priority regions still fit
 // and return those that no longer fit, but that would require lots of
-// manipulation of RunnerInfo and PreFilter state per nominated definition. It may not be
+// manipulation of RunnerInfo and PreFilter state per nominated region. It may not be
 // worth the complexity, especially because we generally expect to have a very
-// small number of nominated definitions per runner.
-func getLowerPriorityNominatedDefinitions(logger klog.Logger, pn framework.DefinitionNominator, definition *corev1.Definition, runnerName string) []*corev1.Definition {
-	definitionInfos := pn.NominatedDefinitionsForRunner(runnerName)
+// small number of nominated regions per runner.
+func getLowerPriorityNominatedRegions(logger klog.Logger, pn framework.RegionNominator, region *corev1.Region, runnerName string) []*corev1.Region {
+	regionInfos := pn.NominatedRegionsForRunner(runnerName)
 
-	if len(definitionInfos) == 0 {
+	if len(regionInfos) == 0 {
 		return nil
 	}
 
-	var lowerPriorityDefinitions []*corev1.Definition
-	//definitionPriority := corecorev1helpers.DefinitionPriority(definition)
-	for _, pi := range definitionInfos {
-		//if corecorev1helpers.DefinitionPriority(pi.Definition) < definitionPriority {
-		lowerPriorityDefinitions = append(lowerPriorityDefinitions, pi.Definition)
+	var lowerPriorityRegions []*corev1.Region
+	//regionPriority := corecorev1helpers.RegionPriority(region)
+	for _, pi := range regionInfos {
+		//if corecorev1helpers.RegionPriority(pi.Region) < regionPriority {
+		lowerPriorityRegions = append(lowerPriorityRegions, pi.Region)
 		//}
 	}
-	return lowerPriorityDefinitions
+	return lowerPriorityRegions
 }
 
 // DryRunPreemption simulates Preemption logic on <potentialRunners> in parallel,
@@ -567,7 +567,7 @@ func getLowerPriorityNominatedDefinitions(logger klog.Logger, pn framework.Defin
 // The number of candidates depends on the constraints defined in the plugin's args. In the returned list of
 // candidates, ones that do not violate PDB are preferred over ones that do.
 // NOTE: This method is exported for easier testing in default preemption.
-func (ev *Evaluator) DryRunPreemption(ctx context.Context, definition *corev1.Definition, potentialRunners []*framework.RunnerInfo,
+func (ev *Evaluator) DryRunPreemption(ctx context.Context, region *corev1.Region, potentialRunners []*framework.RunnerInfo,
 	offset int32, numCandidates int32) ([]Candidate, framework.RunnerToStatusMap, error) {
 	fh := ev.Handler
 	nonViolatingCandidates := newCandidateList(numCandidates)
@@ -580,10 +580,10 @@ func (ev *Evaluator) DryRunPreemption(ctx context.Context, definition *corev1.De
 	checkRunner := func(i int) {
 		runnerInfoCopy := potentialRunners[(int(offset)+i)%len(potentialRunners)].Snapshot()
 		stateCopy := ev.State.Clone()
-		definitions, numPDBViolations, status := ev.SelectVictimsOnRunner(ctx, stateCopy, definition, runnerInfoCopy)
-		if status.IsSuccess() && len(definitions) != 0 {
+		regions, numPDBViolations, status := ev.SelectVictimsOnRunner(ctx, stateCopy, region, runnerInfoCopy)
+		if status.IsSuccess() && len(regions) != 0 {
 			victims := extendercorev1.Victims{
-				Definitions:      definitions,
+				Regions:          regions,
 				NumPDBViolations: int64(numPDBViolations),
 			}
 			c := &candidate{
@@ -601,8 +601,8 @@ func (ev *Evaluator) DryRunPreemption(ctx context.Context, definition *corev1.De
 			}
 			return
 		}
-		if status.IsSuccess() && len(definitions) == 0 {
-			status = framework.AsStatus(fmt.Errorf("expected at least one victim definition on runner %q", runnerInfoCopy.Runner().Name))
+		if status.IsSuccess() && len(regions) == 0 {
+			status = framework.AsStatus(fmt.Errorf("expected at least one victim region on runner %q", runnerInfoCopy.Runner().Name))
 		}
 		statusesLock.Lock()
 		if status.Code() == framework.Error {

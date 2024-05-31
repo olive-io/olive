@@ -79,6 +79,7 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/olive-io/bpmn/schema v1.3.4 h1:UlJDGLF9fMPzPKQTi9KGHbal5c6qYKLe31qn997EbeM=
 github.com/olive-io/bpmn/schema v1.3.4/go.mod h1:n/Pm2VkqktkOkA2PhpT5efK8J/5lgyhE/Ku75HTzWHQ=
+github.com/olive-io/olive/client v0.1.1/go.mod h1:mDD3K42gjKpynRmpuvu1IFtjjctBaGxev7+PfL2DFG4=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
 github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
 github.com/pingcap/errors v0.11.4 h1:lFuQV/oaUMGcD2tqt+01ROSmJs75VG1ToEOkZIZ4nE4=

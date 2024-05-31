@@ -24,7 +24,7 @@ package console
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 )
 
 type LoginRequest struct {

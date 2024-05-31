@@ -1,17 +1,22 @@
 /*
-Copyright 2015 The Kubernetes Authors.
+Copyright 2024 The olive Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package fake
@@ -20,65 +25,64 @@ import (
 	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	internalcache "github.com/olive-io/olive/mon/scheduler/internal/cache"
 )
 
 // Cache is used for testing
 type Cache struct {
-	AssumeFunc              func(*corev1.Definition)
-	ForgetFunc              func(*corev1.Definition)
-	IsAssumedDefinitionFunc func(*corev1.Definition) bool
-	GetDefinitionFunc       func(*corev1.Definition) *corev1.Definition
+	AssumeFunc          func(*corev1.Region)
+	ForgetFunc          func(*corev1.Region)
+	IsAssumedRegionFunc func(*corev1.Region) bool
+	GetRegionFunc       func(*corev1.Region) *corev1.Region
 }
 
-// AssumeDefinition is a fake method for testing.
-func (c *Cache) AssumeDefinition(logger klog.Logger, pod *corev1.Definition) error {
+// AssumeRegion is a fake method for testing.
+func (c *Cache) AssumeRegion(logger klog.Logger, pod *corev1.Region) error {
 	c.AssumeFunc(pod)
 	return nil
 }
 
 // FinishBinding is a fake method for testing.
-func (c *Cache) FinishBinding(logger klog.Logger, pod *corev1.Definition) error { return nil }
+func (c *Cache) FinishBinding(logger klog.Logger, pod *corev1.Region) error { return nil }
 
-// ForgetDefinition is a fake method for testing.
-func (c *Cache) ForgetDefinition(logger klog.Logger, pod *corev1.Definition) error {
+// ForgetRegion is a fake method for testing.
+func (c *Cache) ForgetRegion(logger klog.Logger, pod *corev1.Region) error {
 	c.ForgetFunc(pod)
 	return nil
 }
 
-// AddDefinition is a fake method for testing.
-func (c *Cache) AddDefinition(logger klog.Logger, pod *corev1.Definition) error { return nil }
+// AddRegion is a fake method for testing.
+func (c *Cache) AddRegion(logger klog.Logger, pod *corev1.Region) error { return nil }
 
-// UpdateDefinition is a fake method for testing.
-func (c *Cache) UpdateDefinition(logger klog.Logger, oldDefinition, newDefinition *corev1.Definition) error {
+// UpdateRegion is a fake method for testing.
+func (c *Cache) UpdateRegion(logger klog.Logger, oldRegion, newRegion *corev1.Region) error {
 	return nil
 }
 
-// RemoveDefinition is a fake method for testing.
-func (c *Cache) RemoveDefinition(logger klog.Logger, pod *corev1.Definition) error { return nil }
+// RemoveRegion is a fake method for testing.
+func (c *Cache) RemoveRegion(logger klog.Logger, pod *corev1.Region) error { return nil }
 
-// IsAssumedDefinition is a fake method for testing.
-func (c *Cache) IsAssumedDefinition(pod *corev1.Definition) (bool, error) {
-	return c.IsAssumedDefinitionFunc(pod), nil
+// IsAssumedRegion is a fake method for testing.
+func (c *Cache) IsAssumedRegion(pod *corev1.Region) (bool, error) {
+	return c.IsAssumedRegionFunc(pod), nil
 }
 
-// GetDefinition is a fake method for testing.
-func (c *Cache) GetDefinition(pod *corev1.Definition) (*corev1.Definition, error) {
-	return c.GetDefinitionFunc(pod), nil
+// GetRegion is a fake method for testing.
+func (c *Cache) GetRegion(pod *corev1.Region) (*corev1.Region, error) {
+	return c.GetRegionFunc(pod), nil
 }
 
 // AddRunner is a fake method for testing.
-func (c *Cache) AddRunner(logger klog.Logger, node *monv1.Runner) *framework.RunnerInfo { return nil }
+func (c *Cache) AddRunner(logger klog.Logger, node *corev1.Runner) *framework.RunnerInfo { return nil }
 
 // UpdateRunner is a fake method for testing.
-func (c *Cache) UpdateRunner(logger klog.Logger, oldRunner, newRunner *monv1.Runner) *framework.RunnerInfo {
+func (c *Cache) UpdateRunner(logger klog.Logger, oldRunner, newRunner *corev1.Runner) *framework.RunnerInfo {
 	return nil
 }
 
 // RemoveRunner is a fake method for testing.
-func (c *Cache) RemoveRunner(logger klog.Logger, node *monv1.Runner) error { return nil }
+func (c *Cache) RemoveRunner(logger klog.Logger, node *corev1.Runner) error { return nil }
 
 // UpdateSnapshot is a fake method for testing.
 func (c *Cache) UpdateSnapshot(logger klog.Logger, snapshot *internalcache.Snapshot) error {
@@ -88,8 +92,8 @@ func (c *Cache) UpdateSnapshot(logger klog.Logger, snapshot *internalcache.Snaps
 // RunnerCount is a fake method for testing.
 func (c *Cache) RunnerCount() int { return 0 }
 
-// DefinitionCount is a fake method for testing.
-func (c *Cache) DefinitionCount() (int, error) { return 0, nil }
+// RegionCount is a fake method for testing.
+func (c *Cache) RegionCount() (int, error) { return 0, nil }
 
 // Dump is a fake method for testing.
 func (c *Cache) Dump() *internalcache.Dump {
