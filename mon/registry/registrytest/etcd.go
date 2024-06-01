@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package registrytest
 
 import (
+	"os"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,8 +30,27 @@ import (
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 
+	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/options"
 )
+
+func StartTestEmbedEtcd() (*embed.Etcd, func()) {
+	cfg := embed.NewConfig()
+	cfg.Dir = "testdata"
+	etcd, err := embed.StartEtcd(cfg)
+	if err != nil {
+		panic("start etcd: " + err.Error())
+	}
+	<-etcd.Server.ReadyNotify()
+
+	cancel := func() {
+		etcd.Close()
+		<-etcd.Server.StopNotify()
+		_ = os.RemoveAll(cfg.Dir)
+	}
+
+	return etcd, cancel
+}
 
 // NewEtcdStorage is for testing.  It configures the etcd storage for a bogus resource; the test must not care.
 func NewEtcdStorage(t *testing.T, group string) (*storagebackend.ConfigForResource, *etcd3testing.EtcdTestServer) {

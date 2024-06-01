@@ -40,10 +40,6 @@ var (
 )
 
 func init() {
-	//monInstall.Install(Scheme)
-	//apidiscoveryInstall.Install(Scheme)
-	//coreInstall.Install(Scheme)
-
 	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
 	metav1.AddToGroupVersion(Scheme, unversioned)
 	Scheme.AddUnversionedTypes(unversioned,

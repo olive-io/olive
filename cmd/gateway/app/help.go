@@ -24,7 +24,7 @@ package app
 import (
 	"strings"
 
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 	"github.com/olive-io/olive/gateway"
 )
 

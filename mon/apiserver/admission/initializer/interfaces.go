@@ -26,8 +26,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/component-base/featuregate"
 
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
 )
 
 // WantsExternalKubeClientSet defines a function which sets external ClientSet for admission plugins that need it

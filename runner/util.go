@@ -25,6 +25,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"sort"
 
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"go.uber.org/zap"
@@ -32,7 +33,7 @@ import (
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
-	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/client-go"
 	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
@@ -105,4 +106,22 @@ func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.C
 			zap.Error(err))
 		return
 	}
+}
+
+func sliceEqual[T string | int64](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	sort.Slice(a, func(i, j int) bool {
+		return a[i] < a[j]
+	})
+	sort.Slice(b, func(i, j int) bool {
+		return b[i] < b[j]
+	})
+	for idx, v := range a {
+		if b[idx] != v {
+			return false
+		}
+	}
+	return true
 }

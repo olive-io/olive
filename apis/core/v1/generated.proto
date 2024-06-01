@@ -32,6 +32,14 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 // Package-wide variables from generator "generated".
 option go_package = "github.com/olive-io/olive/apis/core/v1";
 
+message BpmnStat {
+  optional int64 bpmnProcesses = 1;
+
+  optional int64 bpmnEvents = 2;
+
+  optional int64 bpmnTasks = 3;
+}
+
 // Definition is bpmn definitions
 message Definition {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -202,5 +210,146 @@ message ProcessStatus {
 
   // the id of olive region
   optional int64 region = 3;
+}
+
+// Region the olive node
+message Region {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional RegionSpec spec = 2;
+
+  optional RegionStatus status = 3;
+}
+
+// RegionList is a list of Region objects.
+message RegionList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // Items is a list of Region
+  repeated Region items = 2;
+}
+
+message RegionReplica {
+  optional int64 id = 1;
+
+  optional int64 runner = 2;
+
+  optional int64 region = 3;
+
+  optional string raftAddress = 4;
+
+  optional bool isNonVoting = 5;
+
+  optional bool isWitness = 6;
+
+  optional bool isJoin = 7;
+}
+
+// RegionSpec is the specification of a Region.
+message RegionSpec {
+  optional int64 id = 1;
+
+  optional int64 deploymentId = 2;
+
+  repeated RegionReplica replicas = 3;
+
+  optional int64 electionRTT = 4;
+
+  optional int64 heartbeatRTT = 5;
+
+  optional int64 leader = 6;
+
+  optional int64 definitionsLimit = 7;
+}
+
+// RegionStat is the stat information of Region
+message RegionStat {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional int64 runningDefinitions = 2;
+
+  optional BpmnStat bpmn = 3;
+
+  optional int64 timestamp = 4;
+}
+
+message RegionStatus {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional int64 leader = 3;
+
+  optional int64 term = 4;
+
+  optional int32 replicas = 5;
+
+  optional int64 definitions = 6;
+}
+
+// Runner the olive node
+message Runner {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional RunnerSpec spec = 2;
+
+  optional RunnerStatus status = 3;
+}
+
+// RunnerList is a list of Runner objects.
+message RunnerList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // Items is a list of Runner
+  repeated Runner items = 2;
+}
+
+// RunnerSpec is the specification of a Runner.
+message RunnerSpec {
+  // ID is the member ID for this member.
+  optional int64 id = 1;
+
+  // hostname is the host name get by os.Hostname().
+  optional string hostname = 2;
+
+  // peerURL is the URL the member exposes to the cluster for communication.
+  optional string peerURL = 3;
+
+  // clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+  optional string clientURL = 4;
+
+  optional string versionRef = 5;
+
+  // isLearner indicates if the member is raft learner.
+  optional bool isLearner = 6;
+}
+
+// RunnerStat is the stat information of Runner
+message RunnerStat {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional double cpuUsed = 2;
+
+  optional double memoryUsed = 3;
+
+  optional BpmnStat bpmn = 4;
+
+  optional int64 timestamp = 5;
+}
+
+message RunnerStatus {
+  optional string phase = 1;
+
+  optional string message = 2;
+
+  optional double cpuTotal = 3;
+
+  optional double memoryTotal = 4;
+
+  repeated int64 regions = 5;
+
+  repeated string leaders = 6;
+
+  optional int64 definitions = 7;
 }
 

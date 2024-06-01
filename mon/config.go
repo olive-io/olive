@@ -34,14 +34,14 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/olive-io/olive/apis"
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
+
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
 	apidiscoveryrest "github.com/olive-io/olive/mon/registry/apidiscovery/rest"
 	corerest "github.com/olive-io/olive/mon/registry/core/rest"
-	monrest "github.com/olive-io/olive/mon/registry/mon/rest"
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 const (
@@ -137,6 +137,8 @@ func (c completedConfig) New() (*MonitorServer, error) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	etcdClient := v3client.New(etcd.Server)
+
 	monServer := &MonitorServer{
 		IDaemon: embedDaemon,
 
@@ -145,17 +147,25 @@ func (c completedConfig) New() (*MonitorServer, error) {
 
 		lg:       lg,
 		etcd:     etcd,
-		v3cli:    v3client.New(etcd.Server),
+		v3cli:    etcdClient,
 		idGen:    idutil.NewGenerator(uint16(etcd.Server.ID()), time.Now()),
 		notifier: leader.NewNotify(etcd.Server),
 
 		genericAPIServer: genericServer,
 	}
 
+	apiDiscoveryRestStorageProvider, err := apidiscoveryrest.NewRESTStorageProvider()
+	if err != nil {
+		return nil, err
+	}
+	coreRestStorageProvider, err := corerest.NewRESTStorageProvider(etcdClient, monServer.StoppingNotify())
+	if err != nil {
+		return nil, err
+	}
+
 	restStorageProviders := []RESTStorageProvider{
-		&apidiscoveryrest.RESTStorageProvider{},
-		&corerest.RESTStorageProvider{},
-		&monrest.RESTStorageProvider{},
+		coreRestStorageProvider,
+		apiDiscoveryRestStorageProvider,
 	}
 
 	if err = monServer.InstallAPIs(

@@ -1,0 +1,62 @@
+/*
+Copyright 2015 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package runner_test
+
+import (
+	"testing"
+
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/registry/generic"
+	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
+
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	"github.com/olive-io/olive/mon/registry/core/runner"
+	"github.com/olive-io/olive/mon/registry/registrytest"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
+)
+
+func newStorage(t *testing.T) (*runner.RunnerStorage, *etcd3testing.EtcdTestServer) {
+	etcdStorage, server := registrytest.NewEtcdStorage(t, corev1.GroupName)
+	restOptions := generic.RESTOptions{
+		StorageConfig:           etcdStorage,
+		Decorator:               generic.UndecoratedStorage,
+		DeleteCollectionWorkers: 1,
+		ResourcePrefix:          "runners",
+	}
+
+	etcd, cancel := registrytest.StartTestEmbedEtcd()
+	defer cancel()
+	v3cli := v3client.New(etcd.Server)
+	stopCh := genericdaemon.SetupSignalHandler()
+
+	jobStorage, err := runner.NewStorage(v3cli, restOptions, stopCh)
+	if err != nil {
+		t.Fatalf("unexpected error from REST storage: %v", err)
+	}
+	return &jobStorage, server
+}
+
+func validNewRunner() *corev1.Runner {
+	return &corev1.Runner{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: corev1.RunnerSpec{},
+	}
+}

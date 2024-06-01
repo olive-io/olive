@@ -25,8 +25,14 @@ import (
 	"context"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
+	"github.com/olive-io/olive/runner/raft"
 )
 
-func (r *Runner) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+type runnerImpl struct {
+	pb.UnsafeRunnerRPCServer
+	controller *raft.Controller
+}
+
+func (r *runnerImpl) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
 	return r.controller.GetProcessInstance(ctx, req)
 }

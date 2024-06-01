@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package rest
 
 import (
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -30,14 +31,28 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	definitionstore "github.com/olive-io/olive/mon/registry/core/definition/storage"
-	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace/storage"
-	processstore "github.com/olive-io/olive/mon/registry/core/process/storage"
+	definitionstore "github.com/olive-io/olive/mon/registry/core"
+	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace"
+	processstore "github.com/olive-io/olive/mon/registry/core/process"
+	regionstore "github.com/olive-io/olive/mon/registry/core/region"
+	runnerstore "github.com/olive-io/olive/mon/registry/core/runner"
 )
 
-type RESTStorageProvider struct{}
+type CoreRESTStorageProvider struct {
+	v3cli  *clientv3.Client
+	stopCh <-chan struct{}
+}
 
-func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
+func NewRESTStorageProvider(v3cli *clientv3.Client, stopCh <-chan struct{}) (*CoreRESTStorageProvider, error) {
+	provider := &CoreRESTStorageProvider{
+		v3cli:  v3cli,
+		stopCh: stopCh,
+	}
+
+	return provider, nil
+}
+
+func (p *CoreRESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(corev1.GroupName, apis.Scheme, apis.ParameterCodec, apis.Codecs)
 
 	if storageMap, err := p.v1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
@@ -49,8 +64,29 @@ func (p *RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstora
 	return apiGroupInfo, nil
 }
 
-func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
+func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
+
+	// runner
+	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+		runnerStorage, err := runnerstore.NewStorage(p.v3cli, restOptionsGetter, p.stopCh)
+		if err != nil {
+			return storage, err
+		}
+		storage[resource] = runnerStorage.Runner
+		storage[resource+"/status"] = runnerStorage.Status
+		storage[resource+"/stat"] = runnerStorage.Stat
+	}
+
+	// region
+	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
+		regionsStorage, err := regionstore.NewStorage(restOptionsGetter)
+		if err != nil {
+			return storage, err
+		}
+		storage[resource] = regionsStorage.Region
+		storage[resource+"/status"] = regionsStorage.Status
+	}
 
 	// namespace
 	if resource := "namespaces"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
@@ -65,27 +101,27 @@ func (p *RESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage.AP
 
 	// definition
 	if resource := "definitions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		runnersStorage, runnersStatusStorage, err := definitionstore.NewREST(restOptionsGetter)
+		defStorage, err := definitionstore.NewStorage(restOptionsGetter)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = runnersStorage
-		storage[resource+"/status"] = runnersStatusStorage
+		storage[resource] = defStorage.Definition
+		storage[resource+"/status"] = defStorage.Status
 	}
 
 	// processInstance
 	if resource := "processes"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		regionsStorage, regionsStatusStorage, err := processstore.NewREST(restOptionsGetter)
+		processStorage, err := processstore.NewStorage(restOptionsGetter)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = regionsStorage
-		storage[resource+"/status"] = regionsStatusStorage
+		storage[resource] = processStorage.Process
+		storage[resource+"/status"] = processStorage.Status
 	}
 
 	return storage, nil
 }
 
-func (p *RESTStorageProvider) GroupName() string {
+func (p *CoreRESTStorageProvider) GroupName() string {
 	return core.GroupName
 }

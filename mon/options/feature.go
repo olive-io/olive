@@ -24,8 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apiserver/pkg/server"
 
-	clientset "github.com/olive-io/olive/client/generated/clientset/versioned"
-	informers "github.com/olive-io/olive/client/generated/informers/externalversions"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
 )
 
 type FeatureOptions struct {

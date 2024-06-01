@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"path"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -48,16 +49,13 @@ type Ring struct {
 	mu  sync.RWMutex
 	s   store
 	rev int64
-
-	stopCh <-chan struct{}
 }
 
-func NewRing(key string, client *clientv3.Client, stopCh <-chan struct{}) (*Ring, error) {
+func NewRing(key string, client *clientv3.Client) (*Ring, error) {
 	r := &Ring{
 		key:    key,
 		client: client,
 		lg:     client.GetLogger(),
-		stopCh: stopCh,
 	}
 	err := r.load(context.TODO())
 	if err != nil {
@@ -74,17 +72,21 @@ func (r *Ring) Current() uint64 {
 // Next returns next identify
 func (r *Ring) Next(ctx context.Context) uint64 {
 	var next uint64
-	if r.frees() > 0 {
-		r.mu.Lock()
+	frees := r.frees()
+
+	r.mu.Lock()
+	if frees > 0 {
 		next = r.s.Frees[0]
-		r.s.Frees = r.s.Frees[1:]
-		r.mu.Unlock()
+		newSpaces := r.s.Frees[1:]
+		sort.Slice(newSpaces, func(i, j int) bool {
+			return newSpaces[i] < newSpaces[j]
+		})
+		r.s.Frees = newSpaces
 	} else {
-		r.mu.Lock()
 		r.s.Index += 1
 		next = r.s.Index
-		r.mu.RUnlock()
 	}
+	r.mu.Unlock()
 	err := r.set(ctx)
 	if err != nil {
 		r.lg.Error("generate next id", zap.Error(err))
@@ -108,17 +110,17 @@ func (r *Ring) frees() int {
 	return len(r.s.Frees)
 }
 
-func (r *Ring) Start() {
-	go r.watching()
+func (r *Ring) Start(stopCh <-chan struct{}) {
+	go r.watching(stopCh)
 }
 
-func (r *Ring) watching() {
+func (r *Ring) watching(stopCh <-chan struct{}) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	wch := r.client.Watch(ctx, r.key, clientv3.WithSerializable())
+	wch := r.client.Watch(ctx, r.key)
 	for {
 		select {
-		case <-r.stopCh:
+		case <-stopCh:
 			return
 		case ch := <-wch:
 			if ch.IsProgressNotify() || ch.Canceled {
@@ -129,7 +131,9 @@ func (r *Ring) watching() {
 				if event.Kv.ModRevision > atomic.LoadInt64(&r.rev) {
 					var s store
 					if err := json.Unmarshal(event.Kv.Value, &s); err == nil {
+						r.mu.Lock()
 						r.s = s
+						r.mu.Unlock()
 					}
 					atomic.StoreInt64(&r.rev, event.Kv.ModRevision)
 				}
@@ -139,9 +143,9 @@ func (r *Ring) watching() {
 }
 
 func (r *Ring) set(ctx context.Context) error {
-	r.mu.Lock()
+	r.mu.RLock()
 	data, _ := json.Marshal(r.s)
-	r.mu.Unlock()
+	r.mu.RUnlock()
 
 	session, err := concurrency.NewSession(r.client)
 	if err != nil {

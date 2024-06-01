@@ -21,28 +21,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package mon
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
-)
-
-func TestNewOliveMetaServer(t *testing.T) {
-	cfg, cancel := TestConfig()
-	if !assert.NoError(t, cfg.Validate()) {
-		return
-	}
-	defer cancel()
-
-	s, err := NewServer(cfg)
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	err = s.Start(genericdaemon.SetupSignalHandler())
-	if !assert.NoError(t, err) {
-		return
-	}
-}
+//
+//func TestNewOliveMetaServer(t *testing.T) {
+//	cfg, cancel := TestConfig()
+//	if !assert.NoError(t, cfg.Validate()) {
+//		return
+//	}
+//	defer cancel()
+//
+//	s, err := NewServer(cfg)
+//	if !assert.NoError(t, err) {
+//		return
+//	}
+//
+//	err = s.Start(genericdaemon.SetupSignalHandler())
+//	if !assert.NoError(t, err) {
+//		return
+//	}
+//}

@@ -19,5 +19,4 @@ package internalversion
 import (
 	_ "github.com/olive-io/olive/apis/apidiscovery/install"
 	_ "github.com/olive-io/olive/apis/core/install"
-	_ "github.com/olive-io/olive/apis/mon/install"
 )

@@ -41,6 +41,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
 	dsy "github.com/olive-io/olive/pkg/discovery"
@@ -66,7 +67,7 @@ type Controller struct {
 	reqId *idutil.Generator
 	reqW  wait.Wait
 
-	pr *pb.Runner
+	pr *corev1.Runner
 
 	rmu     sync.RWMutex
 	regions map[uint64]*Region
@@ -75,7 +76,7 @@ type Controller struct {
 	done     chan struct{}
 }
 
-func NewController(ctx context.Context, cfg Config, be backend.IBackend, discovery dsy.IDiscovery, pr *pb.Runner) (*Controller, error) {
+func NewController(ctx context.Context, cfg Config, be backend.IBackend, discovery dsy.IDiscovery, pr *corev1.Runner) (*Controller, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = zap.NewExample()
 	}
@@ -120,7 +121,7 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, discove
 	}
 
 	// deep copy *pb.Runner
-	runner := pr.Clone()
+	runner := pr.DeepCopy()
 	ctx, cancel := context.WithCancel(ctx)
 
 	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
@@ -222,14 +223,14 @@ func (c *Controller) Stop() {
 	}
 }
 
-func (c *Controller) RunnerStat() ([]uint64, []string) {
+func (c *Controller) RunnerStat() ([]int64, []string) {
 	c.rmu.RLock()
 	defer c.rmu.RUnlock()
 
-	regions := make([]uint64, 0)
+	regions := make([]int64, 0)
 	leaders := make([]string, 0)
 	for _, region := range c.regions {
-		regions = append(regions, region.id)
+		regions = append(regions, int64(region.id))
 		lead := region.getLeader()
 		if lead == 0 {
 			continue
@@ -240,7 +241,7 @@ func (c *Controller) RunnerStat() ([]uint64, []string) {
 			continue
 		}
 		for _, replica := range replicas {
-			if lead == replica.Id && replica.Runner == c.pr.Id {
+			if lead == replica.Id && replica.Runner == uint64(c.pr.Spec.ID) {
 				sv := semver.Version{
 					Major: int64(region.id),
 					Minor: int64(replica.Id),
@@ -371,7 +372,7 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 	replicaId := uint64(0)
 	var join bool
 	for _, replica := range ri.Replicas {
-		if replica.Runner == c.pr.Id {
+		if replica.Runner == uint64(c.pr.Spec.ID) {
 			replicaId = replica.Id
 			join = replica.IsJoin
 		}
