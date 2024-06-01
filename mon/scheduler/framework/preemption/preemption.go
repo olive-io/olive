@@ -39,6 +39,7 @@ import (
 	"github.com/olive-io/olive/mon/scheduler/framework/parallelize"
 	"github.com/olive-io/olive/mon/scheduler/metrics"
 	"github.com/olive-io/olive/mon/scheduler/util"
+	apiregion "github.com/olive-io/olive/pkg/api/v1/region"
 )
 
 // Candidate represents a nominated runner on which the preemptor can be scheduled,
@@ -220,17 +221,12 @@ func (ev *Evaluator) findCandidates(ctx context.Context, region *corev1.Region, 
 	if len(potentialRunners) == 0 {
 		logger.V(3).Info("Preemption will not help schedule region on any runner", "region", klog.KObj(region))
 		// In this case, we should clean-up any existing nominated runner name of the region.
-		//if err := util.ClearNominatedRunnerName(ctx, ev.Handler.ClientSet(), region); err != nil {
-		//	logger.Error(err, "Could not clear the nominatedRunnerName field of region", "region", klog.KObj(region))
-		//	// We do not return as this error is not critical.
-		//}
+		if err := util.ClearNominatedRunnerName(ctx, ev.Handler.ClientSet(), region); err != nil {
+			logger.Error(err, "Could not clear the nominatedRunnerName field of region", "region", klog.KObj(region))
+			// We do not return as this error is not critical.
+		}
 		return nil, unschedulableRunnerStatus, nil
 	}
-
-	//pdbs, err := getRegionDisruptionBudgets(ev.PdbLister)
-	//if err != nil {
-	//	return nil, nil, err
-	//}
 
 	offset, numCandidates := ev.GetOffsetAndNumCandidates(int32(len(potentialRunners)))
 	if loggerV := logger.V(5); logger.Enabled() {
@@ -346,7 +342,7 @@ func (ev *Evaluator) SelectCandidate(ctx context.Context, candidates []Candidate
 // - Clear the low-priority regions' nominatedRunnerName status if needed
 func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, region *corev1.Region, pluginName string) *framework.Status {
 	fh := ev.Handler
-	//cs := ev.Handler.ClientSet()
+	cs := ev.Handler.ClientSet()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -360,29 +356,27 @@ func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, region *
 			waitingRegion.Reject(pluginName, "preempted")
 			logger.V(2).Info("Preemptor region rejected a waiting region", "preemptor", klog.KObj(region), "waitingRegion", klog.KObj(victim), "runner", c.Name())
 		} else {
-			//if feature.DefaultFeatureGate.Enabled(features.RegionDisruptionConditions) {
-			//	condition := &corev1.RegionCondition{
-			//		Type:    corev1.DisruptionTarget,
-			//		Status:  corev1.ConditionTrue,
-			//		Reason:  corev1.RegionReasonPreemptionByScheduler,
-			//		Message: fmt.Sprintf("%s: preempting to accommodate a higher priority region", region.Spec.SchedulerName),
-			//	}
-			//	newStatus := region.Status.DeepCopy()
-			//	updated := apiregion.UpdateRegionCondition(newStatus, condition)
-			//	if updated {
-			//		if err := util.PatchRegionStatus(ctx, cs, victim, newStatus); err != nil {
-			//			logger.Error(err, "Could not add DisruptionTarget condition due to preemption", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
-			//			errCh.SendErrorWithCancel(err, cancel)
-			//			return
-			//		}
-			//	}
-			//}
-			//if err := util.DeleteRegion(ctx, cs, victim); err != nil {
-			//	logger.Error(err, "Preempted region", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
-			//	errCh.SendErrorWithCancel(err, cancel)
-			//	return
-			//}
-			//logger.V(2).Info("Preemptor Region preempted victim Region", "preemptor", klog.KObj(region), "victim", klog.KObj(victim), "runner", c.Name())
+			condition := &corev1.RegionCondition{
+				Type:    corev1.DisruptionTarget,
+				Status:  corev1.ConditionTrue,
+				Reason:  corev1.RegionReasonPreemptionByScheduler,
+				Message: fmt.Sprintf("%s: preempting to accommodate a higher priority region", region.Spec.SchedulerName),
+			}
+			newStatus := region.Status.DeepCopy()
+			updated := apiregion.UpdateRegionCondition(newStatus, condition)
+			if updated {
+				if err := util.PatchRegionStatus(ctx, cs, victim, newStatus); err != nil {
+					logger.Error(err, "Could not add DisruptionTarget condition due to preemption", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
+					errCh.SendErrorWithCancel(err, cancel)
+					return
+				}
+			}
+			if err := util.DeleteRegion(ctx, cs, victim); err != nil {
+				logger.Error(err, "Preempted region", "region", klog.KObj(victim), "preemptor", klog.KObj(region))
+				errCh.SendErrorWithCancel(err, cancel)
+				return
+			}
+			logger.V(2).Info("Preemptor Region preempted victim Region", "preemptor", klog.KObj(region), "victim", klog.KObj(victim), "runner", c.Name())
 		}
 
 		// corev1.EventTypeNormal
@@ -400,11 +394,11 @@ func (ev *Evaluator) prepareCandidate(ctx context.Context, c Candidate, region *
 	// this runner. So, we should remove their nomination. Removing their
 	// nomination updates these regions and moves them to the active queue. It
 	// lets scheduler find another place for them.
-	//nominatedRegions := getLowerPriorityNominatedRegions(logger, fh, region, c.Name())
-	//if err := util.ClearNominatedRunnerName(ctx, cs, nominatedRegions...); err != nil {
-	//	logger.Error(err, "Cannot clear 'NominatedRunnerName' field")
-	//	// We do not return as this error is not critical.
-	//}
+	nominatedRegions := getLowerPriorityNominatedRegions(logger, fh, region, c.Name())
+	if err := util.ClearNominatedRunnerName(ctx, cs, nominatedRegions...); err != nil {
+		logger.Error(err, "Cannot clear 'NominatedRunnerName' field")
+		// We do not return as this error is not critical.
+	}
 
 	return nil
 }

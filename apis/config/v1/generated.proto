@@ -33,6 +33,10 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 // Package-wide variables from generator "generated".
 option go_package = "github.com/olive-io/olive/apis/config/v1";
 
+// DebuggingConfiguration holds configuration for Debugging related features.
+message DebuggingConfiguration {
+}
+
 // DefaultPreemptionArgs holds arguments used to configure the
 // DefaultPreemption plugin.
 message DefaultPreemptionArgs {
@@ -349,16 +353,12 @@ message SchedulerConfiguration {
   // Parallelism defines the amount of parallelism in algorithms for scheduling a Regions. Must be greater than 0. Defaults to 16
   optional int32 parallelism = 1;
 
-  // LeaderElection defines the configuration of leader election client.
-  optional LeaderElectionConfiguration leaderElection = 2;
+  // enableProfiling enables profiling via web interface host:port/debug/pprof/
+  optional bool enableProfiling = 2;
 
-  // ClientConnection specifies the kubeconfig file and client connection
-  // settings for the proxy server to use when communicating with the apiserver.
-  optional ClientConnectionConfiguration clientConnection = 3;
-
-  // DebuggingConfiguration holds configuration for Debugging related features
-  // TODO: We might wanna make this a substruct like Debugging componentbaseconfigv1alpha1.DebuggingConfiguration
-  optional DebuggingConfiguration debuggingConfiguration = 4;
+  // enableContentionProfiling enables block profiling, if
+  // enableProfiling is true.
+  optional bool enableContentionProfiling = 3;
 
   // PercentageOfRunnersToScore is the percentage of all runners that once found feasible
   // for running a region, the scheduler stops its search for more feasible runners in
@@ -368,17 +368,17 @@ message SchedulerConfiguration {
   // then scheduler stops finding further feasible runners once it finds 150 feasible ones.
   // When the value is 0, default percentage (5%--50% based on the size of the cluster) of the
   // runners will be scored. It is overridden by profile level PercentageofRunnersToScore.
-  optional int32 percentageOfRunnersToScore = 5;
+  optional int32 percentageOfRunnersToScore = 4;
 
   // RegionInitialBackoffSeconds is the initial backoff for unschedulable regions.
   // If specified, it must be greater than 0. If this value is null, the default value (1s)
   // will be used.
-  optional int64 regionInitialBackoffSeconds = 6;
+  optional int64 regionInitialBackoffSeconds = 5;
 
   // RegionMaxBackoffSeconds is the max backoff for unschedulable regions.
   // If specified, it must be greater than regionInitialBackoffSeconds. If this value is null,
   // the default value (10s) will be used.
-  optional int64 regionMaxBackoffSeconds = 7;
+  optional int64 regionMaxBackoffSeconds = 6;
 
   // Profiles are scheduling profiles that kube-scheduler supports. Regions can
   // choose to be scheduled under a particular profile by setting its associated
@@ -386,18 +386,18 @@ message SchedulerConfiguration {
   // with the "default-scheduler" profile, if present here.
   // +listType=map
   // +listMapKey=schedulerName
-  repeated SchedulerProfile profiles = 8;
+  repeated SchedulerProfile profiles = 7;
 
   // Extenders are the list of scheduler extenders, each holding the values of how to communicate
   // with the extender. These extenders are shared by all scheduler profiles.
   // +listType=set
-  repeated Extender extenders = 9;
+  repeated Extender extenders = 8;
 
   // DelayCacheUntilActive specifies when to start caching. If this is true and leader election is enabled,
   // the scheduler will wait to fill informer caches until it is the leader. Doing so will have slower
   // failover with the benefit of lower memory overhead while waiting to become leader.
   // Defaults to false.
-  optional bool delayCacheUntilActive = 10;
+  optional bool delayCacheUntilActive = 9;
 }
 
 // SchedulerProfile is a scheduling profile.
@@ -460,95 +460,5 @@ message UtilizationShapePoint {
 
   // Score assigned to given utilization (y axis). Valid values are 0 to 10.
   optional int32 score = 2;
-}
-
-// VolumeBindingArgs holds arguments used to configure the VolumeBinding plugin.
-message VolumeBindingArgs {
-  // BindTimeoutSeconds is the timeout in seconds in volume binding operation.
-  // Value must be non-negative integer. The value zero indicates no waiting.
-  // If this value is nil, the default value (600) will be used.
-  optional int64 bindTimeoutSeconds = 1;
-
-  // Shape specifies the points defining the score function shape, which is
-  // used to score runners based on the utilization of statically provisioned
-  // PVs. The utilization is calculated by dividing the total requested
-  // storage of the region by the total capacity of feasible PVs on each runner.
-  // Each point contains utilization (ranges from 0 to 100) and its
-  // associated score (ranges from 0 to 10). You can turn the priority by
-  // specifying different scores for different utilization numbers.
-  // The default shape points are:
-  // 1) 0 for 0 utilization
-  // 2) 10 for 100 utilization
-  // All points must be sorted in increasing order by utilization.
-  // +featureGate=VolumeCapacityPriority
-  // +optional
-  // +listType=atomic
-  repeated UtilizationShapePoint shape = 2;
-}
-
-message ClientConnectionConfiguration {
-  // kubeconfig is the path to a KubeConfig file.
-  optional string kubeconfig = 1;
-
-  // acceptContentTypes defines the Accept header sent by clients when connecting to a server, overriding the
-  // default value of 'application/json'. This field will control all connections to the server used by a particular
-  // client.
-  optional string acceptContentTypes = 2;
-
-  // contentType is the content type used when sending data to the server from this client.
-  optional string contentType = 3;
-
-  // qps controls the number of queries per second allowed for this connection.
-  optional float qPS = 4;
-
-  // burst allows extra queries to accumulate when a client is exceeding its rate.
-  optional int32 burst = 5;
-}
-
-message DebuggingConfiguration {
-  // enableProfiling enables profiling via web interface host:port/debug/pprof/
-  optional bool enableProfiling = 1;
-
-  // enableContentionProfiling enables block profiling, if
-  // enableProfiling is true.
-  optional bool enableContentionProfiling = 2;
-}
-
-message LeaderElectionConfiguration {
-  // leaderElect enables a leader election client to gain leadership
-  // before executing the main loop. Enable this when running replicated
-  // components for high availability.
-  optional bool leaderElect = 1;
-
-  // leaseDuration is the duration that non-leader candidates will wait
-  // after observing a leadership renewal until attempting to acquire
-  // leadership of a led but unrenewed leader slot. This is effectively the
-  // maximum duration that a leader can be stopped before it is replaced
-  // by another candidate. This is only applicable if leader election is
-  // enabled.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration leaseDuration = 2;
-
-  // renewDeadline is the interval between attempts by the acting master to
-  // renew a leadership slot before it stops leading. This must be less
-  // than or equal to the lease duration. This is only applicable if leader
-  // election is enabled.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration renewDeadline = 3;
-
-  // retryPeriod is the duration the clients should wait between attempting
-  // acquisition and renewal of a leadership. This is only applicable if
-  // leader election is enabled.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration retryPeriod = 4;
-
-  // resourceLock indicates the resource object type that will be used to lock
-  // during leader election cycles.
-  optional string resourceLock = 5;
-
-  // resourceName indicates the name of resource object that will be used to lock
-  // during leader election cycles.
-  optional string resourceName = 6;
-
-  // resourceNamespace indicates the namespace of resource object that will be used to lock
-  // during leader election cycles.
-  optional string resourceNamespace = 7;
 }
 

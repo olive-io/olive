@@ -50,6 +50,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceList":                     schema_olive_apis_apidiscovery_v1_ServiceList(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec":                     schema_olive_apis_apidiscovery_v1_ServiceSpec(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus":                   schema_olive_apis_apidiscovery_v1_ServiceStatus(ref),
+		"github.com/olive-io/olive/apis/config/v1.DebuggingConfiguration":                schema_olive_apis_config_v1_DebuggingConfiguration(ref),
 		"github.com/olive-io/olive/apis/config/v1.DefaultPreemptionArgs":                 schema_olive_apis_config_v1_DefaultPreemptionArgs(ref),
 		"github.com/olive-io/olive/apis/config/v1.Extender":                              schema_olive_apis_config_v1_Extender(ref),
 		"github.com/olive-io/olive/apis/config/v1.ExtenderManagedResource":               schema_olive_apis_config_v1_ExtenderManagedResource(ref),
@@ -69,7 +70,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/config/v1.SchedulerProfile":                      schema_olive_apis_config_v1_SchedulerProfile(ref),
 		"github.com/olive-io/olive/apis/config/v1.ScoringStrategy":                       schema_olive_apis_config_v1_ScoringStrategy(ref),
 		"github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint":                 schema_olive_apis_config_v1_UtilizationShapePoint(ref),
-		"github.com/olive-io/olive/apis/config/v1.VolumeBindingArgs":                     schema_olive_apis_config_v1_VolumeBindingArgs(ref),
 		"github.com/olive-io/olive/apis/core/v1.Affinity":                                schema_olive_apis_core_v1_Affinity(ref),
 		"github.com/olive-io/olive/apis/core/v1.AvoidRegions":                            schema_olive_apis_core_v1_AvoidRegions(ref),
 		"github.com/olive-io/olive/apis/core/v1.Binding":                                 schema_olive_apis_core_v1_Binding(ref),
@@ -835,6 +835,17 @@ func schema_olive_apis_apidiscovery_v1_ServiceStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_config_v1_DebuggingConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "DebuggingConfiguration holds configuration for Debugging related features.",
+				Type:        []string{"object"},
 			},
 		},
 	}
@@ -1676,32 +1687,16 @@ func schema_olive_apis_config_v1_SchedulerConfiguration(ref common.ReferenceCall
 							Format:      "int32",
 						},
 					},
-					"leaderElection": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LeaderElection defines the configuration of leader election client.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/component-base/config.LeaderElectionConfiguration"),
-						},
-					},
-					"clientConnection": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ClientConnection specifies the kubeconfig file and client connection settings for the proxy server to use when communicating with the apiserver.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/component-base/config.ClientConnectionConfiguration"),
-						},
-					},
-					"EnableProfiling": {
+					"enableProfiling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "enableProfiling enables profiling via web interface host:port/debug/pprof/",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
-					"EnableContentionProfiling": {
+					"enableContentionProfiling": {
 						SchemaProps: spec.SchemaProps{
 							Description: "enableContentionProfiling enables block profiling, if enableProfiling is true.",
-							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -1776,11 +1771,10 @@ func schema_olive_apis_config_v1_SchedulerConfiguration(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"leaderElection", "clientConnection", "EnableProfiling", "EnableContentionProfiling"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.Extender", "github.com/olive-io/olive/apis/config/v1.SchedulerProfile", "k8s.io/component-base/config.ClientConnectionConfiguration", "k8s.io/component-base/config.LeaderElectionConfiguration"},
+			"github.com/olive-io/olive/apis/config/v1.Extender", "github.com/olive-io/olive/apis/config/v1.SchedulerProfile"},
 	}
 }
 
@@ -1918,61 +1912,6 @@ func schema_olive_apis_config_v1_UtilizationShapePoint(ref common.ReferenceCallb
 				Required: []string{"utilization", "score"},
 			},
 		},
-	}
-}
-
-func schema_olive_apis_config_v1_VolumeBindingArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "VolumeBindingArgs holds arguments used to configure the VolumeBinding plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"bindTimeoutSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "BindTimeoutSeconds is the timeout in seconds in volume binding operation. Value must be non-negative integer. The value zero indicates no waiting. If this value is nil, the default value (600) will be used.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"shape": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Shape specifies the points defining the score function shape, which is used to score runners based on the utilization of statically provisioned PVs. The utilization is calculated by dividing the total requested storage of the region by the total capacity of feasible PVs on each runner. Each point contains utilization (ranges from 0 to 100) and its associated score (ranges from 0 to 10). You can turn the priority by specifying different scores for different utilization numbers. The default shape points are: 1) 0 for 0 utilization 2) 10 for 100 utilization All points must be sorted in increasing order by utilization.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint"},
 	}
 }
 

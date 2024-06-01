@@ -139,9 +139,9 @@ func DeleteRegion(ctx context.Context, cs clientset.Interface, region *corev1.Re
 	return cs.CoreV1().Regions().Delete(ctx, region.Name, metav1.DeleteOptions{})
 }
 
-// ClearNominatedNodeName internally submit a patch request to API server
+// ClearNominatedRunnerName internally submit a patch request to API server
 // to set each regions[*].Status.NominatedNodeName> to "".
-func ClearNominatedNodeName(ctx context.Context, cs clientset.Interface, regions ...*corev1.Region) utilerrors.Aggregate {
+func ClearNominatedRunnerName(ctx context.Context, cs clientset.Interface, regions ...*corev1.Region) utilerrors.Aggregate {
 	var errs []error
 	for _, p := range regions {
 		regionStatusCopy := p.Status.DeepCopy()

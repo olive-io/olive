@@ -30,12 +30,14 @@ import (
 	"github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 )
 
-// The RegionExpansion interface allows manually adding extra methods to the RegionInterface.
-type RegionExpansion interface {
-	Bind(ctx context.Context, binding *corev1.Binding, opts metav1.CreateOptions) error
+// The NamespaceExpansion interface allows manually adding extra methods to the NamespaceInterface.
+type NamespaceExpansion interface {
+	Finalize(ctx context.Context, item *corev1.Namespace, opts metav1.UpdateOptions) (*corev1.Namespace, error)
 }
 
-// Bind applies the provided binding to the named region in the current namespace (binding.Namespace is ignored).
-func (c *regions) Bind(ctx context.Context, binding *corev1.Binding, opts metav1.CreateOptions) error {
-	return c.client.Post().Resource("regions").Name(binding.Name).VersionedParams(&opts, scheme.ParameterCodec).SubResource("binding").Body(binding).Do(ctx).Error()
+// Finalize takes the representation of a namespace to update.  Returns the server's representation of the namespace, and an error, if it occurs.
+func (c *namespaces) Finalize(ctx context.Context, namespace *corev1.Namespace, opts metav1.UpdateOptions) (result *corev1.Namespace, err error) {
+	result = &corev1.Namespace{}
+	err = c.client.Put().Resource("namespaces").Name(namespace.Name).VersionedParams(&opts, scheme.ParameterCodec).SubResource("finalize").Body(namespace).Do(ctx).Into(result)
+	return
 }

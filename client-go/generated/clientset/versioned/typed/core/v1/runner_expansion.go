@@ -25,17 +25,26 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 )
 
-// The RegionExpansion interface allows manually adding extra methods to the RegionInterface.
-type RegionExpansion interface {
-	Bind(ctx context.Context, binding *corev1.Binding, opts metav1.CreateOptions) error
+// The RunnerExpansion interface allows manually adding extra methods to the RunnerInterface.
+type RunnerExpansion interface {
+	Finalize(ctx context.Context, item *corev1.Runner, opts metav1.UpdateOptions) (*corev1.Runner, error)
 }
 
-// Bind applies the provided binding to the named region in the current namespace (binding.Namespace is ignored).
-func (c *regions) Bind(ctx context.Context, binding *corev1.Binding, opts metav1.CreateOptions) error {
-	return c.client.Post().Resource("regions").Name(binding.Name).VersionedParams(&opts, scheme.ParameterCodec).SubResource("binding").Body(binding).Do(ctx).Error()
+// UpdateStat was generated because the type contains a Stat member.
+func (c *runners) UpdateStat(ctx context.Context, runner *corev1.Runner, opts metav1.UpdateOptions) (result *corev1.Runner, err error) {
+	result = &corev1.Runner{}
+	err = c.client.Put().
+		Resource("runners").
+		Name(runner.Name).
+		SubResource("stat").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(runner).
+		Do(ctx).
+		Into(result)
+	return
 }

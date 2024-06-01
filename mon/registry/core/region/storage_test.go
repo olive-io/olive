@@ -23,13 +23,12 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
-
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
 func newStorage(t *testing.T) (*RegionStorage, *etcd3testing.EtcdTestServer) {
-	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
+	etcdStorage, server := registrytest.NewEtcdStorage(t, corev1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,
@@ -43,12 +42,12 @@ func newStorage(t *testing.T) (*RegionStorage, *etcd3testing.EtcdTestServer) {
 	return &jobStorage, server
 }
 
-func validNewRegion() *monv1.Region {
-	return &monv1.Region{
+func validNewRegion() *corev1.Region {
+	return &corev1.Region{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: monv1.RegionSpec{},
+		Spec: corev1.RegionSpec{},
 	}
 }

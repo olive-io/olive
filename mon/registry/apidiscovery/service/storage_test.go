@@ -24,12 +24,12 @@ import (
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	monv1 "github.com/olive-io/olive/apis/mon/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
 )
 
 func newStorage(t *testing.T) (*ServiceStorage, *etcd3testing.EtcdTestServer) {
-	etcdStorage, server := registrytest.NewEtcdStorage(t, monv1.GroupName)
+	etcdStorage, server := registrytest.NewEtcdStorage(t, corev1.GroupName)
 	restOptions := generic.RESTOptions{
 		StorageConfig:           etcdStorage,
 		Decorator:               generic.UndecoratedStorage,

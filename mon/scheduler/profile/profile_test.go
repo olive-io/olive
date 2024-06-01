@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/tools/events"
 	"k8s.io/klog/v2/ktesting"
 
-	"github.com/olive-io/olive/mon/scheduler/apis/config"
+	config "github.com/olive-io/olive/apis/config/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	frameworkruntime "github.com/olive-io/olive/mon/scheduler/framework/runtime"
 )
@@ -85,7 +85,7 @@ func TestNewMap(t *testing.T) {
 					PluginConfig: []config.PluginConfig{
 						{
 							Name: "Bind2",
-							Args: &runtime.Unknown{Raw: []byte("{}")},
+							Args: runtime.RawExtension{Raw: []byte("{}")},
 						},
 					},
 				},
@@ -147,7 +147,7 @@ func TestNewMap(t *testing.T) {
 					PluginConfig: []config.PluginConfig{
 						{
 							Name: "QueueSort",
-							Args: &runtime.Unknown{Raw: []byte("{}")},
+							Args: runtime.RawExtension{Raw: []byte("{}")},
 						},
 					},
 				},

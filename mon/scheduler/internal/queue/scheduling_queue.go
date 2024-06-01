@@ -116,7 +116,6 @@ type SchedulingQueue interface {
 	// TODO(sanposhiho): move all PreEnqueueCkeck to Requeue and delete it from this parameter eventually.
 	// Some PreEnqueueCheck include event filtering logic based on some in-tree plugins
 	// and it affect badly to other plugins.
-	// See https://github.com/kubernetes/kubernetes/issues/110175
 	MoveAllToActiveOrBackoffQueue(logger klog.Logger, event framework.ClusterEvent, oldObj, newObj interface{}, preCheck PreEnqueueCheck)
 	AssignedRegionAdded(logger klog.Logger, region *corev1.Region)
 	AssignedRegionUpdated(logger klog.Logger, oldRegion, newRegion *corev1.Region)
@@ -206,7 +205,6 @@ type PriorityQueue struct {
 	// received a move request. Unschedulable regions in and before this scheduling
 	// cycle will be put back to activeQueue if we were trying to schedule them
 	// when we received move request.
-	// TODO: this will be removed after SchedulingQueueHint goes to stable and the feature gate is removed.
 	moveRequestCycle int64
 
 	// preEnqueuePluginMap is keyed with profile name, valued with registered preEnqueue plugins.
@@ -381,7 +379,7 @@ func NewPriorityQueue(
 		metricsRecorder:                         options.metricsRecorder,
 		pluginMetricsSamplePercent:              options.pluginMetricsSamplePercent,
 		moveRequestCycle:                        -1,
-		//isSchedulingQueueHintEnabled: utilfeature.DefaultFeatureGate.Enabled(features.SchedulerQueueingHints),
+		isSchedulingQueueHintEnabled:            true,
 	}
 	pq.cond.L = &pq.lock
 	pq.regionBackoffQ = heap.NewWithRecorder(regionInfoKeyFunc, pq.regionsCompareBackoffCompleted, metrics.NewBackoffRegionsRecorder())
@@ -1214,7 +1212,7 @@ func (p *PriorityQueue) moveRegionsToActiveOrBackoffQueue(logger klog.Logger, re
 // any affinity term that matches "region".
 // NOTE: this function assumes lock has been acquired in caller.
 //func (p *PriorityQueue) getUnschedulableRegionsWithMatchingAffinityTerm(logger klog.Logger, region *corev1.Region) []*framework.QueuedRegionInfo {
-//	//nsLabels := interregionaffinity.GetNamespaceLabelsSnapshot(logger, region.Namespace, p.nsLister)
+//	nsLabels := interregionaffinity.GetNamespaceLabelsSnapshot(logger, region.Namespace, p.nsLister)
 //
 //	var regionsToMove []*framework.QueuedRegionInfo
 //	for _, pInfo := range p.unschedulableRegions.regionInfoMap {

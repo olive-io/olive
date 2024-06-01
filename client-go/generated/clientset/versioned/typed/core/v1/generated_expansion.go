@@ -27,8 +27,5 @@ type DefinitionExpansion interface{}
 
 type EventExpansion interface{}
 
-type NamespaceExpansion interface{}
-
 type ProcessExpansion interface{}
 
-type RunnerExpansion interface{}

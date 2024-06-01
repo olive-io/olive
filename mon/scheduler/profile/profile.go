@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/events"
 
-	"github.com/olive-io/olive/mon/scheduler/apis/config"
+	config "github.com/olive-io/olive/apis/config/v1"
 	"github.com/olive-io/olive/mon/scheduler/framework"
 	frameworkruntime "github.com/olive-io/olive/mon/scheduler/framework/runtime"
 )
@@ -116,7 +116,7 @@ func (v *cfgValidator) validate(cfg config.SchedulerProfile, f framework.Framewo
 	var queueSortArgs runtime.Object
 	for _, plCfg := range cfg.PluginConfig {
 		if plCfg.Name == queueSort {
-			queueSortArgs = plCfg.Args
+			queueSortArgs = plCfg.Args.Object
 			break
 		}
 	}

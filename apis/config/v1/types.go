@@ -28,7 +28,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	componentbaseconfig "k8s.io/component-base/config"
 	"sigs.k8s.io/yaml"
 )
 
@@ -43,6 +42,10 @@ const (
 	SchedulerDefaultProviderName = "DefaultProvider"
 )
 
+// DebuggingConfiguration holds configuration for Debugging related features.
+type DebuggingConfiguration struct {
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // SchedulerConfiguration configures a scheduler
@@ -52,16 +55,11 @@ type SchedulerConfiguration struct {
 	// Parallelism defines the amount of parallelism in algorithms for scheduling a Regions. Must be greater than 0. Defaults to 16
 	Parallelism int32 `json:"parallelism,omitempty" protobuf:"varint,1,opt,name=parallelism"`
 
-	// LeaderElection defines the configuration of leader election client.
-	LeaderElection componentbaseconfig.LeaderElectionConfiguration `json:"leaderElection" protobuf:"bytes,2,opt,name=leaderElection"`
-
-	// ClientConnection specifies the kubeconfig file and client connection
-	// settings for the proxy server to use when communicating with the apiserver.
-	ClientConnection componentbaseconfig.ClientConnectionConfiguration `json:"clientConnection" protobuf:"bytes,3,opt,name=clientConnection"`
-
-	// DebuggingConfiguration holds configuration for Debugging related features
-	// TODO: We might wanna make this a substruct like Debugging componentbaseconfigv1alpha1.DebuggingConfiguration
-	componentbaseconfig.DebuggingConfiguration `json:",inline" protobuf:"bytes,4,opt,name=debuggingConfiguration"`
+	// enableProfiling enables profiling via web interface host:port/debug/pprof/
+	EnableProfiling bool `json:"enableProfiling,omitempty" protobuf:"varint,2,opt,name=enableProfiling"`
+	// enableContentionProfiling enables block profiling, if
+	// enableProfiling is true.
+	EnableContentionProfiling bool `json:"enableContentionProfiling,omitempty" protobuf:"varint,3,opt,name=enableContentionProfiling"`
 
 	// PercentageOfRunnersToScore is the percentage of all runners that once found feasible
 	// for running a region, the scheduler stops its search for more feasible runners in
@@ -71,17 +69,17 @@ type SchedulerConfiguration struct {
 	// then scheduler stops finding further feasible runners once it finds 150 feasible ones.
 	// When the value is 0, default percentage (5%--50% based on the size of the cluster) of the
 	// runners will be scored. It is overridden by profile level PercentageofRunnersToScore.
-	PercentageOfRunnersToScore int32 `json:"percentageOfRunnersToScore,omitempty" protobuf:"varint,5,opt,name=percentageOfRunnersToScore"`
+	PercentageOfRunnersToScore int32 `json:"percentageOfRunnersToScore,omitempty" protobuf:"varint,4,opt,name=percentageOfRunnersToScore"`
 
 	// RegionInitialBackoffSeconds is the initial backoff for unschedulable regions.
 	// If specified, it must be greater than 0. If this value is null, the default value (1s)
 	// will be used.
-	RegionInitialBackoffSeconds int64 `json:"regionInitialBackoffSeconds,omitempty" protobuf:"varint,6,opt,name=regionInitialBackoffSeconds"`
+	RegionInitialBackoffSeconds int64 `json:"regionInitialBackoffSeconds,omitempty" protobuf:"varint,5,opt,name=regionInitialBackoffSeconds"`
 
 	// RegionMaxBackoffSeconds is the max backoff for unschedulable regions.
 	// If specified, it must be greater than regionInitialBackoffSeconds. If this value is null,
 	// the default value (10s) will be used.
-	RegionMaxBackoffSeconds int64 `json:"regionMaxBackoffSeconds,omitempty" protobuf:"varint,7,opt,name=regionMaxBackoffSeconds"`
+	RegionMaxBackoffSeconds int64 `json:"regionMaxBackoffSeconds,omitempty" protobuf:"varint,6,opt,name=regionMaxBackoffSeconds"`
 
 	// Profiles are scheduling profiles that kube-scheduler supports. Regions can
 	// choose to be scheduled under a particular profile by setting its associated
@@ -89,18 +87,18 @@ type SchedulerConfiguration struct {
 	// with the "default-scheduler" profile, if present here.
 	// +listType=map
 	// +listMapKey=schedulerName
-	Profiles []SchedulerProfile `json:"profiles,omitempty" protobuf:"bytes,8,rep,name=profiles"`
+	Profiles []SchedulerProfile `json:"profiles,omitempty" protobuf:"bytes,7,rep,name=profiles"`
 
 	// Extenders are the list of scheduler extenders, each holding the values of how to communicate
 	// with the extender. These extenders are shared by all scheduler profiles.
 	// +listType=set
-	Extenders []Extender `json:"extenders,omitempty" protobuf:"bytes,9,rep,name=extenders"`
+	Extenders []Extender `json:"extenders,omitempty" protobuf:"bytes,8,rep,name=extenders"`
 
 	// DelayCacheUntilActive specifies when to start caching. If this is true and leader election is enabled,
 	// the scheduler will wait to fill informer caches until it is the leader. Doing so will have slower
 	// failover with the benefit of lower memory overhead while waiting to become leader.
 	// Defaults to false.
-	DelayCacheUntilActive bool `json:"delayCacheUntilActive,omitempty" protobuf:"varint,10,opt,name=delayCacheUntilActive"`
+	DelayCacheUntilActive bool `json:"delayCacheUntilActive,omitempty" protobuf:"varint,9,opt,name=delayCacheUntilActive"`
 }
 
 // DecodeNestedObjects decodes plugin args for known types.
