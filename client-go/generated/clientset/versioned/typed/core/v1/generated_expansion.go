@@ -28,3 +28,5 @@ type DefinitionExpansion interface{}
 type ProcessExpansion interface{}
 
 type RegionExpansion interface{}
+
+type RunnerStatExpansion interface{}

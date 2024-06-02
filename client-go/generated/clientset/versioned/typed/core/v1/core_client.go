@@ -38,6 +38,7 @@ type CoreV1Interface interface {
 	ProcessesGetter
 	RegionsGetter
 	RunnersGetter
+	RunnerStatsGetter
 }
 
 // CoreV1Client is used to interact with features provided by the core.olive.io group.
@@ -63,6 +64,10 @@ func (c *CoreV1Client) Regions() RegionInterface {
 
 func (c *CoreV1Client) Runners() RunnerInterface {
 	return newRunners(c)
+}
+
+func (c *CoreV1Client) RunnerStats() RunnerStatInterface {
+	return newRunnerStats(c)
 }
 
 // NewForConfig creates a new CoreV1Client for the given config.

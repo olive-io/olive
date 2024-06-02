@@ -21,29 +21,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-import (
-	"context"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	v1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
-)
-
 // The RunnerExpansion interface allows manually adding extra methods to the RunnerInterface.
-type RunnerExpansion interface {
-	ApplyStat(ctx context.Context, stat *v1.RunnerStat, opts metav1.UpdateOptions) (*v1.RunnerStat, error)
-}
-
-func (c *runners) ApplyStat(ctx context.Context, stat *v1.RunnerStat, opts metav1.UpdateOptions) (result *v1.RunnerStat, err error) {
-	result = &v1.RunnerStat{}
-	err = c.client.Post().
-		Resource("runners").
-		Name(stat.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		SubResource("stat").
-		Body(stat).
-		Do(ctx).
-		Into(result)
-	return
-}
+type RunnerExpansion interface{}

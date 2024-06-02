@@ -33,11 +33,13 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 option go_package = "github.com/olive-io/olive/apis/core/v1";
 
 message BpmnStat {
-  optional int64 bpmnProcesses = 1;
+  optional int64 definitions = 1;
 
-  optional int64 bpmnEvents = 2;
+  optional int64 processes = 2;
 
-  optional int64 bpmnTasks = 3;
+  optional int64 events = 3;
+
+  optional int64 tasks = 4;
 }
 
 // Definition is bpmn definitions
@@ -335,6 +337,14 @@ message RunnerStat {
   optional BpmnStat bpmn = 4;
 
   optional int64 timestamp = 5;
+}
+
+// RunnerStatList is a list of RunnerStat objects.
+message RunnerStatList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // Items is a list of Runner
+  repeated Runner items = 2;
 }
 
 message RunnerStatus {

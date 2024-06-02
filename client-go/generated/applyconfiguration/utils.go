@@ -54,6 +54,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apidiscoveryv1.ServiceSpecApplyConfiguration{}
 
 		// Group=core.olive.io, Version=v1
+	case corev1.SchemeGroupVersion.WithKind("BpmnStat"):
+		return &applyconfigurationcorev1.BpmnStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Definition"):
 		return &applyconfigurationcorev1.DefinitionApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("DefinitionSpec"):
@@ -86,6 +88,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.RunnerApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerSpec"):
 		return &applyconfigurationcorev1.RunnerSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("RunnerStat"):
+		return &applyconfigurationcorev1.RunnerStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerStatus"):
 		return &applyconfigurationcorev1.RunnerStatusApplyConfiguration{}
 

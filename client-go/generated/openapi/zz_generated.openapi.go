@@ -77,6 +77,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.RunnerList":              schema_olive_apis_core_v1_RunnerList(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":              schema_olive_apis_core_v1_RunnerSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerStat":              schema_olive_apis_core_v1_RunnerStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStatList":          schema_olive_apis_core_v1_RunnerStatList(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":            schema_olive_apis_core_v1_RunnerStatus(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                  schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":              schema_pkg_apis_meta_v1_APIGroupList(ref),
@@ -852,21 +853,28 @@ func schema_olive_apis_core_v1_BpmnStat(ref common.ReferenceCallback) common.Ope
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"bpmnProcesses": {
+					"definitions": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"integer"},
 							Format:  "int64",
 						},
 					},
-					"bpmnEvents": {
+					"processes": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"integer"},
 							Format:  "int64",
 						},
 					},
-					"bpmnTasks": {
+					"events": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"tasks": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"integer"},
@@ -874,7 +882,7 @@ func schema_olive_apis_core_v1_BpmnStat(ref common.ReferenceCallback) common.Ope
 						},
 					},
 				},
-				Required: []string{"bpmnProcesses", "bpmnEvents", "bpmnTasks"},
+				Required: []string{"definitions", "processes", "events", "tasks"},
 			},
 		},
 	}
@@ -2242,6 +2250,56 @@ func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.O
 		},
 		Dependencies: []string{
 			"github.com/olive-io/olive/apis/core/v1.BpmnStat", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_RunnerStatList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RunnerStatList is a list of RunnerStat objects.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Items is a list of Runner",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Runner"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.Runner", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

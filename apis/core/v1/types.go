@@ -81,6 +81,21 @@ type RunnerStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// RunnerList is a list of Runner objects.
+type RunnerList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Items is a list of Runner
+	Items []Runner `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +genclient
+// +genclient:nonNamespaced
+// +genclient:noStatus
+// +genclient:skipVerbs=create,delete,deleteCollection
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // RunnerStat is the stat information of Runner
 type RunnerStat struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -95,15 +110,16 @@ type RunnerStat struct {
 }
 
 type BpmnStat struct {
-	Processes int64 `json:"bpmnProcesses" protobuf:"varint,1,opt,name=bpmnProcesses"`
-	Events    int64 `json:"bpmnEvents" protobuf:"varint,2,opt,name=bpmnEvents"`
-	Tasks     int64 `json:"bpmnTasks" protobuf:"varint,3,opt,name=bpmnTasks"`
+	Definitions int64 `json:"definitions" protobuf:"varint,1,opt,name=definitions"`
+	Processes   int64 `json:"processes" protobuf:"varint,2,opt,name=processes"`
+	Events      int64 `json:"events" protobuf:"varint,3,opt,name=events"`
+	Tasks       int64 `json:"tasks" protobuf:"varint,4,opt,name=tasks"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RunnerList is a list of Runner objects.
-type RunnerList struct {
+// RunnerStatList is a list of RunnerStat objects.
+type RunnerStatList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 

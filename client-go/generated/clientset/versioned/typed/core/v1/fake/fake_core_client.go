@@ -53,6 +53,10 @@ func (c *FakeCoreV1) Runners() v1.RunnerInterface {
 	return &FakeRunners{c}
 }
 
+func (c *FakeCoreV1) RunnerStats() v1.RunnerStatInterface {
+	return &FakeRunnerStats{c}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeCoreV1) RESTClient() rest.Interface {

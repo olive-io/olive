@@ -62,8 +62,9 @@ func addKnownTypes(scheme *krt.Scheme) error {
 	}
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Runner{},
-		&RunnerStat{},
 		&RunnerList{},
+		&RunnerStat{},
+		&RunnerStatList{},
 		&Region{},
 		&RegionStat{},
 		&RegionList{},
