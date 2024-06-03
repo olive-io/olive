@@ -406,18 +406,18 @@ func (s *bpmnServer) definitionMeta(ctx context.Context, id string) (*definition
 }
 
 func (s *bpmnServer) bindDefinition(ctx context.Context, dm *pb.DefinitionMeta) (bool, error) {
-	_, ok, err := s.scheduler.BindRegion(ctx, dm)
-	if err != nil {
-		s.lg.Error("binding region",
-			zap.String("definition", dm.Id),
-			zap.Error(err))
-	}
+	//_, ok, err := s.scheduler.BindRegion(ctx, dm)
+	//if err != nil {
+	//	s.lg.Error("binding region",
+	//		zap.String("definition", dm.Id),
+	//		zap.Error(err))
+	//}
+	//
+	//if ok && dm.Region > 0 {
+	//	s.lg.Info("binding definition",
+	//		zap.String("definition", dm.Id),
+	//		zap.Uint64("region", dm.Region))
+	//}
 
-	if ok && dm.Region > 0 {
-		s.lg.Info("binding definition",
-			zap.String("definition", dm.Id),
-			zap.Uint64("region", dm.Region))
-	}
-
-	return ok, err
+	return false, nil
 }

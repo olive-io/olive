@@ -22,50 +22,93 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package scheduler
 
 import (
-	"math"
+	"fmt"
 
-	pb "github.com/olive-io/olive/apis/pb/olive"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
-type runnerMatch func(runner *pb.Runner) bool
+const (
+	DefaultRegionLimit        = 100
+	DefaultDefinitionLimit    = 10000
+	DefaultInitRegionNum      = 1
+	DefaultRegionReplicas     = 3
+	DefaultRegionElectionTTL  = 10 // 10s
+	DefaultRegionHeartbeatTTL = 1  // 1s
+)
 
-func allRunnerMatch() runnerMatch {
-	return func(runner *pb.Runner) bool {
-		return true
+type Option func(*Options)
+
+type Options struct {
+	RegionLimit        int
+	DefinitionLimit    int
+	InitRegionNum      int
+	RegionReplicas     int
+	RegionElectionTTL  int64
+	RegionHeartbeatTTL int64
+}
+
+func NewOptions(opts ...Option) *Options {
+	options := &Options{
+		RegionLimit:        DefaultRegionLimit,
+		DefinitionLimit:    DefaultDefinitionLimit,
+		InitRegionNum:      DefaultInitRegionNum,
+		RegionReplicas:     DefaultRegionReplicas,
+		RegionElectionTTL:  DefaultRegionElectionTTL,
+		RegionHeartbeatTTL: DefaultRegionHeartbeatTTL,
+	}
+
+	for _, o := range opts {
+		o(options)
+	}
+	return options
+}
+
+func (o *Options) Validate() error {
+	var errors []error
+	if o.RegionReplicas != 3 && o.RegionReplicas != 5 {
+		errors = append(errors, fmt.Errorf("RegionReplicas must be either 3 or 5"))
+	}
+	if o.InitRegionNum <= 0 {
+		errors = append(errors, fmt.Errorf("InitRegionNum must be greater than 0"))
+	}
+	if o.RegionElectionTTL <= o.RegionHeartbeatTTL {
+		errors = append(errors, fmt.Errorf("RegionElectionTTL must be greater than RegionHeartbeatTTL"))
+	}
+	return utilerrors.NewAggregate(errors)
+}
+
+func WithRegionLimit(limit int) Option {
+	return func(options *Options) {
+		options.RegionLimit = limit
 	}
 }
 
-func runnerMatchWithout(id uint64) runnerMatch {
-	return func(runner *pb.Runner) bool {
-		return runner.Id != id
+func WithDefinitionLimit(limit int) Option {
+	return func(options *Options) {
+		options.DefinitionLimit = limit
 	}
 }
 
-type runnerOptions struct {
-	matches []runnerMatch
-	count   int
-}
-
-func newRunnerOptions() *runnerOptions {
-	return &runnerOptions{
-		matches: []runnerMatch{},
-		count:   math.MaxInt,
+func WithInitRegionNum(limit int) Option {
+	return func(options *Options) {
+		options.InitRegionNum = limit
 	}
 }
 
-type runnerOption func(options *runnerOptions)
-
-func runnerWithMatch(match runnerMatch) runnerOption {
-	return func(options *runnerOptions) {
-		if options.matches == nil {
-			options.matches = make([]runnerMatch, 0)
-		}
-		options.matches = append(options.matches, match)
+func WithRegionReplicas(replicas int) Option {
+	return func(options *Options) {
+		options.RegionReplicas = replicas
 	}
 }
 
-func runnerWithCount(count int) runnerOption {
-	return func(options *runnerOptions) {
-		options.count = count
+func WithRegionElectionTTL(ttl int64) Option {
+	return func(options *Options) {
+		options.RegionElectionTTL = ttl
+	}
+}
+
+func WithRegionHeartbeatTTL(ttl int64) Option {
+	return func(options *Options) {
+		options.RegionHeartbeatTTL = ttl
 	}
 }

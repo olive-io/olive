@@ -133,9 +133,9 @@ func (r *Region) scheduleCycle() {
 				if !ok {
 					break
 				}
+				pi := x.(*ProcessInfo)
 
-				processInstance := x.(*pb.ProcessInstance)
-				go r.scheduleDefinition(processInstance)
+				go r.scheduleDefinition(pi.p)
 			}
 		}
 	}
@@ -273,7 +273,7 @@ LOOP:
 	for {
 		select {
 		case <-r.changeNotify():
-			r.processQ.Push(process)
+			r.processQ.Push(NewProcessInfo(process))
 			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)

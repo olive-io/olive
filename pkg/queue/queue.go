@@ -25,39 +25,36 @@ import (
 	"container/heap"
 )
 
-type ScoreFn[T any] func(v T) int64
-
-type item[T any] struct {
-	value T
-	fn    ScoreFn[T]
+type item struct {
+	value IScoreGetter
 	index int
 }
 
-type priorityQueue[T any] struct {
-	list []*item[T]
+type priorityQueue struct {
+	list []*item
 }
 
-func (pq *priorityQueue[T]) Len() int { return len(pq.list) }
+func (pq *priorityQueue) Len() int { return len(pq.list) }
 
-func (pq *priorityQueue[T]) Less(i, j int) bool {
+func (pq *priorityQueue) Less(i, j int) bool {
 	x, y := pq.list[i], pq.list[j]
-	return x.fn(x.value) > y.fn(y.value)
+	return x.value.Score() < y.value.Score()
 }
 
-func (pq *priorityQueue[T]) Swap(i, j int) {
+func (pq *priorityQueue) Swap(i, j int) {
 	pq.list[i], pq.list[j] = pq.list[j], pq.list[i]
 	pq.list[i].index = i
 	pq.list[j].index = j
 }
 
-func (pq *priorityQueue[T]) Push(x any) {
+func (pq *priorityQueue) Push(x any) {
 	n := len(pq.list)
-	value := x.(*item[T])
+	value := x.(*item)
 	value.index = n
 	pq.list = append(pq.list, value)
 }
 
-func (pq *priorityQueue[T]) Pop() any {
+func (pq *priorityQueue) Pop() any {
 	old := *pq
 	n := len(old.list)
 	value := old.list[n-1]
@@ -67,10 +64,7 @@ func (pq *priorityQueue[T]) Pop() any {
 	return value
 }
 
-func (pq *priorityQueue[T]) update(item *item[T], value T, fn ScoreFn[T]) {
+func (pq *priorityQueue) update(item *item, value IScoreGetter) {
 	item.value = value
-	if fn != nil {
-		item.fn = fn
-	}
 	heap.Fix(pq, item.index)
 }

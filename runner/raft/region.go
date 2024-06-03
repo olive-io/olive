@@ -63,7 +63,19 @@ const (
 	traceThreshold                   = 100 * time.Millisecond
 )
 
-func processInstanceStoreFn(process *pb.ProcessInstance) int64 {
+type ProcessInfo struct {
+	p *pb.ProcessInstance
+}
+
+func NewProcessInfo(p *pb.ProcessInstance) *ProcessInfo {
+	return &ProcessInfo{p: p}
+}
+
+func (pi *ProcessInfo) UID() string {
+	return pi.p.Id
+}
+
+func (pi *ProcessInfo) Score() float64 {
 	return 1
 }
 
@@ -95,7 +107,7 @@ type Region struct {
 	regionInfo *pb.Region
 	metric     *regionMetrics
 
-	processQ *queue.SyncPriorityQueue[*pb.ProcessInstance]
+	processQ *queue.SyncPriorityQueue
 
 	applyBase Applier
 
@@ -118,7 +130,7 @@ type Region struct {
 
 func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStateMachine {
 	reqIDGen := idutil.NewGenerator(uint16(nodeId), time.Now())
-	processQ := queue.NewSync[*pb.ProcessInstance](processInstanceStoreFn)
+	processQ := queue.NewSync()
 
 	tracer := c.tracer
 	region := &Region{
@@ -245,7 +257,7 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 		if pi.Status == pb.ProcessInstance_Waiting {
 			pi.Status = pb.ProcessInstance_Prepare
 		}
-		r.processQ.Push(pi)
+		r.processQ.Push(NewProcessInfo(pi))
 	}
 
 	return applyIndex, nil

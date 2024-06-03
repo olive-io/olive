@@ -136,6 +136,8 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		return nil
 	})
 
+	//informersFactory.Core().V1().Runners().Informer()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	etcdClient := v3client.New(etcd.Server)
 

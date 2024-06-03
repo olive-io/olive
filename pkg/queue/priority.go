@@ -26,46 +26,39 @@ import (
 	"sync"
 )
 
-type INode interface {
-	ID() uint64
+type PriorityQueue struct {
+	pq priorityQueue
+	m  map[string]*item
 }
 
-type PriorityQueue[T INode] struct {
-	pq      priorityQueue[T]
-	m       map[uint64]*item[T]
-	scoreFn ScoreFn[T]
-}
-
-func New[T INode](fn ScoreFn[T]) *PriorityQueue[T] {
-	queue := &PriorityQueue[T]{
-		pq:      priorityQueue[T]{},
-		m:       map[uint64]*item[T]{},
-		scoreFn: fn,
+func New() *PriorityQueue {
+	queue := &PriorityQueue{
+		pq: priorityQueue{},
+		m:  map[string]*item{},
 	}
 
 	return queue
 }
 
-func (q *PriorityQueue[T]) Push(val T) {
-	it := &item[T]{
+func (q *PriorityQueue) Push(val IScoreGetter) {
+	it := &item{
 		value: val,
-		fn:    q.scoreFn,
 	}
 	heap.Push(&q.pq, it)
-	q.m[val.ID()] = it
+	q.m[val.UID()] = it
 }
 
-func (q *PriorityQueue[T]) Pop() (any, bool) {
+func (q *PriorityQueue) Pop() (IScoreGetter, bool) {
 	if q.pq.Len() == 0 {
 		return nil, false
 	}
 	x := heap.Pop(&q.pq)
-	it := x.(*item[T])
-	delete(q.m, it.value.ID())
+	it := x.(*item)
+	delete(q.m, it.value.UID())
 	return it.value, true
 }
 
-func (q *PriorityQueue[T]) Get(id uint64) (any, bool) {
+func (q *PriorityQueue) Get(id string) (IScoreGetter, bool) {
 	v, ok := q.m[id]
 	if !ok {
 		return nil, false
@@ -73,79 +66,79 @@ func (q *PriorityQueue[T]) Get(id uint64) (any, bool) {
 	return v.value, true
 }
 
-func (q *PriorityQueue[T]) Remove(id uint64) (any, bool) {
+func (q *PriorityQueue) Remove(id string) (IScoreGetter, bool) {
 	v, ok := q.m[id]
 	if !ok {
 		return nil, false
 	}
 	idx := v.index
 	x := heap.Remove(&q.pq, idx)
-	v = x.(*item[T])
+	v = x.(*item)
 	delete(q.m, id)
 	return v.value, true
 }
 
-func (q *PriorityQueue[T]) Set(val T) {
-	v, ok := q.m[val.ID()]
+func (q *PriorityQueue) Set(val IScoreGetter) {
+	v, ok := q.m[val.UID()]
 	if !ok {
 		q.Push(val)
 		return
 	}
 	v.value = val
-	q.pq.update(v, val, q.scoreFn)
-	q.m[val.ID()] = v
+	q.pq.update(v, val)
+	q.m[val.UID()] = v
 }
 
-func (q *PriorityQueue[T]) Len() int {
+func (q *PriorityQueue) Len() int {
 	return q.pq.Len()
 }
 
-type SyncPriorityQueue[T INode] struct {
+type SyncPriorityQueue struct {
 	mu sync.RWMutex
-	pq *PriorityQueue[T]
+	pq *PriorityQueue
 }
 
-func NewSync[T INode](fn ScoreFn[T]) *SyncPriorityQueue[T] {
-	pq := New(fn)
-	queue := &SyncPriorityQueue[T]{pq: pq}
+func NewSync() *SyncPriorityQueue {
+	pq := New()
+	queue := &SyncPriorityQueue{pq: pq}
 
 	return queue
 }
 
-func (q *SyncPriorityQueue[T]) Push(val T) {
+func (q *SyncPriorityQueue) Push(val IScoreGetter) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	q.pq.Push(val)
 }
 
-func (q *SyncPriorityQueue[T]) Pop() (any, bool) {
+func (q *SyncPriorityQueue) Pop() (IScoreGetter, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Pop()
 	return result, ok
 }
 
-func (q *SyncPriorityQueue[T]) Get(id uint64) (any, bool) {
+func (q *SyncPriorityQueue) Get(id string) (IScoreGetter, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Get(id)
 	return result, ok
 }
 
-func (q *SyncPriorityQueue[T]) Remove(id uint64) (any, bool) {
+func (q *SyncPriorityQueue) Remove(id string) (IScoreGetter, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Remove(id)
 	return result, ok
 }
 
-func (q *SyncPriorityQueue[T]) Set(val T) {
+func (q *SyncPriorityQueue) Set(val IScoreGetter) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	q.pq.Set(val)
 }
 
-func (q *SyncPriorityQueue[T]) Len() int {
+func (q *SyncPriorityQueue) Len() int {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
 	return q.pq.Len()
