@@ -26,15 +26,21 @@ import (
 	"io"
 	"net"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	krt "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/admission"
 	genericopenapi "k8s.io/apiserver/pkg/endpoints/openapi"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	netutils "k8s.io/utils/net"
 
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	"github.com/olive-io/olive/client-go/generated/openapi"
+
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/version"
-	"github.com/olive-io/olive/client-go/generated/openapi"
 	monserver "github.com/olive-io/olive/mon"
 	"github.com/olive-io/olive/mon/embed"
 )
@@ -69,7 +75,11 @@ func NewServerOptions(out, errOut io.Writer) *ServerOptions {
 		StdOut: out,
 		StdErr: errOut,
 	}
-	//o.RecommendedOptions.EtcdStorage.StorageConfig.EncodeVersioner = krt.NewMultiGroupVersioner(v1alpha1.SchemeGroupVersion, schema.GroupKind{Group: v1alpha1.GroupName})
+	o.RecommendedOptions.EtcdStorage.StorageConfig.EncodeVersioner = krt.NewMultiGroupVersioner(
+		metav1.SchemeGroupVersion,
+		schema.GroupKind{Group: corev1.GroupName},
+		schema.GroupKind{Group: apidiscoveryv1.GroupName},
+	)
 	o.RecommendedOptions.Admission = nil
 	o.RecommendedOptions.Authentication = nil
 	o.RecommendedOptions.Authorization.RemoteKubeConfigFileOptional = true

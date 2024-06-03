@@ -54,20 +54,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apidiscoveryv1.ServiceSpecApplyConfiguration{}
 
 		// Group=core.olive.io, Version=v1
-	case corev1.SchemeGroupVersion.WithKind("Affinity"):
-		return &applyconfigurationcorev1.AffinityApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("BpmnStat"):
+		return &applyconfigurationcorev1.BpmnStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Definition"):
 		return &applyconfigurationcorev1.DefinitionApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("DefinitionSpec"):
 		return &applyconfigurationcorev1.DefinitionSpecApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("DefinitionStatus"):
 		return &applyconfigurationcorev1.DefinitionStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("Event"):
-		return &applyconfigurationcorev1.EventApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("EventSeries"):
-		return &applyconfigurationcorev1.EventSeriesApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("EventSource"):
-		return &applyconfigurationcorev1.EventSourceApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Namespace"):
 		return &applyconfigurationcorev1.NamespaceApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("NamespaceCondition"):
@@ -76,10 +70,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.NamespaceSpecApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("NamespaceStatus"):
 		return &applyconfigurationcorev1.NamespaceStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ObjectReference"):
-		return &applyconfigurationcorev1.ObjectReferenceApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("PreferredSchedulingTerm"):
-		return &applyconfigurationcorev1.PreferredSchedulingTermApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Process"):
 		return &applyconfigurationcorev1.ProcessApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("ProcessSpec"):
@@ -88,50 +78,20 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.ProcessStatusApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Region"):
 		return &applyconfigurationcorev1.RegionApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionAffinity"):
-		return &applyconfigurationcorev1.RegionAffinityApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionAffinityTerm"):
-		return &applyconfigurationcorev1.RegionAffinityTermApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionAntiAffinity"):
-		return &applyconfigurationcorev1.RegionAntiAffinityApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionCondition"):
-		return &applyconfigurationcorev1.RegionConditionApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RegionReplica"):
 		return &applyconfigurationcorev1.RegionReplicaApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionSchedulingGate"):
-		return &applyconfigurationcorev1.RegionSchedulingGateApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RegionSpec"):
 		return &applyconfigurationcorev1.RegionSpecApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RegionStat"):
-		return &applyconfigurationcorev1.RegionStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RegionStatus"):
 		return &applyconfigurationcorev1.RegionStatusApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Runner"):
 		return &applyconfigurationcorev1.RunnerApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerAffinity"):
-		return &applyconfigurationcorev1.RunnerAffinityApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerCondition"):
-		return &applyconfigurationcorev1.RunnerConditionApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerDynamicStat"):
-		return &applyconfigurationcorev1.RunnerDynamicStatApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerSelector"):
-		return &applyconfigurationcorev1.RunnerSelectorApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerSelectorRequirement"):
-		return &applyconfigurationcorev1.RunnerSelectorRequirementApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("RunnerSelectorTerm"):
-		return &applyconfigurationcorev1.RunnerSelectorTermApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerSpec"):
 		return &applyconfigurationcorev1.RunnerSpecApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerStat"):
 		return &applyconfigurationcorev1.RunnerStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerStatus"):
 		return &applyconfigurationcorev1.RunnerStatusApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("Taint"):
-		return &applyconfigurationcorev1.TaintApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("Toleration"):
-		return &applyconfigurationcorev1.TolerationApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("WeightedRegionAffinityTerm"):
-		return &applyconfigurationcorev1.WeightedRegionAffinityTermApplyConfiguration{}
 
 	}
 	return nil

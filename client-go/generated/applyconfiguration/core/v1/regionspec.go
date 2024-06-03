@@ -26,19 +26,13 @@ package v1
 // RegionSpecApplyConfiguration represents an declarative configuration of the RegionSpec type for use
 // with apply.
 type RegionSpecApplyConfiguration struct {
-	Id               *int64                                   `json:"id,omitempty"`
-	DeploymentId     *int64                                   `json:"deploymentId,omitempty"`
-	Replicas         []RegionReplicaApplyConfiguration        `json:"replicas,omitempty"`
-	ElectionRTT      *int64                                   `json:"electionRTT,omitempty"`
-	HeartbeatRTT     *int64                                   `json:"heartbeatRTT,omitempty"`
-	Priority         *int32                                   `json:"priority,omitempty"`
-	SchedulerName    *string                                  `json:"schedulerName,omitempty"`
-	DefinitionsLimit *int64                                   `json:"definitionsLimit,omitempty"`
-	RunnerSelector   map[string]string                        `json:"runnerSelector,omitempty"`
-	Affinity         *AffinityApplyConfiguration              `json:"affinity,omitempty"`
-	RunnerNames      []string                                 `json:"regionNames,omitempty"`
-	Tolerations      []TolerationApplyConfiguration           `json:"tolerations,omitempty"`
-	SchedulingGates  []RegionSchedulingGateApplyConfiguration `json:"schedulingGates,omitempty"`
+	Id               *int64                            `json:"id,omitempty"`
+	DeploymentId     *int64                            `json:"deploymentId,omitempty"`
+	Replicas         []RegionReplicaApplyConfiguration `json:"replicas,omitempty"`
+	ElectionRTT      *int64                            `json:"electionRTT,omitempty"`
+	HeartbeatRTT     *int64                            `json:"heartbeatRTT,omitempty"`
+	Leader           *int64                            `json:"leader,omitempty"`
+	DefinitionsLimit *int64                            `json:"definitionsLimit,omitempty"`
 }
 
 // RegionSpecApplyConfiguration constructs an declarative configuration of the RegionSpec type for use with
@@ -92,19 +86,11 @@ func (b *RegionSpecApplyConfiguration) WithHeartbeatRTT(value int64) *RegionSpec
 	return b
 }
 
-// WithPriority sets the Priority field in the declarative configuration to the given value
+// WithLeader sets the Leader field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Priority field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithPriority(value int32) *RegionSpecApplyConfiguration {
-	b.Priority = &value
-	return b
-}
-
-// WithSchedulerName sets the SchedulerName field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the SchedulerName field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithSchedulerName(value string) *RegionSpecApplyConfiguration {
-	b.SchedulerName = &value
+// If called multiple times, the Leader field is set to the value of the last call.
+func (b *RegionSpecApplyConfiguration) WithLeader(value int64) *RegionSpecApplyConfiguration {
+	b.Leader = &value
 	return b
 }
 
@@ -113,63 +99,5 @@ func (b *RegionSpecApplyConfiguration) WithSchedulerName(value string) *RegionSp
 // If called multiple times, the DefinitionsLimit field is set to the value of the last call.
 func (b *RegionSpecApplyConfiguration) WithDefinitionsLimit(value int64) *RegionSpecApplyConfiguration {
 	b.DefinitionsLimit = &value
-	return b
-}
-
-// WithRunnerSelector puts the entries into the RunnerSelector field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, the entries provided by each call will be put on the RunnerSelector field,
-// overwriting an existing map entries in RunnerSelector field with the same key.
-func (b *RegionSpecApplyConfiguration) WithRunnerSelector(entries map[string]string) *RegionSpecApplyConfiguration {
-	if b.RunnerSelector == nil && len(entries) > 0 {
-		b.RunnerSelector = make(map[string]string, len(entries))
-	}
-	for k, v := range entries {
-		b.RunnerSelector[k] = v
-	}
-	return b
-}
-
-// WithAffinity sets the Affinity field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Affinity field is set to the value of the last call.
-func (b *RegionSpecApplyConfiguration) WithAffinity(value *AffinityApplyConfiguration) *RegionSpecApplyConfiguration {
-	b.Affinity = value
-	return b
-}
-
-// WithRunnerNames adds the given value to the RunnerNames field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the RunnerNames field.
-func (b *RegionSpecApplyConfiguration) WithRunnerNames(values ...string) *RegionSpecApplyConfiguration {
-	for i := range values {
-		b.RunnerNames = append(b.RunnerNames, values[i])
-	}
-	return b
-}
-
-// WithTolerations adds the given value to the Tolerations field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Tolerations field.
-func (b *RegionSpecApplyConfiguration) WithTolerations(values ...*TolerationApplyConfiguration) *RegionSpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithTolerations")
-		}
-		b.Tolerations = append(b.Tolerations, *values[i])
-	}
-	return b
-}
-
-// WithSchedulingGates adds the given value to the SchedulingGates field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the SchedulingGates field.
-func (b *RegionSpecApplyConfiguration) WithSchedulingGates(values ...*RegionSchedulingGateApplyConfiguration) *RegionSpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithSchedulingGates")
-		}
-		b.SchedulingGates = append(b.SchedulingGates, *values[i])
-	}
 	return b
 }

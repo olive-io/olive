@@ -20,7 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // +k8s:deepcopy-gen=package
-// +k8s:defaulter-gen=TypeMeta
-// +groupName=scheduler.config.olive.io
 
-package config
+// Package config is the internal version of the API.
+package config // import "github.com/olive-io/olive/apis/config"

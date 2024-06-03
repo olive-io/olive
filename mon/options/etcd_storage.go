@@ -40,8 +40,6 @@ import (
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/options/encryptionconfig"
 	encryptionconfigcontroller "k8s.io/apiserver/pkg/server/options/encryptionconfig/controller"
-	"k8s.io/apiserver/pkg/server/resourceconfig"
-	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/storage/etcd3/metrics"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	storagefactory "k8s.io/apiserver/pkg/storage/storagebackend/factory"
@@ -49,6 +47,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/olive-io/olive/apis"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	serverstorage "github.com/olive-io/olive/mon/storage"
 )
 
 type EtcdStorageOptions struct {
@@ -217,7 +217,12 @@ func (s *EtcdStorageOptions) ApplyTo(c *genericserver.Config) error {
 	}
 
 	storageFactoryConfig := NewStorageFactoryConfig()
-	storageFactoryConfig.APIResourceConfig = c.MergedResourceConfig
+	if c.MergedResourceConfig != nil {
+		storageFactoryConfig.APIResourceConfig = &serverstorage.ResourceConfig{
+			GroupVersionConfigs: c.MergedResourceConfig.GroupVersionConfigs,
+			ResourceConfigs:     c.MergedResourceConfig.ResourceConfigs,
+		}
+	}
 	storageFactory, err := storageFactoryConfig.Complete(s).New()
 	if err != nil {
 		return err
@@ -509,18 +514,9 @@ func NewStorageFactoryConfig() *StorageFactoryConfig {
 		// downgrade to an older apiserver that doesn't know the new
 		// version still needs to be supported for one release.
 		//
-		// Example from Kubernetes 1.24 where csistoragecapacities had just
-		// graduated to GA:
-		//
-		// TODO (https://github.com/kubernetes/kubernetes/issues/108451): remove the override in 1.25.
-		// apisstorage.Resource("csistoragecapacities").WithVersion("v1beta1"),
-		//admissionregistration.Resource("validatingadmissionpolicies").WithVersion("v1beta1"),
-		//admissionregistration.Resource("validatingadmissionpolicybindings").WithVersion("v1beta1"),
-		//networking.Resource("ipaddresses").WithVersion("v1alpha1"),
-		//networking.Resource("servicecidrs").WithVersion("v1alpha1"),
-		//certificates.Resource("clustertrustbundles").WithVersion("v1alpha1"),
-		//storage.Resource("volumeattributesclasses").WithVersion("v1alpha1"),
-		//storagemigration.Resource("storagemigrations").WithVersion("v1alpha1"),
+		corev1.Resource("runners").WithVersion("v1"),
+		corev1.Resource("runnerStat").WithVersion("v1"),
+		corev1.Resource("regions").WithVersion("v1"),
 	}
 
 	return &StorageFactoryConfig{
@@ -560,7 +556,9 @@ type completedStorageFactoryConfig struct {
 
 // New returns a new storage factory created from the completed storage factory configuration.
 func (c *completedStorageFactoryConfig) New() (*serverstorage.DefaultStorageFactory, error) {
-	resourceEncodingConfig := resourceconfig.MergeResourceEncodingConfigs(c.DefaultResourceEncoding, c.ResourceEncodingOverrides)
+	resourceEncoding := c.DefaultResourceEncoding
+	resourceEncodingConfig := MergeResourceEncodingConfigs(resourceEncoding, c.ResourceEncodingOverrides)
+
 	storageFactory := serverstorage.NewDefaultStorageFactory(
 		c.StorageConfig,
 		c.DefaultStorageMediaType,
@@ -568,15 +566,6 @@ func (c *completedStorageFactoryConfig) New() (*serverstorage.DefaultStorageFact
 		resourceEncodingConfig,
 		c.APIResourceConfig,
 		SpecialDefaultResourcePrefixes)
-
-	//storageFactory.AddCohabitatingResources(networking.Resource("networkpolicies"), extensions.Resource("networkpolicies"))
-	//storageFactory.AddCohabitatingResources(apps.Resource("deployments"), extensions.Resource("deployments"))
-	//storageFactory.AddCohabitatingResources(apps.Resource("daemonsets"), extensions.Resource("daemonsets"))
-	//storageFactory.AddCohabitatingResources(apps.Resource("replicasets"), extensions.Resource("replicasets"))
-	//storageFactory.AddCohabitatingResources(api.Resource("events"), events.Resource("events"))
-	//storageFactory.AddCohabitatingResources(api.Resource("replicationcontrollers"), extensions.Resource("replicationcontrollers")) // to make scale subresources equivalent
-	//storageFactory.AddCohabitatingResources(policy.Resource("podsecuritypolicies"), extensions.Resource("podsecuritypolicies"))
-	//storageFactory.AddCohabitatingResources(networking.Resource("ingresses"), extensions.Resource("ingresses"))
 
 	for _, override := range c.EtcdServersOverrides {
 		tokens := strings.Split(override, "#")
@@ -590,4 +579,17 @@ func (c *completedStorageFactoryConfig) New() (*serverstorage.DefaultStorageFact
 		storageFactory.SetEtcdLocation(groupResource, servers)
 	}
 	return storageFactory, nil
+}
+
+// MergeResourceEncodingConfigs merges the given defaultResourceConfig with specific GroupVersionResource overrides.
+func MergeResourceEncodingConfigs(
+	defaultResourceEncoding *serverstorage.DefaultResourceEncodingConfig,
+	resourceEncodingOverrides []schema.GroupVersionResource,
+) *serverstorage.DefaultResourceEncodingConfig {
+	resourceEncodingConfig := defaultResourceEncoding
+	for _, gvr := range resourceEncodingOverrides {
+		resourceEncodingConfig.SetResourceEncoding(gvr.GroupResource(), gvr.GroupVersion(),
+			schema.GroupVersion{Group: gvr.Group, Version: krt.APIVersionInternal})
+	}
+	return resourceEncodingConfig
 }

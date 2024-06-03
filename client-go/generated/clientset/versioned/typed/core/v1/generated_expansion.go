@@ -25,7 +25,8 @@ package v1
 
 type DefinitionExpansion interface{}
 
-type EventExpansion interface{}
-
 type ProcessExpansion interface{}
 
+type RegionExpansion interface{}
+
+type RunnerStatExpansion interface{}

@@ -29,8 +29,6 @@ import (
 	"github.com/olive-io/olive/pkg/tonic"
 	"github.com/olive-io/olive/pkg/tonic/fizz"
 	"github.com/olive-io/olive/pkg/tonic/openapi"
-
-	"github.com/olive-io/olive/client-go"
 )
 
 type AuthGroup struct {

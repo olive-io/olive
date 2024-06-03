@@ -46,7 +46,7 @@ const (
 func AddHandlers(h printers.PrintHandler) {
 	runnerColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
-		{Name: "Status", Type: "string", Description: "The status of the node"},
+		{Name: "Status", Type: "string", Description: "The status of the olive-runner"},
 		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(runnerColumnDefinitions, printRunner)

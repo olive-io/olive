@@ -34,11 +34,11 @@ import (
 type CoreV1Interface interface {
 	RESTClient() rest.Interface
 	DefinitionsGetter
-	EventsGetter
 	NamespacesGetter
 	ProcessesGetter
 	RegionsGetter
 	RunnersGetter
+	RunnerStatsGetter
 }
 
 // CoreV1Client is used to interact with features provided by the core.olive.io group.
@@ -48,10 +48,6 @@ type CoreV1Client struct {
 
 func (c *CoreV1Client) Definitions(namespace string) DefinitionInterface {
 	return newDefinitions(c, namespace)
-}
-
-func (c *CoreV1Client) Events(namespace string) EventInterface {
-	return newEvents(c, namespace)
 }
 
 func (c *CoreV1Client) Namespaces() NamespaceInterface {
@@ -68,6 +64,10 @@ func (c *CoreV1Client) Regions() RegionInterface {
 
 func (c *CoreV1Client) Runners() RunnerInterface {
 	return newRunners(c)
+}
+
+func (c *CoreV1Client) RunnerStats() RunnerStatInterface {
+	return newRunnerStats(c)
 }
 
 // NewForConfig creates a new CoreV1Client for the given config.

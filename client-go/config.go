@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package client
+package clientgo
 
 import (
 	"context"
@@ -32,12 +32,13 @@ import (
 	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	"sigs.k8s.io/yaml"
 
 	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
+	configInstall "github.com/olive-io/olive/apis/config/install"
+	configv1 "github.com/olive-io/olive/apis/config/v1"
 	coreInstall "github.com/olive-io/olive/apis/core/install"
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	"github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 	"github.com/olive-io/olive/client-go/interceptor"
 )
 
@@ -50,8 +51,9 @@ var (
 )
 
 func init() {
-	apidiscoveryInstall.Install(clientcmdlatest.Scheme)
-	coreInstall.Install(clientcmdlatest.Scheme)
+	coreInstall.Install(scheme.Scheme)
+	configInstall.Install(scheme.Scheme)
+	apidiscoveryInstall.Install(scheme.Scheme)
 }
 
 type Config struct {
@@ -84,7 +86,7 @@ func NewConfigWithContext(ctx context.Context, filename string, lg *zap.Logger) 
 		return nil, fmt.Errorf("etcd cluster extension not found")
 	}
 
-	var ec corev1.EtcdCluster
+	var ec configv1.EtcdCluster
 	if value, ok := etcdExtension.(*krt.Unknown); ok {
 		switch value.ContentType {
 		case "application/json":

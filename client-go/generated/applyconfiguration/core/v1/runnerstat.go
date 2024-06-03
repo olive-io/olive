@@ -23,71 +23,219 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+)
+
 // RunnerStatApplyConfiguration represents an declarative configuration of the RunnerStat type for use
 // with apply.
 type RunnerStatApplyConfiguration struct {
-	CpuTotal    *float64                             `json:"cpuTotal,omitempty"`
-	MemoryTotal *float64                             `json:"memoryTotal,omitempty"`
-	Regions     []int64                              `json:"regions,omitempty"`
-	Leaders     []string                             `json:"leaders,omitempty"`
-	Definitions *int64                               `json:"definitions,omitempty"`
-	Dynamic     *RunnerDynamicStatApplyConfiguration `json:"dynamic,omitempty"`
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
+	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
+	CpuUsed                          *float64                    `json:"cpuUsed,omitempty"`
+	MemoryUsed                       *float64                    `json:"memoryUsed,omitempty"`
+	Bpmn                             *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
+	Timestamp                        *int64                      `json:"timestamp,omitempty"`
 }
 
-// RunnerStatApplyConfiguration constructs an declarative configuration of the RunnerStat type for use with
+// RunnerStat constructs an declarative configuration of the RunnerStat type for use with
 // apply.
-func RunnerStat() *RunnerStatApplyConfiguration {
-	return &RunnerStatApplyConfiguration{}
-}
-
-// WithCpuTotal sets the CpuTotal field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the CpuTotal field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithCpuTotal(value float64) *RunnerStatApplyConfiguration {
-	b.CpuTotal = &value
+func RunnerStat(name string) *RunnerStatApplyConfiguration {
+	b := &RunnerStatApplyConfiguration{}
+	b.WithName(name)
+	b.WithKind("RunnerStat")
+	b.WithAPIVersion("core.olive.io/v1")
 	return b
 }
 
-// WithMemoryTotal sets the MemoryTotal field in the declarative configuration to the given value
+// WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the MemoryTotal field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithMemoryTotal(value float64) *RunnerStatApplyConfiguration {
-	b.MemoryTotal = &value
+// If called multiple times, the Kind field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithKind(value string) *RunnerStatApplyConfiguration {
+	b.Kind = &value
 	return b
 }
 
-// WithRegions adds the given value to the Regions field in the declarative configuration
+// WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the APIVersion field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithAPIVersion(value string) *RunnerStatApplyConfiguration {
+	b.APIVersion = &value
+	return b
+}
+
+// WithName sets the Name field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithName(value string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.Name = &value
+	return b
+}
+
+// WithGenerateName sets the GenerateName field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the GenerateName field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithGenerateName(value string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.GenerateName = &value
+	return b
+}
+
+// WithNamespace sets the Namespace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Namespace field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithNamespace(value string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.Namespace = &value
+	return b
+}
+
+// WithUID sets the UID field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the UID field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithUID(value types.UID) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.UID = &value
+	return b
+}
+
+// WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ResourceVersion field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithResourceVersion(value string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.ResourceVersion = &value
+	return b
+}
+
+// WithGeneration sets the Generation field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Generation field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithGeneration(value int64) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.Generation = &value
+	return b
+}
+
+// WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CreationTimestamp field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithCreationTimestamp(value metav1.Time) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.CreationTimestamp = &value
+	return b
+}
+
+// WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeletionTimestamp field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.DeletionTimestamp = &value
+	return b
+}
+
+// WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	b.DeletionGracePeriodSeconds = &value
+	return b
+}
+
+// WithLabels puts the entries into the Labels field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Regions field.
-func (b *RunnerStatApplyConfiguration) WithRegions(values ...int64) *RunnerStatApplyConfiguration {
-	for i := range values {
-		b.Regions = append(b.Regions, values[i])
+// If called multiple times, the entries provided by each call will be put on the Labels field,
+// overwriting an existing map entries in Labels field with the same key.
+func (b *RunnerStatApplyConfiguration) WithLabels(entries map[string]string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.Labels[k] = v
 	}
 	return b
 }
 
-// WithLeaders adds the given value to the Leaders field in the declarative configuration
+// WithAnnotations puts the entries into the Annotations field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Leaders field.
-func (b *RunnerStatApplyConfiguration) WithLeaders(values ...string) *RunnerStatApplyConfiguration {
-	for i := range values {
-		b.Leaders = append(b.Leaders, values[i])
+// If called multiple times, the entries provided by each call will be put on the Annotations field,
+// overwriting an existing map entries in Annotations field with the same key.
+func (b *RunnerStatApplyConfiguration) WithAnnotations(entries map[string]string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.Annotations[k] = v
 	}
 	return b
 }
 
-// WithDefinitions sets the Definitions field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Definitions field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithDefinitions(value int64) *RunnerStatApplyConfiguration {
-	b.Definitions = &value
+// WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the OwnerReferences field.
+func (b *RunnerStatApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithOwnerReferences")
+		}
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
+	}
 	return b
 }
 
-// WithDynamic sets the Dynamic field in the declarative configuration to the given value
+// WithFinalizers adds the given value to the Finalizers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Finalizers field.
+func (b *RunnerStatApplyConfiguration) WithFinalizers(values ...string) *RunnerStatApplyConfiguration {
+	b.ensureObjectMetaApplyConfigurationExists()
+	for i := range values {
+		b.Finalizers = append(b.Finalizers, values[i])
+	}
+	return b
+}
+
+func (b *RunnerStatApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+	if b.ObjectMetaApplyConfiguration == nil {
+		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
+	}
+}
+
+// WithCpuUsed sets the CpuUsed field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Dynamic field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithDynamic(value *RunnerDynamicStatApplyConfiguration) *RunnerStatApplyConfiguration {
-	b.Dynamic = value
+// If called multiple times, the CpuUsed field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithCpuUsed(value float64) *RunnerStatApplyConfiguration {
+	b.CpuUsed = &value
+	return b
+}
+
+// WithMemoryUsed sets the MemoryUsed field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MemoryUsed field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithMemoryUsed(value float64) *RunnerStatApplyConfiguration {
+	b.MemoryUsed = &value
+	return b
+}
+
+// WithBpmn sets the Bpmn field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Bpmn field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguration) *RunnerStatApplyConfiguration {
+	b.Bpmn = value
+	return b
+}
+
+// WithTimestamp sets the Timestamp field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Timestamp field is set to the value of the last call.
+func (b *RunnerStatApplyConfiguration) WithTimestamp(value int64) *RunnerStatApplyConfiguration {
+	b.Timestamp = &value
 	return b
 }

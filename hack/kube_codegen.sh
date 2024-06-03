@@ -341,7 +341,6 @@ function kube::codegen::gen_openapi() {
             --output-dir "${out_dir}" \
             --output-pkg "${out_pkg}" \
             --report-filename "${new_report}" \
-            "k8s.io/apimachinery/pkg/api/resource" \
             "k8s.io/apimachinery/pkg/apis/meta/v1" \
             "k8s.io/apimachinery/pkg/runtime" \
             "k8s.io/apimachinery/pkg/version" \

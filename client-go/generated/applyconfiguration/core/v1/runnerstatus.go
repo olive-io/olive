@@ -30,47 +30,19 @@ import (
 // RunnerStatusApplyConfiguration represents an declarative configuration of the RunnerStatus type for use
 // with apply.
 type RunnerStatusApplyConfiguration struct {
-	Capacity    *v1.ResourceList                    `json:"capacity,omitempty"`
-	Allocatable *v1.ResourceList                    `json:"allocatable,omitempty"`
-	Conditions  []RunnerConditionApplyConfiguration `json:"conditions,omitempty"`
-	Phase       *v1.RunnerPhase                     `json:"phase,omitempty"`
-	Message     *string                             `json:"message,omitempty"`
-	Stat        *RunnerStatApplyConfiguration       `json:"stat,omitempty"`
+	Phase       *v1.RunnerPhase `json:"phase,omitempty"`
+	Message     *string         `json:"message,omitempty"`
+	CpuTotal    *float64        `json:"cpuTotal,omitempty"`
+	MemoryTotal *float64        `json:"memoryTotal,omitempty"`
+	Regions     []int64         `json:"regions,omitempty"`
+	Leaders     []string        `json:"leaders,omitempty"`
+	Definitions *int64          `json:"definitions,omitempty"`
 }
 
 // RunnerStatusApplyConfiguration constructs an declarative configuration of the RunnerStatus type for use with
 // apply.
 func RunnerStatus() *RunnerStatusApplyConfiguration {
 	return &RunnerStatusApplyConfiguration{}
-}
-
-// WithCapacity sets the Capacity field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Capacity field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithCapacity(value v1.ResourceList) *RunnerStatusApplyConfiguration {
-	b.Capacity = &value
-	return b
-}
-
-// WithAllocatable sets the Allocatable field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Allocatable field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithAllocatable(value v1.ResourceList) *RunnerStatusApplyConfiguration {
-	b.Allocatable = &value
-	return b
-}
-
-// WithConditions adds the given value to the Conditions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *RunnerStatusApplyConfiguration) WithConditions(values ...*RunnerConditionApplyConfiguration) *RunnerStatusApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithConditions")
-		}
-		b.Conditions = append(b.Conditions, *values[i])
-	}
-	return b
 }
 
 // WithPhase sets the Phase field in the declarative configuration to the given value
@@ -89,10 +61,46 @@ func (b *RunnerStatusApplyConfiguration) WithMessage(value string) *RunnerStatus
 	return b
 }
 
-// WithStat sets the Stat field in the declarative configuration to the given value
+// WithCpuTotal sets the CpuTotal field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Stat field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithStat(value *RunnerStatApplyConfiguration) *RunnerStatusApplyConfiguration {
-	b.Stat = value
+// If called multiple times, the CpuTotal field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithCpuTotal(value float64) *RunnerStatusApplyConfiguration {
+	b.CpuTotal = &value
+	return b
+}
+
+// WithMemoryTotal sets the MemoryTotal field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the MemoryTotal field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithMemoryTotal(value float64) *RunnerStatusApplyConfiguration {
+	b.MemoryTotal = &value
+	return b
+}
+
+// WithRegions adds the given value to the Regions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Regions field.
+func (b *RunnerStatusApplyConfiguration) WithRegions(values ...int64) *RunnerStatusApplyConfiguration {
+	for i := range values {
+		b.Regions = append(b.Regions, values[i])
+	}
+	return b
+}
+
+// WithLeaders adds the given value to the Leaders field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Leaders field.
+func (b *RunnerStatusApplyConfiguration) WithLeaders(values ...string) *RunnerStatusApplyConfiguration {
+	for i := range values {
+		b.Leaders = append(b.Leaders, values[i])
+	}
+	return b
+}
+
+// WithDefinitions sets the Definitions field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Definitions field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithDefinitions(value int64) *RunnerStatusApplyConfiguration {
+	b.Definitions = &value
 	return b
 }

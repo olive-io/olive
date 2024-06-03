@@ -121,6 +121,14 @@ func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.Valid
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)
 }
 
+// Implement ShortNamesProvider
+var _ rest.ShortNamesProvider = &REST{}
+
+// ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
+func (r *REST) ShortNames() []string {
+	return []string{"rn"}
+}
+
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.
 type StatusREST struct {
 	store *genericregistry.Store

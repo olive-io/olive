@@ -1,49 +1,66 @@
 /*
-Copyright 2022 The Kubernetes Authors.
+Copyright 2023 The olive Authors
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package v1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// GroupName is the group name used in this package
-const GroupName = "kubescheduler.config.k8s.io"
+// GroupName is the group name use in this package
+const GroupName = "mon.olive.io"
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
 
+// Kind takes an unqualified kind and returns a Group qualified GroupKind
+func Kind(kind string) schema.GroupKind {
+	return SchemeGroupVersion.WithKind(kind).GroupKind()
+}
+
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func Resource(resource string) schema.GroupResource {
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
+}
+
 var (
-	// SchemeBuilder is the scheme builder with scheme init functions to run for this API package
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	// AddToScheme is a global function that registers this API group & version to a scheme
-	AddToScheme = SchemeBuilder.AddToScheme
+	// SchemeBuilder object to register various known types
+	localSchemeBuilder = krt.NewSchemeBuilder(addKnownTypes)
+
+	// AddToScheme represents a func that can be used to apply all the registered
+	// funcs in a scheme
+	AddToScheme = localSchemeBuilder.AddToScheme
 )
 
-// addKnownTypes registers known types to the given scheme
-func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion,
-		&SchedulerConfiguration{},
-		&DefaultPreemptionArgs{},
-		&InterRegionAffinityArgs{},
-		&RunnerResourcesBalancedAllocationArgs{},
-		&RunnerResourcesFitArgs{},
-		&RegionTopologySpreadArgs{},
-		&RunnerAffinityArgs{},
-	)
+func init() {
+	localSchemeBuilder.Register(addDefaultingFuncs, addConversionFuncs)
+}
+
+func addKnownTypes(scheme *krt.Scheme) error {
+	if err := scheme.AddIgnoredConversionType(&metav1.TypeMeta{}, &metav1.TypeMeta{}); err != nil {
+		return err
+	}
+	scheme.AddKnownTypes(SchemeGroupVersion)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

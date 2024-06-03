@@ -123,7 +123,7 @@ func (r *Runner) register() (*corev1.Runner, error) {
 
 	runner.Spec.PeerURL = listenPeerURL
 	runner.Spec.ClientURL = listenClientURL
-	runner.Spec.Name, _ = os.Hostname()
+	runner.Spec.Hostname, _ = os.Hostname()
 	runner.Spec.VersionRef = version.Version
 	if runner.Status.Stat == nil {
 		runner.Status.Stat = &corev1.RunnerStat{}
@@ -213,6 +213,10 @@ func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 		stat.Definitions = definitions
 	}
 
+	stat.BpmnProcesses = int64(raft.ProcessCounter.Get())
+	stat.BpmnEvents = int64(raft.EventCounter.Get())
+	stat.BpmnTasks = int64(raft.TaskCounter.Get())
+
 	regions, leaders := r.controller.RunnerStat()
 	if !sliceEqual[int64](stat.Regions, regions) ||
 		!sliceEqual[string](stat.Leaders, leaders) {
@@ -223,9 +227,6 @@ func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 
 	if !validChanged {
 		dynamicStat := &corev1.RunnerDynamicStat{}
-		dynamicStat.BpmnProcesses = int64(raft.ProcessCounter.Get())
-		dynamicStat.BpmnEvents = int64(raft.EventCounter.Get())
-		dynamicStat.BpmnTasks = int64(raft.TaskCounter.Get())
 
 		interval := time.Millisecond * 500
 		percents, err := pscpu.Percent(interval, false)

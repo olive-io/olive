@@ -30,12 +30,12 @@ import (
 // RegionStatusApplyConfiguration represents an declarative configuration of the RegionStatus type for use
 // with apply.
 type RegionStatusApplyConfiguration struct {
-	Phase       *v1.RegionPhase                     `json:"phase,omitempty"`
-	Message     *string                             `json:"message,omitempty"`
-	Leader      *int64                              `json:"leader,omitempty"`
-	Definitions *int64                              `json:"definitions,omitempty"`
-	Conditions  []RegionConditionApplyConfiguration `json:"conditions,omitempty"`
-	Stat        *RegionStatApplyConfiguration       `json:"stat,omitempty"`
+	Phase       *v1.RegionPhase `json:"phase,omitempty"`
+	Message     *string         `json:"message,omitempty"`
+	Leader      *int64          `json:"leader,omitempty"`
+	Term        *int64          `json:"term,omitempty"`
+	Replicas    *int32          `json:"replicas,omitempty"`
+	Definitions *int64          `json:"definitions,omitempty"`
 }
 
 // RegionStatusApplyConfiguration constructs an declarative configuration of the RegionStatus type for use with
@@ -68,31 +68,26 @@ func (b *RegionStatusApplyConfiguration) WithLeader(value int64) *RegionStatusAp
 	return b
 }
 
+// WithTerm sets the Term field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Term field is set to the value of the last call.
+func (b *RegionStatusApplyConfiguration) WithTerm(value int64) *RegionStatusApplyConfiguration {
+	b.Term = &value
+	return b
+}
+
+// WithReplicas sets the Replicas field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Replicas field is set to the value of the last call.
+func (b *RegionStatusApplyConfiguration) WithReplicas(value int32) *RegionStatusApplyConfiguration {
+	b.Replicas = &value
+	return b
+}
+
 // WithDefinitions sets the Definitions field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Definitions field is set to the value of the last call.
 func (b *RegionStatusApplyConfiguration) WithDefinitions(value int64) *RegionStatusApplyConfiguration {
 	b.Definitions = &value
-	return b
-}
-
-// WithConditions adds the given value to the Conditions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *RegionStatusApplyConfiguration) WithConditions(values ...*RegionConditionApplyConfiguration) *RegionStatusApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithConditions")
-		}
-		b.Conditions = append(b.Conditions, *values[i])
-	}
-	return b
-}
-
-// WithStat sets the Stat field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Stat field is set to the value of the last call.
-func (b *RegionStatusApplyConfiguration) WithStat(value *RegionStatApplyConfiguration) *RegionStatusApplyConfiguration {
-	b.Stat = value
 	return b
 }

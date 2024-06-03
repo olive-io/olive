@@ -37,10 +37,6 @@ func (c *FakeCoreV1) Definitions(namespace string) v1.DefinitionInterface {
 	return &FakeDefinitions{c, namespace}
 }
 
-func (c *FakeCoreV1) Events(namespace string) v1.EventInterface {
-	return &FakeEvents{c, namespace}
-}
-
 func (c *FakeCoreV1) Namespaces() v1.NamespaceInterface {
 	return &FakeNamespaces{c}
 }
@@ -55,6 +51,10 @@ func (c *FakeCoreV1) Regions() v1.RegionInterface {
 
 func (c *FakeCoreV1) Runners() v1.RunnerInterface {
 	return &FakeRunners{c}
+}
+
+func (c *FakeCoreV1) RunnerStats() v1.RunnerStatInterface {
+	return &FakeRunnerStats{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -26,14 +26,12 @@ package v1
 // RunnerSpecApplyConfiguration represents an declarative configuration of the RunnerSpec type for use
 // with apply.
 type RunnerSpecApplyConfiguration struct {
-	ID            *int64                    `json:"id,omitempty"`
-	Name          *string                   `json:"name,omitempty"`
-	PeerURL       *string                   `json:"peerURL,omitempty"`
-	ClientURL     *string                   `json:"clientURL,omitempty"`
-	IsLearner     *bool                     `json:"isLearner,omitempty"`
-	VersionRef    *string                   `json:"versionRef,omitempty"`
-	Unschedulable *bool                     `json:"unschedulable,omitempty"`
-	Taints        []TaintApplyConfiguration `json:"taints,omitempty"`
+	ID         *int64  `json:"id,omitempty"`
+	Hostname   *string `json:"hostname,omitempty"`
+	PeerURL    *string `json:"peerURL,omitempty"`
+	ClientURL  *string `json:"clientURL,omitempty"`
+	VersionRef *string `json:"versionRef,omitempty"`
+	IsLearner  *bool   `json:"isLearner,omitempty"`
 }
 
 // RunnerSpecApplyConfiguration constructs an declarative configuration of the RunnerSpec type for use with
@@ -50,11 +48,11 @@ func (b *RunnerSpecApplyConfiguration) WithID(value int64) *RunnerSpecApplyConfi
 	return b
 }
 
-// WithName sets the Name field in the declarative configuration to the given value
+// WithHostname sets the Hostname field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Name field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithName(value string) *RunnerSpecApplyConfiguration {
-	b.Name = &value
+// If called multiple times, the Hostname field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithHostname(value string) *RunnerSpecApplyConfiguration {
+	b.Hostname = &value
 	return b
 }
 
@@ -74,14 +72,6 @@ func (b *RunnerSpecApplyConfiguration) WithClientURL(value string) *RunnerSpecAp
 	return b
 }
 
-// WithIsLearner sets the IsLearner field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the IsLearner field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithIsLearner(value bool) *RunnerSpecApplyConfiguration {
-	b.IsLearner = &value
-	return b
-}
-
 // WithVersionRef sets the VersionRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the VersionRef field is set to the value of the last call.
@@ -90,23 +80,10 @@ func (b *RunnerSpecApplyConfiguration) WithVersionRef(value string) *RunnerSpecA
 	return b
 }
 
-// WithUnschedulable sets the Unschedulable field in the declarative configuration to the given value
+// WithIsLearner sets the IsLearner field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Unschedulable field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithUnschedulable(value bool) *RunnerSpecApplyConfiguration {
-	b.Unschedulable = &value
-	return b
-}
-
-// WithTaints adds the given value to the Taints field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Taints field.
-func (b *RunnerSpecApplyConfiguration) WithTaints(values ...*TaintApplyConfiguration) *RunnerSpecApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithTaints")
-		}
-		b.Taints = append(b.Taints, *values[i])
-	}
+// If called multiple times, the IsLearner field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithIsLearner(value bool) *RunnerSpecApplyConfiguration {
+	b.IsLearner = &value
 	return b
 }

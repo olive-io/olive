@@ -28,7 +28,6 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/olive-io/olive/client-go"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
 )

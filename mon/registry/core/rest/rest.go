@@ -69,22 +69,23 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 
 	// runner
 	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		runnersStorage, runnersStatusStorage, err := runnerstore.NewREST(p.v3cli, restOptionsGetter, p.stopCh)
+		runnerStorage, err := runnerstore.NewStorage(p.v3cli, restOptionsGetter, p.stopCh)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = runnersStorage
-		storage[resource+"/status"] = runnersStatusStorage
+		storage[resource] = runnerStorage.Runner
+		storage[resource+"/status"] = runnerStorage.Status
+		storage[resource+"/stat"] = runnerStorage.Stat
 	}
 
 	// region
 	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		regionsStorage, regionsStatusStorage, err := regionstore.NewREST(restOptionsGetter)
+		regionsStorage, err := regionstore.NewStorage(restOptionsGetter)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = regionsStorage
-		storage[resource+"/status"] = regionsStatusStorage
+		storage[resource] = regionsStorage.Region
+		storage[resource+"/status"] = regionsStorage.Status
 	}
 
 	// namespace
@@ -100,22 +101,22 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 
 	// definition
 	if resource := "definitions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		runnersStorage, runnersStatusStorage, err := definitionstore.NewREST(restOptionsGetter)
+		defStorage, err := definitionstore.NewStorage(restOptionsGetter)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = runnersStorage
-		storage[resource+"/status"] = runnersStatusStorage
+		storage[resource] = defStorage.Definition
+		storage[resource+"/status"] = defStorage.Status
 	}
 
 	// processInstance
 	if resource := "processes"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		regionsStorage, regionsStatusStorage, err := processstore.NewREST(restOptionsGetter)
+		processStorage, err := processstore.NewStorage(restOptionsGetter)
 		if err != nil {
 			return storage, err
 		}
-		storage[resource] = regionsStorage
-		storage[resource+"/status"] = regionsStatusStorage
+		storage[resource] = processStorage.Process
+		storage[resource+"/status"] = processStorage.Status
 	}
 
 	return storage, nil

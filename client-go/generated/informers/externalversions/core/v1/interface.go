@@ -31,8 +31,6 @@ import (
 type Interface interface {
 	// Definitions returns a DefinitionInformer.
 	Definitions() DefinitionInformer
-	// Events returns a EventInformer.
-	Events() EventInformer
 	// Namespaces returns a NamespaceInformer.
 	Namespaces() NamespaceInformer
 	// Processes returns a ProcessInformer.
@@ -41,6 +39,8 @@ type Interface interface {
 	Regions() RegionInformer
 	// Runners returns a RunnerInformer.
 	Runners() RunnerInformer
+	// RunnerStats returns a RunnerStatInformer.
+	RunnerStats() RunnerStatInformer
 }
 
 type version struct {
@@ -57,11 +57,6 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Definitions returns a DefinitionInformer.
 func (v *version) Definitions() DefinitionInformer {
 	return &definitionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Events returns a EventInformer.
-func (v *version) Events() EventInformer {
-	return &eventInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Namespaces returns a NamespaceInformer.
@@ -82,4 +77,9 @@ func (v *version) Regions() RegionInformer {
 // Runners returns a RunnerInformer.
 func (v *version) Runners() RunnerInformer {
 	return &runnerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// RunnerStats returns a RunnerStatInformer.
+func (v *version) RunnerStats() RunnerStatInformer {
+	return &runnerStatInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

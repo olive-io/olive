@@ -26,18 +26,11 @@ import (
 
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/olive-io/olive/apis/core/helper"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
-
-const isNegativeErrorMsg string = apimachineryvalidation.IsNegativeErrorMsg
-const isInvalidQuotaResource string = `must be a standard resource for quota`
-const fieldImmutableErrorMsg string = apimachineryvalidation.FieldImmutableErrorMsg
-const isNotIntegerErrorMsg string = `must be an integer`
-const isNotPositiveErrorMsg string = `must be greater than zero`
 
 // ValidateNameFunc validates that the provided name is valid for a given resource type.
 // Not all resources have the same validation rules for names. Prefix is true
@@ -81,15 +74,6 @@ func ValidateObjectMetaUpdate(newMeta, oldMeta *metav1.ObjectMeta, fldPath *fiel
 		allErrs = append(allErrs, validateKubeFinalizerName(string(newMeta.Finalizers[i]), fldPath.Child("finalizers").Index(i))...)
 	}
 
-	return allErrs
-}
-
-// ValidateQualifiedName validates if name is what Kubernetes calls a "qualified name".
-func ValidateQualifiedName(value string, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	for _, msg := range validation.IsQualifiedName(value) {
-		allErrs = append(allErrs, field.Invalid(fldPath, value, msg))
-	}
 	return allErrs
 }
 
@@ -305,19 +289,6 @@ func ValidateNamespaceFinalizeUpdate(newNamespace, oldNamespace *corev1.Namespac
 	for i := range newNamespace.Spec.Finalizers {
 		idxPath := fldPath.Index(i)
 		allErrs = append(allErrs, validateFinalizerName(string(newNamespace.Spec.Finalizers[i]), idxPath)...)
-	}
-	return allErrs
-}
-
-func ValidateImmutableField(newVal, oldVal interface{}, fldPath *field.Path) field.ErrorList {
-	return apimachineryvalidation.ValidateImmutableField(newVal, oldVal, fldPath)
-}
-
-func ValidateImmutableAnnotation(newVal string, oldVal string, annotation string, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if oldVal != newVal {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("annotations", annotation), newVal, fieldImmutableErrorMsg))
 	}
 	return allErrs
 }

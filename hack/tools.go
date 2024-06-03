@@ -18,7 +18,6 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
 // This package imports things required by build scripts, to force `go mod` to see them as dependencies
 package tool
 

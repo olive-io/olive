@@ -67,7 +67,7 @@ type Runner struct {
 
 	scheme *krt.Scheme
 
-	oct   *client.Client
+	oct   *clientgo.Client
 	be    backend.IBackend
 	serve *http.Server
 
@@ -90,7 +90,7 @@ func NewRunner(cfg *Config) (*Runner, error) {
 	}
 	lg.Debug("protected directory: " + cfg.DataDir)
 
-	oct, err := client.New(cfg.clientConfig)
+	oct, err := clientgo.New(cfg.clientConfig)
 	if err != nil {
 		return nil, err
 	}

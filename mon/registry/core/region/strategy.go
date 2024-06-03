@@ -78,7 +78,7 @@ func (regionStrategy) NamespaceScoped() bool {
 // and should not be modified by the user.
 func (regionStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
-		"mon/v1": fieldpath.NewSet(
+		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
 		),
 	}
@@ -166,7 +166,7 @@ var StatusStrategy = regionStatusStrategy{Strategy}
 // and should not be modified by the user.
 func (regionStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
-		"mon/v1": fieldpath.NewSet(
+		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("spec"),
 		),
 	}

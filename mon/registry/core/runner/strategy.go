@@ -87,7 +87,7 @@ func (rs *runnerStrategy) NamespaceScoped() bool {
 // and should not be modified by the user.
 func (rs *runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
-		"mon/v1": fieldpath.NewSet(
+		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
 		),
 	}
@@ -97,7 +97,10 @@ func (rs *runnerStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.S
 
 // PrepareForCreate clears the status of a runner before creation.
 func (rs *runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
-	runner := obj.(*corev1.Runner)
+	runner, ok := obj.(*corev1.Runner)
+	if !ok {
+		return
+	}
 
 	nextId := rs.ring.Next(ctx)
 	runner.Name = fmt.Sprintf("runner%d", nextId)
@@ -111,15 +114,18 @@ func (rs *runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Obje
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
 func (rs *runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
-	newRunner := obj.(*corev1.Runner)
-	oldRunner := old.(*corev1.Runner)
+	newRunner, ok1 := obj.(*corev1.Runner)
+	oldRunner, ok2 := old.(*corev1.Runner)
+	if !ok1 || !ok2 {
+		return
+	}
+
 	newRunner.Spec.DeepCopyInto(&oldRunner.Spec)
 
 	// See metav1.ObjectMeta description for more information on Generation.
 	if !apiequality.Semantic.DeepEqual(newRunner.Spec, oldRunner.Spec) {
 		newRunner.Generation = oldRunner.Generation + 1
 	}
-
 }
 
 func (rs *runnerStrategy) PrepareForDelete(ctx context.Context, obj runtime.Object) error {
@@ -130,14 +136,21 @@ func (rs *runnerStrategy) PrepareForDelete(ctx context.Context, obj runtime.Obje
 
 // Validate validates a new runner.
 func (rs *runnerStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
-	runner := obj.(*corev1.Runner)
+	runner, ok := obj.(*corev1.Runner)
+	if !ok {
+		return field.ErrorList{}
+	}
 	return corevalidation.ValidateRunner(runner)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
 func (rs *runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
-	newRunner := obj.(*corev1.Runner)
 	var warnings []string
+	newRunner, ok := obj.(*corev1.Runner)
+	if !ok {
+		return warnings
+	}
+
 	if msgs := utilvalidation.IsDNS1123Label(newRunner.Name); len(msgs) != 0 {
 		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in Runner names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
 	}
@@ -159,8 +172,11 @@ func (rs *runnerStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (rs *runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	runner := obj.(*corev1.Runner)
-	oldRunner := old.(*corev1.Runner)
+	runner, ok1 := obj.(*corev1.Runner)
+	oldRunner, ok2 := old.(*corev1.Runner)
+	if !ok1 || !ok2 {
+		return nil
+	}
 
 	validationErrorList := corevalidation.ValidateRunner(runner)
 	updateErrorList := corevalidation.ValidateRunnerUpdate(runner, oldRunner)
@@ -170,8 +186,12 @@ func (rs *runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.O
 // WarningsOnUpdate returns warnings for the given update.
 func (rs *runnerStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
-	newRunner := obj.(*corev1.Runner)
-	oldRunner := old.(*corev1.Runner)
+	newRunner, ok1 := obj.(*corev1.Runner)
+	oldRunner, ok2 := old.(*corev1.Runner)
+	if !ok1 || !ok2 {
+		return warnings
+	}
+
 	if newRunner.Generation != oldRunner.Generation {
 	}
 	return warnings
@@ -189,7 +209,7 @@ func createStatusStrategy(strategy *runnerStrategy) *runnerStatusStrategy {
 // and should not be modified by the user.
 func (rs *runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
-		"mon/v1": fieldpath.NewSet(
+		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
 		),
 	}
@@ -197,12 +217,6 @@ func (rs *runnerStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*field
 
 func (rs *runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newRunner := obj.(*corev1.Runner)
-	if newRunner.Status.Stat != nil && newRunner.Status.Stat.Dynamic != nil {
-		dynamicStat := newRunner.Status.Stat.Dynamic.DeepCopy()
-		newRunner.Status.Stat.Dynamic = nil
-		_ = dynamicStat
-	}
-	newRunner.Status.Stat.Dynamic = nil
 	oldRunner := old.(*corev1.Runner)
 	newRunner.Status.DeepCopyInto(&oldRunner.Status)
 }
@@ -215,6 +229,35 @@ func (rs *runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old run
 
 // WarningsOnUpdate returns warnings for the given update.
 func (rs *runnerStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+	return nil
+}
+
+type runnerStatStrategy struct {
+	*runnerStrategy
+}
+
+func createStatStrategy(strategy *runnerStrategy) *runnerStatStrategy {
+	return &runnerStatStrategy{strategy}
+}
+
+// GetResetFields returns the set of fields that get reset by the strategy
+// and should not be modified by the user.
+func (rs *runnerStatStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+	return map[fieldpath.APIVersion]*fieldpath.Set{
+		"core/v1": fieldpath.NewSet(
+			fieldpath.MakePathOrDie("stat"),
+		),
+	}
+}
+
+func (rs *runnerStatStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+	newRunnerStat := obj.(*corev1.RunnerStat)
+	oldRunnerStat := old.(*corev1.RunnerStat)
+	newRunnerStat.DeepCopyInto(oldRunnerStat)
+}
+
+// WarningsOnUpdate returns warnings for the given update.
+func (rs *runnerStatStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	return nil
 }
 

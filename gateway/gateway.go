@@ -40,7 +40,6 @@ import (
 	dsypb "github.com/olive-io/olive/apis/pb/discovery"
 	pb "github.com/olive-io/olive/apis/pb/gateway"
 
-	"github.com/olive-io/olive/client-go"
 	"github.com/olive-io/olive/gateway/consumer"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	dsy "github.com/olive-io/olive/pkg/discovery"

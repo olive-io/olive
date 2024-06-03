@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/json-iterator/go v1.1.12
 	github.com/olive-io/olive/apis v0.1.1
-	github.com/olive-io/olive/client v0.1.1
+	github.com/olive-io/olive/client-go v0.1.1
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/prometheus/client_golang v1.19.1
 	github.com/spf13/pflag v1.0.5

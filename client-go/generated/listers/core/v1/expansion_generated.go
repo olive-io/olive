@@ -31,14 +31,6 @@ type DefinitionListerExpansion interface{}
 // DefinitionNamespaceLister.
 type DefinitionNamespaceListerExpansion interface{}
 
-// EventListerExpansion allows custom methods to be added to
-// EventLister.
-type EventListerExpansion interface{}
-
-// EventNamespaceListerExpansion allows custom methods to be added to
-// EventNamespaceLister.
-type EventNamespaceListerExpansion interface{}
-
 // NamespaceListerExpansion allows custom methods to be added to
 // NamespaceLister.
 type NamespaceListerExpansion interface{}
@@ -58,3 +50,7 @@ type RegionListerExpansion interface{}
 // RunnerListerExpansion allows custom methods to be added to
 // RunnerLister.
 type RunnerListerExpansion interface{}
+
+// RunnerStatListerExpansion allows custom methods to be added to
+// RunnerStatLister.
+type RunnerStatListerExpansion interface{}

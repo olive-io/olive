@@ -28,7 +28,7 @@ import (
 )
 
 // GroupName is the group name use in this package
-const GroupName = "olive.io"
+const GroupName = "core.olive.io"
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
@@ -61,11 +61,12 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		return err
 	}
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&EtcdCluster{},
-		&Binding{},
 		&Runner{},
 		&RunnerList{},
+		&RunnerStat{},
+		&RunnerStatList{},
 		&Region{},
+		&RegionStat{},
 		&RegionList{},
 		&Namespace{},
 		&NamespaceList{},

@@ -26,47 +26,20 @@ syntax = "proto2";
 package github.com.olive_io.olive.apis.core.v1;
 
 import "github.com/olive-io/olive/apis/apidiscovery/v1/generated.proto";
-import "k8s.io/apimachinery/pkg/api/resource/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
 option go_package = "github.com/olive-io/olive/apis/core/v1";
 
-// Affinity is a group of affinity scheduling rules.
-message Affinity {
-  // Describes runner affinity scheduling rules for the region.
-  // +optional
-  optional RunnerAffinity runnerAffinity = 1;
+message BpmnStat {
+  optional int64 definitions = 1;
 
-  // Describes region affinity scheduling rules (e.g. co-locate this region in the same runner, zone, etc. as some other region(s)).
-  // +optional
-  optional RegionAffinity regionAffinity = 2;
+  optional int64 processes = 2;
 
-  // Describes region anti-affinity scheduling rules (e.g. avoid putting this region in the same runner, zone, etc. as some other region(s)).
-  // +optional
-  optional RegionAntiAffinity regionAntiAffinity = 3;
-}
+  optional int64 events = 3;
 
-// AvoidRegions describes regions that should avoid this runner. This is the value for a
-// Runner annotation with key scheduler.alpha.olive.io/preferAvoidRegions and
-// will eventually become a field of RunnerStatus.
-message AvoidRegions {
-  // Bounded-sized list of signatures of regions that should avoid this runner, sorted
-  // in timestamp order from oldest to newest. Size of the slice is unspecified.
-  // +optional
-  // +listType=atomic
-  repeated PreferAvoidRegionsEntry preferAvoidRegions = 1;
-}
-
-// Binding ties one object to another; for example, a region is bound to a runner by a scheduler.
-message Binding {
-  // Standard object's metadata.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  // The target object that you want to bind to the standard object.
-  optional ObjectReference target = 2;
+  optional int64 tasks = 4;
 }
 
 // Definition is bpmn definitions
@@ -91,129 +64,15 @@ message DefinitionSpec {
 
   optional int64 version = 2;
 
-  // the name of olive region
-  optional string regionName = 3;
-
-  optional int64 priority = 4;
-
-  optional string schedulerName = 5;
+  // the id of olive region
+  optional int64 region = 3;
 }
 
 message DefinitionStatus {
   optional string phase = 1;
 }
 
-message EtcdCluster {
-  repeated string endpoints = 1;
-
-  // dial and request timeout
-  optional string timeout = 2;
-
-  optional int32 maxUnaryRetries = 3;
-}
-
-// Event is a report of an event somewhere in the cluster.  Events
-// have a limited retention time and triggers and messages may evolve
-// with time.  Event consumers should not rely on the timing of an event
-// with a given Reason reflecting a consistent underlying trigger, or the
-// continued existence of events with that Reason.  Events should be
-// treated as informative, best-effort, supplemental data.
-message Event {
-  // Standard object's metadata.
-  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  // The object that this event is about.
-  optional ObjectReference involvedObject = 2;
-
-  // This should be a short, machine understandable string that gives the reason
-  // for the transition into the object's current status.
-  // TODO: provide exact specification for format.
-  // +optional
-  optional string reason = 3;
-
-  // A human-readable description of the status of this operation.
-  // TODO: decide on maximum length.
-  // +optional
-  optional string message = 4;
-
-  // The component reporting this event. Should be a short machine understandable string.
-  // +optional
-  optional EventSource source = 5;
-
-  // The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time firstTimestamp = 6;
-
-  // The time at which the most recent occurrence of this event was recorded.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTimestamp = 7;
-
-  // The number of times this event has occurred.
-  // +optional
-  optional int32 count = 8;
-
-  // Type of this event (Normal, Warning), new types could be added in the future
-  // +optional
-  optional string type = 9;
-
-  // Time when this Event was first observed.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime eventTime = 10;
-
-  // Data about the Event series this event represents or nil if it's a singleton Event.
-  // +optional
-  optional EventSeries series = 11;
-
-  // What action was taken/failed regarding to the Regarding object.
-  // +optional
-  optional string action = 12;
-
-  // Optional secondary object for more complex actions.
-  // +optional
-  optional ObjectReference related = 13;
-
-  // Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
-  // +optional
-  optional string reportingComponent = 14;
-
-  // ID of the controller instance, e.g. `olive-runner-xyzf`.
-  // +optional
-  optional string reportingInstance = 15;
-}
-
-// EventList is a list of events.
-message EventList {
-  // Standard list metadata.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  // List of events
-  repeated Event items = 2;
-}
-
-// EventSeries contain information on series of events, i.e. thing that was/is happening
-// continuously for some time.
-message EventSeries {
-  // Number of occurrences in this series up to the last heartbeat time
-  optional int32 count = 1;
-
-  // Time of the last occurrence observed
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime lastObservedTime = 2;
-}
-
-// EventSource contains information for an event.
-message EventSource {
-  // Component from which the event is generated.
-  // +optional
-  optional string component = 1;
-
-  // Node name on which the event is generated.
-  // +optional
-  optional string host = 2;
-}
-
-message FlowRunnerStat {
+message FlowNodeStat {
   optional string id = 1;
 
   optional string name = 2;
@@ -286,88 +145,6 @@ message NamespaceStatus {
   repeated NamespaceCondition conditions = 2;
 }
 
-// ObjectReference contains enough information to let you inspect or modify the referred object.
-// ---
-// New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
-//  1. Ignored fields.  It includes many fields which are not generally honored.  For instance, ResourceVersion and FieldPath are both very rarely valid in actual usage.
-//  2. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
-//     restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
-//     Those cannot be well described when embedded.
-//  3. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
-//  4. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
-//     during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
-//     and the version of the actual struct is irrelevant.
-//  5. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
-//     will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
-//
-// Instead of using this type, create a locally provided and used type that is well-focused on your reference.
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +structType=atomic
-message ObjectReference {
-  // Kind of the referent.
-  // +optional
-  optional string kind = 1;
-
-  // Namespace of the referent.
-  // +optional
-  optional string namespace = 2;
-
-  // Name of the referent.
-  // +optional
-  repeated string name = 3;
-
-  // UID of the referent.
-  // +optional
-  optional string uid = 4;
-
-  // API version of the referent.
-  // +optional
-  optional string apiVersion = 5;
-
-  // Specific resourceVersion to which this reference is made, if any.
-  // +optional
-  optional string resourceVersion = 6;
-
-  // If referring to a piece of an object instead of an entire object, this string
-  // should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
-  // For example, if the object reference is to a container within a region, this would take on a value like:
-  // "spec.containers{name}" (where "name" refers to the name of the container that triggered
-  // the event) or if no container name is specified "spec.containers[2]" (container with
-  // index 2 in this region). This syntax is chosen only to have some well-defined way of
-  // referencing a part of an object.
-  // TODO: this design is not final and this field is subject to change in the future.
-  // +optional
-  optional string fieldPath = 7;
-}
-
-// PreferAvoidRegionsEntry describes a class of regions that should avoid this runner.
-message PreferAvoidRegionsEntry {
-  // The class of regions.
-  optional RegionSignature regionSignature = 1;
-
-  // Time at which this entry was added to the list.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time evictionTime = 2;
-
-  // (brief) reason why this entry was added to the list.
-  // +optional
-  optional string reason = 3;
-
-  // Human readable message indicating why this entry was added to the list.
-  // +optional
-  optional string message = 4;
-}
-
-// PreferredSchedulingTerm An empty preferred scheduling term matches all objects with implicit weight 0
-// (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).
-message PreferredSchedulingTerm {
-  // Weight associated with matching the corresponding runnerSelectorTerm, in the range 1-100.
-  optional int32 weight = 1;
-
-  // A runner selector term, associated with the corresponding weight.
-  optional RunnerSelectorTerm preference = 2;
-}
-
 // Process is bpmn process instance
 message Process {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -421,7 +198,7 @@ message ProcessStat {
 
   optional int64 attempts = 4;
 
-  map<string, FlowRunnerStat> flowRunners = 5;
+  map<string, FlowNodeStat> flowNodes = 5;
 
   optional int64 startTime = 6;
 
@@ -437,155 +214,13 @@ message ProcessStatus {
   optional int64 region = 3;
 }
 
-// Region the olive runner
+// Region the olive node
 message Region {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional RegionSpec spec = 2;
 
   optional RegionStatus status = 3;
-}
-
-// RegionAffinity Region affinity is a group of inter region affinity scheduling rules.
-message RegionAffinity {
-  // If the affinity requirements specified by this field are not met at
-  // scheduling time, the region will not be scheduled onto the runner.
-  // If the affinity requirements specified by this field cease to be met
-  // at some point during region execution (e.g. due to a region label update), the
-  // system may or may not try to eventually evict the region from its runner.
-  // When there are multiple elements, the lists of runners corresponding to each
-  // regionAffinityTerm are intersected, i.e. all terms must be satisfied.
-  // +optional
-  // +listType=atomic
-  repeated RegionAffinityTerm requiredDuringSchedulingIgnoredDuringExecution = 1;
-
-  // The scheduler will prefer to schedule regions to runners that satisfy
-  // the affinity expressions specified by this field, but it may choose
-  // a runner that violates one or more of the expressions. The runner that is
-  // most preferred is the one with the greatest sum of weights, i.e.
-  // for each runner that meets all of the scheduling requirements (resource
-  // request, requiredDuringScheduling affinity expressions, etc.),
-  // compute a sum by iterating through the elements of this field and adding
-  // "weight" to the sum if the runner has regions which matches the corresponding regionAffinityTerm; the
-  // runner(s) with the highest sum are the most preferred.
-  // +optional
-  // +listType=atomic
-  repeated WeightedRegionAffinityTerm preferredDuringSchedulingIgnoredDuringExecution = 2;
-}
-
-// RegionAffinityTerm Defines a set of regions (namely those matching the labelSelector
-// relative to the given namespace(s)) that this region should be
-// co-located (affinity) or not co-located (anti-affinity) with,
-// where co-located is defined as running on a runner whose value of
-// the label with key <topologyKey> matches that of any runner on which
-// a region of the set of regions is running
-message RegionAffinityTerm {
-  // A label query over a set of resources, in this case regions.
-  // If it's null, this RegionAffinityTerm matches with no Regions.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 1;
-
-  // namespaces specifies a static list of namespace names that the term applies to.
-  // The term is applied to the union of the namespaces listed in this field
-  // and the ones selected by namespaceSelector.
-  // null or empty namespaces list and null namespaceSelector means "this region's namespace".
-  // +optional
-  // +listType=atomic
-  repeated string namespaces = 2;
-
-  // This region should be co-located (affinity) or not co-located (anti-affinity) with the regions matching
-  // the labelSelector in the specified namespaces, where co-located is defined as running on a runner
-  // whose value of the label with key topologyKey matches that of any runner on which any of the
-  // selected regions is running.
-  // Empty topologyKey is not allowed.
-  optional string topologyKey = 3;
-
-  // A label query over the set of namespaces that the term applies to.
-  // The term is applied to the union of the namespaces selected by this field
-  // and the ones listed in the namespaces field.
-  // null selector and null or empty namespaces list means "this region's namespace".
-  // An empty selector ({}) matches all namespaces.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector namespaceSelector = 4;
-
-  // MatchLabelKeys is a set of region label keys to select which regions will
-  // be taken into consideration. The keys are used to lookup values from the
-  // incoming region labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-  // to select the group of existing regions which regions will be taken into consideration
-  // for the incoming region's region (anti) affinity. Keys that don't exist in the incoming
-  // region labels will be ignored. The default value is empty.
-  // The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-  // Also, matchLabelKeys cannot be set when labelSelector isn't set.
-  // This is an alpha field and requires enabling MatchLabelKeysInRegionAffinity feature gate.
-  // +listType=atomic
-  // +optional
-  repeated string matchLabelKeys = 5;
-
-  // MismatchLabelKeys is a set of region label keys to select which regions will
-  // be taken into consideration. The keys are used to lookup values from the
-  // incoming region labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-  // to select the group of existing regions which regions will be taken into consideration
-  // for the incoming region's region (anti) affinity. Keys that don't exist in the incoming
-  // region labels will be ignored. The default value is empty.
-  // The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-  // Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-  // This is an alpha field and requires enabling MatchLabelKeysInRegionAffinity feature gate.
-  // +listType=atomic
-  // +optional
-  repeated string mismatchLabelKeys = 6;
-}
-
-// RegionAntiAffinity Region anti affinity is a group of inter region anti affinity scheduling rules.
-message RegionAntiAffinity {
-  // If the anti-affinity requirements specified by this field are not met at
-  // scheduling time, the region will not be scheduled onto the runner.
-  // If the anti-affinity requirements specified by this field cease to be met
-  // at some point during region execution (e.g. due to a region label update), the
-  // system may or may not try to eventually evict the region from its runner.
-  // When there are multiple elements, the lists of runners corresponding to each
-  // regionAffinityTerm are intersected, i.e. all terms must be satisfied.
-  // +optional
-  // +listType=atomic
-  repeated RegionAffinityTerm requiredDuringSchedulingIgnoredDuringExecution = 1;
-
-  // The scheduler will prefer to schedule regions to runners that satisfy
-  // the anti-affinity expressions specified by this field, but it may choose
-  // a runner that violates one or more of the expressions. The runner that is
-  // most preferred is the one with the greatest sum of weights, i.e.
-  // for each runner that meets all of the scheduling requirements (resource
-  // request, requiredDuringScheduling anti-affinity expressions, etc.),
-  // compute a sum by iterating through the elements of this field and adding
-  // "weight" to the sum if the runner has regions which matches the corresponding regionAffinityTerm; the
-  // runner(s) with the highest sum are the most preferred.
-  // +optional
-  // +listType=atomic
-  repeated WeightedRegionAffinityTerm preferredDuringSchedulingIgnoredDuringExecution = 2;
-}
-
-// RegionCondition contains details for the current condition of this region.
-message RegionCondition {
-  // Type is the type of the condition.
-  optional string type = 1;
-
-  // Status is the status of the condition.
-  // Can be True, False, Unknown.
-  optional string status = 2;
-
-  // Last time we probed the condition.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastProbeTime = 3;
-
-  // Last time the condition transitioned from one status to another.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
-
-  // Unique, one-word, CamelCase reason for the condition's last transition.
-  // +optional
-  optional string reason = 5;
-
-  // Human-readable message indicating details about last transition.
-  // +optional
-  optional string message = 6;
 }
 
 // RegionList is a list of Region objects.
@@ -612,21 +247,6 @@ message RegionReplica {
   optional bool isJoin = 7;
 }
 
-// RegionSchedulingGate is associated to a Region to guard its scheduling.
-message RegionSchedulingGate {
-  // Name of the scheduling gate.
-  // Each scheduling gate must have a unique name field.
-  optional string name = 1;
-}
-
-// RegionSignature describes the class of regions that should avoid this runner.
-// Exactly one field should be set.
-message RegionSignature {
-  // Reference to controller whose regions should avoid this runner.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference regionController = 1;
-}
-
 // RegionSpec is the specification of a Region.
 message RegionSpec {
   optional int64 id = 1;
@@ -639,64 +259,20 @@ message RegionSpec {
 
   optional int64 heartbeatRTT = 5;
 
-  optional int32 priority = 6;
+  optional int64 leader = 6;
 
-  optional string schedulerName = 7;
-
-  optional int64 definitionsLimit = 8;
-
-  // RunnerSelector is a selector which must be true for the region to fit on a runner.
-  // Selector which must match a runner's labels for the region to be scheduled on that runner.
-  // +optional
-  // +mapType=atomic
-  map<string, string> runnerSelector = 9;
-
-  // If specified, the region's scheduling constraints
-  // +optional
-  optional Affinity affinity = 10;
-
-  repeated string regionNames = 11;
-
-  // If specified, the region's tolerations.
-  // +optional
-  // +listType=atomic
-  repeated Toleration tolerations = 12;
-
-  // SchedulingGates is an opaque list of values that if specified will block scheduling the region.
-  // If schedulingGates is not empty, the region will stay in the SchedulingGated state and the
-  // scheduler will not attempt to schedule the region.
-  //
-  // SchedulingGates can only be set at region creation time, and be removed only afterwards.
-  //
-  // +patchMergeKey=name
-  // +patchStrategy=merge
-  // +listType=map
-  // +listMapKey=name
-  // +optional
-  repeated RegionSchedulingGate schedulingGates = 13;
+  optional int64 definitionsLimit = 7;
 }
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional int64 leader = 1;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional int64 term = 2;
+  optional int64 runningDefinitions = 2;
 
-  optional int32 replicas = 3;
+  optional BpmnStat bpmn = 3;
 
-  optional int64 definitions = 4;
-
-  optional int64 runningDefinitions = 5;
-
-  optional int64 bpmnProcesses = 6;
-
-  optional int64 bpmnEvents = 7;
-
-  optional int64 bpmnTasks = 8;
-
-  optional string message = 9;
-
-  optional int64 timestamp = 10;
+  optional int64 timestamp = 4;
 }
 
 message RegionStatus {
@@ -706,89 +282,20 @@ message RegionStatus {
 
   optional int64 leader = 3;
 
-  optional int64 definitions = 4;
+  optional int64 term = 4;
 
-  // Current service state of region.
-  // +optional
-  // +patchMergeKey=type
-  // +patchStrategy=merge
-  // +listType=map
-  // +listMapKey=type
-  repeated RegionCondition conditions = 5;
+  optional int32 replicas = 5;
 
-  optional RegionStat stat = 6;
+  optional int64 definitions = 6;
 }
 
-// Runner the olive runner
+// Runner the olive node
 message Runner {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional RunnerSpec spec = 2;
 
   optional RunnerStatus status = 3;
-}
-
-// RunnerAffinity Runner affinity is a group of runner affinity scheduling rules.
-message RunnerAffinity {
-  // If the affinity requirements specified by this field are not met at
-  // scheduling time, the region will not be scheduled onto the runner.
-  // If the affinity requirements specified by this field cease to be met
-  // at some point during region execution (e.g. due to an update), the system
-  // may or may not try to eventually evict the region from its runner.
-  // +optional
-  optional RunnerSelector requiredDuringSchedulingIgnoredDuringExecution = 1;
-
-  // The scheduler will prefer to schedule regions to runners that satisfy
-  // the affinity expressions specified by this field, but it may choose
-  // a runner that violates one or more of the expressions. The runner that is
-  // most preferred is the one with the greatest sum of weights, i.e.
-  // for each runner that meets all of the scheduling requirements (resource
-  // request, requiredDuringScheduling affinity expressions, etc.),
-  // compute a sum by iterating through the elements of this field and adding
-  // "weight" to the sum if the runner matches the corresponding matchExpressions; the
-  // runner(s) with the highest sum are the most preferred.
-  // +optional
-  // +listType=atomic
-  repeated PreferredSchedulingTerm preferredDuringSchedulingIgnoredDuringExecution = 2;
-}
-
-// RunnerCondition contains condition information for a runner.
-message RunnerCondition {
-  // Type of runner condition.
-  optional string type = 1;
-
-  // Status of the condition, one of True, False, Unknown.
-  optional string status = 2;
-
-  // Last time we got an update on a given condition.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastHeartbeatTime = 3;
-
-  // Last time the condition transit from one status to another.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 4;
-
-  // (brief) reason for the condition's last transition.
-  // +optional
-  optional string reason = 5;
-
-  // Human readable message indicating details about last transition.
-  // +optional
-  optional string message = 6;
-}
-
-message RunnerDynamicStat {
-  optional int64 bpmnProcesses = 1;
-
-  optional int64 bpmnEvents = 2;
-
-  optional int64 bpmnTasks = 3;
-
-  optional double cpuUsed = 4;
-
-  optional double memoryUsed = 5;
-
-  optional int64 timestamp = 6;
 }
 
 // RunnerList is a list of Runner objects.
@@ -799,335 +306,60 @@ message RunnerList {
   repeated Runner items = 2;
 }
 
-// RunnerSelector A runner selector represents the union of the results of one or more label queries
-// over a set of runners; that is, it represents the OR of the selectors represented
-// by the runner selector terms.
-// +structType=atomic
-message RunnerSelector {
-  // Required. A list of runner selector terms. The terms are ORed.
-  // +listType=atomic
-  repeated RunnerSelectorTerm runnerSelectorTerms = 1;
-}
-
-// RunnerSelectorRequirement A runner selector requirement is a selector that contains values, a key, and an operator
-// that relates the key and values.
-message RunnerSelectorRequirement {
-  // The label key that the selector applies to.
-  optional string key = 1;
-
-  // Represents a key's relationship to a set of values.
-  // Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-  optional string operator = 2;
-
-  // An array of string values. If the operator is In or NotIn,
-  // the values array must be non-empty. If the operator is Exists or DoesNotExist,
-  // the values array must be empty. If the operator is Gt or Lt, the values
-  // array must have a single element, which will be interpreted as an integer.
-  // This array is replaced during a strategic merge patch.
-  // +optional
-  // +listType=atomic
-  repeated string values = 3;
-}
-
-// RunnerSelectorTerm A null or empty runner selector term matches no objects. The requirements of
-// them are ANDed.
-// The TopologySelectorTerm type implements a subset of the RunnerSelectorTerm.
-// +structType=atomic
-message RunnerSelectorTerm {
-  // A list of runner selector requirements by runner's labels.
-  // +optional
-  // +listType=atomic
-  repeated RunnerSelectorRequirement matchExpressions = 1;
-
-  // A list of runner selector requirements by runner's fields.
-  // +optional
-  // +listType=atomic
-  repeated RunnerSelectorRequirement matchFields = 2;
-}
-
 // RunnerSpec is the specification of a Runner.
 message RunnerSpec {
   // ID is the member ID for this member.
   optional int64 id = 1;
 
-  // name is the human-readable name of the member. If the member is not started, the name will be an empty string.
-  optional string name = 2;
+  // hostname is the host name get by os.Hostname().
+  optional string hostname = 2;
 
-  // peerURLs is the list of URLs the member exposes to the cluster for communication.
+  // peerURL is the URL the member exposes to the cluster for communication.
   optional string peerURL = 3;
 
-  // clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+  // clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
   optional string clientURL = 4;
 
+  optional string versionRef = 5;
+
   // isLearner indicates if the member is raft learner.
-  optional bool isLearner = 5;
-
-  // version information, generated during build
-  optional string versionRef = 6;
-
-  // Unschedulable controls node schedulability of new regions. By default, runner is schedulable.
-  // +optional
-  optional bool unschedulable = 7;
-
-  // If specified, the runner's taints.
-  // +optional
-  // +listType=atomic
-  repeated Taint taints = 8;
+  optional bool isLearner = 6;
 }
 
 // RunnerStat is the stat information of Runner
 message RunnerStat {
-  optional double cpuTotal = 1;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional double memoryTotal = 2;
+  optional double cpuUsed = 2;
 
-  repeated int64 regions = 3;
+  optional double memoryUsed = 3;
 
-  repeated string leaders = 4;
+  optional BpmnStat bpmn = 4;
 
-  optional int64 definitions = 5;
+  optional int64 timestamp = 5;
+}
 
-  // dynamic statistic, don't save to storage
-  optional RunnerDynamicStat dynamic = 6;
+// RunnerStatList is a list of RunnerStat objects.
+message RunnerStatList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  // Items is a list of Runner
+  repeated Runner items = 2;
 }
 
 message RunnerStatus {
-  // Capacity represents the total resources of a runner.
-  // +optional
-  map<string, k8s.io.apimachinery.pkg.api.resource.Quantity> capacity = 1;
+  optional string phase = 1;
 
-  // Allocatable represents the resources of a runner that are available for scheduling.
-  // Defaults to Capacity.
-  // +optional
-  map<string, k8s.io.apimachinery.pkg.api.resource.Quantity> allocatable = 2;
+  optional string message = 2;
 
-  // Conditions is an array of current observed runner conditions.
-  // +optional
-  // +patchMergeKey=type
-  // +patchStrategy=merge
-  // +listType=map
-  // +listMapKey=type
-  repeated RunnerCondition conditions = 3;
+  optional double cpuTotal = 3;
 
-  optional string phase = 4;
+  optional double memoryTotal = 4;
 
-  optional string message = 5;
+  repeated int64 regions = 5;
 
-  optional RunnerStat stat = 6;
-}
+  repeated string leaders = 6;
 
-// Taint The runner this Taint is attached to has the "effect" on
-// any region that does not tolerate the Taint.
-message Taint {
-  // Required. The taint key to be applied to a runner.
-  optional string key = 1;
-
-  // The taint value corresponding to the taint key.
-  // +optional
-  optional string value = 2;
-
-  // Required. The effect of the taint on regions
-  // that do not tolerate the taint.
-  // Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
-  optional string effect = 3;
-
-  // TimeAdded represents the time at which the taint was added.
-  // It is only written for NoExecute taints.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time timeAdded = 4;
-}
-
-// Toleration The region this Toleration is attached to tolerates any taint that matches
-// the triple <key,value,effect> using the matching operator <operator>.
-message Toleration {
-  // Key is the taint key that the toleration applies to. Empty means match all taint keys.
-  // If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-  // +optional
-  optional string key = 1;
-
-  // Operator represents a key's relationship to the value.
-  // Valid operators are Exists and Equal. Defaults to Equal.
-  // Exists is equivalent to wildcard for value, so that a region can
-  // tolerate all taints of a particular category.
-  // +optional
-  optional string operator = 2;
-
-  // Value is the taint value the toleration matches to.
-  // If the operator is Exists, the value should be empty, otherwise just a regular string.
-  // +optional
-  optional string value = 3;
-
-  // Effect indicates the taint effect to match. Empty means match all taint effects.
-  // When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-  // +optional
-  optional string effect = 4;
-
-  // TolerationSeconds represents the period of time the toleration (which must be
-  // of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default,
-  // it is not set, which means tolerate the taint forever (do not evict). Zero and
-  // negative values will be treated as 0 (evict immediately) by the system.
-  // +optional
-  optional int64 tolerationSeconds = 5;
-}
-
-// TopologySelectorLabelRequirement A topology selector requirement is a selector that matches given label.
-// This is an alpha feature and may change in the future.
-message TopologySelectorLabelRequirement {
-  // The label key that the selector applies to.
-  optional string key = 1;
-
-  // An array of string values. One value must match the label to be selected.
-  // Each entry in Values is ORed.
-  // +listType=atomic
-  repeated string values = 2;
-}
-
-// TopologySelectorTerm A topology selector term represents the result of label queries.
-// A null or empty topology selector term matches no objects.
-// The requirements of them are ANDed.
-// It provides a subset of functionality as RunnerSelectorTerm.
-// This is an alpha feature and may change in the future.
-// +structType=atomic
-message TopologySelectorTerm {
-  // A list of topology selector requirements by labels.
-  // +optional
-  // +listType=atomic
-  repeated TopologySelectorLabelRequirement matchLabelExpressions = 1;
-}
-
-// TopologySpreadConstraint specifies how to spread matching regions among the given topology.
-message TopologySpreadConstraint {
-  // MaxSkew describes the degree to which regions may be unevenly distributed.
-  // When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference
-  // between the number of matching regions in the target topology and the global minimum.
-  // The global minimum is the minimum number of matching regions in an eligible domain
-  // or zero if the number of eligible domains is less than MinDomains.
-  // For example, in a 3-zone cluster, MaxSkew is set to 1, and regions with the same
-  // labelSelector spread as 2/2/1:
-  // In this case, the global minimum is 1.
-  // +-------+-------+-------+
-  // | zone1 | zone2 | zone3 |
-  // +-------+-------+-------+
-  // |  R R  |  R R  |   R   |
-  // +-------+-------+-------+
-  // - if MaxSkew is 1, incoming region can only be scheduled to zone3 to become 2/2/2;
-  // scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2)
-  // violate MaxSkew(1).
-  // - if MaxSkew is 2, incoming region can be scheduled onto any zone.
-  // When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence
-  // to topologies that satisfy it.
-  // It's a required field. Default value is 1 and 0 is not allowed.
-  optional int32 maxSkew = 1;
-
-  // TopologyKey is the key of runner labels. Runners that have a label with this key
-  // and identical values are considered to be in the same topology.
-  // We consider each <key, value> as a "bucket", and try to put balanced number
-  // of regions into each bucket.
-  // We define a domain as a particular instance of a topology.
-  // Also, we define an eligible domain as a domain whose runners meet the requirements of
-  // runnerAffinityPolicy and runnerTaintsPolicy.
-  // e.g. If TopologyKey is "kubernetes.io/hostname", each Runner is a domain of that topology.
-  // And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology.
-  // It's a required field.
-  optional string topologyKey = 2;
-
-  // WhenUnsatisfiable indicates how to deal with a region if it doesn't satisfy
-  // the spread constraint.
-  // - DoNotSchedule (default) tells the scheduler not to schedule it.
-  // - ScheduleAnyway tells the scheduler to schedule the region in any location,
-  //   but giving higher precedence to topologies that would help reduce the
-  //   skew.
-  // A constraint is considered "Unsatisfiable" for an incoming region
-  // if and only if every possible runner assignment for that region would violate
-  // "MaxSkew" on some topology.
-  // For example, in a 3-zone cluster, MaxSkew is set to 1, and regions with the same
-  // labelSelector spread as 3/1/1:
-  // +-------+-------+-------+
-  // | zone1 | zone2 | zone3 |
-  // +-------+-------+-------+
-  // | R R R |   R   |   R   |
-  // +-------+-------+-------+
-  // If WhenUnsatisfiable is set to DoNotSchedule, incoming region can only be scheduled
-  // to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies
-  // MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler
-  // won't make it *more* imbalanced.
-  // It's a required field.
-  optional string whenUnsatisfiable = 3;
-
-  // LabelSelector is used to find matching regions.
-  // Regions that match this label selector are counted to determine the number of regions
-  // in their corresponding topology domain.
-  // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 4;
-
-  // MinDomains indicates a minimum number of eligible domains.
-  // When the number of eligible domains with matching topology keys is less than minDomains,
-  // Region Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed.
-  // And when the number of eligible domains with matching topology keys equals or greater than minDomains,
-  // this value has no effect on scheduling.
-  // As a result, when the number of eligible domains is less than minDomains,
-  // scheduler won't schedule more than maxSkew Regions to those domains.
-  // If value is nil, the constraint behaves as if MinDomains is equal to 1.
-  // Valid values are integers greater than 0.
-  // When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
-  //
-  // For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and regions with the same
-  // labelSelector spread as 2/2/2:
-  // +-------+-------+-------+
-  // | zone1 | zone2 | zone3 |
-  // +-------+-------+-------+
-  // |  R R  |  R R  |  R R  |
-  // +-------+-------+-------+
-  // The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0.
-  // In this situation, new region with the same labelSelector cannot be scheduled,
-  // because computed skew will be 3(3 - 0) if new Region is scheduled to any of the three zones,
-  // it will violate MaxSkew.
-  // +optional
-  optional int32 minDomains = 5;
-
-  // RunnerAffinityPolicy indicates how we will treat Region's runnerAffinity/runnerSelector
-  // when calculating region topology spread skew. Options are:
-  // - Honor: only runners matching runnerAffinity/runnerSelector are included in the calculations.
-  // - Ignore: runnerAffinity/runnerSelector are ignored. All runners are included in the calculations.
-  //
-  // If this value is nil, the behavior is equivalent to the Honor policy.
-  // This is a beta-level feature default enabled by the RunnerInclusionPolicyInRegionTopologySpread feature flag.
-  // +optional
-  optional string runnerAffinityPolicy = 6;
-
-  // RunnerTaintsPolicy indicates how we will treat runner taints when calculating
-  // region topology spread skew. Options are:
-  // - Honor: runners without taints, along with tainted runners for which the incoming region
-  // has a toleration, are included.
-  // - Ignore: runner taints are ignored. All runners are included.
-  //
-  // If this value is nil, the behavior is equivalent to the Ignore policy.
-  // This is a beta-level feature default enabled by the RunnerInclusionPolicyInRegionTopologySpread feature flag.
-  // +optional
-  optional string runnerTaintsPolicy = 7;
-
-  // MatchLabelKeys is a set of region label keys to select the regions over which
-  // spreading will be calculated. The keys are used to lookup values from the
-  // incoming region labels, those key-value labels are ANDed with labelSelector
-  // to select the group of existing regions over which spreading will be calculated
-  // for the incoming region. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector.
-  // MatchLabelKeys cannot be set when LabelSelector isn't set.
-  // Keys that don't exist in the incoming region labels will
-  // be ignored. A null or empty list means only match against labelSelector.
-  //
-  // This is a beta field and requires the MatchLabelKeysInRegionTopologySpread feature gate to be enabled (enabled by default).
-  // +listType=atomic
-  // +optional
-  repeated string matchLabelKeys = 8;
-}
-
-// WeightedRegionAffinityTerm The weights of all of the matched WeightedRegionAffinityTerm fields are added per-runner to find the most preferred runner(s)
-message WeightedRegionAffinityTerm {
-  // weight associated with matching the corresponding regionAffinityTerm,
-  // in the range 1-100.
-  optional int32 weight = 1;
-
-  // Required. A region affinity term, associated with the corresponding weight.
-  optional RegionAffinityTerm regionAffinityTerm = 2;
+  optional int64 definitions = 7;
 }
 

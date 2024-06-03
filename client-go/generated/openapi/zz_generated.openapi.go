@@ -27,7 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package openapi
 
 import (
-	resource "k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	common "k8s.io/kube-openapi/pkg/common"
 	spec "k8s.io/kube-openapi/pkg/validation/spec"
@@ -35,151 +34,103 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":                        schema_olive_apis_apidiscovery_v1_Activity(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":                             schema_olive_apis_apidiscovery_v1_Box(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":                            schema_olive_apis_apidiscovery_v1_Edge(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeList":                        schema_olive_apis_apidiscovery_v1_EdgeList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":                        schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":                      schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":                        schema_olive_apis_apidiscovery_v1_Endpoint(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":                    schema_olive_apis_apidiscovery_v1_EndpointList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":                    schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":                  schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Node":                            schema_olive_apis_apidiscovery_v1_Node(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Service":                         schema_olive_apis_apidiscovery_v1_Service(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceList":                     schema_olive_apis_apidiscovery_v1_ServiceList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec":                     schema_olive_apis_apidiscovery_v1_ServiceSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus":                   schema_olive_apis_apidiscovery_v1_ServiceStatus(ref),
-		"github.com/olive-io/olive/apis/config/v1.DebuggingConfiguration":                schema_olive_apis_config_v1_DebuggingConfiguration(ref),
-		"github.com/olive-io/olive/apis/config/v1.DefaultPreemptionArgs":                 schema_olive_apis_config_v1_DefaultPreemptionArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.Extender":                              schema_olive_apis_config_v1_Extender(ref),
-		"github.com/olive-io/olive/apis/config/v1.ExtenderManagedResource":               schema_olive_apis_config_v1_ExtenderManagedResource(ref),
-		"github.com/olive-io/olive/apis/config/v1.ExtenderTLSConfig":                     schema_olive_apis_config_v1_ExtenderTLSConfig(ref),
-		"github.com/olive-io/olive/apis/config/v1.InterRegionAffinityArgs":               schema_olive_apis_config_v1_InterRegionAffinityArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.Plugin":                                schema_olive_apis_config_v1_Plugin(ref),
-		"github.com/olive-io/olive/apis/config/v1.PluginConfig":                          schema_olive_apis_config_v1_PluginConfig(ref),
-		"github.com/olive-io/olive/apis/config/v1.PluginSet":                             schema_olive_apis_config_v1_PluginSet(ref),
-		"github.com/olive-io/olive/apis/config/v1.Plugins":                               schema_olive_apis_config_v1_Plugins(ref),
-		"github.com/olive-io/olive/apis/config/v1.RegionTopologySpreadArgs":              schema_olive_apis_config_v1_RegionTopologySpreadArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.RequestedToCapacityRatioParam":         schema_olive_apis_config_v1_RequestedToCapacityRatioParam(ref),
-		"github.com/olive-io/olive/apis/config/v1.ResourceSpec":                          schema_olive_apis_config_v1_ResourceSpec(ref),
-		"github.com/olive-io/olive/apis/config/v1.RunnerAffinityArgs":                    schema_olive_apis_config_v1_RunnerAffinityArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.RunnerResourcesBalancedAllocationArgs": schema_olive_apis_config_v1_RunnerResourcesBalancedAllocationArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.RunnerResourcesFitArgs":                schema_olive_apis_config_v1_RunnerResourcesFitArgs(ref),
-		"github.com/olive-io/olive/apis/config/v1.SchedulerConfiguration":                schema_olive_apis_config_v1_SchedulerConfiguration(ref),
-		"github.com/olive-io/olive/apis/config/v1.SchedulerProfile":                      schema_olive_apis_config_v1_SchedulerProfile(ref),
-		"github.com/olive-io/olive/apis/config/v1.ScoringStrategy":                       schema_olive_apis_config_v1_ScoringStrategy(ref),
-		"github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint":                 schema_olive_apis_config_v1_UtilizationShapePoint(ref),
-		"github.com/olive-io/olive/apis/core/v1.Affinity":                                schema_olive_apis_core_v1_Affinity(ref),
-		"github.com/olive-io/olive/apis/core/v1.AvoidRegions":                            schema_olive_apis_core_v1_AvoidRegions(ref),
-		"github.com/olive-io/olive/apis/core/v1.Binding":                                 schema_olive_apis_core_v1_Binding(ref),
-		"github.com/olive-io/olive/apis/core/v1.Definition":                              schema_olive_apis_core_v1_Definition(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionList":                          schema_olive_apis_core_v1_DefinitionList(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":                          schema_olive_apis_core_v1_DefinitionSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":                        schema_olive_apis_core_v1_DefinitionStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.EtcdCluster":                             schema_olive_apis_core_v1_EtcdCluster(ref),
-		"github.com/olive-io/olive/apis/core/v1.Event":                                   schema_olive_apis_core_v1_Event(ref),
-		"github.com/olive-io/olive/apis/core/v1.EventList":                               schema_olive_apis_core_v1_EventList(ref),
-		"github.com/olive-io/olive/apis/core/v1.EventSeries":                             schema_olive_apis_core_v1_EventSeries(ref),
-		"github.com/olive-io/olive/apis/core/v1.EventSource":                             schema_olive_apis_core_v1_EventSource(ref),
-		"github.com/olive-io/olive/apis/core/v1.FlowRunnerStat":                          schema_olive_apis_core_v1_FlowRunnerStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.Namespace":                               schema_olive_apis_core_v1_Namespace(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":                      schema_olive_apis_core_v1_NamespaceCondition(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceList":                           schema_olive_apis_core_v1_NamespaceList(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceSpec":                           schema_olive_apis_core_v1_NamespaceSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":                         schema_olive_apis_core_v1_NamespaceStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.ObjectReference":                         schema_olive_apis_core_v1_ObjectReference(ref),
-		"github.com/olive-io/olive/apis/core/v1.PreferAvoidRegionsEntry":                 schema_olive_apis_core_v1_PreferAvoidRegionsEntry(ref),
-		"github.com/olive-io/olive/apis/core/v1.PreferredSchedulingTerm":                 schema_olive_apis_core_v1_PreferredSchedulingTerm(ref),
-		"github.com/olive-io/olive/apis/core/v1.Process":                                 schema_olive_apis_core_v1_Process(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessList":                             schema_olive_apis_core_v1_ProcessList(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":                     schema_olive_apis_core_v1_ProcessRunningState(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":                             schema_olive_apis_core_v1_ProcessSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStat":                             schema_olive_apis_core_v1_ProcessStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":                           schema_olive_apis_core_v1_ProcessStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Region":                                  schema_olive_apis_core_v1_Region(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionAffinity":                          schema_olive_apis_core_v1_RegionAffinity(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm":                      schema_olive_apis_core_v1_RegionAffinityTerm(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionAntiAffinity":                      schema_olive_apis_core_v1_RegionAntiAffinity(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionCondition":                         schema_olive_apis_core_v1_RegionCondition(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionList":                              schema_olive_apis_core_v1_RegionList(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionReplica":                           schema_olive_apis_core_v1_RegionReplica(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionSchedulingGate":                    schema_olive_apis_core_v1_RegionSchedulingGate(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionSignature":                         schema_olive_apis_core_v1_RegionSignature(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionSpec":                              schema_olive_apis_core_v1_RegionSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStat":                              schema_olive_apis_core_v1_RegionStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStatus":                            schema_olive_apis_core_v1_RegionStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Runner":                                  schema_olive_apis_core_v1_Runner(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerAffinity":                          schema_olive_apis_core_v1_RunnerAffinity(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerCondition":                         schema_olive_apis_core_v1_RunnerCondition(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerDynamicStat":                       schema_olive_apis_core_v1_RunnerDynamicStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerList":                              schema_olive_apis_core_v1_RunnerList(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerSelector":                          schema_olive_apis_core_v1_RunnerSelector(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerSelectorRequirement":               schema_olive_apis_core_v1_RunnerSelectorRequirement(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerSelectorTerm":                      schema_olive_apis_core_v1_RunnerSelectorTerm(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":                              schema_olive_apis_core_v1_RunnerSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerStat":                              schema_olive_apis_core_v1_RunnerStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":                            schema_olive_apis_core_v1_RunnerStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Taint":                                   schema_olive_apis_core_v1_Taint(ref),
-		"github.com/olive-io/olive/apis/core/v1.Toleration":                              schema_olive_apis_core_v1_Toleration(ref),
-		"github.com/olive-io/olive/apis/core/v1.TopologySelectorLabelRequirement":        schema_olive_apis_core_v1_TopologySelectorLabelRequirement(ref),
-		"github.com/olive-io/olive/apis/core/v1.TopologySelectorTerm":                    schema_olive_apis_core_v1_TopologySelectorTerm(ref),
-		"github.com/olive-io/olive/apis/core/v1.TopologySpreadConstraint":                schema_olive_apis_core_v1_TopologySpreadConstraint(ref),
-		"github.com/olive-io/olive/apis/core/v1.WeightedRegionAffinityTerm":              schema_olive_apis_core_v1_WeightedRegionAffinityTerm(ref),
-		"k8s.io/apimachinery/pkg/api/resource.Quantity":                                  schema_apimachinery_pkg_api_resource_Quantity(ref),
-		"k8s.io/apimachinery/pkg/api/resource.int64Amount":                               schema_apimachinery_pkg_api_resource_int64Amount(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                                  schema_pkg_apis_meta_v1_APIGroup(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":                              schema_pkg_apis_meta_v1_APIGroupList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":                               schema_pkg_apis_meta_v1_APIResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResourceList":                           schema_pkg_apis_meta_v1_APIResourceList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIVersions":                               schema_pkg_apis_meta_v1_APIVersions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ApplyOptions":                              schema_pkg_apis_meta_v1_ApplyOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Condition":                                 schema_pkg_apis_meta_v1_Condition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.CreateOptions":                             schema_pkg_apis_meta_v1_CreateOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.DeleteOptions":                             schema_pkg_apis_meta_v1_DeleteOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Duration":                                  schema_pkg_apis_meta_v1_Duration(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.FieldsV1":                                  schema_pkg_apis_meta_v1_FieldsV1(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions":                                schema_pkg_apis_meta_v1_GetOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupKind":                                 schema_pkg_apis_meta_v1_GroupKind(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupResource":                             schema_pkg_apis_meta_v1_GroupResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersion":                              schema_pkg_apis_meta_v1_GroupVersion(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionForDiscovery":                  schema_pkg_apis_meta_v1_GroupVersionForDiscovery(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind":                          schema_pkg_apis_meta_v1_GroupVersionKind(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionResource":                      schema_pkg_apis_meta_v1_GroupVersionResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent":                             schema_pkg_apis_meta_v1_InternalEvent(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector":                             schema_pkg_apis_meta_v1_LabelSelector(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelectorRequirement":                  schema_pkg_apis_meta_v1_LabelSelectorRequirement(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.List":                                      schema_pkg_apis_meta_v1_List(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta":                                  schema_pkg_apis_meta_v1_ListMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ListOptions":                               schema_pkg_apis_meta_v1_ListOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ManagedFieldsEntry":                        schema_pkg_apis_meta_v1_ManagedFieldsEntry(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime":                                 schema_pkg_apis_meta_v1_MicroTime(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta":                                schema_pkg_apis_meta_v1_ObjectMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference":                            schema_pkg_apis_meta_v1_OwnerReference(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadata":                     schema_pkg_apis_meta_v1_PartialObjectMetadata(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadataList":                 schema_pkg_apis_meta_v1_PartialObjectMetadataList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Patch":                                     schema_pkg_apis_meta_v1_Patch(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PatchOptions":                              schema_pkg_apis_meta_v1_PatchOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Preconditions":                             schema_pkg_apis_meta_v1_Preconditions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.RootPaths":                                 schema_pkg_apis_meta_v1_RootPaths(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ServerAddressByClientCIDR":                 schema_pkg_apis_meta_v1_ServerAddressByClientCIDR(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Status":                                    schema_pkg_apis_meta_v1_Status(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusCause":                               schema_pkg_apis_meta_v1_StatusCause(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusDetails":                             schema_pkg_apis_meta_v1_StatusDetails(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Table":                                     schema_pkg_apis_meta_v1_Table(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableColumnDefinition":                     schema_pkg_apis_meta_v1_TableColumnDefinition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableOptions":                              schema_pkg_apis_meta_v1_TableOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRow":                                  schema_pkg_apis_meta_v1_TableRow(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRowCondition":                         schema_pkg_apis_meta_v1_TableRowCondition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Time":                                      schema_pkg_apis_meta_v1_Time(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Timestamp":                                 schema_pkg_apis_meta_v1_Timestamp(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta":                                  schema_pkg_apis_meta_v1_TypeMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.UpdateOptions":                             schema_pkg_apis_meta_v1_UpdateOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent":                                schema_pkg_apis_meta_v1_WatchEvent(ref),
-		"k8s.io/apimachinery/pkg/runtime.RawExtension":                                   schema_k8sio_apimachinery_pkg_runtime_RawExtension(ref),
-		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                                       schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
-		"k8s.io/apimachinery/pkg/runtime.Unknown":                                        schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
-		"k8s.io/apimachinery/pkg/version.Info":                                           schema_k8sio_apimachinery_pkg_version_Info(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":        schema_olive_apis_apidiscovery_v1_Activity(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":             schema_olive_apis_apidiscovery_v1_Box(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":            schema_olive_apis_apidiscovery_v1_Edge(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeList":        schema_olive_apis_apidiscovery_v1_EdgeList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":        schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":      schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":        schema_olive_apis_apidiscovery_v1_Endpoint(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":    schema_olive_apis_apidiscovery_v1_EndpointList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":    schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":  schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Node":            schema_olive_apis_apidiscovery_v1_Node(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Service":         schema_olive_apis_apidiscovery_v1_Service(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceList":     schema_olive_apis_apidiscovery_v1_ServiceList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec":     schema_olive_apis_apidiscovery_v1_ServiceSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus":   schema_olive_apis_apidiscovery_v1_ServiceStatus(ref),
+		"github.com/olive-io/olive/apis/config/v1.EtcdCluster":           schema_olive_apis_config_v1_EtcdCluster(ref),
+		"github.com/olive-io/olive/apis/core/v1.BpmnStat":                schema_olive_apis_core_v1_BpmnStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.Definition":              schema_olive_apis_core_v1_Definition(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionList":          schema_olive_apis_core_v1_DefinitionList(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":          schema_olive_apis_core_v1_DefinitionSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":        schema_olive_apis_core_v1_DefinitionStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":            schema_olive_apis_core_v1_FlowNodeStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.Namespace":               schema_olive_apis_core_v1_Namespace(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":      schema_olive_apis_core_v1_NamespaceCondition(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceList":           schema_olive_apis_core_v1_NamespaceList(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceSpec":           schema_olive_apis_core_v1_NamespaceSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":         schema_olive_apis_core_v1_NamespaceStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Process":                 schema_olive_apis_core_v1_Process(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessList":             schema_olive_apis_core_v1_ProcessList(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessRunningState":     schema_olive_apis_core_v1_ProcessRunningState(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":             schema_olive_apis_core_v1_ProcessSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStat":             schema_olive_apis_core_v1_ProcessStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":           schema_olive_apis_core_v1_ProcessStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Region":                  schema_olive_apis_core_v1_Region(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionList":              schema_olive_apis_core_v1_RegionList(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionReplica":           schema_olive_apis_core_v1_RegionReplica(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionSpec":              schema_olive_apis_core_v1_RegionSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionStat":              schema_olive_apis_core_v1_RegionStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionStatus":            schema_olive_apis_core_v1_RegionStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Runner":                  schema_olive_apis_core_v1_Runner(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerList":              schema_olive_apis_core_v1_RunnerList(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":              schema_olive_apis_core_v1_RunnerSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStat":              schema_olive_apis_core_v1_RunnerStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStatList":          schema_olive_apis_core_v1_RunnerStatList(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":            schema_olive_apis_core_v1_RunnerStatus(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                  schema_pkg_apis_meta_v1_APIGroup(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":              schema_pkg_apis_meta_v1_APIGroupList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":               schema_pkg_apis_meta_v1_APIResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResourceList":           schema_pkg_apis_meta_v1_APIResourceList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIVersions":               schema_pkg_apis_meta_v1_APIVersions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ApplyOptions":              schema_pkg_apis_meta_v1_ApplyOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Condition":                 schema_pkg_apis_meta_v1_Condition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.CreateOptions":             schema_pkg_apis_meta_v1_CreateOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.DeleteOptions":             schema_pkg_apis_meta_v1_DeleteOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Duration":                  schema_pkg_apis_meta_v1_Duration(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.FieldsV1":                  schema_pkg_apis_meta_v1_FieldsV1(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions":                schema_pkg_apis_meta_v1_GetOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupKind":                 schema_pkg_apis_meta_v1_GroupKind(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupResource":             schema_pkg_apis_meta_v1_GroupResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersion":              schema_pkg_apis_meta_v1_GroupVersion(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionForDiscovery":  schema_pkg_apis_meta_v1_GroupVersionForDiscovery(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind":          schema_pkg_apis_meta_v1_GroupVersionKind(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionResource":      schema_pkg_apis_meta_v1_GroupVersionResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent":             schema_pkg_apis_meta_v1_InternalEvent(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector":             schema_pkg_apis_meta_v1_LabelSelector(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelectorRequirement":  schema_pkg_apis_meta_v1_LabelSelectorRequirement(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.List":                      schema_pkg_apis_meta_v1_List(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta":                  schema_pkg_apis_meta_v1_ListMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ListOptions":               schema_pkg_apis_meta_v1_ListOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ManagedFieldsEntry":        schema_pkg_apis_meta_v1_ManagedFieldsEntry(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime":                 schema_pkg_apis_meta_v1_MicroTime(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta":                schema_pkg_apis_meta_v1_ObjectMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference":            schema_pkg_apis_meta_v1_OwnerReference(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadata":     schema_pkg_apis_meta_v1_PartialObjectMetadata(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadataList": schema_pkg_apis_meta_v1_PartialObjectMetadataList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Patch":                     schema_pkg_apis_meta_v1_Patch(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PatchOptions":              schema_pkg_apis_meta_v1_PatchOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Preconditions":             schema_pkg_apis_meta_v1_Preconditions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.RootPaths":                 schema_pkg_apis_meta_v1_RootPaths(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ServerAddressByClientCIDR": schema_pkg_apis_meta_v1_ServerAddressByClientCIDR(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Status":                    schema_pkg_apis_meta_v1_Status(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusCause":               schema_pkg_apis_meta_v1_StatusCause(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusDetails":             schema_pkg_apis_meta_v1_StatusDetails(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Table":                     schema_pkg_apis_meta_v1_Table(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableColumnDefinition":     schema_pkg_apis_meta_v1_TableColumnDefinition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableOptions":              schema_pkg_apis_meta_v1_TableOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRow":                  schema_pkg_apis_meta_v1_TableRow(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRowCondition":         schema_pkg_apis_meta_v1_TableRowCondition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Time":                      schema_pkg_apis_meta_v1_Time(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Timestamp":                 schema_pkg_apis_meta_v1_Timestamp(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta":                  schema_pkg_apis_meta_v1_TypeMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.UpdateOptions":             schema_pkg_apis_meta_v1_UpdateOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent":                schema_pkg_apis_meta_v1_WatchEvent(ref),
+		"k8s.io/apimachinery/pkg/runtime.RawExtension":                   schema_k8sio_apimachinery_pkg_runtime_RawExtension(ref),
+		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                       schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
+		"k8s.io/apimachinery/pkg/runtime.Unknown":                        schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
+		"k8s.io/apimachinery/pkg/version.Info":                           schema_k8sio_apimachinery_pkg_version_Info(ref),
 	}
 }
 
@@ -840,23 +791,11 @@ func schema_olive_apis_apidiscovery_v1_ServiceStatus(ref common.ReferenceCallbac
 	}
 }
 
-func schema_olive_apis_config_v1_DebuggingConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_config_v1_EtcdCluster(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DebuggingConfiguration holds configuration for Debugging related features.",
-				Type:        []string{"object"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_DefaultPreemptionArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "DefaultPreemptionArgs holds arguments used to configure the DefaultPreemption plugin.",
-				Type:        []string{"object"},
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -872,748 +811,9 @@ func schema_olive_apis_config_v1_DefaultPreemptionArgs(ref common.ReferenceCallb
 							Format:      "",
 						},
 					},
-					"minCandidateRunnersPercentage": {
+					"endpoints": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MinCandidateRunnersPercentage is the minimum number of candidates to shortlist when dry running preemption as a percentage of number of runners. Must be in the range [0, 100]. Defaults to 10% of the cluster size if unspecified.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"minCandidateRunnersAbsolute": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MinCandidateRunnersAbsolute is the absolute minimum number of candidates to shortlist. The likely number of candidates enumerated for dry running preemption is given by the formula: numCandidates = max(numRunners * minCandidateRunnersPercentage, minCandidateRunnersAbsolute) We say \"likely\" because there are other factors such as PDB violations that play a role in the number of candidates shortlisted. Must be at least 0 runners. Defaults to 100 runners if unspecified.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_Extender(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Extender holds the parameters used to communicate with the extender. If a verb is unspecified/empty, it is assumed that the extender chose not to provide that extension.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"urlPrefix": {
-						SchemaProps: spec.SchemaProps{
-							Description: "URLPrefix at which the extender is available",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"filterVerb": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Verb for the filter call, empty if not supported. This verb is appended to the URLPrefix when issuing the filter call to extender.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"preemptVerb": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Verb for the preempt call, empty if not supported. This verb is appended to the URLPrefix when issuing the preempt call to extender.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"prioritizeVerb": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Verb for the prioritize call, empty if not supported. This verb is appended to the URLPrefix when issuing the prioritize call to extender.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"weight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The numeric multiplier for the runner scores that the prioritize call generates. The weight should be a positive integer",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"bindVerb": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Verb for the bind call, empty if not supported. This verb is appended to the URLPrefix when issuing the bind call to extender. If this method is implemented by the extender, it is the extender's responsibility to bind the region to apiserver. Only one extender can implement this function.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"enableHTTPS": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableHTTPS specifies whether https should be used to communicate with the extender",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"tlsConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TLSConfig specifies the transport layer security config",
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.ExtenderTLSConfig"),
-						},
-					},
-					"httpTimeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HTTPTimeout specifies the timeout duration for a call to the extender. Filter timeout fails the scheduling of the region. Prioritize timeout is ignored, k8s/other extenders priorities are used to select the runner.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-						},
-					},
-					"runnerCacheCapable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RunnerCacheCapable specifies that the extender is capable of caching runner information, so the scheduler should only send minimal information about the eligible runners assuming that the extender already cached full details of all runners in the cluster",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"managedResources": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "ManagedResources is a list of extended resources that are managed by this extender. - A region will be sent to the extender on the Filter, Prioritize and Bind\n  (if the extender is the binder) phases iff the region requests at least\n  one of the extended resources in this list. If empty or unspecified,\n  all regions will be sent to this extender.\n- If IgnoredByScheduler is set to true for a resource, kube-scheduler\n  will skip checking the resource in predicates.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.ExtenderManagedResource"),
-									},
-								},
-							},
-						},
-					},
-					"ignorable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Ignorable specifies if the extender is ignorable, i.e. scheduling should not fail when the extender returns an error or is not reachable.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"urlPrefix"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.ExtenderManagedResource", "github.com/olive-io/olive/apis/config/v1.ExtenderTLSConfig", "k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
-	}
-}
-
-func schema_olive_apis_config_v1_ExtenderManagedResource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ExtenderManagedResource describes the arguments of extended resources managed by an extender.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name is the extended resource name.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"ignoredByScheduler": {
-						SchemaProps: spec.SchemaProps{
-							Description: "IgnoredByScheduler indicates whether kube-scheduler should ignore this resource when applying predicates.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_ExtenderTLSConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ExtenderTLSConfig contains settings to enable TLS with extender",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"insecure": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Server should be accessed without verifying the TLS certificate. For testing only.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"serverName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ServerName is passed to the server for SNI and is used in the client to check server certificates against. If ServerName is empty, the hostname used to contact the server is used.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"certFile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Server requires TLS client certificate authentication",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"keyFile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Server requires TLS client certificate authentication",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"caFile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Trusted root certificates for server",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"certData": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "CertData holds PEM-encoded bytes (typically read from a client certificate file). CertData takes precedence over CertFile",
-							Type:        []string{"string"},
-							Format:      "byte",
-						},
-					},
-					"keyData": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "KeyData holds PEM-encoded bytes (typically read from a client certificate key file). KeyData takes precedence over KeyFile",
-							Type:        []string{"string"},
-							Format:      "byte",
-						},
-					},
-					"caData": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "CAData holds PEM-encoded bytes (typically read from a root certificates bundle). CAData takes precedence over CAFile",
-							Type:        []string{"string"},
-							Format:      "byte",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_InterRegionAffinityArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "InterRegionAffinityArgs holds arguments used to configure the InterRegionAffinity plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"hardRegionAffinityWeight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HardRegionAffinityWeight is the scoring weight for existing regions with a matching hard affinity to the incoming region.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"ignorePreferredTermsOfExistingRegions": {
-						SchemaProps: spec.SchemaProps{
-							Description: "IgnorePreferredTermsOfExistingRegions configures the scheduler to ignore existing regions' preferred affinity rules when scoring candidate runners, unless the incoming region has inter-region affinities.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"ignorePreferredTermsOfExistingRegions"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_Plugin(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Plugin specifies a plugin name and its weight when applicable. Weight is used only for Score plugins.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name defines the name of plugin",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"weight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Weight defines the weight of plugin, only used for Score plugins.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_PluginConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PluginConfig specifies arguments that should be passed to a plugin at the time of initialization. A plugin that is invoked at multiple extension points is initialized once. Args can have arbitrary structure. It is up to the plugin to process these Args.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name defines the name of plugin being configured",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"args": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Args defines the arguments passed to the plugins at the time of initialization. Args can have arbitrary structure.",
-							Ref:         ref("k8s.io/apimachinery/pkg/runtime.RawExtension"),
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/runtime.RawExtension"},
-	}
-}
-
-func schema_olive_apis_config_v1_PluginSet(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PluginSet specifies enabled and disabled plugins for an extension point. If an array is empty, missing, or nil, default plugins at that extension point will be used.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"enabled": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Enabled specifies plugins that should be enabled in addition to default plugins. If the default plugin is also configured in the scheduler config file, the weight of plugin will be overridden accordingly. These are called after default plugins and in the same order specified here.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.Plugin"),
-									},
-								},
-							},
-						},
-					},
-					"disabled": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"name",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Disabled specifies default plugins that should be disabled. When all default plugins need to be disabled, an array containing only one \"*\" should be provided.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.Plugin"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.Plugin"},
-	}
-}
-
-func schema_olive_apis_config_v1_Plugins(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Plugins include multiple extension points. When specified, the list of plugins for a particular extension point are the only ones enabled. If an extension point is omitted from the config, then the default set of plugins is used for that extension point. Enabled plugins are called in the order specified here, after default plugins. If they need to be invoked before default plugins, default plugins must be disabled and re-enabled here in desired order.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"preEnqueue": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PreEnqueue is a list of plugins that should be invoked before adding regions to the scheduling queue.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"queueSort": {
-						SchemaProps: spec.SchemaProps{
-							Description: "QueueSort is a list of plugins that should be invoked when sorting regions in the scheduling queue.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"preFilter": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PreFilter is a list of plugins that should be invoked at \"PreFilter\" extension point of the scheduling framework.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"filter": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Filter is a list of plugins that should be invoked when filtering out runners that cannot run the Region.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"postFilter": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PostFilter is a list of plugins that are invoked after filtering phase, but only when no feasible runners were found for the region.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"preScore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PreScore is a list of plugins that are invoked before scoring.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"score": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Score is a list of plugins that should be invoked when ranking runners that have passed the filtering phase.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"reserve": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reserve is a list of plugins invoked when reserving/unreserving resources after a runner is assigned to run the region.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"permit": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Permit is a list of plugins that control binding of a Region. These plugins can prevent or delay binding of a Region.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"preBind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PreBind is a list of plugins that should be invoked before a region is bound.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"bind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Bind is a list of plugins that should be invoked at \"Bind\" extension point of the scheduling framework. The scheduler call these plugins in order. Scheduler skips the rest of these plugins as soon as one returns success.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"postBind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PostBind is a list of plugins that should be invoked after a region is successfully bound.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-					"multiPoint": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MultiPoint is a simplified config section to enable plugins for all valid extension points. Plugins enabled through MultiPoint will automatically register for every individual extension point the plugin has implemented. Disabling a plugin through MultiPoint disables that behavior. The same is true for disabling \"*\" through MultiPoint (no default plugins will be automatically registered). Plugins can still be disabled through their individual extension points.\n\nIn terms of precedence, plugin config follows this basic hierarchy\n  1. Specific extension points\n  2. Explicitly configured MultiPoint plugins\n  3. The set of default plugins, as MultiPoint plugins\nThis implies that a higher precedence plugin will run first and overwrite any settings within MultiPoint. Explicitly user-configured plugins also take a higher precedence over default plugins. Within this hierarchy, an Enabled setting takes precedence over Disabled. For example, if a plugin is set in both `multiPoint.Enabled` and `multiPoint.Disabled`, the plugin will be enabled. Similarly, including `multiPoint.Disabled = '*'` and `multiPoint.Enabled = pluginA` will still register that specific plugin through MultiPoint. This follows the same behavior as all other extension point configurations.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.PluginSet"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.PluginSet"},
-	}
-}
-
-func schema_olive_apis_config_v1_RegionTopologySpreadArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionTopologySpreadArgs holds arguments used to configure the RegionTopologySpread plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"defaultConstraints": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "DefaultConstraints defines topology spread constraints to be applied to regions that don't define any in `region.spec.topologySpreadConstraints`. `.defaultConstraints[*].labelSelectors` must be empty, as they are deduced from the region's membership to Services, ReplicationControllers, ReplicaSets or StatefulSets. When not empty, .defaultingType must be \"List\".",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.TopologySpreadConstraint"),
-									},
-								},
-							},
-						},
-					},
-					"defaultingType": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DefaultingType determines how .defaultConstraints are deduced. Can be one of \"System\" or \"List\".\n\n- \"System\": Use kubernetes defined constraints that spread regions among\n  Runners and Zones.\n- \"List\": Use constraints defined in .defaultConstraints.\n\nDefaults to \"System\".",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.TopologySpreadConstraint"},
-	}
-}
-
-func schema_olive_apis_config_v1_RequestedToCapacityRatioParam(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RequestedToCapacityRatioParam define RequestedToCapacityRatio parameters",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"shape": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Shape is a list of points defining the scoring function shape.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.UtilizationShapePoint"},
-	}
-}
-
-func schema_olive_apis_config_v1_ResourceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ResourceSpec represents a single resource.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the resource.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"weight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Weight of the resource.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_config_v1_RunnerAffinityArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerAffinityArgs holds arguments to configure the RunnerAffinity plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"addedAffinity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AddedAffinity is applied to all regions additionally to the RunnerAffinity specified in the regionSpec. That is, Runners need to satisfy AddedAffinity AND .spec.RunnerAffinity. AddedAffinity is empty by default (all Runners match). When AddedAffinity is used, some regions with affinity requirements that match a specific Runner (such as Daemonset regions) might remain unschedulable.",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RunnerAffinity"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerAffinity"},
-	}
-}
-
-func schema_olive_apis_config_v1_RunnerResourcesBalancedAllocationArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerResourcesBalancedAllocationArgs holds arguments used to configure RunnerResourcesBalancedAllocation plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"resources": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"name",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Resources to be managed, the default is \"cpu\" and \"memory\" if not specified.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.ResourceSpec"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.ResourceSpec"},
-	}
-}
-
-func schema_olive_apis_config_v1_RunnerResourcesFitArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerResourcesFitArgs holds arguments used to configure the RunnerResourcesFit plugin.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"ignoredResources": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "IgnoredResources is the list of resources that RunnerResources fit filter should ignore. This doesn't apply to scoring.",
-							Type:        []string{"array"},
+							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -1625,404 +825,66 @@ func schema_olive_apis_config_v1_RunnerResourcesFitArgs(ref common.ReferenceCall
 							},
 						},
 					},
-					"ignoredResourceGroups": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
+					"timeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "IgnoredResourceGroups defines the list of resource groups that RunnerResources fit filter should ignore. e.g. if group is [\"example.com\"], it will ignore all resource names that begin with \"example.com\", such as \"example.com/aaa\" and \"example.com/bbb\". A resource group name can't contain '/'. This doesn't apply to scoring.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"scoringStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ScoringStrategy selects the runner resource scoring strategy. The default strategy is LeastAllocated with an equal \"cpu\" and \"memory\" weight.",
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.ScoringStrategy"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.ScoringStrategy"},
-	}
-}
-
-func schema_olive_apis_config_v1_SchedulerConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "SchedulerConfiguration configures a scheduler",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Description: "dial and request timeout",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
-					"apiVersion": {
+					"maxUnaryRetries": {
 						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"parallelism": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Parallelism defines the amount of parallelism in algorithms for scheduling a Regions. Must be greater than 0. Defaults to 16",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"enableProfiling": {
-						SchemaProps: spec.SchemaProps{
-							Description: "enableProfiling enables profiling via web interface host:port/debug/pprof/",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableContentionProfiling": {
-						SchemaProps: spec.SchemaProps{
-							Description: "enableContentionProfiling enables block profiling, if enableProfiling is true.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"percentageOfRunnersToScore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PercentageOfRunnersToScore is the percentage of all runners that once found feasible for running a region, the scheduler stops its search for more feasible runners in the cluster. This helps improve scheduler's performance. Scheduler always tries to find at least \"minFeasibleRunnersToFind\" feasible runners no matter what the value of this flag is. Example: if the cluster size is 500 runners and the value of this flag is 30, then scheduler stops finding further feasible runners once it finds 150 feasible ones. When the value is 0, default percentage (5%--50% based on the size of the cluster) of the runners will be scored. It is overridden by profile level PercentageofRunnersToScore.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"regionInitialBackoffSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RegionInitialBackoffSeconds is the initial backoff for unschedulable regions. If specified, it must be greater than 0. If this value is null, the default value (1s) will be used.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"regionMaxBackoffSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RegionMaxBackoffSeconds is the max backoff for unschedulable regions. If specified, it must be greater than regionInitialBackoffSeconds. If this value is null, the default value (10s) will be used.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"profiles": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"schedulerName",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Profiles are scheduling profiles that kube-scheduler supports. Regions can choose to be scheduled under a particular profile by setting its associated scheduler name. Regions that don't specify any scheduler name are scheduled with the \"default-scheduler\" profile, if present here.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.SchedulerProfile"),
-									},
-								},
-							},
-						},
-					},
-					"extenders": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "set",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Extenders are the list of scheduler extenders, each holding the values of how to communicate with the extender. These extenders are shared by all scheduler profiles.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.Extender"),
-									},
-								},
-							},
-						},
-					},
-					"delayCacheUntilActive": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DelayCacheUntilActive specifies when to start caching. If this is true and leader election is enabled, the scheduler will wait to fill informer caches until it is the leader. Doing so will have slower failover with the benefit of lower memory overhead while waiting to become leader. Defaults to false.",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int32",
 						},
 					},
 				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.Extender", "github.com/olive-io/olive/apis/config/v1.SchedulerProfile"},
-	}
-}
-
-func schema_olive_apis_config_v1_SchedulerProfile(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "SchedulerProfile is a scheduling profile.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SchedulerName is the name of the scheduler associated to this profile. If SchedulerName matches with the region's \"spec.schedulerName\", then the region is scheduled with this profile.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"percentageOfRunnersToScore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PercentageOfRunnersToScore is the percentage of all runners that once found feasible for running a region, the scheduler stops its search for more feasible runners in the cluster. This helps improve scheduler's performance. Scheduler always tries to find at least \"minFeasibleRunnersToFind\" feasible runners no matter what the value of this flag is. Example: if the cluster size is 500 runners and the value of this flag is 30, then scheduler stops finding further feasible runners once it finds 150 feasible ones. When the value is 0, default percentage (5%--50% based on the size of the cluster) of the runners will be scored. It will override global PercentageOfRunnersToScore. If it is empty, global PercentageOfRunnersToScore will be used.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"plugins": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Plugins specify the set of plugins that should be enabled or disabled. Enabled plugins are the ones that should be enabled in addition to the default plugins. Disabled plugins are any of the default plugins that should be disabled. When no enabled or disabled plugin is specified for an extension point, default plugins for that extension point will be used if there is any. If a QueueSort plugin is specified, the same QueueSort Plugin and PluginConfig must be specified for all profiles.",
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.Plugins"),
-						},
-					},
-					"pluginConfig": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"name",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "PluginConfig is an optional set of custom plugin arguments for each plugin. Omitting config args for a plugin is equivalent to using the default config for that plugin.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.PluginConfig"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.PluginConfig", "github.com/olive-io/olive/apis/config/v1.Plugins"},
-	}
-}
-
-func schema_olive_apis_config_v1_ScoringStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ScoringStrategy define ScoringStrategyType for runner resource plugin",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type selects which strategy to run.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"resources": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"topologyKey",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Resources to consider when scoring. The default resource set includes \"cpu\" and \"memory\" with an equal weight. Allowed weights go from 1 to 100. Weight defaults to 1 if not specified or explicitly set to 0.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/config/v1.ResourceSpec"),
-									},
-								},
-							},
-						},
-					},
-					"requestedToCapacityRatio": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Arguments specific to RequestedToCapacityRatio strategy.",
-							Ref:         ref("github.com/olive-io/olive/apis/config/v1.RequestedToCapacityRatioParam"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/config/v1.RequestedToCapacityRatioParam", "github.com/olive-io/olive/apis/config/v1.ResourceSpec"},
-	}
-}
-
-func schema_olive_apis_config_v1_UtilizationShapePoint(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "UtilizationShapePoint represents single point of priority function shape.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"utilization": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Utilization (x axis). Valid values are 0 to 100. Fully utilized runner maps to 100.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"score": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Score assigned to given utilization (y axis). Valid values are 0 to 10.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-				},
-				Required: []string{"utilization", "score"},
+				Required: []string{"endpoints", "timeout", "maxUnaryRetries"},
 			},
 		},
 	}
 }
 
-func schema_olive_apis_core_v1_Affinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_BpmnStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Affinity is a group of affinity scheduling rules.",
-				Type:        []string{"object"},
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"runnerAffinity": {
+					"definitions": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Describes runner affinity scheduling rules for the region.",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RunnerAffinity"),
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
 						},
 					},
-					"regionAffinity": {
+					"processes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Describes region affinity scheduling rules (e.g. co-locate this region in the same runner, zone, etc. as some other region(s)).",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RegionAffinity"),
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
 						},
 					},
-					"regionAntiAffinity": {
+					"events": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Describes region anti-affinity scheduling rules (e.g. avoid putting this region in the same runner, zone, etc. as some other region(s)).",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RegionAntiAffinity"),
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"tasks": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
 						},
 					},
 				},
+				Required: []string{"definitions", "processes", "events", "tasks"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionAffinity", "github.com/olive-io/olive/apis/core/v1.RegionAntiAffinity", "github.com/olive-io/olive/apis/core/v1.RunnerAffinity"},
-	}
-}
-
-func schema_olive_apis_core_v1_AvoidRegions(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "AvoidRegions describes regions that should avoid this runner. This is the value for a Runner annotation with key scheduler.alpha.olive.io/preferAvoidRegions and will eventually become a field of RunnerStatus.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"preferAvoidRegions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Bounded-sized list of signatures of regions that should avoid this runner, sorted in timestamp order from oldest to newest. Size of the slice is unspecified.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.PreferAvoidRegionsEntry"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.PreferAvoidRegionsEntry"},
-	}
-}
-
-func schema_olive_apis_core_v1_Binding(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Binding ties one object to another; for example, a region is bound to a runner by a scheduler.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Standard object's metadata.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"target": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The target object that you want to bind to the standard object.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.ObjectReference"),
-						},
-					},
-				},
-				Required: []string{"target"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2142,28 +1004,14 @@ func schema_olive_apis_core_v1_DefinitionSpec(ref common.ReferenceCallback) comm
 							Format: "int64",
 						},
 					},
-					"regionName": {
+					"region": {
 						SchemaProps: spec.SchemaProps{
-							Description: "the name of olive region",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int64",
-						},
-					},
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "the id of olive region",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 				},
-				Required: []string{"schedulerName"},
 			},
 		},
 	}
@@ -2187,301 +1035,7 @@ func schema_olive_apis_core_v1_DefinitionStatus(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_olive_apis_core_v1_EtcdCluster(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"endpoints": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "dial and request timeout",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"maxUnaryRetries": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
-						},
-					},
-				},
-				Required: []string{"endpoints", "timeout", "maxUnaryRetries"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_Event(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Event is a report of an event somewhere in the cluster.  Events have a limited retention time and triggers and messages may evolve with time.  Event consumers should not rely on the timing of an event with a given Reason reflecting a consistent underlying trigger, or the continued existence of events with that Reason.  Events should be treated as informative, best-effort, supplemental data.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"involvedObject": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The object that this event is about.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.ObjectReference"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "This should be a short, machine understandable string that gives the reason for the transition into the object's current status.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A human-readable description of the status of this operation.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"source": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The component reporting this event. Should be a short machine understandable string.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.EventSource"),
-						},
-					},
-					"firstTimestamp": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"lastTimestamp": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The time at which the most recent occurrence of this event was recorded.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"count": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The number of times this event has occurred.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of this event (Normal, Warning), new types could be added in the future",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"eventTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Time when this Event was first observed.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime"),
-						},
-					},
-					"series": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Data about the Event series this event represents or nil if it's a singleton Event.",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.EventSeries"),
-						},
-					},
-					"action": {
-						SchemaProps: spec.SchemaProps{
-							Description: "What action was taken/failed regarding to the Regarding object.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"related": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Optional secondary object for more complex actions.",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.ObjectReference"),
-						},
-					},
-					"reportingComponent": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"reportingInstance": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ID of the controller instance, e.g. `olive-runner-xyzf`.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"metadata", "involvedObject"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.EventSeries", "github.com/olive-io/olive/apis/core/v1.EventSource", "github.com/olive-io/olive/apis/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
-	}
-}
-
-func schema_olive_apis_core_v1_EventList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "EventList is a list of events.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Standard list metadata.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Description: "List of events",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Event"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.Event", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_EventSeries(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "EventSeries contain information on series of events, i.e. thing that was/is happening continuously for some time.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"count": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Number of occurrences in this series up to the last heartbeat time",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"lastObservedTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Time of the last occurrence observed",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime"},
-	}
-}
-
-func schema_olive_apis_core_v1_EventSource(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "EventSource contains information for an event.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"component": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Component from which the event is generated.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"host": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Node name on which the event is generated.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_FlowRunnerStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2781,155 +1335,6 @@ func schema_olive_apis_core_v1_NamespaceStatus(ref common.ReferenceCallback) com
 	}
 }
 
-func schema_olive_apis_core_v1_ObjectReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ObjectReference contains enough information to let you inspect or modify the referred object.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind of the referent.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"namespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Namespace of the referent.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the referent.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"uid": {
-						SchemaProps: spec.SchemaProps{
-							Description: "UID of the referent.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "API version of the referent.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"resourceVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Specific resourceVersion to which this reference is made, if any.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"fieldPath": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a region, this would take on a value like: \"spec.containers{name}\" (where \"name\" refers to the name of the container that triggered the event) or if no container name is specified \"spec.containers[2]\" (container with index 2 in this region). This syntax is chosen only to have some well-defined way of referencing a part of an object.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					"x-kubernetes-map-type": "atomic",
-				},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_PreferAvoidRegionsEntry(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PreferAvoidRegionsEntry describes a class of regions that should avoid this runner.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"regionSignature": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The class of regions.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RegionSignature"),
-						},
-					},
-					"evictionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Time at which this entry was added to the list.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "(brief) reason why this entry was added to the list.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Human readable message indicating why this entry was added to the list.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"regionSignature"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionSignature", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
-	}
-}
-
-func schema_olive_apis_core_v1_PreferredSchedulingTerm(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PreferredSchedulingTerm An empty preferred scheduling term matches all objects with implicit weight 0 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"weight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Weight associated with matching the corresponding runnerSelectorTerm, in the range 1-100.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"preference": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A runner selector term, associated with the corresponding weight.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RunnerSelectorTerm"),
-						},
-					},
-				},
-				Required: []string{"weight", "preference"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerSelectorTerm"},
-	}
-}
-
 func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3218,7 +1623,7 @@ func schema_olive_apis_core_v1_ProcessStat(ref common.ReferenceCallback) common.
 							Format:  "int64",
 						},
 					},
-					"flowRunners": {
+					"flowNodes": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
@@ -3226,7 +1631,7 @@ func schema_olive_apis_core_v1_ProcessStat(ref common.ReferenceCallback) common.
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.FlowRunnerStat"),
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.FlowNodeStat"),
 									},
 								},
 							},
@@ -3247,11 +1652,11 @@ func schema_olive_apis_core_v1_ProcessStat(ref common.ReferenceCallback) common.
 						},
 					},
 				},
-				Required: []string{"id", "definitionContent", "processState", "attempts", "flowRunners", "startTime", "endTime"},
+				Required: []string{"id", "definitionContent", "processState", "attempts", "flowNodes", "startTime", "endTime"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.FlowRunnerStat", "github.com/olive-io/olive/apis/core/v1.ProcessRunningState"},
+			"github.com/olive-io/olive/apis/core/v1.FlowNodeStat", "github.com/olive-io/olive/apis/core/v1.ProcessRunningState"},
 	}
 }
 
@@ -3293,7 +1698,7 @@ func schema_olive_apis_core_v1_Region(ref common.ReferenceCallback) common.OpenA
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Region the olive runner",
+				Description: "Region the olive node",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -3334,266 +1739,6 @@ func schema_olive_apis_core_v1_Region(ref common.ReferenceCallback) common.OpenA
 		},
 		Dependencies: []string{
 			"github.com/olive-io/olive/apis/core/v1.RegionSpec", "github.com/olive-io/olive/apis/core/v1.RegionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionAffinity Region affinity is a group of inter region affinity scheduling rules.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"requiredDuringSchedulingIgnoredDuringExecution": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "If the affinity requirements specified by this field are not met at scheduling time, the region will not be scheduled onto the runner. If the affinity requirements specified by this field cease to be met at some point during region execution (e.g. due to a region label update), the system may or may not try to eventually evict the region from its runner. When there are multiple elements, the lists of runners corresponding to each regionAffinityTerm are intersected, i.e. all terms must be satisfied.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm"),
-									},
-								},
-							},
-						},
-					},
-					"preferredDuringSchedulingIgnoredDuringExecution": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "The scheduler will prefer to schedule regions to runners that satisfy the affinity expressions specified by this field, but it may choose a runner that violates one or more of the expressions. The runner that is most preferred is the one with the greatest sum of weights, i.e. for each runner that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding \"weight\" to the sum if the runner has regions which matches the corresponding regionAffinityTerm; the runner(s) with the highest sum are the most preferred.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.WeightedRegionAffinityTerm"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm", "github.com/olive-io/olive/apis/core/v1.WeightedRegionAffinityTerm"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionAffinityTerm(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionAffinityTerm Defines a set of regions (namely those matching the labelSelector relative to the given namespace(s)) that this region should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a runner whose value of the label with key <topologyKey> matches that of any runner on which a region of the set of regions is running",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"labelSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A label query over a set of resources, in this case regions. If it's null, this RegionAffinityTerm matches with no Regions.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
-						},
-					},
-					"namespaces": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this region's namespace\".",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"topologyKey": {
-						SchemaProps: spec.SchemaProps{
-							Description: "This region should be co-located (affinity) or not co-located (anti-affinity) with the regions matching the labelSelector in the specified namespaces, where co-located is defined as running on a runner whose value of the label with key topologyKey matches that of any runner on which any of the selected regions is running. Empty topologyKey is not allowed.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"namespaceSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this region's namespace\". An empty selector ({}) matches all namespaces.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
-						},
-					},
-					"matchLabelKeys": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "MatchLabelKeys is a set of region label keys to select which regions will be taken into consideration. The keys are used to lookup values from the incoming region labels, those key-value labels are merged with `labelSelector` as `key in (value)` to select the group of existing regions which regions will be taken into consideration for the incoming region's region (anti) affinity. Keys that don't exist in the incoming region labels will be ignored. The default value is empty. The same key is forbidden to exist in both matchLabelKeys and labelSelector. Also, matchLabelKeys cannot be set when labelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInRegionAffinity feature gate.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"mismatchLabelKeys": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "MismatchLabelKeys is a set of region label keys to select which regions will be taken into consideration. The keys are used to lookup values from the incoming region labels, those key-value labels are merged with `labelSelector` as `key notin (value)` to select the group of existing regions which regions will be taken into consideration for the incoming region's region (anti) affinity. Keys that don't exist in the incoming region labels will be ignored. The default value is empty. The same key is forbidden to exist in both mismatchLabelKeys and labelSelector. Also, mismatchLabelKeys cannot be set when labelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInRegionAffinity feature gate.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"topologyKey"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionAntiAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionAntiAffinity Region anti affinity is a group of inter region anti affinity scheduling rules.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"requiredDuringSchedulingIgnoredDuringExecution": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "If the anti-affinity requirements specified by this field are not met at scheduling time, the region will not be scheduled onto the runner. If the anti-affinity requirements specified by this field cease to be met at some point during region execution (e.g. due to a region label update), the system may or may not try to eventually evict the region from its runner. When there are multiple elements, the lists of runners corresponding to each regionAffinityTerm are intersected, i.e. all terms must be satisfied.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm"),
-									},
-								},
-							},
-						},
-					},
-					"preferredDuringSchedulingIgnoredDuringExecution": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "The scheduler will prefer to schedule regions to runners that satisfy the anti-affinity expressions specified by this field, but it may choose a runner that violates one or more of the expressions. The runner that is most preferred is the one with the greatest sum of weights, i.e. for each runner that meets all of the scheduling requirements (resource request, requiredDuringScheduling anti-affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding \"weight\" to the sum if the runner has regions which matches the corresponding regionAffinityTerm; the runner(s) with the highest sum are the most preferred.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.WeightedRegionAffinityTerm"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm", "github.com/olive-io/olive/apis/core/v1.WeightedRegionAffinityTerm"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionCondition contains details for the current condition of this region.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type is the type of the condition.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status is the status of the condition. Can be True, False, Unknown.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastProbeTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Last time we probed the condition.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Last time the condition transitioned from one status to another.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Unique, one-word, CamelCase reason for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Human-readable message indicating details about last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3709,49 +1854,6 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 	}
 }
 
-func schema_olive_apis_core_v1_RegionSchedulingGate(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionSchedulingGate is associated to a Region to guard its scheduling.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the scheduling gate. Each scheduling gate must have a unique name field.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionSignature(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionSignature describes the class of regions that should avoid this runner. Exactly one field should be set.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"regionController": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Reference to controller whose regions should avoid this runner.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference"},
-	}
-}
-
 func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3800,17 +1902,11 @@ func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"priority": {
+					"leader": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
-					"schedulerName": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
 						},
 					},
 					"definitionsLimit": {
@@ -3820,96 +1916,12 @@ func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"runnerSelector": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-map-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "RunnerSelector is a selector which must be true for the region to fit on a runner. Selector which must match a runner's labels for the region to be scheduled on that runner.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"affinity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the region's scheduling constraints",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.Affinity"),
-						},
-					},
-					"regionNames": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"tolerations": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the region's tolerations.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Toleration"),
-									},
-								},
-							},
-						},
-					},
-					"schedulingGates": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"name",
-								},
-								"x-kubernetes-list-type":       "map",
-								"x-kubernetes-patch-merge-key": "name",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "SchedulingGates is an opaque list of values that if specified will block scheduling the region. If schedulingGates is not empty, the region will stay in the SchedulingGated state and the scheduler will not attempt to schedule the region.\n\nSchedulingGates can only be set at region creation time, and be removed only afterwards.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionSchedulingGate"),
-									},
-								},
-							},
-						},
-					},
 				},
-				Required: []string{"id", "deploymentId", "replicas", "electionRTT", "heartbeatRTT", "priority", "schedulerName", "definitionsLimit", "regionNames"},
+				Required: []string{"id", "deploymentId", "replicas", "electionRTT", "heartbeatRTT", "leader", "definitionsLimit"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.Affinity", "github.com/olive-io/olive/apis/core/v1.RegionReplica", "github.com/olive-io/olive/apis/core/v1.RegionSchedulingGate", "github.com/olive-io/olive/apis/core/v1.Toleration"},
+			"github.com/olive-io/olive/apis/core/v1.RegionReplica"},
 	}
 }
 
@@ -3920,32 +1932,24 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 				Description: "RegionStat is the stat information of Region",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"leader": {
+					"kind": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"term": {
+					"apiVersion": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"replicas": {
+					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
-						},
-					},
-					"definitions": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
 					"runningDefinitions": {
@@ -3955,32 +1959,9 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"bpmnProcesses": {
+					"bpmn": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnEvents": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnTasks": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
 						},
 					},
 					"timestamp": {
@@ -3991,9 +1972,11 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"leader", "term", "replicas", "definitions", "runningDefinitions", "bpmnProcesses", "bpmnEvents", "bpmnTasks", "message", "timestamp"},
+				Required: []string{"metadata", "runningDefinitions", "timestamp"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.BpmnStat", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -4024,6 +2007,20 @@ func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common
 							Format:  "int64",
 						},
 					},
+					"term": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"replicas": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int32",
+						},
+					},
 					"definitions": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -4031,41 +2028,10 @@ func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common
 							Format:  "int64",
 						},
 					},
-					"conditions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"type",
-								},
-								"x-kubernetes-list-type":       "map",
-								"x-kubernetes-patch-merge-key": "type",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Current service state of region.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionCondition"),
-									},
-								},
-							},
-						},
-					},
-					"stat": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.RegionStat"),
-						},
-					},
 				},
-				Required: []string{"phase", "message", "leader", "definitions", "stat"},
+				Required: []string{"phase", "message", "leader", "term", "replicas", "definitions"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionCondition", "github.com/olive-io/olive/apis/core/v1.RegionStat"},
 	}
 }
 
@@ -4073,7 +2039,7 @@ func schema_olive_apis_core_v1_Runner(ref common.ReferenceCallback) common.OpenA
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Runner the olive runner",
+				Description: "Runner the olive node",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -4114,157 +2080,6 @@ func schema_olive_apis_core_v1_Runner(ref common.ReferenceCallback) common.OpenA
 		},
 		Dependencies: []string{
 			"github.com/olive-io/olive/apis/core/v1.RunnerSpec", "github.com/olive-io/olive/apis/core/v1.RunnerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerAffinity Runner affinity is a group of runner affinity scheduling rules.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"requiredDuringSchedulingIgnoredDuringExecution": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If the affinity requirements specified by this field are not met at scheduling time, the region will not be scheduled onto the runner. If the affinity requirements specified by this field cease to be met at some point during region execution (e.g. due to an update), the system may or may not try to eventually evict the region from its runner.",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RunnerSelector"),
-						},
-					},
-					"preferredDuringSchedulingIgnoredDuringExecution": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "The scheduler will prefer to schedule regions to runners that satisfy the affinity expressions specified by this field, but it may choose a runner that violates one or more of the expressions. The runner that is most preferred is the one with the greatest sum of weights, i.e. for each runner that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding \"weight\" to the sum if the runner matches the corresponding matchExpressions; the runner(s) with the highest sum are the most preferred.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.PreferredSchedulingTerm"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.PreferredSchedulingTerm", "github.com/olive-io/olive/apis/core/v1.RunnerSelector"},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerCondition contains condition information for a runner.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type of runner condition.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status of the condition, one of True, False, Unknown.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"lastHeartbeatTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Last time we got an update on a given condition.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Last time the condition transit from one status to another.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"reason": {
-						SchemaProps: spec.SchemaProps{
-							Description: "(brief) reason for the condition's last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Human readable message indicating details about last transition.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"type", "status"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerDynamicStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"bpmnProcesses": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnEvents": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"bpmnTasks": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"cpuUsed": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"number"},
-							Format: "double",
-						},
-					},
-					"memoryUsed": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"number"},
-							Format: "double",
-						},
-					},
-					"timestamp": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-				},
-				Required: []string{"bpmnProcesses", "bpmnEvents", "bpmnTasks", "timestamp"},
-			},
-		},
 	}
 }
 
@@ -4318,155 +2133,6 @@ func schema_olive_apis_core_v1_RunnerList(ref common.ReferenceCallback) common.O
 	}
 }
 
-func schema_olive_apis_core_v1_RunnerSelector(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerSelector A runner selector represents the union of the results of one or more label queries over a set of runners; that is, it represents the OR of the selectors represented by the runner selector terms.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"runnerSelectorTerms": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Required. A list of runner selector terms. The terms are ORed.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerSelectorTerm"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"runnerSelectorTerms"},
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					"x-kubernetes-map-type": "atomic",
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerSelectorTerm"},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerSelectorRequirement(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerSelectorRequirement A runner selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"key": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The label key that the selector applies to.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"operator": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.\n\nPossible enum values:\n - `\"DoesNotExist\"`\n - `\"Exists\"`\n - `\"Gt\"`\n - `\"In\"`\n - `\"Lt\"`\n - `\"NotIn\"`",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"DoesNotExist", "Exists", "Gt", "In", "Lt", "NotIn"},
-						},
-					},
-					"values": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"key", "operator"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerSelectorTerm(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RunnerSelectorTerm A null or empty runner selector term matches no objects. The requirements of them are ANDed. The TopologySelectorTerm type implements a subset of the RunnerSelectorTerm.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"matchExpressions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "A list of runner selector requirements by runner's labels.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerSelectorRequirement"),
-									},
-								},
-							},
-						},
-					},
-					"matchFields": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "A list of runner selector requirements by runner's fields.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerSelectorRequirement"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					"x-kubernetes-map-type": "atomic",
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerSelectorRequirement"},
-	}
-}
-
 func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4482,9 +2148,9 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 							Format:      "int64",
 						},
 					},
-					"name": {
+					"hostname": {
 						SchemaProps: spec.SchemaProps{
-							Description: "name is the human-readable name of the member. If the member is not started, the name will be an empty string.",
+							Description: "hostname is the host name get by os.Hostname().",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4492,7 +2158,7 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 					},
 					"peerURL": {
 						SchemaProps: spec.SchemaProps{
-							Description: "peerURLs is the list of URLs the member exposes to the cluster for communication.",
+							Description: "peerURL is the URL the member exposes to the cluster for communication.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -4500,10 +2166,17 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 					},
 					"clientURL": {
 						SchemaProps: spec.SchemaProps{
-							Description: "clientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.",
+							Description: "clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"versionRef": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"isLearner": {
@@ -4513,46 +2186,10 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
-					"versionRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "version information, generated during build",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"unschedulable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Unschedulable controls node schedulability of new regions. By default, runner is schedulable.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"taints": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the runner's taints.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Taint"),
-									},
-								},
-							},
-						},
-					},
 				},
-				Required: []string{"id", "name", "peerURL", "clientURL", "isLearner", "versionRef"},
+				Required: []string{"id", "hostname", "peerURL", "clientURL", "versionRef", "isLearner"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.Taint"},
 	}
 }
 
@@ -4563,6 +2200,129 @@ func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.O
 				Description: "RunnerStat is the stat information of Runner",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"cpuUsed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"number"},
+							Format: "double",
+						},
+					},
+					"memoryUsed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"number"},
+							Format: "double",
+						},
+					},
+					"bpmn": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
+						},
+					},
+					"timestamp": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+				},
+				Required: []string{"metadata", "timestamp"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.BpmnStat", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_RunnerStatList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RunnerStatList is a list of RunnerStat objects.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Items is a list of Runner",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Runner"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.Runner", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_RunnerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
 					"cpuTotal": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -4612,447 +2372,8 @@ func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"dynamic": {
-						SchemaProps: spec.SchemaProps{
-							Description: "dynamic statistic, don't save to storage",
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RunnerDynamicStat"),
-						},
-					},
 				},
-				Required: []string{"cpuTotal", "memoryTotal", "regions", "leaders", "definitions", "dynamic"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerDynamicStat"},
-	}
-}
-
-func schema_olive_apis_core_v1_RunnerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"capacity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Capacity represents the total resources of a runner.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
-									},
-								},
-							},
-						},
-					},
-					"allocatable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Allocatable represents the resources of a runner that are available for scheduling. Defaults to Capacity.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("k8s.io/apimachinery/pkg/api/resource.Quantity"),
-									},
-								},
-							},
-						},
-					},
-					"conditions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"type",
-								},
-								"x-kubernetes-list-type":       "map",
-								"x-kubernetes-patch-merge-key": "type",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Conditions is an array of current observed runner conditions.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerCondition"),
-									},
-								},
-							},
-						},
-					},
-					"phase": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"stat": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.RunnerStat"),
-						},
-					},
-				},
-				Required: []string{"phase"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerCondition", "github.com/olive-io/olive/apis/core/v1.RunnerStat", "k8s.io/apimachinery/pkg/api/resource.Quantity"},
-	}
-}
-
-func schema_olive_apis_core_v1_Taint(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Taint The runner this Taint is attached to has the \"effect\" on any region that does not tolerate the Taint.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"key": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Required. The taint key to be applied to a runner.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"value": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The taint value corresponding to the taint key.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"effect": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Required. The effect of the taint on regions that do not tolerate the taint. Valid effects are NoSchedule, PreferNoSchedule and NoExecute.\n\nPossible enum values:\n - `\"NoExecute\"` evicts any already-running regions that do not tolerate the taint. Currently enforced by RunnerController.\n - `\"NoSchedule\"` do not allow new regions to schedule onto the runner unless they tolerate the taint, but allow all regions submitted to Kubelet without going through the scheduler to start, and allow all already-running regions to continue running. Enforced by the scheduler.\n - `\"PreferNoSchedule\"` likes TaintEffectNoSchedule, but the scheduler tries not to schedule new regions onto the runner, rather than prohibiting new regions from scheduling onto the runner entirely. Enforced by the scheduler.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"NoExecute", "NoSchedule", "PreferNoSchedule"},
-						},
-					},
-					"timeAdded": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TimeAdded represents the time at which the taint was added. It is only written for NoExecute taints.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-				},
-				Required: []string{"key", "effect"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
-	}
-}
-
-func schema_olive_apis_core_v1_Toleration(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Toleration The region this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"key": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"operator": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a region can tolerate all taints of a particular category.\n\nPossible enum values:\n - `\"Equal\"`\n - `\"Exists\"`",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"Equal", "Exists"},
-						},
-					},
-					"value": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"effect": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.\n\nPossible enum values:\n - `\"NoExecute\"` evicts any already-running regions that do not tolerate the taint. Currently enforced by RunnerController.\n - `\"NoSchedule\"` do not allow new regions to schedule onto the runner unless they tolerate the taint, but allow all regions submitted to Kubelet without going through the scheduler to start, and allow all already-running regions to continue running. Enforced by the scheduler.\n - `\"PreferNoSchedule\"` likes TaintEffectNoSchedule, but the scheduler tries not to schedule new regions onto the runner, rather than prohibiting new regions from scheduling onto the runner entirely. Enforced by the scheduler.",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"NoExecute", "NoSchedule", "PreferNoSchedule"},
-						},
-					},
-					"tolerationSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_TopologySelectorLabelRequirement(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "TopologySelectorLabelRequirement A topology selector requirement is a selector that matches given label. This is an alpha feature and may change in the future.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"key": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The label key that the selector applies to.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"values": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "An array of string values. One value must match the label to be selected. Each entry in Values is ORed.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"key", "values"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_TopologySelectorTerm(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "TopologySelectorTerm A topology selector term represents the result of label queries. A null or empty topology selector term matches no objects. The requirements of them are ANDed. It provides a subset of functionality as RunnerSelectorTerm. This is an alpha feature and may change in the future.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"matchLabelExpressions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "A list of topology selector requirements by labels.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.TopologySelectorLabelRequirement"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					"x-kubernetes-map-type": "atomic",
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.TopologySelectorLabelRequirement"},
-	}
-}
-
-func schema_olive_apis_core_v1_TopologySpreadConstraint(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "TopologySpreadConstraint specifies how to spread matching regions among the given topology.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"maxSkew": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MaxSkew describes the degree to which regions may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching regions in the target topology and the global minimum. The global minimum is the minimum number of matching regions in an eligible domain or zero if the number of eligible domains is less than MinDomains. For example, in a 3-zone cluster, MaxSkew is set to 1, and regions with the same labelSelector spread as 2/2/1: In this case, the global minimum is 1. | zone1 | zone2 | zone3 | |  R R  |  R R  |   R   | - if MaxSkew is 1, incoming region can only be scheduled to zone3 to become 2/2/2; scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming region can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"topologyKey": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TopologyKey is the key of runner labels. Runners that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a \"bucket\", and try to put balanced number of regions into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose runners meet the requirements of runnerAffinityPolicy and runnerTaintsPolicy. e.g. If TopologyKey is \"kubernetes.io/hostname\", each Runner is a domain of that topology. And, if TopologyKey is \"topology.kubernetes.io/zone\", each zone is a domain of that topology. It's a required field.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"whenUnsatisfiable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "WhenUnsatisfiable indicates how to deal with a region if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the region in any location,\n  but giving higher precedence to topologies that would help reduce the\n  skew.\nA constraint is considered \"Unsatisfiable\" for an incoming region if and only if every possible runner assignment for that region would violate \"MaxSkew\" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and regions with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | R R R |   R   |   R   | If WhenUnsatisfiable is set to DoNotSchedule, incoming region can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.\n\nPossible enum values:\n - `\"DoNotSchedule\"` instructs the scheduler not to schedule the region when constraints are not satisfied.\n - `\"ScheduleAnyway\"` instructs the scheduler to schedule the region even if constraints are not satisfied.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"DoNotSchedule", "ScheduleAnyway"},
-						},
-					},
-					"labelSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LabelSelector is used to find matching regions. Regions that match this label selector are counted to determine the number of regions in their corresponding topology domain.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
-						},
-					},
-					"minDomains": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MinDomains indicates a minimum number of eligible domains. When the number of eligible domains with matching topology keys is less than minDomains, Region Topology Spread treats \"global minimum\" as 0, and then the calculation of Skew is performed. And when the number of eligible domains with matching topology keys equals or greater than minDomains, this value has no effect on scheduling. As a result, when the number of eligible domains is less than minDomains, scheduler won't schedule more than maxSkew Regions to those domains. If value is nil, the constraint behaves as if MinDomains is equal to 1. Valid values are integers greater than 0. When value is not nil, WhenUnsatisfiable must be DoNotSchedule.\n\nFor example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and regions with the same labelSelector spread as 2/2/2: | zone1 | zone2 | zone3 | |  R R  |  R R  |  R R  | The number of domains is less than 5(MinDomains), so \"global minimum\" is treated as 0. In this situation, new region with the same labelSelector cannot be scheduled, because computed skew will be 3(3 - 0) if new Region is scheduled to any of the three zones, it will violate MaxSkew.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"runnerAffinityPolicy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RunnerAffinityPolicy indicates how we will treat Region's runnerAffinity/runnerSelector when calculating region topology spread skew. Options are: - Honor: only runners matching runnerAffinity/runnerSelector are included in the calculations. - Ignore: runnerAffinity/runnerSelector are ignored. All runners are included in the calculations.\n\nIf this value is nil, the behavior is equivalent to the Honor policy. This is a beta-level feature default enabled by the RunnerInclusionPolicyInRegionTopologySpread feature flag.\n\nPossible enum values:\n - `\"Honor\"` means use this scheduling directive when calculating region topology spread skew.\n - `\"Ignore\"` means ignore this scheduling directive when calculating region topology spread skew.",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"Honor", "Ignore"},
-						},
-					},
-					"runnerTaintsPolicy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RunnerTaintsPolicy indicates how we will treat runner taints when calculating region topology spread skew. Options are: - Honor: runners without taints, along with tainted runners for which the incoming region has a toleration, are included. - Ignore: runner taints are ignored. All runners are included.\n\nIf this value is nil, the behavior is equivalent to the Ignore policy. This is a beta-level feature default enabled by the RunnerInclusionPolicyInRegionTopologySpread feature flag.\n\nPossible enum values:\n - `\"Honor\"` means use this scheduling directive when calculating region topology spread skew.\n - `\"Ignore\"` means ignore this scheduling directive when calculating region topology spread skew.",
-							Type:        []string{"string"},
-							Format:      "",
-							Enum:        []interface{}{"Honor", "Ignore"},
-						},
-					},
-					"matchLabelKeys": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "MatchLabelKeys is a set of region label keys to select the regions over which spreading will be calculated. The keys are used to lookup values from the incoming region labels, those key-value labels are ANDed with labelSelector to select the group of existing regions over which spreading will be calculated for the incoming region. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. MatchLabelKeys cannot be set when LabelSelector isn't set. Keys that don't exist in the incoming region labels will be ignored. A null or empty list means only match against labelSelector.\n\nThis is a beta field and requires the MatchLabelKeysInRegionTopologySpread feature gate to be enabled (enabled by default).",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"maxSkew", "topologyKey", "whenUnsatisfiable"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
-	}
-}
-
-func schema_olive_apis_core_v1_WeightedRegionAffinityTerm(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "WeightedRegionAffinityTerm The weights of all of the matched WeightedRegionAffinityTerm fields are added per-runner to find the most preferred runner(s)",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"weight": {
-						SchemaProps: spec.SchemaProps{
-							Description: "weight associated with matching the corresponding regionAffinityTerm, in the range 1-100.",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"regionAffinityTerm": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Required. A region affinity term, associated with the corresponding weight.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm"),
-						},
-					},
-				},
-				Required: []string{"weight", "regionAffinityTerm"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionAffinityTerm"},
-	}
-}
-
-func schema_apimachinery_pkg_api_resource_Quantity(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.EmbedOpenAPIDefinitionIntoV2Extension(common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n``` <quantity>        ::= <signedNumber><suffix>\n\n\t(Note that <suffix> may be empty, from the \"\" case in <decimalSI>.)\n\n<digit>           ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits> <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>            ::= \"+\" | \"-\" <signedNumber>    ::= <number> | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei\n\n\t(International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\n<decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n\n\t(Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\n<decimalExponent> ::= \"e\" <signedNumber> | \"E\" <signedNumber> ```\n\nNo matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:\n\n- No precision is lost - No fractional digits will be emitted - The exponent (or suffix) is as large as possible.\n\nThe sign will be omitted unless the number is negative.\n\nExamples:\n\n- 1.5 will be serialized as \"1500m\" - 1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.",
-				OneOf:       common.GenerateOpenAPIV3OneOfSchema(resource.Quantity{}.OpenAPIV3OneOfTypes()),
-				Format:      resource.Quantity{}.OpenAPISchemaFormat(),
-			},
-		},
-	}, common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n``` <quantity>        ::= <signedNumber><suffix>\n\n\t(Note that <suffix> may be empty, from the \"\" case in <decimalSI>.)\n\n<digit>           ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits> <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>            ::= \"+\" | \"-\" <signedNumber>    ::= <number> | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei\n\n\t(International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\n<decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n\n\t(Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\n<decimalExponent> ::= \"e\" <signedNumber> | \"E\" <signedNumber> ```\n\nNo matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:\n\n- No precision is lost - No fractional digits will be emitted - The exponent (or suffix) is as large as possible.\n\nThe sign will be omitted unless the number is negative.\n\nExamples:\n\n- 1.5 will be serialized as \"1500m\" - 1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation.",
-				Type:        resource.Quantity{}.OpenAPISchemaType(),
-				Format:      resource.Quantity{}.OpenAPISchemaFormat(),
-			},
-		},
-	})
-}
-
-func schema_apimachinery_pkg_api_resource_int64Amount(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "int64Amount represents a fixed precision numerator and arbitrary scale exponent. It is faster than operations on inf.Dec for values that can be represented as int64.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"value": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"scale": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
-						},
-					},
-				},
-				Required: []string{"value", "scale"},
+				Required: []string{"phase", "message", "cpuTotal", "memoryTotal", "regions", "leaders", "definitions"},
 			},
 		},
 	}
