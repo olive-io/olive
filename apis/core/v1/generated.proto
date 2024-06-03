@@ -266,13 +266,11 @@ message RegionSpec {
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
   optional int64 runningDefinitions = 2;
 
   optional BpmnStat bpmn = 3;
 
-  optional int64 timestamp = 4;
+  optional int64 timeout = 4;
 }
 
 message RegionStatus {
@@ -287,6 +285,8 @@ message RegionStatus {
   optional int32 replicas = 5;
 
   optional int64 definitions = 6;
+
+  optional RegionStat stat = 7;
 }
 
 // Runner the olive node
@@ -328,23 +328,13 @@ message RunnerSpec {
 
 // RunnerStat is the stat information of Runner
 message RunnerStat {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
   optional double cpuUsed = 2;
 
   optional double memoryUsed = 3;
 
   optional BpmnStat bpmn = 4;
 
-  optional int64 timestamp = 5;
-}
-
-// RunnerStatList is a list of RunnerStat objects.
-message RunnerStatList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  // Items is a list of Runner
-  repeated Runner items = 2;
+  optional int64 timeout = 5;
 }
 
 message RunnerStatus {
@@ -361,5 +351,7 @@ message RunnerStatus {
   repeated string leaders = 6;
 
   optional int64 definitions = 7;
+
+  optional RunnerStat stat = 8;
 }
 

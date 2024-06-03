@@ -30,13 +30,14 @@ import (
 // RunnerStatusApplyConfiguration represents an declarative configuration of the RunnerStatus type for use
 // with apply.
 type RunnerStatusApplyConfiguration struct {
-	Phase       *v1.RunnerPhase `json:"phase,omitempty"`
-	Message     *string         `json:"message,omitempty"`
-	CpuTotal    *float64        `json:"cpuTotal,omitempty"`
-	MemoryTotal *float64        `json:"memoryTotal,omitempty"`
-	Regions     []int64         `json:"regions,omitempty"`
-	Leaders     []string        `json:"leaders,omitempty"`
-	Definitions *int64          `json:"definitions,omitempty"`
+	Phase       *v1.RunnerPhase               `json:"phase,omitempty"`
+	Message     *string                       `json:"message,omitempty"`
+	CpuTotal    *float64                      `json:"cpuTotal,omitempty"`
+	MemoryTotal *float64                      `json:"memoryTotal,omitempty"`
+	Regions     []int64                       `json:"regions,omitempty"`
+	Leaders     []string                      `json:"leaders,omitempty"`
+	Definitions *int64                        `json:"definitions,omitempty"`
+	Stat        *RunnerStatApplyConfiguration `json:"stat,omitempty"`
 }
 
 // RunnerStatusApplyConfiguration constructs an declarative configuration of the RunnerStatus type for use with
@@ -102,5 +103,13 @@ func (b *RunnerStatusApplyConfiguration) WithLeaders(values ...string) *RunnerSt
 // If called multiple times, the Definitions field is set to the value of the last call.
 func (b *RunnerStatusApplyConfiguration) WithDefinitions(value int64) *RunnerStatusApplyConfiguration {
 	b.Definitions = &value
+	return b
+}
+
+// WithStat sets the Stat field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Stat field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithStat(value *RunnerStatApplyConfiguration) *RunnerStatusApplyConfiguration {
+	b.Stat = value
 	return b
 }

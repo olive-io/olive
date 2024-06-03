@@ -27,21 +27,20 @@ import (
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// RunnerStatApplyConfiguration represents an declarative configuration of the RunnerStat type for use
+// RegionStatApplyConfiguration represents an declarative configuration of the RegionStat type for use
 // with apply.
-type RunnerStatApplyConfiguration struct {
+type RegionStatApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration `json:",inline"`
-	CpuUsed                       *float64                    `json:"cpuUsed,omitempty"`
-	MemoryUsed                    *float64                    `json:"memoryUsed,omitempty"`
+	RunningDefinitions            *int64                      `json:"runningDefinitions,omitempty"`
 	Bpmn                          *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
 	Timeout                       *int64                      `json:"timeout,omitempty"`
 }
 
-// RunnerStatApplyConfiguration constructs an declarative configuration of the RunnerStat type for use with
+// RegionStatApplyConfiguration constructs an declarative configuration of the RegionStat type for use with
 // apply.
-func RunnerStat() *RunnerStatApplyConfiguration {
-	b := &RunnerStatApplyConfiguration{}
-	b.WithKind("RunnerStat")
+func RegionStat() *RegionStatApplyConfiguration {
+	b := &RegionStatApplyConfiguration{}
+	b.WithKind("RegionStat")
 	b.WithAPIVersion("core.olive.io/v1")
 	return b
 }
@@ -49,7 +48,7 @@ func RunnerStat() *RunnerStatApplyConfiguration {
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithKind(value string) *RunnerStatApplyConfiguration {
+func (b *RegionStatApplyConfiguration) WithKind(value string) *RegionStatApplyConfiguration {
 	b.Kind = &value
 	return b
 }
@@ -57,31 +56,23 @@ func (b *RunnerStatApplyConfiguration) WithKind(value string) *RunnerStatApplyCo
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithAPIVersion(value string) *RunnerStatApplyConfiguration {
+func (b *RegionStatApplyConfiguration) WithAPIVersion(value string) *RegionStatApplyConfiguration {
 	b.APIVersion = &value
 	return b
 }
 
-// WithCpuUsed sets the CpuUsed field in the declarative configuration to the given value
+// WithRunningDefinitions sets the RunningDefinitions field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the CpuUsed field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithCpuUsed(value float64) *RunnerStatApplyConfiguration {
-	b.CpuUsed = &value
-	return b
-}
-
-// WithMemoryUsed sets the MemoryUsed field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the MemoryUsed field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithMemoryUsed(value float64) *RunnerStatApplyConfiguration {
-	b.MemoryUsed = &value
+// If called multiple times, the RunningDefinitions field is set to the value of the last call.
+func (b *RegionStatApplyConfiguration) WithRunningDefinitions(value int64) *RegionStatApplyConfiguration {
+	b.RunningDefinitions = &value
 	return b
 }
 
 // WithBpmn sets the Bpmn field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Bpmn field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguration) *RunnerStatApplyConfiguration {
+func (b *RegionStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguration) *RegionStatApplyConfiguration {
 	b.Bpmn = value
 	return b
 }
@@ -89,7 +80,7 @@ func (b *RunnerStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguratio
 // WithTimeout sets the Timeout field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Timeout field is set to the value of the last call.
-func (b *RunnerStatApplyConfiguration) WithTimeout(value int64) *RunnerStatApplyConfiguration {
+func (b *RegionStatApplyConfiguration) WithTimeout(value int64) *RegionStatApplyConfiguration {
 	b.Timeout = &value
 	return b
 }

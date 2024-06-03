@@ -49,7 +49,7 @@ const (
 	DefaultListenPeerURL   = "http://127.0.0.1:5380"
 	DefaultListenClientURL = "http://127.0.0.1:5379"
 
-	DefaultHeartbeatMs = 5000
+	DefaultHeartbeatMs = 10000
 
 	DefaultRaftRTTMillisecond = 500
 )
@@ -59,7 +59,7 @@ type Config struct {
 
 	ConfigPath string
 
-	clientConfig *client.Config
+	clientConfig *clientgo.Config
 
 	DataDir   string
 	CacheSize uint64
@@ -106,7 +106,7 @@ func (cfg *Config) Complete() error {
 		return err
 	}
 
-	cfg.clientConfig, err = client.NewConfig(cfg.ConfigPath, cfg.GetLogger())
+	cfg.clientConfig, err = clientgo.NewConfig(cfg.ConfigPath, cfg.GetLogger())
 	if err != nil {
 		return err
 	}

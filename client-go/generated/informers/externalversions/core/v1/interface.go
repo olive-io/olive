@@ -39,8 +39,6 @@ type Interface interface {
 	Regions() RegionInformer
 	// Runners returns a RunnerInformer.
 	Runners() RunnerInformer
-	// RunnerStats returns a RunnerStatInformer.
-	RunnerStats() RunnerStatInformer
 }
 
 type version struct {
@@ -77,9 +75,4 @@ func (v *version) Regions() RegionInformer {
 // Runners returns a RunnerInformer.
 func (v *version) Runners() RunnerInformer {
 	return &runnerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// RunnerStats returns a RunnerStatInformer.
-func (v *version) RunnerStats() RunnerStatInformer {
-	return &runnerStatInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

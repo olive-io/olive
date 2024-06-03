@@ -114,11 +114,8 @@ func (rs *runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Obje
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
 func (rs *runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
-	newRunner, ok1 := obj.(*corev1.Runner)
-	oldRunner, ok2 := old.(*corev1.Runner)
-	if !ok1 || !ok2 {
-		return
-	}
+	newRunner := obj.(*corev1.Runner)
+	oldRunner := old.(*corev1.Runner)
 
 	newRunner.Spec.DeepCopyInto(&oldRunner.Spec)
 
@@ -146,10 +143,7 @@ func (rs *runnerStrategy) Validate(ctx context.Context, obj runtime.Object) fiel
 // WarningsOnCreate returns warnings for the creation of the given object.
 func (rs *runnerStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	var warnings []string
-	newRunner, ok := obj.(*corev1.Runner)
-	if !ok {
-		return warnings
-	}
+	newRunner := obj.(*corev1.Runner)
 
 	if msgs := utilvalidation.IsDNS1123Label(newRunner.Name); len(msgs) != 0 {
 		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in Runner names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
@@ -172,11 +166,8 @@ func (rs *runnerStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (rs *runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	runner, ok1 := obj.(*corev1.Runner)
-	oldRunner, ok2 := old.(*corev1.Runner)
-	if !ok1 || !ok2 {
-		return nil
-	}
+	runner := obj.(*corev1.Runner)
+	oldRunner := old.(*corev1.Runner)
 
 	validationErrorList := corevalidation.ValidateRunner(runner)
 	updateErrorList := corevalidation.ValidateRunnerUpdate(runner, oldRunner)
@@ -186,11 +177,8 @@ func (rs *runnerStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.O
 // WarningsOnUpdate returns warnings for the given update.
 func (rs *runnerStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
-	newRunner, ok1 := obj.(*corev1.Runner)
-	oldRunner, ok2 := old.(*corev1.Runner)
-	if !ok1 || !ok2 {
-		return warnings
-	}
+	newRunner := obj.(*corev1.Runner)
+	oldRunner := old.(*corev1.Runner)
 
 	if newRunner.Generation != oldRunner.Generation {
 	}
@@ -232,38 +220,9 @@ func (rs *runnerStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old r
 	return nil
 }
 
-type runnerStatStrategy struct {
-	*runnerStrategy
-}
-
-func createStatStrategy(strategy *runnerStrategy) *runnerStatStrategy {
-	return &runnerStatStrategy{strategy}
-}
-
-// GetResetFields returns the set of fields that get reset by the strategy
-// and should not be modified by the user.
-func (rs *runnerStatStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
-	return map[fieldpath.APIVersion]*fieldpath.Set{
-		"core/v1": fieldpath.NewSet(
-			fieldpath.MakePathOrDie("stat"),
-		),
-	}
-}
-
-func (rs *runnerStatStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
-	newRunnerStat := obj.(*corev1.RunnerStat)
-	oldRunnerStat := old.(*corev1.RunnerStat)
-	newRunnerStat.DeepCopyInto(oldRunnerStat)
-}
-
-// WarningsOnUpdate returns warnings for the given update.
-func (rs *runnerStatStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
-	return nil
-}
-
-// RunnerToSelectableFields returns a field set that represents the object for matching purposes.
-func RunnerToSelectableFields(runner *corev1.Runner) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&runner.ObjectMeta, true)
+// ProcessToSelectableFields returns a field set that represents the object for matching purposes.
+func ProcessToSelectableFields(runner *corev1.Runner) fields.Set {
+	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&runner.ObjectMeta, false)
 	specificFieldsSet := fields.Set{}
 	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }
@@ -274,7 +233,7 @@ func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
 	if !ok {
 		return nil, nil, fmt.Errorf("given object is not a runner.")
 	}
-	return labels.Set(runner.ObjectMeta.Labels), RunnerToSelectableFields(runner), nil
+	return labels.Set(runner.ObjectMeta.Labels), ProcessToSelectableFields(runner), nil
 }
 
 // MatchRunner is the filter used by the generic etcd backend to route

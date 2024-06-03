@@ -32,7 +32,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
-
 	"github.com/olive-io/olive/client-go"
 	ort "github.com/olive-io/olive/pkg/runtime"
 )
@@ -85,7 +84,7 @@ func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, err
 	return process, true, nil
 }
 
-func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.Client, process *pb.ProcessInstance) {
+func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *clientgo.Client, process *pb.ProcessInstance) {
 	if lg == nil {
 		lg = zap.NewNop()
 	}

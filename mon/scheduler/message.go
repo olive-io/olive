@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The olive Authors
+Copyright 2023 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -19,7 +19,25 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package v1
+package scheduler
 
-// The RunnerExpansion interface allows manually adding extra methods to the RunnerInterface.
-type RunnerExpansion interface{}
+type imessage interface {
+	payload()
+}
+
+// regionAllocMessage allocates a new region on the given olive-runners
+type regionAllocMessage struct{}
+
+func (m *regionAllocMessage) payload() {}
+
+// regionExpendMessage expends the capacity of region (maximum is 3)
+type regionExpendMessage struct {
+	region uint64
+}
+
+func (m *regionExpendMessage) payload() {}
+
+// regionMigrateMessage migrates the replicas of region to a new olive-runners
+type regionMigrateMessage struct{}
+
+func (m *regionMigrateMessage) payload() {}

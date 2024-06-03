@@ -82,6 +82,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.RegionReplicaApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RegionSpec"):
 		return &applyconfigurationcorev1.RegionSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("RegionStat"):
+		return &applyconfigurationcorev1.RegionStatApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RegionStatus"):
 		return &applyconfigurationcorev1.RegionStatusApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Runner"):

@@ -128,8 +128,8 @@ func (r *Runner) register() (*corev1.Runner, error) {
 	if runner.Status.Stat == nil {
 		runner.Status.Stat = &corev1.RunnerStat{}
 	}
-	runner.Status.Stat.CpuTotal = cpuTotal
-	runner.Status.Stat.MemoryTotal = float64(vm.Total)
+	runner.Status.CpuTotal = cpuTotal
+	runner.Status.MemoryTotal = float64(vm.Total)
 
 	if runner.Spec.ID == 0 {
 		runner.Name = "runner_default" // runner not be empty
@@ -162,8 +162,8 @@ func (r *Runner) process() {
 		zap.Int64("id", runner.Spec.ID),
 		zap.String("listen-client-url", runner.Spec.ClientURL),
 		zap.String("listen-peer-url", runner.Spec.PeerURL),
-		zap.Float64("cpu", runner.Status.Stat.CpuTotal),
-		zap.String("memory", humanize.IBytes(uint64(runner.Status.Stat.MemoryTotal))),
+		zap.Float64("cpu", runner.Status.CpuTotal),
+		zap.String("memory", humanize.IBytes(uint64(runner.Status.MemoryTotal))),
 		zap.String("version", runner.Spec.VersionRef))
 
 	ticker := time.NewTicker(time.Duration(cfg.HeartbeatMs) * time.Millisecond)
@@ -203,51 +203,41 @@ func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 	lg := r.Logger()
 	runner := r.getRunner()
 	stat := runner.Status.Stat
+	if stat == nil {
+		stat = &corev1.RunnerStat{}
+	}
 
 	updateOptions := metav1.UpdateOptions{}
 
-	validChanged := false
-	definitions := int64(raft.DefinitionsCounter.Get())
-	if stat.Definitions != definitions {
-		validChanged = true
-		stat.Definitions = definitions
+	runner.Status.Phase = corev1.RunnerActive
+	runner.Status.Definitions = int64(raft.DefinitionsCounter.Get())
+
+	stat.Bpmn = &corev1.BpmnStat{
+		Processes: int64(raft.ProcessCounter.Get()),
+		Events:    int64(raft.EventCounter.Get()),
+		Tasks:     int64(raft.TaskCounter.Get()),
 	}
-
-	stat.BpmnProcesses = int64(raft.ProcessCounter.Get())
-	stat.BpmnEvents = int64(raft.EventCounter.Get())
-	stat.BpmnTasks = int64(raft.TaskCounter.Get())
-
 	regions, leaders := r.controller.RunnerStat()
-	if !sliceEqual[int64](stat.Regions, regions) ||
-		!sliceEqual[string](stat.Leaders, leaders) {
-		validChanged = true
-		stat.Regions = regions
-		stat.Leaders = leaders
+	runner.Status.Regions = regions
+	runner.Status.Leaders = leaders
+
+	interval := time.Millisecond * 500
+	percents, err := pscpu.Percent(interval, false)
+	if err != nil {
+		lg.Error("current cpu percent", zap.Error(err))
+	}
+	if len(percents) > 0 && percents[0] > 0 {
+		stat.CpuUsed = percents[0] / 100 * runner.Status.CpuTotal
 	}
 
-	if !validChanged {
-		dynamicStat := &corev1.RunnerDynamicStat{}
-
-		interval := time.Millisecond * 500
-		percents, err := pscpu.Percent(interval, false)
-		if err != nil {
-			lg.Error("current cpu percent", zap.Error(err))
-		}
-		if len(percents) > 0 {
-			dynamicStat.CpuUsed = percents[0] * stat.CpuTotal
-		}
-
-		vm, err := psmem.VirtualMemory()
-		if err != nil {
-			lg.Error("current memory percent", zap.Error(err))
-		}
-		if vm != nil {
-			dynamicStat.MemoryUsed = float64(vm.Used)
-		}
-		dynamicStat.Timestamp = time.Now().Unix()
-		stat.Dynamic = dynamicStat
-		updateOptions.DryRun = []string{metav1.DryRunAll}
+	vm, err := psmem.VirtualMemory()
+	if err != nil {
+		lg.Error("current memory percent", zap.Error(err))
 	}
+	if vm != nil {
+		stat.MemoryUsed = float64(vm.Used)
+	}
+	stat.Timeout = time.Now().Unix()
 
 	return runner, updateOptions
 }

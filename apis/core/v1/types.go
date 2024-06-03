@@ -34,8 +34,8 @@ type RunnerPhase string
 const (
 	// RunnerPending means the node has been created/added by the system, but not configured.
 	RunnerPending RunnerPhase = "Pending"
-	// RunnerRunning means the node has been configured and has Olive components running.
-	RunnerRunning RunnerPhase = "Running"
+	// RunnerActive means the olive-runner has been configured and has Olive components active.
+	RunnerActive RunnerPhase = "Running"
 	// RunnerTerminated means the node has been removed from the cluster.
 	RunnerTerminated RunnerPhase = "Terminated"
 )
@@ -77,36 +77,21 @@ type RunnerStatus struct {
 	Regions     []int64  `json:"regions" protobuf:"varint,5,rep,name=regions"`
 	Leaders     []string `json:"leaders" protobuf:"bytes,6,rep,name=leaders"`
 	Definitions int64    `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
+
+	Stat *RunnerStat `json:"stat" protobuf:"bytes,8,opt,name=stat"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// RunnerList is a list of Runner objects.
-type RunnerList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Runner
-	Items []Runner `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
-// +genclient
-// +genclient:nonNamespaced
-// +genclient:noStatus
-// +genclient:skipVerbs=create,delete,deleteCollection
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RunnerStat is the stat information of Runner
 type RunnerStat struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.TypeMeta `json:",inline"`
 
 	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,2,opt,name=cpuUsed"`
 	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,3,opt,name=memoryUsed"`
 
-	Bpmn *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,4,opt,name=bpmn"`
-
-	Timestamp int64 `json:"timestamp" protobuf:"varint,5,opt,name=timestamp"`
+	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,4,opt,name=bpmn"`
+	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,5,opt,name=timeout"`
 }
 
 type BpmnStat struct {
@@ -118,8 +103,8 @@ type BpmnStat struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RunnerStatList is a list of RunnerStat objects.
-type RunnerStatList struct {
+// RunnerList is a list of Runner objects.
+type RunnerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
@@ -184,20 +169,20 @@ type RegionStatus struct {
 	Term        int64 `json:"term" protobuf:"varint,4,opt,name=term"`
 	Replicas    int32 `json:"replicas" protobuf:"varint,5,opt,name=replicas"`
 	Definitions int64 `json:"definitions" protobuf:"varint,6,opt,name=definitions"`
+
+	Stat *RegionStat `json:"stat" protobuf:"bytes,7,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RegionStat is the stat information of Region
 type RegionStat struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.TypeMeta `json:",inline"`
 
 	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,2,opt,name=runningDefinitions"`
 
-	Bpmn *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,3,opt,name=bpmn"`
-
-	Timestamp int64 `json:"timestamp" protobuf:"varint,4,opt,name=timestamp"`
+	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,3,opt,name=bpmn"`
+	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -209,6 +194,111 @@ type RegionList struct {
 
 	// Items is a list of Region
 	Items []Region `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// The below types are used by olive_client and api_server.
+
+// ConditionStatus defines conditions of resources
+type ConditionStatus string
+
+// These are valid condition statuses. "ConditionTrue" means a resource is in the condition;
+// "ConditionFalse" means a resource is not in the condition; "ConditionUnknown" means kubernetes
+// can't decide if a resource is in the condition or not. In the future, we could add other
+// intermediate conditions, e.g. ConditionDegraded.
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+// NamespaceSpec describes the attributes on a Namespace
+type NamespaceSpec struct {
+	// Finalizers is an opaque list of values that must be empty to permanently remove object from storage
+	Finalizers []FinalizerName `json:"finalizers" protobuf:"bytes,1,rep,name=finalizers,casttype=FinalizerName"`
+}
+
+// FinalizerName is the name identifying a finalizer during namespace lifecycle.
+type FinalizerName string
+
+// FinalizerOlive there are internal finalizer values to Olive, must be qualified name unless defined here or
+// in metav1.
+const (
+	FinalizerOlive FinalizerName = "Olive"
+)
+
+// NamespaceStatus is information about the current status of a Namespace.
+type NamespaceStatus struct {
+	// Phase is the current lifecycle phase of the namespace.
+	// +optional
+	Phase NamespacePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=NamespacePhase"`
+	// +optional
+	Conditions []NamespaceCondition `json:"conditions" protobuf:"bytes,2,rep,name=conditions"`
+}
+
+// NamespacePhase defines the phase in which the namespace is
+type NamespacePhase string
+
+// These are the valid phases of a namespace.
+const (
+	// NamespaceActive means the namespace is available for use in the system
+	NamespaceActive NamespacePhase = "Active"
+	// NamespaceTerminating means the namespace is undergoing graceful termination
+	NamespaceTerminating NamespacePhase = "Terminating"
+)
+
+// NamespaceConditionType defines constants reporting on status during namespace lifetime and deletion progress
+type NamespaceConditionType string
+
+// These are valid conditions of a namespace.
+const (
+	NamespaceDeletionDiscoveryFailure NamespaceConditionType = "NamespaceDeletionDiscoveryFailure"
+	NamespaceDeletionContentFailure   NamespaceConditionType = "NamespaceDeletionContentFailure"
+	NamespaceDeletionGVParsingFailure NamespaceConditionType = "NamespaceDeletionGroupVersionParsingFailure"
+)
+
+// NamespaceCondition contains details about state of namespace.
+type NamespaceCondition struct {
+	// Type of namespace controller condition.
+	Type NamespaceConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NamespaceConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=ConditionStatus"`
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime" protobuf:"bytes,3,opt,name=lastTransitionTime"`
+	// +optional
+	Reason string `json:"reason" protobuf:"bytes,4,opt,name=reason"`
+	// +optional
+	Message string `json:"message" protobuf:"bytes,5,opt,name=message"`
+}
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Namespace provides a scope for Names.
+// Use of multiple namespaces is optional
+type Namespace struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the behavior of the Namespace.
+	// +optional
+	Spec NamespaceSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+
+	// Status describes the current status of a Namespace
+	// +optional
+	Status NamespaceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NamespaceList is a list of Namespaces.
+type NamespaceList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+
+	Items []Namespace `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // DefPhase defines the phase in which a definition is in
@@ -342,109 +432,4 @@ type FlowNodeStat struct {
 	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,5,rep,name=dataObjects"`
 	StartTime   int64             `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
 	EndTime     int64             `json:"endTime" protobuf:"varint,7,opt,name=endTime"`
-}
-
-// The below types are used by olive_client and api_server.
-
-// ConditionStatus defines conditions of resources
-type ConditionStatus string
-
-// These are valid condition statuses. "ConditionTrue" means a resource is in the condition;
-// "ConditionFalse" means a resource is not in the condition; "ConditionUnknown" means kubernetes
-// can't decide if a resource is in the condition or not. In the future, we could add other
-// intermediate conditions, e.g. ConditionDegraded.
-const (
-	ConditionTrue    ConditionStatus = "True"
-	ConditionFalse   ConditionStatus = "False"
-	ConditionUnknown ConditionStatus = "Unknown"
-)
-
-// NamespaceSpec describes the attributes on a Namespace
-type NamespaceSpec struct {
-	// Finalizers is an opaque list of values that must be empty to permanently remove object from storage
-	Finalizers []FinalizerName `json:"finalizers" protobuf:"bytes,1,rep,name=finalizers,casttype=FinalizerName"`
-}
-
-// FinalizerName is the name identifying a finalizer during namespace lifecycle.
-type FinalizerName string
-
-// FinalizerOlive there are internal finalizer values to Olive, must be qualified name unless defined here or
-// in metav1.
-const (
-	FinalizerOlive FinalizerName = "Olive"
-)
-
-// NamespaceStatus is information about the current status of a Namespace.
-type NamespaceStatus struct {
-	// Phase is the current lifecycle phase of the namespace.
-	// +optional
-	Phase NamespacePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=NamespacePhase"`
-	// +optional
-	Conditions []NamespaceCondition `json:"conditions" protobuf:"bytes,2,rep,name=conditions"`
-}
-
-// NamespacePhase defines the phase in which the namespace is
-type NamespacePhase string
-
-// These are the valid phases of a namespace.
-const (
-	// NamespaceActive means the namespace is available for use in the system
-	NamespaceActive NamespacePhase = "Active"
-	// NamespaceTerminating means the namespace is undergoing graceful termination
-	NamespaceTerminating NamespacePhase = "Terminating"
-)
-
-// NamespaceConditionType defines constants reporting on status during namespace lifetime and deletion progress
-type NamespaceConditionType string
-
-// These are valid conditions of a namespace.
-const (
-	NamespaceDeletionDiscoveryFailure NamespaceConditionType = "NamespaceDeletionDiscoveryFailure"
-	NamespaceDeletionContentFailure   NamespaceConditionType = "NamespaceDeletionContentFailure"
-	NamespaceDeletionGVParsingFailure NamespaceConditionType = "NamespaceDeletionGroupVersionParsingFailure"
-)
-
-// NamespaceCondition contains details about state of namespace.
-type NamespaceCondition struct {
-	// Type of namespace controller condition.
-	Type NamespaceConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=NamespaceConditionType"`
-	// Status of the condition, one of True, False, Unknown.
-	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=ConditionStatus"`
-	// +optional
-	LastTransitionTime metav1.Time `json:"lastTransitionTime" protobuf:"bytes,3,opt,name=lastTransitionTime"`
-	// +optional
-	Reason string `json:"reason" protobuf:"bytes,4,opt,name=reason"`
-	// +optional
-	Message string `json:"message" protobuf:"bytes,5,opt,name=message"`
-}
-
-// +genclient
-// +genclient:nonNamespaced
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Namespace provides a scope for Names.
-// Use of multiple namespaces is optional
-type Namespace struct {
-	metav1.TypeMeta `json:",inline"`
-	// +optional
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Spec defines the behavior of the Namespace.
-	// +optional
-	Spec NamespaceSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-
-	// Status describes the current status of a Namespace
-	// +optional
-	Status NamespaceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// NamespaceList is a list of Namespaces.
-type NamespaceList struct {
-	metav1.TypeMeta `json:",inline"`
-	// +optional
-	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	Items []Namespace `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

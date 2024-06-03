@@ -39,7 +39,7 @@ import (
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
-	"github.com/olive-io/olive/mon/schedule"
+	monscheduler "github.com/olive-io/olive/mon/scheduler"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
@@ -75,7 +75,7 @@ type MonitorServer struct {
 
 	genericAPIServer *genericapiserver.GenericAPIServer
 
-	scheduler *schedule.Scheduler
+	scheduler *monscheduler.Scheduler
 }
 
 // DefaultAPIResourceConfigSource returns default configuration for an APIResource.
@@ -154,14 +154,14 @@ func (s *MonitorServer) Start(stopc <-chan struct{}) error {
 		return err
 	}
 
-	scfg := &schedule.Config{
+	scfg := &monscheduler.Config{
 		Logger:          s.lg,
 		Client:          s.v3cli,
 		Notifier:        s.notifier,
 		RegionLimit:     DefaultRegionLimit,
 		DefinitionLimit: DefaultRegionDefinitionsLimit,
 	}
-	s.scheduler = schedule.New(scfg, s.StoppingNotify())
+	s.scheduler = monscheduler.New(scfg, s.StoppingNotify())
 	if err = s.scheduler.Start(); err != nil {
 		return err
 	}

@@ -75,7 +75,6 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 		}
 		storage[resource] = runnerStorage.Runner
 		storage[resource+"/status"] = runnerStorage.Status
-		storage[resource+"/stat"] = runnerStorage.Stat
 	}
 
 	// region

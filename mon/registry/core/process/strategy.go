@@ -201,7 +201,7 @@ func ProcessToSelectableFields(processInstance *corev1.Process) fields.Set {
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
 	processInstance, ok := obj.(*corev1.Process)
 	if !ok {
-		return nil, nil, fmt.Errorf("given object is not a processInstance.")
+		return nil, nil, fmt.Errorf("given object is not a process.")
 	}
 	return labels.Set(processInstance.ObjectMeta.Labels), ProcessToSelectableFields(processInstance), nil
 }

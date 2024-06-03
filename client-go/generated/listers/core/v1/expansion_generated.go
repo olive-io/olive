@@ -50,7 +50,3 @@ type RegionListerExpansion interface{}
 // RunnerListerExpansion allows custom methods to be added to
 // RunnerLister.
 type RunnerListerExpansion interface{}
-
-// RunnerStatListerExpansion allows custom methods to be added to
-// RunnerStatLister.
-type RunnerStatListerExpansion interface{}
