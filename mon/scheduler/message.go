@@ -21,23 +21,43 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package scheduler
 
+import corev1 "github.com/olive-io/olive/apis/core/v1"
+
+// scheduler inner message channel
 type imessage interface {
-	payload()
+	payload() any
 }
 
-// regionAllocMessage allocates a new region on the given olive-runners
-type regionAllocMessage struct{}
-
-func (m *regionAllocMessage) payload() {}
-
-// regionExpendMessage expends the capacity of region (maximum is 3)
-type regionExpendMessage struct {
-	region uint64
+type allocRegionBox struct {
+	num int
 }
 
-func (m *regionExpendMessage) payload() {}
+// allocRegionMsg defines create new Region
+type allocRegionMsg struct {
+	box *allocRegionBox
+}
 
-// regionMigrateMessage migrates the replicas of region to a new olive-runners
-type regionMigrateMessage struct{}
+func newAllocRegionMsg(n int) *allocRegionMsg {
+	return &allocRegionMsg{box: &allocRegionBox{num: n}}
+}
 
-func (m *regionMigrateMessage) payload() {}
+func (m *allocRegionMsg) payload() any {
+	return m.box
+}
+
+type scaleRegionBox struct {
+	region *corev1.Region
+	scale  int
+}
+
+type scaleRegionMsg struct {
+	box *scaleRegionBox
+}
+
+func newScaleRegionMsg(region *corev1.Region, n int) *scaleRegionMsg {
+	return &scaleRegionMsg{box: &scaleRegionBox{region: region, scale: n}}
+}
+
+func (m *scaleRegionMsg) payload() any {
+	return m.box
+}

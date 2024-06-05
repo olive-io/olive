@@ -71,7 +71,7 @@ func (ri *RegionInfo) Score() float64 {
 	return float64(score)
 }
 
-type RunnerHit func(*corev1.Runner) bool
+type RunnerFilter func(*corev1.Runner) bool
 
 type RunnerMap struct {
 	mu    sync.RWMutex
@@ -91,15 +91,15 @@ func (m *RunnerMap) Get(uid string) (*corev1.Runner, bool) {
 	return rt, ok
 }
 
-func (m *RunnerMap) Hit(hits ...RunnerHit) []*corev1.Runner {
+func (m *RunnerMap) Hit(filters ...RunnerFilter) []*corev1.Runner {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	runners := make([]*corev1.Runner, 0)
 	for _, runner := range m.store {
 		match := true
-		for _, h := range hits {
-			if !h(runner) {
+		for _, fn := range filters {
+			if !fn(runner) {
 				match = false
 				break
 			}
@@ -144,7 +144,7 @@ type RegionMap struct {
 	store map[string]*corev1.Region
 }
 
-type RegionHit func(*corev1.Region) bool
+type RegionFilter func(*corev1.Region) bool
 
 func NewRegionMap() *RegionMap {
 	return &RegionMap{
@@ -159,15 +159,15 @@ func (m *RegionMap) Get(uid string) (*corev1.Region, bool) {
 	return rt, ok
 }
 
-func (m *RegionMap) Hit(hits ...RegionHit) []*corev1.Region {
+func (m *RegionMap) Hit(filters ...RegionFilter) []*corev1.Region {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	regions := make([]*corev1.Region, 0)
 	for _, region := range m.store {
 		match := true
-		for _, h := range hits {
-			if !h(region) {
+		for _, fn := range filters {
+			if !fn(region) {
 				match = false
 				break
 			}

@@ -66,6 +66,9 @@ func TestNewRunnerQueue(t *testing.T) {
 		return
 	}
 
+	value, _ := q.Next("2")
+	assert.Equal(t, "3", value.UID())
+
 	runners := make([]string, 0)
 	for q.Len() != 0 {
 		if v, ok := q.Pop(); ok {

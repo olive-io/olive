@@ -24,11 +24,12 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/google/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
@@ -41,6 +42,9 @@ import (
 
 type Scheduler struct {
 	options *Options
+
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	leaderNotifier leader.Notifier
 
@@ -55,9 +59,12 @@ type Scheduler struct {
 	regionSynced    cache.InformerSynced
 	regionMap       *RegionMap
 	regionWorkQueue *queue.SyncPriorityQueue
+
+	messageC chan imessage
 }
 
 func NewScheduler(
+	ctx context.Context,
 	leaderNotifier leader.Notifier,
 	clientSet clientset.Interface,
 	runnerInformer coreInformers.RunnerInformer,
@@ -90,8 +97,11 @@ func NewScheduler(
 		regionMap.Put(region)
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
 	scheduler := &Scheduler{
 		options:         options,
+		ctx:             ctx,
+		cancel:          cancel,
 		leaderNotifier:  leaderNotifier,
 		clientSet:       clientSet,
 		runnerLister:    runnerLister,
@@ -102,6 +112,8 @@ func NewScheduler(
 		regionSynced:    regionInformer.Informer().HasSynced,
 		regionMap:       regionMap,
 		regionWorkQueue: queue.NewSync(),
+
+		messageC: make(chan imessage, 20),
 	}
 
 	_, err = runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -137,27 +149,42 @@ func NewScheduler(
 	return scheduler, nil
 }
 
-func (s *Scheduler) Start(ctx context.Context, workers int) error {
+func (s *Scheduler) Start() error {
 	defer utilruntime.HandleCrash()
+	ctx := s.ctx
 
 	if ok := cache.WaitForCacheSync(ctx.Done(), s.runnerSynced, s.regionSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	period := time.Second
+	defer s.cancel()
 
-	for i := 0; i < workers; i++ {
-		go wait.UntilWithContext(ctx, s.runRegionWorker, period)
+LOOP:
+	for {
+		if !s.waitUtilLeader() {
+			select {
+			case <-s.ctx.Done():
+				break LOOP
+			case <-s.messageC:
+				// to nothing
+			default:
+			}
+			continue
+		}
+
+		for {
+			select {
+			case <-s.ctx.Done():
+				break LOOP
+			case <-s.leaderNotifier.ChangeNotify():
+				goto LOOP
+			case msg := <-s.messageC:
+				go s.handleMessage(msg)
+			}
+		}
 	}
-
-	<-ctx.Done()
 
 	return nil
-}
-
-func (s *Scheduler) runRegionWorker(ctx context.Context) {
-	for s.processNextRegionWorkItem(ctx) {
-	}
 }
 
 func (s *Scheduler) enqueueRunner(runner *corev1.Runner) {
@@ -172,9 +199,8 @@ func (s *Scheduler) enqueueRunner(runner *corev1.Runner) {
 		})
 	}
 
-	remind := s.options.InitRegionNum - s.regionMap.Len()
-	if remind > 0 {
-		s.allocRegion(remind)
+	if remind := s.options.InitRegionNum - s.regionMap.Len(); remind > 0 {
+		s.putMessage(newAllocRegionMsg(remind))
 	}
 }
 
@@ -188,11 +214,15 @@ func (s *Scheduler) enqueueRegion(region *corev1.Region) {
 	s.regionMap.Put(region)
 	// filter region
 	// TODO: add region filter
-	if int(region.Status.Replicas) < s.options.RegionReplicas {
+	if region.Status.Phase == corev1.RegionActive {
 		s.regionWorkQueue.Push(&RegionInfo{
 			Region:          region,
 			DefinitionLimit: s.options.DefinitionLimit,
 		})
+	}
+
+	if scale := s.options.RegionReplicas - int(region.Status.Replicas); scale != 0 {
+		s.putMessage(newScaleRegionMsg(region.DeepCopy(), scale))
 	}
 }
 
@@ -202,18 +232,105 @@ func (s *Scheduler) dequeueRegion(region *corev1.Region) {
 	s.runnerWorkQueue.Remove(uid)
 }
 
-func (s *Scheduler) allocRegion(n int) {
+func (s *Scheduler) putMessage(msg imessage) {
+	s.messageC <- msg
+}
+
+func (s *Scheduler) handleMessage(msg imessage) {
+	body := msg.payload()
+	switch box := body.(type) {
+	case *allocRegionBox:
+		for i := 0; i < box.num; i++ {
+			s.allocRegion()
+		}
+	case *scaleRegionBox:
+
+	}
+}
+
+func (s *Scheduler) allocRegion() {
+	runners := make([]*corev1.Runner, 0)
+	for i := 0; i < s.options.RegionReplicas; i++ {
+		runner, ok := s.runnerPop()
+		if !ok {
+			break
+		}
+		runners = append(runners, runner)
+	}
+
+	if len(runners) == 0 {
+		return
+	}
+
+	region := &corev1.Region{
+		Spec: corev1.RegionSpec{
+			Replicas:         []corev1.RegionReplica{},
+			ElectionRTT:      s.options.RegionElectionTTL,
+			HeartbeatRTT:     s.options.RegionHeartbeatTTL,
+			DefinitionsLimit: int64(s.options.DefinitionLimit),
+		},
+	}
+	region.Name = "region"
+	region.SetUID(types.UID(uuid.New().String()))
+
+	region.Spec.Leader = runners[0].Spec.ID
+	for i, runner := range runners {
+		replica := corev1.RegionReplica{
+			Id:          int64(i),
+			Runner:      runner.Spec.ID,
+			RaftAddress: runner.Spec.PeerURL,
+		}
+		region.Spec.Replicas = append(region.Spec.Replicas, replica)
+	}
+
+	region, err := s.clientSet.CoreV1().Regions().Create(context.TODO(), region, metav1.CreateOptions{})
+	if err != nil {
+
+	} else {
+		s.regionMap.Put(region)
+	}
+
+	for _, runner := range runners {
+		s.runnerWorkQueue.Set(&RunnerInfo{
+			Runner:      runner,
+			RegionLimit: s.options.RegionLimit,
+		})
+	}
+}
+
+func (s *Scheduler) scaleRegion(scale int) {
 
 }
 
-// processNextWorkItem will read a single work item off the workqueue and
-// attempt to process it, by calling the syncHandler.
-func (s *Scheduler) processNextRegionWorkItem(ctx context.Context) bool {
-	select {
-	case <-ctx.Done():
-		return false
-	default:
+func (s *Scheduler) runnerPop() (*corev1.Runner, bool) {
+	x, ok := s.runnerWorkQueue.Pop()
+	if !ok {
+		return nil, false
 	}
+	runnerInfo := x.(*RunnerInfo)
+	return runnerInfo.Runner, true
+}
 
-	return true
+func (s *Scheduler) regionPop() (*corev1.Region, bool) {
+	x, ok := s.regionWorkQueue.Pop()
+	if !ok {
+		return nil, false
+	}
+	regionInfo := x.(*RegionInfo)
+	return regionInfo.Region, true
+}
+
+func (s *Scheduler) waitUtilLeader() bool {
+	for {
+		if s.leaderNotifier.IsLeader() {
+			<-s.leaderNotifier.ReadyNotify()
+			return true
+		}
+
+		select {
+		case <-s.ctx.Done():
+			return false
+		case <-s.leaderNotifier.ChangeNotify():
+		}
+	}
 }

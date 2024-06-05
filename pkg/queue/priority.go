@@ -66,6 +66,18 @@ func (q *PriorityQueue) Get(id string) (IScoreGetter, bool) {
 	return v.value, true
 }
 
+func (q *PriorityQueue) Next(id string) (IScoreGetter, bool) {
+	v, ok := q.m[id]
+	if !ok {
+		return nil, false
+	}
+	idx := v.index
+	if idx >= q.pq.Len()-1 {
+		return nil, false
+	}
+	return q.pq.list[idx+1].value, true
+}
+
 func (q *PriorityQueue) Remove(id string) (IScoreGetter, bool) {
 	v, ok := q.m[id]
 	if !ok {
@@ -119,9 +131,16 @@ func (q *SyncPriorityQueue) Pop() (IScoreGetter, bool) {
 }
 
 func (q *SyncPriorityQueue) Get(id string) (IScoreGetter, bool) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
+	q.mu.RLock()
+	defer q.mu.RUnlock()
 	result, ok := q.pq.Get(id)
+	return result, ok
+}
+
+func (q *SyncPriorityQueue) Next(id string) (IScoreGetter, bool) {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+	result, ok := q.pq.Next(id)
 	return result, ok
 }
 
