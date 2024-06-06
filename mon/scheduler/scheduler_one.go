@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
@@ -244,7 +245,7 @@ func (s *Scheduler) handleMessage(msg imessage) {
 			s.allocRegion()
 		}
 	case *scaleRegionBox:
-
+		s.scaleRegion(box)
 	}
 }
 
@@ -298,8 +299,23 @@ func (s *Scheduler) allocRegion() {
 	}
 }
 
-func (s *Scheduler) scaleRegion(scale int) {
-
+func (s *Scheduler) scaleRegion(box *scaleRegionBox) {
+	region := box.region
+	binded := sets.New[int64]()
+	for _, replica := range region.Spec.Replicas {
+		binded.Insert(replica.Runner)
+	}
+	learners := make([]*corev1.Runner, 0)
+	pops := make([]*RunnerInfo, 0)
+	need := box.scale
+	for {
+		x, ok := s.runnerWorkQueue.Pop()
+		if !ok {
+			break
+		}
+		ri := x.(*RunnerInfo)
+		pops = append(pops, ri)
+	}
 }
 
 func (s *Scheduler) runnerPop() (*corev1.Runner, bool) {

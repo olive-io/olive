@@ -37,19 +37,19 @@ func (ri *RunnerInfo) UID() string {
 	return string(ri.Runner.UID)
 }
 
-func (ri *RunnerInfo) Score() float64 {
+func (ri *RunnerInfo) Score() int64 {
 	status := ri.Runner.Status
 	stat := status.Stat
 	cpus := status.CpuTotal
 	memoryTotal := status.MemoryTotal
 
 	if ri.RegionLimit <= len(status.Regions) {
-		return -math.MaxFloat64
+		return -math.MaxInt64
 	}
 
-	score := float64(int(cpus-stat.CpuUsed)%30) + float64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30) +
-		float64((ri.RegionLimit-len(status.Regions))%30) +
-		float64((ri.RegionLimit-len(status.Leaders))%10)
+	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30) +
+		int64((ri.RegionLimit-len(status.Regions))%30) +
+		int64((ri.RegionLimit-len(status.Leaders))%10)
 
 	return score
 }
@@ -63,12 +63,12 @@ func (ri *RegionInfo) UID() string {
 	return string(ri.Region.UID)
 }
 
-func (ri *RegionInfo) Score() float64 {
+func (ri *RegionInfo) Score() int64 {
 	status := ri.Region.Status
 	score := int64(float64(status.Definitions)/float64(ri.DefinitionLimit)*100)%70 +
 		int64(status.Replicas*10)%30
 
-	return float64(score)
+	return score
 }
 
 type RunnerFilter func(*corev1.Runner) bool

@@ -23,5 +23,5 @@ package queue
 
 type IScoreGetter interface {
 	UID() string
-	Score() float64
+	Score() int64
 }
