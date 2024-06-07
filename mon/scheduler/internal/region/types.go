@@ -19,10 +19,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package runner
+package region
 
 import (
-	"math"
 	"sync/atomic"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -31,83 +30,92 @@ import (
 )
 
 type Snapshot struct {
-	runner *corev1.Runner
-	// Sets the limit of region number in which Runner
-	regionLimit int
-	// the score of Runner, calculation by calScore()
+	region *corev1.Region
+	// Sets the limit of definition number in which Region
+	DefinitionLimit int
+	// the score of Region, calculation by calScore()
 	score atomic.Int64
 }
 
 func (s *Snapshot) UID() string {
-	return s.runner.Name
+	return s.region.Name
 }
 
 func (s *Snapshot) Score() int64 {
 	return s.score.Load()
 }
 
-func (s *Snapshot) Get() *corev1.Runner {
-	return s.runner.DeepCopy()
+func (s *Snapshot) Get() *corev1.Region {
+	return s.region.DeepCopy()
 }
 
-func (s *Snapshot) Set(r *corev1.Runner) {
-	s.runner = r
+func (s *Snapshot) Set(r *corev1.Region) {
+	s.region = r
 }
 
 func (s *Snapshot) DeepCopy() *Snapshot {
 	return &Snapshot{
-		runner:      s.runner.DeepCopy(),
-		regionLimit: s.regionLimit,
+		region:          s.region.DeepCopy(),
+		DefinitionLimit: s.DefinitionLimit,
 	}
 }
 
-func NewSnapshot(runner *corev1.Runner, limit int) *Snapshot {
+func NewSnapshot(region *corev1.Region, limit int) *Snapshot {
 	snapshot := &Snapshot{
-		runner:      runner,
-		regionLimit: limit,
-		score:       atomic.Int64{},
+		region:          region,
+		DefinitionLimit: limit,
+		score:           atomic.Int64{},
 	}
 	snapshot.score.Store(snapshot.calScore())
 	return snapshot
 }
 
 func (s *Snapshot) calScore() int64 {
-	runner := s.runner
-	limit := s.regionLimit
-	status := runner.Status
-	stat := status.Stat
-	cpus := status.CpuTotal
-	memoryTotal := status.MemoryTotal
-
-	if len(status.Regions) >= limit {
-		return -math.MaxInt64
-	}
-
-	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30) +
-		int64((limit-len(status.Regions))%30) +
-		int64((limit-len(status.Leaders))%10)
+	region := s.region
+	limit := s.DefinitionLimit
+	status := region.Status
+	score := int64((1-float64(status.Definitions)/float64(limit))*100)%70 +
+		int64(status.Replicas*10)%30
 	return score
 }
 
-type runnerSelector func(*corev1.Runner) bool
+type scaleRegion struct {
+	region *corev1.Region
+}
 
-type Selector []runnerSelector
+func newScaleRegion(region *corev1.Region) *scaleRegion {
+	return &scaleRegion{region: region}
+}
+
+func (s *scaleRegion) UID() string {
+	return s.region.Name
+}
+
+func (s *scaleRegion) Score() int64 {
+	score := int64(s.region.Status.Replicas*10)%60 +
+		s.region.Spec.Id*100%40
+	return score
+}
+
+type regionSelector func(*corev1.Region) bool
+
+type Selector []regionSelector
 
 func NewSelector(options NextOptions) Selector {
 	selector := Selector{}
 	if len(options.Ignores) > 0 {
-		selector = append(selector, func(runner *corev1.Runner) bool {
+		selector = append(selector, func(region *corev1.Region) bool {
 			idSets := sets.NewString(options.Ignores...)
-			return idSets.Has(runner.Name)
+			return idSets.Has(region.Name)
 		})
 	}
 
 	return selector
 }
 
-func (s Selector) Select(runner *corev1.Runner) bool {
+func (s Selector) Select(region *corev1.Region) bool {
 	for _, item := range s {
-		if !item(runner) {
+		if !item(region) {
 			return false
 		}
 	}
@@ -115,9 +123,9 @@ func (s Selector) Select(runner *corev1.Runner) bool {
 }
 
 type NextOptions struct {
-	// runner name
+	// region name
 	Name *string
-	// ignores the given runners name
+	// ignores the given regions name
 	Ignores []string
 }
 

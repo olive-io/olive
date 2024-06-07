@@ -234,7 +234,7 @@ message RegionList {
 message RegionReplica {
   optional int64 id = 1;
 
-  optional int64 runner = 2;
+  optional string runner = 2;
 
   optional int64 region = 3;
 
@@ -266,11 +266,11 @@ message RegionSpec {
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional int64 runningDefinitions = 2;
+  optional int64 runningDefinitions = 1;
 
-  optional BpmnStat bpmn = 3;
+  optional BpmnStat bpmn = 2;
 
-  optional int64 timeout = 4;
+  optional int64 timeout = 3;
 }
 
 message RegionStatus {
@@ -328,13 +328,13 @@ message RunnerSpec {
 
 // RunnerStat is the stat information of Runner
 message RunnerStat {
-  optional double cpuUsed = 2;
+  optional double cpuUsed = 1;
 
-  optional double memoryUsed = 3;
+  optional double memoryUsed = 2;
 
-  optional BpmnStat bpmn = 4;
+  optional BpmnStat bpmn = 3;
 
-  optional int64 timeout = 5;
+  optional int64 timeout = 4;
 }
 
 message RunnerStatus {

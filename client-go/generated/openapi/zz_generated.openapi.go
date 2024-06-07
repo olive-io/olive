@@ -1806,9 +1806,9 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 					},
 					"runner": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"region": {
@@ -1827,16 +1827,14 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 					},
 					"isNonVoting": {
 						SchemaProps: spec.SchemaProps{
-							Default: false,
-							Type:    []string{"boolean"},
-							Format:  "",
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 					"isWitness": {
 						SchemaProps: spec.SchemaProps{
-							Default: false,
-							Type:    []string{"boolean"},
-							Format:  "",
+							Type:   []string{"boolean"},
+							Format: "",
 						},
 					},
 					"isJoin": {

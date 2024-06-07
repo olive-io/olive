@@ -24,21 +24,20 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	coreInformers "github.com/olive-io/olive/client-go/generated/informers/externalversions/core/v1"
-	lister "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	"github.com/olive-io/olive/mon/leader"
-	"github.com/olive-io/olive/pkg/queue"
+	internalregion "github.com/olive-io/olive/mon/scheduler/internal/region"
+	internalrunner "github.com/olive-io/olive/mon/scheduler/internal/runner"
 )
 
 type Scheduler struct {
@@ -49,17 +48,12 @@ type Scheduler struct {
 
 	leaderNotifier leader.Notifier
 
-	clientSet clientset.Interface
+	clientSet      clientset.Interface
+	runnerInformer coreInformers.RunnerInformer
+	regionInformer coreInformers.RegionInformer
 
-	runnerLister    lister.RunnerLister
-	runnerSynced    cache.InformerSynced
-	runnerMap       *RunnerMap
-	runnerWorkQueue *queue.SyncPriorityQueue
-
-	regionLister    lister.RegionLister
-	regionSynced    cache.InformerSynced
-	regionMap       *RegionMap
-	regionWorkQueue *queue.SyncPriorityQueue
+	runnerQ internalrunner.SchedulingQueue
+	regionQ internalregion.SchedulingQueue
 
 	messageC chan imessage
 }
@@ -77,74 +71,24 @@ func NewScheduler(
 		return nil, err
 	}
 
-	runnerLister := runnerInformer.Lister()
-	runners, err := runnerLister.List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	runnerMap := NewRunnerMap()
-	for _, runner := range runners {
-		runnerMap.Put(runner)
-	}
-
-	regionLister := regionInformer.Lister()
-	regions, err := regionLister.List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-	regionMap := NewRegionMap()
-	for _, region := range regions {
-		regionMap.Put(region)
-	}
+	runnerQ := internalrunner.NewSchedulingQueue(options.RegionLimit)
+	regionQ := internalregion.NewSchedulingQueue(options.DefinitionLimit, options.RegionReplicas)
 
 	ctx, cancel := context.WithCancel(ctx)
 	scheduler := &Scheduler{
-		options:         options,
-		ctx:             ctx,
-		cancel:          cancel,
-		leaderNotifier:  leaderNotifier,
-		clientSet:       clientSet,
-		runnerLister:    runnerLister,
-		runnerSynced:    runnerInformer.Informer().HasSynced,
-		runnerMap:       runnerMap,
-		runnerWorkQueue: queue.NewSync(),
-		regionLister:    regionLister,
-		regionSynced:    regionInformer.Informer().HasSynced,
-		regionMap:       regionMap,
-		regionWorkQueue: queue.NewSync(),
+		options:        options,
+		ctx:            ctx,
+		cancel:         cancel,
+		leaderNotifier: leaderNotifier,
+
+		clientSet:      clientSet,
+		runnerInformer: runnerInformer,
+		regionInformer: regionInformer,
+
+		runnerQ: runnerQ,
+		regionQ: regionQ,
 
 		messageC: make(chan imessage, 20),
-	}
-
-	_, err = runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			scheduler.enqueueRunner(obj.(*corev1.Runner))
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			scheduler.enqueueRunner(newObj.(*corev1.Runner))
-		},
-		DeleteFunc: func(obj interface{}) {
-			scheduler.dequeueRunner(obj.(*corev1.Runner))
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			scheduler.enqueueRegion(obj.(*corev1.Region))
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			scheduler.enqueueRegion(newObj.(*corev1.Region))
-		},
-		DeleteFunc: func(obj interface{}) {
-			scheduler.dequeueRegion(obj.(*corev1.Region))
-		},
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	return scheduler, nil
@@ -152,13 +96,68 @@ func NewScheduler(
 
 func (s *Scheduler) Start() error {
 	defer utilruntime.HandleCrash()
-	ctx := s.ctx
 
-	if ok := cache.WaitForCacheSync(ctx.Done(), s.runnerSynced, s.regionSynced); !ok {
+	runnerListener := s.runnerInformer.Lister()
+	runners, err := runnerListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, runner := range runners {
+		s.runnerQ.Add(runner)
+	}
+
+	regionListener := s.regionInformer.Lister()
+	regions, err := regionListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, region := range regions {
+		s.regionQ.Add(region)
+	}
+
+	_, err = s.runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			s.runnerQ.Add(obj.(*corev1.Runner))
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			s.runnerQ.Update(newObj.(*corev1.Runner), s.options.RegionLimit)
+		},
+		DeleteFunc: func(obj interface{}) {
+			s.runnerQ.Remove(obj.(*corev1.Runner))
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = s.regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			s.regionQ.Add(obj.(*corev1.Region))
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			s.regionQ.Update(newObj.(*corev1.Region), s.options.RegionLimit)
+		},
+		DeleteFunc: func(obj interface{}) {
+			s.regionQ.Remove(obj.(*corev1.Region))
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx := s.ctx
+	informerSynced := []cache.InformerSynced{
+		s.runnerInformer.Informer().HasSynced,
+		s.regionInformer.Informer().HasSynced,
+	}
+
+	if ok := cache.WaitForCacheSync(ctx.Done(), informerSynced...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	defer s.cancel()
+
+	go wait.UntilWithContext(ctx, s.runnerRegionWorker, time.Second*3)
 
 LOOP:
 	for {
@@ -188,49 +187,23 @@ LOOP:
 	return nil
 }
 
-func (s *Scheduler) enqueueRunner(runner *corev1.Runner) {
-	s.runnerMap.Put(runner)
-
-	// filter runner
-	// TODO: add runner filter
-	if runner.Status.Phase == corev1.RunnerActive {
-		s.runnerWorkQueue.Push(&RunnerInfo{
-			Runner:      runner,
-			RegionLimit: s.options.RegionLimit,
-		})
+func (s *Scheduler) runnerRegionWorker(ctx context.Context) {
+	if !s.leaderReady() {
+		return
 	}
 
-	if remind := s.options.InitRegionNum - s.regionMap.Len(); remind > 0 {
+	remind := s.options.InitRegionNum - s.regionQ.Len()
+	if remind > 0 {
 		s.putMessage(newAllocRegionMsg(remind))
-	}
-}
-
-func (s *Scheduler) dequeueRunner(runner *corev1.Runner) {
-	uid := string(runner.UID)
-	s.runnerMap.Del(uid)
-	s.runnerWorkQueue.Remove(uid)
-}
-
-func (s *Scheduler) enqueueRegion(region *corev1.Region) {
-	s.regionMap.Put(region)
-	// filter region
-	// TODO: add region filter
-	if region.Status.Phase == corev1.RegionActive {
-		s.regionWorkQueue.Push(&RegionInfo{
-			Region:          region,
-			DefinitionLimit: s.options.DefinitionLimit,
-		})
+		return
 	}
 
-	if scale := s.options.RegionReplicas - int(region.Status.Replicas); scale != 0 {
-		s.putMessage(newScaleRegionMsg(region.DeepCopy(), scale))
+	needScaled, ok := s.regionQ.RegionToScale()
+	if ok {
+		replicas := s.options.RegionReplicas - int(needScaled.Status.Replicas)
+		s.putMessage(newScaleRegionMsg(needScaled, replicas))
+		return
 	}
-}
-
-func (s *Scheduler) dequeueRegion(region *corev1.Region) {
-	uid := string(region.UID)
-	s.regionMap.Del(uid)
-	s.runnerWorkQueue.Remove(uid)
 }
 
 func (s *Scheduler) putMessage(msg imessage) {
@@ -239,25 +212,26 @@ func (s *Scheduler) putMessage(msg imessage) {
 
 func (s *Scheduler) handleMessage(msg imessage) {
 	body := msg.payload()
-	switch box := body.(type) {
-	case *allocRegionBox:
-		for i := 0; i < box.num; i++ {
-			s.allocRegion()
-		}
-	case *scaleRegionBox:
-		s.scaleRegion(box)
+	switch req := body.(type) {
+	case *AllocRegionRequest:
+		s.AllocRegion(req)
+	case *ScaleRegionRequest:
+		s.ScaleRegion(req)
 	}
 }
 
-func (s *Scheduler) allocRegion() {
+func (s *Scheduler) AllocRegion(req *AllocRegionRequest) {
+
+	opts := make([]internalrunner.NextOption, 0)
 	runners := make([]*corev1.Runner, 0)
 	for i := 0; i < s.options.RegionReplicas; i++ {
-		runner, ok := s.runnerPop()
+		snapshot, ok := s.runnerQ.Pop(opts...)
 		if !ok {
 			break
 		}
-		runners = append(runners, runner)
+		runners = append(runners, snapshot.Get())
 	}
+	defer s.runnerQ.Recycle()
 
 	if len(runners) == 0 {
 		return
@@ -270,15 +244,17 @@ func (s *Scheduler) allocRegion() {
 			HeartbeatRTT:     s.options.RegionHeartbeatTTL,
 			DefinitionsLimit: int64(s.options.DefinitionLimit),
 		},
+		Status: corev1.RegionStatus{
+			Phase: corev1.RegionPending,
+			Stat:  &corev1.RegionStat{},
+		},
 	}
 	region.Name = "region"
-	region.SetUID(types.UID(uuid.New().String()))
-
 	region.Spec.Leader = runners[0].Spec.ID
 	for i, runner := range runners {
 		replica := corev1.RegionReplica{
 			Id:          int64(i),
-			Runner:      runner.Spec.ID,
+			Runner:      runner.Name,
 			RaftAddress: runner.Spec.PeerURL,
 		}
 		region.Spec.Replicas = append(region.Spec.Replicas, replica)
@@ -287,53 +263,35 @@ func (s *Scheduler) allocRegion() {
 	region, err := s.clientSet.CoreV1().Regions().Create(context.TODO(), region, metav1.CreateOptions{})
 	if err != nil {
 
-	} else {
-		s.regionMap.Put(region)
-	}
-
-	for _, runner := range runners {
-		s.runnerWorkQueue.Set(&RunnerInfo{
-			Runner:      runner,
-			RegionLimit: s.options.RegionLimit,
-		})
 	}
 }
 
-func (s *Scheduler) scaleRegion(box *scaleRegionBox) {
-	region := box.region
-	binded := sets.New[int64]()
+func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
+	region := req.region
+	scale := req.scale
+
+	opts := make([]internalrunner.NextOption, 0)
+
+	ignores := []string{}
 	for _, replica := range region.Spec.Replicas {
-		binded.Insert(replica.Runner)
+		ignores = append(ignores, replica.Runner)
 	}
-	learners := make([]*corev1.Runner, 0)
-	pops := make([]*RunnerInfo, 0)
-	need := box.scale
-	for {
-		x, ok := s.runnerWorkQueue.Pop()
+	opts = append(opts, internalrunner.WithIgnores(ignores...))
+
+	runners := make([]*corev1.Runner, 0)
+	for i := 0; i < scale; i++ {
+		snapshot, ok := s.runnerQ.Pop(opts...)
 		if !ok {
 			break
 		}
-		ri := x.(*RunnerInfo)
-		pops = append(pops, ri)
+		runners = append(runners, snapshot.Get())
 	}
-}
+	defer s.runnerQ.Recycle()
 
-func (s *Scheduler) runnerPop() (*corev1.Runner, bool) {
-	x, ok := s.runnerWorkQueue.Pop()
-	if !ok {
-		return nil, false
+	if len(runners) == 0 {
+		return
 	}
-	runnerInfo := x.(*RunnerInfo)
-	return runnerInfo.Runner, true
-}
 
-func (s *Scheduler) regionPop() (*corev1.Region, bool) {
-	x, ok := s.regionWorkQueue.Pop()
-	if !ok {
-		return nil, false
-	}
-	regionInfo := x.(*RegionInfo)
-	return regionInfo.Region, true
 }
 
 func (s *Scheduler) waitUtilLeader() bool {
@@ -349,4 +307,12 @@ func (s *Scheduler) waitUtilLeader() bool {
 		case <-s.leaderNotifier.ChangeNotify():
 		}
 	}
+}
+
+func (s *Scheduler) leaderReady() bool {
+	if s.leaderNotifier.IsLeader() {
+		<-s.leaderNotifier.ReadyNotify()
+		return true
+	}
+	return false
 }

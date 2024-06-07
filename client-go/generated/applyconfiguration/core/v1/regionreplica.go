@@ -27,7 +27,7 @@ package v1
 // with apply.
 type RegionReplicaApplyConfiguration struct {
 	Id          *int64  `json:"id,omitempty"`
-	Runner      *int64  `json:"runner,omitempty"`
+	Runner      *string `json:"runner,omitempty"`
 	Region      *int64  `json:"region,omitempty"`
 	RaftAddress *string `json:"raftAddress,omitempty"`
 	IsNonVoting *bool   `json:"isNonVoting,omitempty"`
@@ -52,7 +52,7 @@ func (b *RegionReplicaApplyConfiguration) WithId(value int64) *RegionReplicaAppl
 // WithRunner sets the Runner field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Runner field is set to the value of the last call.
-func (b *RegionReplicaApplyConfiguration) WithRunner(value int64) *RegionReplicaApplyConfiguration {
+func (b *RegionReplicaApplyConfiguration) WithRunner(value string) *RegionReplicaApplyConfiguration {
 	b.Runner = &value
 	return b
 }

@@ -28,36 +28,36 @@ type imessage interface {
 	payload() any
 }
 
-type allocRegionBox struct {
-	num int
+type AllocRegionRequest struct {
+	Count int
 }
 
 // allocRegionMsg defines create new Region
 type allocRegionMsg struct {
-	box *allocRegionBox
+	req *AllocRegionRequest
 }
 
-func newAllocRegionMsg(n int) *allocRegionMsg {
-	return &allocRegionMsg{box: &allocRegionBox{num: n}}
+func newAllocRegionMsg(count int) *allocRegionMsg {
+	return &allocRegionMsg{req: &AllocRegionRequest{Count: count}}
 }
 
 func (m *allocRegionMsg) payload() any {
-	return m.box
+	return m.req
 }
 
-type scaleRegionBox struct {
+type ScaleRegionRequest struct {
 	region *corev1.Region
 	scale  int
 }
 
 type scaleRegionMsg struct {
-	box *scaleRegionBox
+	req *ScaleRegionRequest
 }
 
 func newScaleRegionMsg(region *corev1.Region, n int) *scaleRegionMsg {
-	return &scaleRegionMsg{box: &scaleRegionBox{region: region, scale: n}}
+	return &scaleRegionMsg{req: &ScaleRegionRequest{region: region, scale: n}}
 }
 
 func (m *scaleRegionMsg) payload() any {
-	return m.box
+	return m.req
 }

@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package runner
+package region
 
 import (
 	"sync"
@@ -29,61 +29,79 @@ import (
 )
 
 type SchedulingQueue interface {
-	Add(runner *corev1.Runner)
-	Update(runner *corev1.Runner, limit int)
-	Remove(runner *corev1.Runner)
+	Add(region *corev1.Region)
+	Update(region *corev1.Region, limit int)
+	Remove(region *corev1.Region)
 	Len() int
 
-	// Pop gets the highest score Runner
+	// Pop gets the highest score Region
 	Pop(opts ...NextOption) (*Snapshot, bool)
-	// Recycle recycles popped runners by Pop()
+	// Recycle recycles the popped region by Pop()
 	Recycle()
-	// Free clears popped runners by Pop()
+	// Free clears the popped region by Pop()
 	Free()
+
+	// RegionToScale gets a scale Region
+	RegionToScale() (*corev1.Region, bool)
 }
 
 type schedulingQueue struct {
-	mu          sync.RWMutex
-	maps        map[string]*Snapshot
-	activeQ     *queue.PriorityQueue
-	recycled    []*Snapshot
-	regionLimit int
+	mu       sync.RWMutex
+	maps     map[string]*Snapshot
+	activeQ  *queue.PriorityQueue
+	recycled []*Snapshot
+
+	smu    sync.Mutex
+	scaleQ *queue.PriorityQueue
+
+	definitionLimit int
+	replicaNum      int
 }
 
-func NewSchedulingQueue(regionLimit int) SchedulingQueue {
+func NewSchedulingQueue(definitionLimit, replicaNum int) SchedulingQueue {
 	return &schedulingQueue{
-		maps:        make(map[string]*Snapshot),
-		activeQ:     queue.New(),
-		recycled:    make([]*Snapshot, 0),
-		regionLimit: regionLimit,
+		maps:            make(map[string]*Snapshot),
+		activeQ:         queue.New(),
+		recycled:        make([]*Snapshot, 0),
+		scaleQ:          queue.New(),
+		definitionLimit: definitionLimit,
+		replicaNum:      replicaNum,
 	}
 }
 
-func (sq *schedulingQueue) Add(runner *corev1.Runner) {
-	name := runner.Name
-	snapshot := NewSnapshot(runner, sq.regionLimit)
+func (sq *schedulingQueue) Add(region *corev1.Region) {
+	name := region.Name
+	snapshot := NewSnapshot(region, sq.definitionLimit)
 	sq.mu.Lock()
-	defer sq.mu.Unlock()
 	sq.maps[name] = snapshot
 	sq.activeQ.Push(snapshot)
+	sq.mu.Unlock()
+
+	sq.scaledRegion(region)
 }
 
-func (sq *schedulingQueue) Update(runner *corev1.Runner, limit int) {
-	name := runner.Name
-	snapshot := NewSnapshot(runner, sq.regionLimit)
+func (sq *schedulingQueue) Update(region *corev1.Region, limit int) {
+	name := region.Name
+	snapshot := NewSnapshot(region, sq.definitionLimit)
 	sq.mu.Lock()
-	defer sq.mu.Unlock()
-	sq.regionLimit = limit
+	sq.definitionLimit = limit
 	sq.maps[name] = snapshot
 	sq.activeQ.Set(snapshot)
+	sq.mu.Unlock()
+
+	sq.scaledRegion(region)
 }
 
-func (sq *schedulingQueue) Remove(runner *corev1.Runner) {
-	name := runner.Name
+func (sq *schedulingQueue) Remove(region *corev1.Region) {
+	name := region.Name
 	sq.mu.Lock()
-	defer sq.mu.Unlock()
 	delete(sq.maps, name)
 	sq.activeQ.Remove(name)
+	sq.mu.Unlock()
+
+	sq.smu.Lock()
+	sq.scaleQ.Remove(name)
+	sq.smu.Unlock()
 }
 
 func (sq *schedulingQueue) Len() int {
@@ -107,9 +125,9 @@ func (sq *schedulingQueue) Pop(opts ...NextOption) (*Snapshot, bool) {
 
 	if options.Name != nil && *options.Name != "" {
 		sq.mu.RLock()
-		runner, ok := sq.maps[*options.Name]
+		region, ok := sq.maps[*options.Name]
 		sq.mu.RUnlock()
-		return runner, ok
+		return region, ok
 	}
 
 	selector := NewSelector(options)
@@ -124,7 +142,7 @@ func (sq *schedulingQueue) Pop(opts ...NextOption) (*Snapshot, bool) {
 			break
 		}
 		snap := item.(*Snapshot)
-		if selector.Select(snap.runner) {
+		if selector.Select(snap.region) {
 			matched = snap
 			sq.recycled = append(sq.recycled, snap)
 			break
@@ -140,7 +158,7 @@ func (sq *schedulingQueue) Pop(opts ...NextOption) (*Snapshot, bool) {
 	return matched, matched != nil
 }
 
-// Recycle recycles popped runners by Pop()
+// Recycle recycles popped regions by Pop()
 //
 // Examples:
 //
@@ -158,7 +176,7 @@ func (sq *schedulingQueue) Recycle() {
 	sq.recycled = make([]*Snapshot, 0)
 }
 
-// Free clears popped runners by Pop()
+// Free clears popped regions by Pop()
 //
 // Examples:
 //
@@ -170,4 +188,24 @@ func (sq *schedulingQueue) Free() {
 	sq.mu.Lock()
 	defer sq.mu.Unlock()
 	sq.recycled = make([]*Snapshot, 0)
+}
+
+func (sq *schedulingQueue) scaledRegion(region *corev1.Region) {
+	if int(region.Status.Replicas) >= sq.replicaNum {
+		return
+	}
+	sq.smu.Lock()
+	sq.scaleQ.Set(newScaleRegion(region))
+	sq.smu.Unlock()
+}
+
+func (sq *schedulingQueue) RegionToScale() (*corev1.Region, bool) {
+	sq.smu.Lock()
+	x, ok := sq.scaleQ.Pop()
+	sq.smu.Unlock()
+	if !ok {
+		return nil, false
+	}
+	region := x.(*scaleRegion).region.DeepCopy()
+	return region, true
 }

@@ -87,11 +87,11 @@ type RunnerStatus struct {
 type RunnerStat struct {
 	metav1.TypeMeta `json:",inline"`
 
-	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,2,opt,name=cpuUsed"`
-	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,3,opt,name=memoryUsed"`
+	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,1,opt,name=cpuUsed"`
+	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,2,opt,name=memoryUsed"`
 
-	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,4,opt,name=bpmn"`
-	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,5,opt,name=timeout"`
+	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,3,opt,name=bpmn"`
+	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
 }
 
 type BpmnStat struct {
@@ -153,11 +153,11 @@ type RegionSpec struct {
 
 type RegionReplica struct {
 	Id          int64  `json:"id" protobuf:"varint,1,opt,name=id"`
-	Runner      int64  `json:"runner" protobuf:"varint,2,opt,name=runner"`
+	Runner      string `json:"runner" protobuf:"bytes,2,opt,name=runner"`
 	Region      int64  `json:"region" protobuf:"varint,3,opt,name=region"`
 	RaftAddress string `json:"raftAddress" protobuf:"bytes,4,opt,name=raftAddress"`
-	IsNonVoting bool   `json:"isNonVoting" protobuf:"varint,5,opt,name=isNonVoting"`
-	IsWitness   bool   `json:"isWitness" protobuf:"varint,6,opt,name=isWitness"`
+	IsNonVoting *bool  `json:"isNonVoting" protobuf:"varint,5,opt,name=isNonVoting"`
+	IsWitness   *bool  `json:"isWitness" protobuf:"varint,6,opt,name=isWitness"`
 	IsJoin      bool   `json:"isJoin" protobuf:"varint,7,opt,name=isJoin"`
 }
 
@@ -179,10 +179,10 @@ type RegionStatus struct {
 type RegionStat struct {
 	metav1.TypeMeta `json:",inline"`
 
-	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,2,opt,name=runningDefinitions"`
+	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,1,opt,name=runningDefinitions"`
 
-	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,3,opt,name=bpmn"`
-	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
+	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,2,opt,name=bpmn"`
+	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,3,opt,name=timeout"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
