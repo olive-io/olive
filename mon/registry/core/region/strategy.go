@@ -42,20 +42,30 @@ import (
 	"github.com/olive-io/olive/apis"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	corevalidation "github.com/olive-io/olive/apis/core/validation"
+	"github.com/olive-io/olive/pkg/idutil"
 )
 
 // regionStrategy implements verification logic for Region.
 type regionStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
+
+	ring *idutil.Ring
 }
 
-// Strategy is the default logic that applies when creating and updating Region objects.
-var Strategy = regionStrategy{apis.Scheme, names.SimpleNameGenerator}
+func createStrategy(ring *idutil.Ring) *regionStrategy {
+	strategy := &regionStrategy{
+		ObjectTyper:   apis.Scheme,
+		NameGenerator: names.SimpleNameGenerator,
+		ring:          ring,
+	}
+
+	return strategy
+}
 
 // DefaultGarbageCollectionPolicy returns OrphanDependents for mon/v1 for backwards compatibility,
 // and DeleteDependents for all other versions.
-func (regionStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
+func (rs *regionStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
 	var groupVersion schema.GroupVersion
 	if requestInfo, found := genericapirequest.RequestInfoFrom(ctx); found {
 		groupVersion = schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
@@ -70,13 +80,13 @@ func (regionStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.G
 }
 
 // NamespaceScoped returns true because all regions need to be within a namespace.
-func (regionStrategy) NamespaceScoped() bool {
+func (rs *regionStrategy) NamespaceScoped() bool {
 	return false
 }
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
-func (regionStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (rs *regionStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
 		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
@@ -87,15 +97,22 @@ func (regionStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 }
 
 // PrepareForCreate clears the status of a region before creation.
-func (regionStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+func (rs *regionStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 	region := obj.(*corev1.Region)
 	region.Status = corev1.RegionStatus{}
+
+	nextId := rs.ring.Next(ctx)
+	region.Name = fmt.Sprintf("rn%d", nextId)
+	region.Spec.Id = int64(nextId)
+	region.Status = corev1.RegionStatus{
+		Phase: corev1.RegionPending,
+	}
 
 	region.Generation = 1
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (regionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+func (rs *regionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newRegion := obj.(*corev1.Region)
 	oldRegion := old.(*corev1.Region)
 	newRegion.Status = oldRegion.Status
@@ -107,14 +124,20 @@ func (regionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Obj
 
 }
 
+func (rs *regionStrategy) PrepareForDelete(ctx context.Context, obj runtime.Object) error {
+	region := obj.(*corev1.Region)
+	rs.ring.Recycle(ctx, uint64(region.Spec.Id))
+	return nil
+}
+
 // Validate validates a new region.
-func (regionStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
+func (rs *regionStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	region := obj.(*corev1.Region)
 	return corevalidation.ValidateRegion(region)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
-func (regionStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
+func (rs *regionStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	newRegion := obj.(*corev1.Region)
 	var warnings []string
 	if msgs := utilvalidation.IsDNS1123Label(newRegion.Name); len(msgs) != 0 {
@@ -124,20 +147,20 @@ func (regionStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) 
 }
 
 // Canonicalize normalizes the object after validation.
-func (regionStrategy) Canonicalize(obj runtime.Object) {
+func (rs *regionStrategy) Canonicalize(obj runtime.Object) {
 }
 
-func (regionStrategy) AllowUnconditionalUpdate() bool {
+func (rs *regionStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
 // AllowCreateOnUpdate is false for regions; this means a POST is needed to create one.
-func (regionStrategy) AllowCreateOnUpdate() bool {
+func (rs *regionStrategy) AllowCreateOnUpdate() bool {
 	return false
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (regionStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+func (rs *regionStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	region := obj.(*corev1.Region)
 	oldRegion := old.(*corev1.Region)
 
@@ -147,7 +170,7 @@ func (regionStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Objec
 }
 
 // WarningsOnUpdate returns warnings for the given update.
-func (regionStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+func (rs *regionStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
 	newRegion := obj.(*corev1.Region)
 	oldRegion := old.(*corev1.Region)
@@ -157,10 +180,12 @@ func (regionStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Obj
 }
 
 type regionStatusStrategy struct {
-	regionStrategy
+	*regionStrategy
 }
 
-var StatusStrategy = regionStatusStrategy{Strategy}
+func createStatusStrategy(strategy *regionStrategy) *regionStatusStrategy {
+	return &regionStatusStrategy{strategy}
+}
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.

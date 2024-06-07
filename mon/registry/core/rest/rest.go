@@ -79,7 +79,7 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 
 	// region
 	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		regionsStorage, err := regionstore.NewStorage(restOptionsGetter)
+		regionsStorage, err := regionstore.NewStorage(p.v3cli, restOptionsGetter, p.stopCh)
 		if err != nil {
 			return storage, err
 		}

@@ -31,20 +31,21 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 	"github.com/olive-io/olive/client-go"
 	ort "github.com/olive-io/olive/pkg/runtime"
 )
 
-func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
-	region := new(pb.Region)
-	err := proto.Unmarshal(kv.Value, region)
+func parseRegionKV(kv *mvccpb.KeyValue, runner string) (*corev1.Region, bool, error) {
+	region := new(corev1.Region)
+	err := region.Unmarshal(kv.Value)
 	if err != nil {
 		return nil, false, err
 	}
 	match := false
-	for _, replica := range region.Replicas {
-		if replica.Runner == runnerId {
+	for _, replica := range region.Spec.Replicas {
+		if replica.Runner == runner {
 			match = true
 			break
 		}

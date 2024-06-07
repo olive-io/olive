@@ -33,7 +33,6 @@ import (
 	pscpu "github.com/shirou/gopsutil/v3/cpu"
 	psmem "github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
@@ -175,15 +174,16 @@ func (r *Runner) process() {
 		case trace := <-r.traces:
 			switch tt := trace.(type) {
 			case *raft.RegionStatTrace:
-				stat := tt.Stat
-				lg.Debug("update region stat", zap.Stringer("stat", stat))
-
-				key := path.Join(ort.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
-				data, _ = proto.Marshal(stat)
-				_, err = r.oct.Put(ctx, key, string(data))
-				if err != nil {
-					lg.Error("olive-runner update region stat", zap.Error(err))
-				}
+				_ = tt
+				//stat := tt.Stat
+				//lg.Debug("update region stat", zap.Stringer("stat", stat))
+				//
+				//key := path.Join(ort.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
+				//data, _ = proto.Marshal(stat)
+				//_, err = r.oct.Put(ctx, key, string(data))
+				//if err != nil {
+				//	lg.Error("olive-runner update region stat", zap.Error(err))
+				//}
 			}
 		case <-ticker.C:
 			applied, updateOptions := r.updateRunnerStat()

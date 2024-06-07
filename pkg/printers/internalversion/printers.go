@@ -46,8 +46,10 @@ const (
 func AddHandlers(h printers.PrintHandler) {
 	runnerColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "PeerURL", Type: "string", Description: "The peer url of the olive-runner"},
+		{Name: "ClientURL", Type: "string", Description: "The client url of the olive-runner"},
 		{Name: "Status", Type: "string", Description: "The status of the olive-runner"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(runnerColumnDefinitions, printRunner)
 	_ = h.TableHandler(runnerColumnDefinitions, printRunnerList)
@@ -55,7 +57,7 @@ func AddHandlers(h printers.PrintHandler) {
 	regionColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the region"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(regionColumnDefinitions, printRegion)
 	_ = h.TableHandler(regionColumnDefinitions, printRegionList)
@@ -114,7 +116,11 @@ func printRunner(obj *corev1.Runner, options printers.GenerateOptions) ([]metav1
 		Object: krt.RawExtension{Object: obj},
 	}
 
-	row.Cells = append(row.Cells, obj.Name, obj.Spec.ClientURL, obj.Status.Phase)
+	row.Cells = append(row.Cells, obj.Name,
+		obj.Spec.PeerURL,
+		obj.Spec.ClientURL,
+		obj.Status.Phase,
+		obj.CreationTimestamp)
 
 	return []metav1.TableRow{row}, nil
 }
@@ -136,7 +142,10 @@ func printRegion(obj *corev1.Region, options printers.GenerateOptions) ([]metav1
 		Object: krt.RawExtension{Object: obj},
 	}
 
-	row.Cells = append(row.Cells, obj.Name, obj.Status.Phase)
+	row.Cells = append(row.Cells,
+		obj.Name,
+		obj.Status.Phase,
+		obj.CreationTimestamp)
 
 	return []metav1.TableRow{row}, nil
 }

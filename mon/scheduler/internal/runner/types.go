@@ -95,11 +95,16 @@ type Selector []runnerSelector
 
 func NewSelector(options NextOptions) Selector {
 	selector := Selector{}
+	if options.Name != nil && *options.Name != "" {
+		sfn := func(r *corev1.Runner) bool { return *options.Name != r.Name }
+		selector = append(selector, sfn)
+	}
 	if len(options.Ignores) > 0 {
-		selector = append(selector, func(runner *corev1.Runner) bool {
+		sfn := func(region *corev1.Runner) bool {
 			idSets := sets.NewString(options.Ignores...)
-			return idSets.Has(runner.Name)
-		})
+			return !idSets.Has(region.Name)
+		}
+		selector = append(selector, sfn)
 	}
 
 	return selector

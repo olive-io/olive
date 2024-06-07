@@ -26,6 +26,7 @@ import (
 
 	"github.com/lni/dragonboat/v4/raftio"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 )
 
@@ -34,7 +35,7 @@ type leaderTrace raftio.LeaderInfo
 func (t leaderTrace) TraceInterface() {}
 
 type RegionStatTrace struct {
-	Stat *pb.RegionStat
+	Stat *corev1.RegionStat
 }
 
 func (t *RegionStatTrace) TraceInterface() {}

@@ -36,6 +36,7 @@ import (
 	"github.com/olive-io/olive/apis"
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
+	monscheduler "github.com/olive-io/olive/mon/scheduler"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 
 	"github.com/olive-io/olive/mon/embed"
@@ -75,7 +76,7 @@ type ExtraConfig struct {
 
 	APIResourceConfigSource serverstorage.APIResourceConfigSource
 
-	KubeClient            clientset.Interface
+	ClientSet             clientset.Interface
 	SharedInformerFactory informers.SharedInformerFactory
 	DynamicClient         dynamic.Interface
 
@@ -136,10 +137,11 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		return nil
 	})
 
-	//informersFactory.Core().V1().Runners().Informer()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	etcdClient := v3client.New(etcd.Server)
+
+	leaderNotifier := leader.NewNotify(etcd.Server)
+	clientSet := c.ExtraConfig.ClientSet
 
 	monServer := &MonitorServer{
 		IDaemon: embedDaemon,
@@ -151,7 +153,7 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		etcd:     etcd,
 		v3cli:    etcdClient,
 		idGen:    idutil.NewGenerator(uint16(etcd.Server.ID()), time.Now()),
-		notifier: leader.NewNotify(etcd.Server),
+		notifier: leaderNotifier,
 
 		genericAPIServer: genericServer,
 	}
@@ -174,6 +176,12 @@ func (c completedConfig) New() (*MonitorServer, error) {
 		c.ExtraConfig.APIResourceConfigSource,
 		c.GenericConfig.RESTOptionsGetter,
 		restStorageProviders...); err != nil {
+		return nil, err
+	}
+
+	schedulerOptions := []monscheduler.Option{}
+	monServer.scheduler, err = monscheduler.NewScheduler(ctx, leaderNotifier, clientSet, informersFactory, schedulerOptions...)
+	if err != nil {
 		return nil, err
 	}
 

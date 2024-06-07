@@ -39,11 +39,9 @@ import (
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
-
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/pkg/proxy"
@@ -236,15 +234,15 @@ func (c *Controller) RunnerStat() ([]int64, []string) {
 			continue
 		}
 
-		replicas := region.getInfo().Replicas
+		replicas := region.getInfo().Spec.Replicas
 		if len(replicas) == 0 {
 			continue
 		}
 		for _, replica := range replicas {
-			if lead == replica.Id && replica.Runner == uint64(c.pr.Spec.ID) {
+			if int64(lead) == replica.Id && replica.Runner == c.pr.Name {
 				sv := semver.Version{
 					Major: int64(region.id),
-					Minor: int64(replica.Id),
+					Minor: replica.Id,
 				}
 				leaders = append(leaders, sv.String())
 			}
@@ -260,14 +258,14 @@ func (c *Controller) SubscribeTrace() <-chan tracing.ITrace {
 	return c.tracer.SubscribeChannel(traceChannel)
 }
 
-func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error {
+func (c *Controller) CreateRegion(ctx context.Context, region *corev1.Region) error {
 	_, err := c.startRaftRegion(ctx, region)
 	if err != nil {
 		return err
 	}
 
-	key := fmt.Sprintf("%d", region.Id)
-	data, _ := proto.Marshal(region)
+	key := region.Name
+	data, _ := region.Marshal()
 	tx := c.be.BatchTx()
 	tx.Lock()
 	_ = tx.UnsafePut(buckets.Region, []byte(key), data)
@@ -278,8 +276,8 @@ func (c *Controller) CreateRegion(ctx context.Context, region *pb.Region) error 
 	return nil
 }
 
-func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
-	local, ok := c.getRegion(region.Id)
+func (c *Controller) SyncRegion(ctx context.Context, region *corev1.Region) error {
+	local, ok := c.getRegion(uint64(region.Spec.Id))
 	if !ok {
 		return c.CreateRegion(ctx, region)
 	}
@@ -302,7 +300,7 @@ func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
 				patchErr = multierr.Append(patchErr, err)
 				return
 			}
-			if err = c.requestAddRegionReplica(ctx, oldRegion.Id, replica); err != nil {
+			if err = c.requestAddRegionReplica(ctx, uint64(oldRegion.Spec.Id), replica); err != nil {
 				patchErr = multierr.Append(patchErr, err)
 				return
 			}
@@ -310,7 +308,7 @@ func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
 		if op == "replace" && strings.HasPrefix(path, "/leader") {
 			var leader uint64
 			_ = json.Unmarshal(data, &leader)
-			if err = c.requestLeaderTransferRegion(ctx, oldRegion.Id, leader); err != nil {
+			if err = c.requestLeaderTransferRegion(ctx, uint64(oldRegion.Spec.Id), leader); err != nil {
 				patchErr = multierr.Append(patchErr, err)
 				return
 			}
@@ -327,12 +325,12 @@ func (c *Controller) SyncRegion(ctx context.Context, region *pb.Region) error {
 
 // prepareRegions loads regions from backend.IBackend and start raft regions
 func (c *Controller) prepareRegions() error {
-	regions := make([]*pb.Region, 0)
+	regions := make([]*corev1.Region, 0)
 	readTx := c.be.ReadTx()
 	readTx.RLock()
-	err := readTx.UnsafeForEach(buckets.Region, func(k, v []byte) error {
-		region := &pb.Region{}
-		err := proto.Unmarshal(v, region)
+	err := readTx.UnsafeForEach(buckets.Region, func(k, value []byte) error {
+		region := &corev1.Region{}
+		err := region.Unmarshal(value)
 		if err != nil {
 			return err
 		}
@@ -354,26 +352,26 @@ func (c *Controller) prepareRegions() error {
 			_, err = c.startRaftRegion(ctx, region)
 			if err != nil {
 				lg.Error("start raft region",
-					zap.Uint64("id", region.Id),
+					zap.Int64("id", region.Spec.Id),
 					zap.Error(err))
 				return
 			}
-			DefinitionsCounter.Add(float64(region.Definitions))
+			DefinitionsCounter.Add(float64(region.Status.Definitions))
 
 			lg.Info("start raft region",
-				zap.Uint64("id", region.Id))
+				zap.Int64("id", region.Spec.Id))
 		}()
 	}
 
 	return nil
 }
 
-func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Region, error) {
+func (c *Controller) startRaftRegion(ctx context.Context, ri *corev1.Region) (*Region, error) {
 	replicaId := uint64(0)
 	var join bool
-	for _, replica := range ri.Replicas {
-		if replica.Runner == uint64(c.pr.Spec.ID) {
-			replicaId = replica.Id
+	for _, replica := range ri.Spec.Replicas {
+		if replica.Runner == c.pr.Name {
+			replicaId = uint64(replica.Id)
 			join = replica.IsJoin
 		}
 	}
@@ -388,23 +386,23 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 		if err != nil {
 			return nil, errors.Wrap(ErrRaftAddress, err.Error())
 		}
-		members[id] = url.Host
+		members[uint64(id)] = url.Host
 	}
 
-	regionId := ri.Id
-	electRTT := ri.ElectionRTT
-	heartbeatRTT := ri.HeartbeatRTT
+	regionId := ri.Spec.Id
+	electRTT := ri.Spec.ElectionRTT
+	heartbeatRTT := ri.Spec.HeartbeatRTT
 	snapshotEntries := uint64(10000)
 	compactionOverhead := uint64(1000)
 	maxInMemLogSize := uint64(1 * 1024 * 1024 * 1024) // 1GB
 
 	cfg := config.Config{
 		ReplicaID:           replicaId,
-		ShardID:             regionId,
+		ShardID:             uint64(regionId),
 		CheckQuorum:         true,
 		PreVote:             true,
-		ElectionRTT:         electRTT,
-		HeartbeatRTT:        heartbeatRTT,
+		ElectionRTT:         uint64(electRTT),
+		HeartbeatRTT:        uint64(heartbeatRTT),
 		SnapshotEntries:     snapshotEntries,
 		CompactionOverhead:  compactionOverhead,
 		OrderedConfigChange: true,
@@ -414,8 +412,8 @@ func (c *Controller) startRaftRegion(ctx context.Context, ri *pb.Region) (*Regio
 
 	rcfg := NewRegionConfig()
 	rcfg.RaftRTTMillisecond = c.cfg.RaftRTTMillisecond
-	rcfg.ElectionRTT = electRTT
-	rcfg.HeartbeatRTT = heartbeatRTT
+	rcfg.ElectionRTT = uint64(electRTT)
+	rcfg.HeartbeatRTT = uint64(heartbeatRTT)
 	rcfg.StatHeartBeatMs = c.cfg.HeartbeatMs
 
 	if err := cfg.Validate(); err != nil {

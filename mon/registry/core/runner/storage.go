@@ -61,7 +61,7 @@ func NewStorage(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, st
 }
 
 const (
-	defaultRegionPrefix = "/olive/ring/ids/runner"
+	defaultRunnerPrefix = "/olive/ring/ids/runner"
 )
 
 var deleteOptionWarnings = ""
@@ -75,7 +75,7 @@ type REST struct {
 
 // NewREST returns a RESTStorage object that will work against Runners.
 func NewREST(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (*REST, *StatusREST, error) {
-	ring, err := idutil.NewRing(defaultRegionPrefix, v3cli)
+	ring, err := idutil.NewRing(defaultRunnerPrefix, v3cli)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -314,7 +314,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		return nil, nil, err
 	}
 
-	regions := make([]*pb.Region, 0)
+	regions := make([]*corev1.Region, 0)
 	definitions := make([]*pb.Definition, 0)
 	processes := make([]*pb.ProcessInstance, 0)
 	for _, kv := range rsp.Kvs {
@@ -322,7 +322,7 @@ func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace,
 		key := string(kv.Value)
 		switch {
 		case strings.HasPrefix(key, ort.DefaultRunnerRegion):
-			region, match, err := parseRegionKV(kv, uint64(pr.Spec.ID))
+			region, match, err := parseRegionKV(kv, pr.Name)
 			if err != nil || !match {
 				continue
 			}
@@ -453,7 +453,7 @@ func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
 	}
 
 	pr := r.getRunner()
-	region, match, err := parseRegionKV(kv, uint64(pr.Spec.ID))
+	region, match, err := parseRegionKV(kv, pr.Name)
 	if err != nil {
 		lg.Error("parse region data", zap.Error(err))
 		return

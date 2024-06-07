@@ -173,6 +173,14 @@ type RegionStatus struct {
 	Stat *RegionStat `json:"stat" protobuf:"bytes,7,opt,name=stat"`
 }
 
+func (m *Region) InitialURL() map[int64]string {
+	initial := map[int64]string{}
+	for _, replica := range m.Spec.Replicas {
+		initial[replica.Id] = replica.RaftAddress
+	}
+	return initial
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RegionStat is the stat information of Region

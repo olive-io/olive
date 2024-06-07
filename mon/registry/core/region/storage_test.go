@@ -24,12 +24,14 @@ package region
 import (
 	"testing"
 
+	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/registry/generic"
 	etcd3testing "k8s.io/apiserver/pkg/storage/etcd3/testing"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/mon/registry/registrytest"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 func newStorage(t *testing.T) (*RegionStorage, *etcd3testing.EtcdTestServer) {
@@ -40,11 +42,17 @@ func newStorage(t *testing.T) (*RegionStorage, *etcd3testing.EtcdTestServer) {
 		DeleteCollectionWorkers: 1,
 		ResourcePrefix:          "runners",
 	}
-	jobStorage, err := NewStorage(restOptions)
+
+	etcd, cancel := registrytest.StartTestEmbedEtcd()
+	defer cancel()
+	v3cli := v3client.New(etcd.Server)
+	stopCh := genericdaemon.SetupSignalHandler()
+
+	regionStorage, err := NewStorage(v3cli, restOptions, stopCh)
 	if err != nil {
 		t.Fatalf("unexpected error from REST storage: %v", err)
 	}
-	return &jobStorage, server
+	return &regionStorage, server
 }
 
 func validNewRegion() *corev1.Region {

@@ -40,6 +40,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	dsypb "github.com/olive-io/olive/apis/pb/discovery"
 	gatewaypb "github.com/olive-io/olive/apis/pb/gateway"
 	pb "github.com/olive-io/olive/apis/pb/olive"
@@ -135,16 +136,16 @@ func (r *Region) scheduleCycle() {
 				}
 				pi := x.(*ProcessInfo)
 
-				go r.scheduleDefinition(pi.p)
+				go r.scheduleDefinition(pi.Process)
 			}
 		}
 	}
 }
 
-func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
-	if len(process.DefinitionsContent) == 0 {
+func (r *Region) scheduleDefinition(process *corev1.Process) {
+	if len(process.Spec.Definition) == 0 {
 		definitionKey := bytesutil.PathJoin(definitionPrefix,
-			[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
+			[]byte(process.Spec.Definition), []byte(fmt.Sprintf("%d", process.Spec.Version)))
 
 		kv, err := r.get(definitionKey)
 		if err != nil {
@@ -155,11 +156,11 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		}
 		definition := new(pb.Definition)
 		_ = proto.Unmarshal(kv.Value, definition)
-		process.DefinitionsContent = definition.Content
+		process.Spec.Definition = definition.Content
 	}
 
 	var definitions *schema.Definitions
-	err := xml.Unmarshal([]byte(process.DefinitionsContent), &definitions)
+	err := xml.Unmarshal([]byte(process.Spec.Definition), &definitions)
 	if err != nil {
 		return
 	}
@@ -171,30 +172,30 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 		return
 	}
 	processElement := (*definitions.Processes())[0]
-	if id, ok := processElement.Id(); ok {
-		process.DefinitionsProcess = *id
-	}
+	//if id, ok := processElement.Id(); ok {
+	//	process.DefinitionsProcess = *id
+	//}
 	var dataObjects map[string][]byte
-	for name, value := range process.DataObjects {
+	for name, value := range process.Spec.DataObjects {
 		dataObjects[name] = []byte(value)
 	}
 
 	variables := make(map[string][]byte)
-	for name, value := range process.Properties {
+	for name, value := range process.Spec.Properties {
 		box, _ := json.Marshal(value)
 		variables[name] = box
 	}
-	if state := process.RunningState; state != nil {
-		for key, value := range state.Properties {
-			variables[key] = []byte(value)
-		}
-		for key, value := range state.DataObjects {
-			dataObjects[key] = []byte(value)
-		}
-		for key, value := range state.Variables {
-			variables[key] = []byte(value)
-		}
-	}
+	//if state := process.RunningState; state != nil {
+	//	for key, value := range state.Properties {
+	//		variables[key] = []byte(value)
+	//	}
+	//	for key, value := range state.DataObjects {
+	//		dataObjects[key] = []byte(value)
+	//	}
+	//	for key, value := range state.Variables {
+	//		variables[key] = []byte(value)
+	//	}
+	//}
 
 	ctx := context.Background()
 	options := []bpi.Option{
@@ -205,7 +206,7 @@ func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
 }
 
-func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstance, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
+func (r *Region) scheduleProcess(ctx context.Context, process *corev1.Process, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -213,22 +214,22 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 	defer r.metric.process.Dec()
 
 	fields := []zap.Field{
-		zap.String("definition", process.DefinitionsId),
-		zap.Uint64("version", process.DefinitionsVersion),
-		zap.String("process", process.Id),
+		zap.String("definition", process.Spec.Definition),
+		zap.Int64("version", process.Spec.Version),
+		zap.String("process", process.Name),
 	}
 
 	r.lg.Info("start process instance", fields...)
 
 	var err error
-	if process.Status == pb.ProcessInstance_Prepare {
-		process.Status = pb.ProcessInstance_Running
-		process.StartTime = time.Now().UnixNano()
-		err = saveProcess(ctx, r, process)
-		if err != nil {
-			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
-		}
-	}
+	//if process.Status == pb.ProcessInstance_Prepare {
+	//	process.Status = pb.ProcessInstance_Running
+	//	process.StartTime = time.Now().UnixNano()
+	//	err = saveProcess(ctx, r, process)
+	//	if err != nil {
+	//		r.lg.Error("save process instance", append(fields, zap.Error(err))...)
+	//	}
+	//}
 
 	finish := true
 	defer func() {
@@ -236,19 +237,19 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 			return
 		}
 
-		process.EndTime = time.Now().UnixNano()
-		process.Status = pb.ProcessInstance_Ok
-		if err != nil {
-			process.Status = pb.ProcessInstance_Fail
-			process.Message = err.Error()
-		}
+		//process.EndTime = time.Now().UnixNano()
+		//process.Status = pb.ProcessInstance_Ok
+		//if err != nil {
+		//	process.Status = pb.ProcessInstance_Fail
+		//	process.Message = err.Error()
+		//}
 
-		err = saveProcess(ctx, r, process)
-		if err != nil {
-			r.lg.Error("finish process instance", append(fields, zap.Error(err))...)
-		} else {
-			r.lg.Info("finish process instance", fields...)
-		}
+		//err = saveProcess(ctx, r, process)
+		//if err != nil {
+		//	r.lg.Error("finish process instance", append(fields, zap.Error(err))...)
+		//} else {
+		//	r.lg.Info("finish process instance", fields...)
+		//}
 	}()
 
 	proc := bp.New(processElement, definitions)
@@ -268,6 +269,7 @@ func (r *Region) scheduleProcess(ctx context.Context, process *pb.ProcessInstanc
 
 	finish = false
 	completed := map[string]struct{}{}
+	_ = completed
 
 LOOP:
 	for {
@@ -287,65 +289,66 @@ LOOP:
 				case schema.EventInterface:
 					r.metric.event.Inc()
 				}
+				_ = id
 
-				if process.FlowNodes == nil {
-					process.FlowNodes = map[string]*pb.FlowNodeStat{}
-				}
-				flowNode, ok := process.FlowNodes[*id]
-				if ok {
-					completed[*id] = struct{}{}
-				} else {
-					flowNode = &pb.FlowNodeStat{
-						Id:        *id,
-						StartTime: time.Now().UnixNano(),
-					}
-					if name, has := tt.Node.Name(); has {
-						flowNode.Name = *name
-					}
-					process.FlowNodes[*id] = flowNode
-				}
+				//if process.Status.FlowNodes == nil {
+				//	process.FlowNodes = map[string]*pb.FlowNodeStat{}
+				//}
+				//flowNode, ok := process.FlowNodes[*id]
+				//if ok {
+				//	completed[*id] = struct{}{}
+				//} else {
+				//	flowNode = &pb.FlowNodeStat{
+				//		Id:        *id,
+				//		StartTime: time.Now().UnixNano(),
+				//	}
+				//	if name, has := tt.Node.Name(); has {
+				//		flowNode.Name = *name
+				//	}
+				//	process.FlowNodes[*id] = flowNode
+				//}
 
 			case flow.LeaveTrace:
-				id, _ := tt.Node.Id()
-
-				flowNode, ok := process.FlowNodes[*id]
-				if ok {
-					flowNode.EndTime = time.Now().UnixNano()
-				}
-
-				switch tt.Node.(type) {
-				case schema.EventInterface:
-					r.metric.event.Dec()
-				}
+				//id, _ := tt.Node.Id()
+				//
+				//flowNode, ok := process.FlowNodes[*id]
+				//if ok {
+				//	flowNode.EndTime = time.Now().UnixNano()
+				//}
+				//
+				//switch tt.Node.(type) {
+				//case schema.EventInterface:
+				//	r.metric.event.Dec()
+				//}
 
 			case bact.ActiveBoundaryTrace:
 				if tt.Start {
 					r.metric.task.Inc()
 				} else {
 					r.metric.task.Dec()
-					process.RunningState.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
-					process.RunningState.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
-					process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
+					//process.RunningState.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
+					//process.RunningState.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
+					//process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
 				}
 			case *bact.Trace:
-				act := tt.GetActivity()
-				id, _ := act.Element().Id()
-
-				flowNode, ok := process.FlowNodes[*id]
-				if ok {
-					flowNode.EndTime = time.Now().UnixNano()
-					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
-					flowNode.Headers = toGenericMap[string](headers)
-					flowNode.Properties = toGenericMap[string](dataSets)
-					flowNode.DataObjects = toGenericMap[string](dataObjects)
-				}
-
-				_, ok = completed[*id]
-				if ok {
-					tt.Do()
-				} else {
-					r.handleActivity(ctx, tt, inst, process)
-				}
+				//act := tt.GetActivity()
+				//id, _ := act.Element().Id()
+				//
+				//flowNode, ok := process.FlowNodes[*id]
+				//if ok {
+				//	flowNode.EndTime = time.Now().UnixNano()
+				//	headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
+				//	flowNode.Headers = toGenericMap[string](headers)
+				//	flowNode.Properties = toGenericMap[string](dataSets)
+				//	flowNode.DataObjects = toGenericMap[string](dataObjects)
+				//}
+				//
+				//_, ok = completed[*id]
+				//if ok {
+				//	tt.Do()
+				//} else {
+				//	r.handleActivity(ctx, tt, inst, process)
+				//}
 			case tracing.ErrorTrace:
 				finish = true
 				err = tt.Error
@@ -430,16 +433,17 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	trace.Do(doOpts...)
 }
 
-func saveProcess(ctx context.Context, kv IRegionRaftKV, process *pb.ProcessInstance) error {
-	pkey := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
-		[]byte(process.Id))
-
-	value, err := proto.Marshal(process)
-	if err != nil {
-		return err
-	}
-	_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
+func saveProcess(ctx context.Context, kv IRegionRaftKV, process *corev1.Process) error {
+	var err error
+	//pkey := bytesutil.PathJoin(processPrefix,
+	//	[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
+	//	[]byte(process.Id))
+	//
+	//value, err := proto.Marshal(process)
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
 	return err
 }
 

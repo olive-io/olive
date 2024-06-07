@@ -41,6 +41,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -64,18 +65,18 @@ const (
 )
 
 type ProcessInfo struct {
-	p *pb.ProcessInstance
+	Process *corev1.Process
 }
 
-func NewProcessInfo(p *pb.ProcessInstance) *ProcessInfo {
-	return &ProcessInfo{p: p}
+func NewProcessInfo(process *corev1.Process) *ProcessInfo {
+	return &ProcessInfo{Process: process}
 }
 
 func (pi *ProcessInfo) UID() string {
-	return pi.p.Id
+	return pi.Process.Name
 }
 
-func (pi *ProcessInfo) Score() float64 {
+func (pi *ProcessInfo) Score() int64 {
 	return 1
 }
 
@@ -104,7 +105,7 @@ type Region struct {
 	be backend.IBackend
 
 	rimu       sync.RWMutex
-	regionInfo *pb.Region
+	regionInfo *corev1.Region
 	metric     *regionMetrics
 
 	processQ *queue.SyncPriorityQueue
@@ -145,7 +146,7 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		reqIDGen:   reqIDGen,
 		be:         c.be,
 		processQ:   processQ,
-		regionInfo: &pb.Region{},
+		regionInfo: &corev1.Region{},
 		changeC:    make(chan struct{}),
 		readyC:     make(chan struct{}),
 		stopc:      make(<-chan struct{}, 1),
@@ -233,30 +234,31 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 
 	kvs, _ = r.getRange(processPrefix, getPrefix(processPrefix), 0)
 	for _, kv := range kvs {
-		pi := new(pb.ProcessInstance)
-		err = proto.Unmarshal(kv.Value, pi)
+		pi := new(corev1.Process)
+		err = pi.Unmarshal(kv.Value)
 		if err != nil {
 			r.lg.Error("unmarshal process instance", zap.Error(err))
 			_ = r.del(kv.Key, true)
 			continue
 		}
-		if pi.Status == pb.ProcessInstance_Unknown ||
-			pi.Status == pb.ProcessInstance_Ok ||
-			pi.Status == pb.ProcessInstance_Fail ||
-			pi.DefinitionsId == "" ||
-			pi.DefinitionsVersion == 0 {
-			continue
-		}
 
-		if pi.RunningState == nil {
-			pi.RunningState = &pb.ProcessRunningState{}
-		}
-		if pi.FlowNodes == nil {
-			pi.FlowNodes = map[string]*pb.FlowNodeStat{}
-		}
-		if pi.Status == pb.ProcessInstance_Waiting {
-			pi.Status = pb.ProcessInstance_Prepare
-		}
+		//if pi.Status == pb.ProcessInstance_Unknown ||
+		//	pi.Status == pb.ProcessInstance_Ok ||
+		//	pi.Status == pb.ProcessInstance_Fail ||
+		//	pi.DefinitionsId == "" ||
+		//	pi.DefinitionsVersion == 0 {
+		//	continue
+		//}
+		//
+		//if pi.RunningState == nil {
+		//	pi.RunningState = &pb.ProcessRunningState{}
+		//}
+		//if pi.FlowNodes == nil {
+		//	pi.FlowNodes = map[string]*pb.FlowNodeStat{}
+		//}
+		//if pi.Status == pb.ProcessInstance_Waiting {
+		//	pi.Status = pb.ProcessInstance_Prepare
+		//}
 		r.processQ.Push(NewProcessInfo(pi))
 	}
 
@@ -575,7 +577,7 @@ func (r *Region) putPrefix() []byte {
 	return sb
 }
 
-func (r *Region) updateInfo(info *pb.Region) {
+func (r *Region) updateInfo(info *corev1.Region) {
 	r.rimu.Lock()
 	defer r.rimu.Unlock()
 	r.regionInfo = info
@@ -585,7 +587,7 @@ func (r *Region) updateConfig(config RegionConfig) {
 	r.cfg = config
 }
 
-func (r *Region) getInfo() *pb.Region {
+func (r *Region) getInfo() *corev1.Region {
 	r.rimu.RLock()
 	defer r.rimu.RUnlock()
 	return r.regionInfo

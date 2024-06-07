@@ -31,10 +31,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
-	coreInformers "github.com/olive-io/olive/client-go/generated/informers/externalversions/core/v1"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
 	"github.com/olive-io/olive/mon/leader"
 	internalregion "github.com/olive-io/olive/mon/scheduler/internal/region"
 	internalrunner "github.com/olive-io/olive/mon/scheduler/internal/runner"
@@ -48,9 +49,8 @@ type Scheduler struct {
 
 	leaderNotifier leader.Notifier
 
-	clientSet      clientset.Interface
-	runnerInformer coreInformers.RunnerInformer
-	regionInformer coreInformers.RegionInformer
+	clientSet       clientset.Interface
+	informerFactory informers.SharedInformerFactory
 
 	runnerQ internalrunner.SchedulingQueue
 	regionQ internalregion.SchedulingQueue
@@ -62,8 +62,7 @@ func NewScheduler(
 	ctx context.Context,
 	leaderNotifier leader.Notifier,
 	clientSet clientset.Interface,
-	runnerInformer coreInformers.RunnerInformer,
-	regionInformer coreInformers.RegionInformer,
+	informerFactory informers.SharedInformerFactory,
 	opts ...Option) (*Scheduler, error) {
 
 	options := NewOptions(opts...)
@@ -81,9 +80,8 @@ func NewScheduler(
 		cancel:         cancel,
 		leaderNotifier: leaderNotifier,
 
-		clientSet:      clientSet,
-		runnerInformer: runnerInformer,
-		regionInformer: regionInformer,
+		clientSet:       clientSet,
+		informerFactory: informerFactory,
 
 		runnerQ: runnerQ,
 		regionQ: regionQ,
@@ -97,7 +95,8 @@ func NewScheduler(
 func (s *Scheduler) Start() error {
 	defer utilruntime.HandleCrash()
 
-	runnerListener := s.runnerInformer.Lister()
+	runnerInformer := s.informerFactory.Core().V1().Runners()
+	runnerListener := runnerInformer.Lister()
 	runners, err := runnerListener.List(labels.Everything())
 	if err != nil {
 		return err
@@ -106,7 +105,8 @@ func (s *Scheduler) Start() error {
 		s.runnerQ.Add(runner)
 	}
 
-	regionListener := s.regionInformer.Lister()
+	regionInformer := s.informerFactory.Core().V1().Regions()
+	regionListener := regionInformer.Lister()
 	regions, err := regionListener.List(labels.Everything())
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (s *Scheduler) Start() error {
 		s.regionQ.Add(region)
 	}
 
-	_, err = s.runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.runnerQ.Add(obj.(*corev1.Runner))
 		},
@@ -130,7 +130,7 @@ func (s *Scheduler) Start() error {
 		return err
 	}
 
-	_, err = s.regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.regionQ.Add(obj.(*corev1.Region))
 		},
@@ -145,10 +145,32 @@ func (s *Scheduler) Start() error {
 		return err
 	}
 
+	definitionInformer := s.informerFactory.Core().V1().Definitions()
+	_, err = definitionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    nil,
+		UpdateFunc: nil,
+		DeleteFunc: nil,
+	})
+	if err != nil {
+		return err
+	}
+
+	processInformer := s.informerFactory.Core().V1().Processes()
+	_, err = processInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    nil,
+		UpdateFunc: nil,
+		DeleteFunc: nil,
+	})
+	if err != nil {
+		return err
+	}
+
 	ctx := s.ctx
 	informerSynced := []cache.InformerSynced{
-		s.runnerInformer.Informer().HasSynced,
-		s.regionInformer.Informer().HasSynced,
+		runnerInformer.Informer().HasSynced,
+		regionInformer.Informer().HasSynced,
+		definitionInformer.Informer().HasSynced,
+		processInformer.Informer().HasSynced,
 	}
 
 	if ok := cache.WaitForCacheSync(ctx.Done(), informerSynced...); !ok {
@@ -157,6 +179,9 @@ func (s *Scheduler) Start() error {
 
 	defer s.cancel()
 
+	klog.Infof("Start Scheduler")
+
+	klog.Infof("start region worker")
 	go wait.UntilWithContext(ctx, s.runnerRegionWorker, time.Second*3)
 
 LOOP:
@@ -166,7 +191,7 @@ LOOP:
 			case <-s.ctx.Done():
 				break LOOP
 			case <-s.messageC:
-				// to nothing
+				// to nothing, when monitor is not leader
 			default:
 			}
 			continue
@@ -179,11 +204,12 @@ LOOP:
 			case <-s.leaderNotifier.ChangeNotify():
 				goto LOOP
 			case msg := <-s.messageC:
-				go s.handleMessage(msg)
+				go s.handleAction(msg)
 			}
 		}
 	}
 
+	klog.Infof("Scheduler Done")
 	return nil
 }
 
@@ -194,23 +220,23 @@ func (s *Scheduler) runnerRegionWorker(ctx context.Context) {
 
 	remind := s.options.InitRegionNum - s.regionQ.Len()
 	if remind > 0 {
-		s.putMessage(newAllocRegionMsg(remind))
+		s.putAction(newAllocRegionAction(remind))
 		return
 	}
 
 	needScaled, ok := s.regionQ.RegionToScale()
 	if ok {
 		replicas := s.options.RegionReplicas - int(needScaled.Status.Replicas)
-		s.putMessage(newScaleRegionMsg(needScaled, replicas))
+		s.putAction(newScaleRegionAction(needScaled, replicas))
 		return
 	}
 }
 
-func (s *Scheduler) putMessage(msg imessage) {
+func (s *Scheduler) putAction(msg imessage) {
 	s.messageC <- msg
 }
 
-func (s *Scheduler) handleMessage(msg imessage) {
+func (s *Scheduler) handleAction(msg imessage) {
 	body := msg.payload()
 	switch req := body.(type) {
 	case *AllocRegionRequest:
@@ -221,6 +247,12 @@ func (s *Scheduler) handleMessage(msg imessage) {
 }
 
 func (s *Scheduler) AllocRegion(req *AllocRegionRequest) {
+	for i := 0; i < req.Count; i++ {
+		s.allocRegion()
+	}
+}
+
+func (s *Scheduler) allocRegion() {
 
 	opts := make([]internalrunner.NextOption, 0)
 	runners := make([]*corev1.Runner, 0)
@@ -231,7 +263,7 @@ func (s *Scheduler) AllocRegion(req *AllocRegionRequest) {
 		}
 		runners = append(runners, snapshot.Get())
 	}
-	defer s.runnerQ.Recycle()
+	defer s.runnerQ.Free()
 
 	if len(runners) == 0 {
 		return
@@ -253,17 +285,22 @@ func (s *Scheduler) AllocRegion(req *AllocRegionRequest) {
 	region.Spec.Leader = runners[0].Spec.ID
 	for i, runner := range runners {
 		replica := corev1.RegionReplica{
-			Id:          int64(i),
+			Id:          int64(i) + 1,
 			Runner:      runner.Name,
 			RaftAddress: runner.Spec.PeerURL,
 		}
 		region.Spec.Replicas = append(region.Spec.Replicas, replica)
 	}
 
-	region, err := s.clientSet.CoreV1().Regions().Create(context.TODO(), region, metav1.CreateOptions{})
+	var err error
+	region, err = s.clientSet.CoreV1().
+		Regions().
+		Create(s.ctx, region, metav1.CreateOptions{})
 	if err != nil {
-
+		return
 	}
+	klog.Infof("create new region %s, replica %d", region.Name, len(region.Spec.Replicas))
+	s.regionQ.Add(region)
 }
 
 func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
@@ -286,12 +323,40 @@ func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
 		}
 		runners = append(runners, snapshot.Get())
 	}
-	defer s.runnerQ.Recycle()
+	defer s.runnerQ.Free()
 
 	if len(runners) == 0 {
 		return
 	}
 
+	from := len(region.Spec.Replicas)
+	for _, runner := range runners {
+		replicaNum := len(region.Spec.Replicas)
+
+		isJoin := true
+		if replicaNum == 0 {
+			isJoin = false
+		}
+		replicaId := replicaNum + 1
+		newReplica := corev1.RegionReplica{
+			Id:          int64(replicaId),
+			Runner:      runner.Name,
+			Region:      runner.Spec.ID,
+			RaftAddress: runner.Spec.PeerURL,
+			IsJoin:      isJoin,
+		}
+		region.Spec.Replicas = append(region.Spec.Replicas, newReplica)
+	}
+
+	klog.Infof("scale region %s: %d -> %d", region.Name, from, len(region.Spec.Replicas))
+	var err error
+	region, err = s.clientSet.CoreV1().
+		Regions().
+		Update(s.ctx, region, metav1.UpdateOptions{})
+	if err != nil {
+		return
+	}
+	s.regionQ.Update(region, s.options.DefinitionLimit)
 }
 
 func (s *Scheduler) waitUtilLeader() bool {

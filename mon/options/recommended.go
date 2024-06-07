@@ -129,29 +129,29 @@ func (o *RecommendedOptions) ApplyTo(config *genericserver.RecommendedConfig, ex
 	config.LoopbackClientConfig.DisableCompression = false
 	config.LoopbackClientConfig.Timeout = time.Minute * 10
 
-	kubeClient, err := clientset.NewForConfig(config.LoopbackClientConfig)
+	clientSet, err := clientset.NewForConfig(config.LoopbackClientConfig)
 	if err != nil {
 		return err
 	}
 
-	informerFactory := informers.NewSharedInformerFactory(kubeClient, config.LoopbackClientConfig.Timeout)
+	informerFactory := informers.NewSharedInformerFactory(clientSet, config.LoopbackClientConfig.Timeout)
 	dynamicClient, err := dynamicclient.NewForConfig(config.LoopbackClientConfig)
 	if err != nil {
 		return err
 	}
 
-	extraConfig.KubeClient = kubeClient
+	extraConfig.ClientSet = clientSet
 	extraConfig.SharedInformerFactory = informerFactory
 	extraConfig.DynamicClient = dynamicClient
 
-	if err := o.Features.ApplyTo(&config.Config, kubeClient, informerFactory); err != nil {
+	if err := o.Features.ApplyTo(&config.Config, clientSet, informerFactory); err != nil {
 		return err
 	}
 	initializers, err := o.ExtraAdmissionInitializers(config, extraConfig)
 	if err != nil {
 		return err
 	}
-	if err := o.Admission.ApplyTo(&config.Config, informerFactory, kubeClient, dynamicClient, o.FeatureGate,
+	if err := o.Admission.ApplyTo(&config.Config, informerFactory, clientSet, dynamicClient, o.FeatureGate,
 		initializers...); err != nil {
 		return err
 	}

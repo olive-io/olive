@@ -24,6 +24,7 @@ package region
 import (
 	"context"
 
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
+	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
@@ -46,8 +48,8 @@ type RegionStorage struct {
 }
 
 // NewStorage creates a new RegionStorage against etcd.
-func NewStorage(optsGetter generic.RESTOptionsGetter) (RegionStorage, error) {
-	regionRest, regionStatusRest, err := NewREST(optsGetter)
+func NewStorage(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (RegionStorage, error) {
+	regionRest, regionStatusRest, err := NewREST(v3cli, optsGetter, stopCh)
 	if err != nil {
 		return RegionStorage{}, err
 	}
@@ -60,13 +62,26 @@ func NewStorage(optsGetter generic.RESTOptionsGetter) (RegionStorage, error) {
 
 var deleteOptionWarnings = ""
 
+const (
+	defaultRegionPrefix = "/olive/ring/ids/region"
+)
+
 // REST implements a RESTStorage for regions against etcd
 type REST struct {
 	*genericregistry.Store
+
+	strategy *regionStrategy
 }
 
 // NewREST returns a RESTStorage object that will work against Regions.
-func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
+func NewREST(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (*REST, *StatusREST, error) {
+	ring, err := idutil.NewRing(defaultRegionPrefix, v3cli)
+	if err != nil {
+		return nil, nil, err
+	}
+	ring.Start(stopCh)
+
+	strategy := createStrategy(ring)
 	store := &genericregistry.Store{
 		NewFunc:                   func() runtime.Object { return &corev1.Region{} },
 		NewListFunc:               func() runtime.Object { return &corev1.RegionList{} },
@@ -74,10 +89,10 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 		DefaultQualifiedResource:  corev1.Resource("regions"),
 		SingularQualifiedResource: corev1.Resource("region"),
 
-		CreateStrategy:      Strategy,
-		UpdateStrategy:      Strategy,
-		DeleteStrategy:      Strategy,
-		ResetFieldsStrategy: Strategy,
+		CreateStrategy:      strategy,
+		UpdateStrategy:      strategy,
+		DeleteStrategy:      strategy,
+		ResetFieldsStrategy: strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
@@ -86,11 +101,13 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 		return nil, nil, err
 	}
 
-	statusStore := *store
-	statusStore.UpdateStrategy = StatusStrategy
-	statusStore.ResetFieldsStrategy = StatusStrategy
+	statusStrategy := createStatusStrategy(strategy)
 
-	return &REST{store}, &StatusREST{store: &statusStore}, nil
+	statusStore := *store
+	statusStore.UpdateStrategy = statusStrategy
+	statusStore.ResetFieldsStrategy = statusStrategy
+
+	return &REST{store, strategy}, &StatusREST{store: &statusStore}, nil
 }
 
 // Implement CategoriesProvider
@@ -105,17 +122,27 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		r.strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		// Throw a warning if delete options are not explicitly set as Region deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
+
+	region, err := r.Store.Get(ctx, name, &metav1.GetOptions{})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if err = r.strategy.PrepareForDelete(ctx, region); err != nil {
+		return nil, false, err
+	}
+
 	return r.Store.Delete(ctx, name, deleteValidation, options)
 }
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		r.strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)

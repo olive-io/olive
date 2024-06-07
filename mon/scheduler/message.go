@@ -23,7 +23,7 @@ package scheduler
 
 import corev1 "github.com/olive-io/olive/apis/core/v1"
 
-// scheduler inner message channel
+// scheduler inner event channel
 type imessage interface {
 	payload() any
 }
@@ -32,16 +32,16 @@ type AllocRegionRequest struct {
 	Count int
 }
 
-// allocRegionMsg defines create new Region
-type allocRegionMsg struct {
+// allocRegionEvent defines create new Region
+type allocRegionAction struct {
 	req *AllocRegionRequest
 }
 
-func newAllocRegionMsg(count int) *allocRegionMsg {
-	return &allocRegionMsg{req: &AllocRegionRequest{Count: count}}
+func newAllocRegionAction(count int) *allocRegionAction {
+	return &allocRegionAction{req: &AllocRegionRequest{Count: count}}
 }
 
-func (m *allocRegionMsg) payload() any {
+func (m *allocRegionAction) payload() any {
 	return m.req
 }
 
@@ -50,14 +50,14 @@ type ScaleRegionRequest struct {
 	scale  int
 }
 
-type scaleRegionMsg struct {
+type scaleRegionAction struct {
 	req *ScaleRegionRequest
 }
 
-func newScaleRegionMsg(region *corev1.Region, n int) *scaleRegionMsg {
-	return &scaleRegionMsg{req: &ScaleRegionRequest{region: region, scale: n}}
+func newScaleRegionAction(region *corev1.Region, n int) *scaleRegionAction {
+	return &scaleRegionAction{req: &ScaleRegionRequest{region: region, scale: n}}
 }
 
-func (m *scaleRegionMsg) payload() any {
+func (m *scaleRegionAction) payload() any {
 	return m.req
 }

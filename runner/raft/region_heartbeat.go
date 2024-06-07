@@ -24,7 +24,7 @@ package raft
 import (
 	"time"
 
-	pb "github.com/olive-io/olive/apis/pb/olive"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
 func (r *Region) heartbeat() {
@@ -59,20 +59,19 @@ func (r *Region) heartbeat() {
 	}
 }
 
-func (r *Region) stat() *pb.RegionStat {
+func (r *Region) stat() *corev1.RegionStat {
 	info := r.getInfo()
-	replicas := int32(len(info.Replicas))
-	rs := &pb.RegionStat{
-		Id:                 r.getID(),
-		Leader:             r.getLeader(),
-		Term:               r.getTerm(),
-		Replicas:           replicas,
-		Definitions:        uint64(r.metric.definition.Get()),
-		RunningDefinitions: uint64(r.metric.runningDefinition.Get()),
-		BpmnProcesses:      uint64(r.metric.process.Get()),
-		BpmnEvents:         uint64(r.metric.event.Get()),
-		BpmnTasks:          uint64(r.metric.task.Get()),
-		Timestamp:          time.Now().Unix(),
+	_ = info
+	rs := &corev1.RegionStat{
+		//Id:                 r.getID(),
+		//Leader:             r.getLeader(),
+		//Term:               r.getTerm(),
+		//Definitions:        uint64(r.metric.definition.Get()),
+		//RunningDefinitions: uint64(r.metric.runningDefinition.Get()),
+		//BpmnProcesses:      uint64(r.metric.process.Get()),
+		//BpmnEvents:         uint64(r.metric.event.Get()),
+		//BpmnTasks:          uint64(r.metric.task.Get()),
+		//Timestamp:          time.Now().Unix(),
 	}
 
 	return rs
