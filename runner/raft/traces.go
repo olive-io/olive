@@ -34,11 +34,12 @@ type leaderTrace raftio.LeaderInfo
 
 func (t leaderTrace) TraceInterface() {}
 
-type RegionStatTrace struct {
-	Stat *corev1.RegionStat
+type regionStatTrace struct {
+	Id   uint64
+	stat *corev1.RegionStat
 }
 
-func (t *RegionStatTrace) TraceInterface() {}
+func (t *regionStatTrace) TraceInterface() {}
 
 type proposeTrace struct {
 	ctx    context.Context

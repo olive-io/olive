@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -37,7 +36,6 @@ import (
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	"github.com/olive-io/olive/apis/version"
-	ort "github.com/olive-io/olive/pkg/runtime"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
 )
@@ -85,7 +83,7 @@ func (r *Runner) register() (*corev1.Runner, error) {
 		if e1 := runner.Unmarshal(data); e1 != nil {
 			r.Logger().Error("Unmarshal runner", zap.Error(e1))
 		}
-		latest, err := r.oct.CoreV1().Runners().Get(ctx, runner.Name, metav1.GetOptions{})
+		latest, err := r.client.CoreV1().Runners().Get(ctx, runner.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("sync runner: %w", err)
 		}
@@ -124,17 +122,14 @@ func (r *Runner) register() (*corev1.Runner, error) {
 	runner.Spec.ClientURL = listenClientURL
 	runner.Spec.Hostname, _ = os.Hostname()
 	runner.Spec.VersionRef = version.Version
-	if runner.Status.Stat == nil {
-		runner.Status.Stat = &corev1.RunnerStat{}
-	}
 	runner.Status.CpuTotal = cpuTotal
 	runner.Status.MemoryTotal = float64(vm.Total)
 
 	if runner.Spec.ID == 0 {
 		runner.Name = "runner_default" // runner not be empty
-		runner, err = r.oct.CoreV1().Runners().Create(ctx, runner, metav1.CreateOptions{})
+		runner, err = r.client.CoreV1().Runners().Create(ctx, runner, metav1.CreateOptions{})
 	} else {
-		runner, err = r.oct.CoreV1().Runners().Update(ctx, runner, metav1.UpdateOptions{})
+		runner, err = r.client.CoreV1().Runners().Update(ctx, runner, metav1.UpdateOptions{})
 	}
 	if err != nil {
 		return nil, fmt.Errorf("register runner: %w", err)
@@ -150,15 +145,8 @@ func (r *Runner) process() {
 	lg := r.Logger()
 	cfg := r.cfg
 
-	rKey := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", runner.Spec.ID))
-	data, _ := runner.Marshal()
-	_, err := r.oct.Put(ctx, rKey, string(data))
-	if err != nil {
-		lg.Panic("olive-runner register", zap.Error(err))
-	}
-
 	lg.Info("olive-runner registered",
-		zap.Int64("id", runner.Spec.ID),
+		zap.String("name", runner.Name),
 		zap.String("listen-client-url", runner.Spec.ClientURL),
 		zap.String("listen-peer-url", runner.Spec.PeerURL),
 		zap.Float64("cpu", runner.Status.CpuTotal),
@@ -171,25 +159,11 @@ func (r *Runner) process() {
 		select {
 		case <-r.StoppingNotify():
 			return
-		case trace := <-r.traces:
-			switch tt := trace.(type) {
-			case *raft.RegionStatTrace:
-				_ = tt
-				//stat := tt.Stat
-				//lg.Debug("update region stat", zap.Stringer("stat", stat))
-				//
-				//key := path.Join(ort.DefaultMetaRegionStat, fmt.Sprintf("%d", stat.Id))
-				//data, _ = proto.Marshal(stat)
-				//_, err = r.oct.Put(ctx, key, string(data))
-				//if err != nil {
-				//	lg.Error("olive-runner update region stat", zap.Error(err))
-				//}
-			}
 		case <-ticker.C:
 			applied, updateOptions := r.updateRunnerStat()
 
-			lg.Debug("update runner stat", zap.Stringer("stat", applied.Status.Stat))
-			runner, err = r.oct.CoreV1().Runners().UpdateStatus(ctx, applied, updateOptions)
+			lg.Debug("update runner stat", zap.Stringer("stat", &applied.Status.Stat))
+			runner, err := r.client.CoreV1().Runners().UpdateStatus(ctx, applied, updateOptions)
 			if err != nil {
 				lg.Error("olive-runner update runner stat", zap.Error(err))
 			} else {
@@ -203,9 +177,6 @@ func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 	lg := r.Logger()
 	runner := r.getRunner()
 	stat := runner.Status.Stat
-	if stat == nil {
-		stat = &corev1.RunnerStat{}
-	}
 
 	updateOptions := metav1.UpdateOptions{}
 

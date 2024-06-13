@@ -43,7 +43,7 @@ func (as *InternalRaftStringer) String() string {
 	return as.Request.String()
 }
 
-func NewLoggablePutRequest(request *RegionPutRequest) *LoggablePutRequest {
+func NewLoggablePutRequest(request *ShardPutRequest) *LoggablePutRequest {
 	return &LoggablePutRequest{
 		Key:       request.Key,
 		ValueSize: int64(len(request.Value)),

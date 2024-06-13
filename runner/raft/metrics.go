@@ -100,7 +100,7 @@ type regionMetrics struct {
 	task              metrics.Gauge
 }
 
-func newRegionMetrics(id, replica uint64) (*regionMetrics, error) {
+func newShardMetrics(id, replica uint64) (*regionMetrics, error) {
 	constLabels := prometheus.Labels{
 		"region":  fmt.Sprintf("%d", id),
 		"replica": fmt.Sprintf("%d", replica),

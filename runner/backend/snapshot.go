@@ -27,7 +27,7 @@ import (
 	"io"
 
 	"github.com/cockroachdb/pebble"
-	"google.golang.org/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
 )

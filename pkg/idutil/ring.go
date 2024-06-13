@@ -78,9 +78,6 @@ func (r *Ring) Next(ctx context.Context) uint64 {
 	if frees > 0 {
 		next = r.s.Frees[0]
 		newSpaces := r.s.Frees[1:]
-		sort.Slice(newSpaces, func(i, j int) bool {
-			return newSpaces[i] < newSpaces[j]
-		})
 		r.s.Frees = newSpaces
 	} else {
 		r.s.Index += 1
@@ -95,8 +92,16 @@ func (r *Ring) Next(ctx context.Context) uint64 {
 }
 
 func (r *Ring) Recycle(ctx context.Context, id uint64) {
+	if id > r.Current() {
+		return
+	}
+
 	r.mu.Lock()
-	r.s.Frees = append(r.s.Frees, id)
+	frees := append(r.s.Frees, id)
+	sort.Slice(frees, func(i, j int) bool {
+		return frees[i] < frees[j]
+	})
+	r.s.Frees = frees
 	r.mu.Unlock()
 	err := r.set(ctx)
 	if err != nil {

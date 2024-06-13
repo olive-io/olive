@@ -28,6 +28,7 @@ option go_package = "github.com/olive-io/olive/apis/pb/olive;olivepb";
 import "github.com/olive-io/olive/apis/pb/olive/internal.proto";
 import "github.com/olive-io/olive/apis/pb/discovery/discovery.proto";
 import "github.com/olive-io/olive/apis/pb/auth/auth.proto";
+import "github.com/olive-io/olive/apis/core/v1/generated.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";
@@ -500,18 +501,18 @@ service BpmnRPC {
       body: "*"
     };
   };
-  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/processInstance/list"
-      body: "*"
-    };
-  };
-  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/processInstance/get"
-      body: "*"
-    };
-  };
+//  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
+//    option (google.api.http) = {
+//      post: "/api/v1/processInstance/list"
+//      body: "*"
+//    };
+//  };
+//  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
+//    option (google.api.http) = {
+//      post: "/api/v1/processInstance/get"
+//      body: "*"
+//    };
+//  };
 }
 
 message DeployDefinitionRequest {
@@ -568,37 +569,37 @@ message ExecuteDefinitionResponse {
   ProcessInstance instance = 2;
 }
 
-service RunnerRPC {
-  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
-    option (google.api.http) = {
-      post: "/api/runner/v1/processInstance/fetch"
-      body: "*"
-    };
-  };
-}
+//service RunnerRPC {
+//  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
+//    option (google.api.http) = {
+//      post: "/api/runner/v1/processInstance/fetch"
+//      body: "*"
+//    };
+//  };
+//}
 
-message ListProcessInstancesRequest {
-  string definitionId = 1;
-  uint64 definitionVersion = 2;
-
-  int64 limit = 21;
-  string continue = 22;
-}
-
-message ListProcessInstancesResponse {
-  ResponseHeader header = 1;
-  repeated ProcessInstance instances = 2;
-  string continueToken = 3;
-}
-
-message GetProcessInstanceRequest {
-  uint64 region = 1;
-  string definitionId = 2;
-  uint64 definitionVersion = 3;
-  string id = 4;
-}
-
-message GetProcessInstanceResponse {
-  ResponseHeader header = 1;
-  ProcessInstance instance = 2;
-}
+//message ListProcessInstancesRequest {
+//  string definitionId = 1;
+//  uint64 definitionVersion = 2;
+//
+//  int64 limit = 21;
+//  string continue = 22;
+//}
+//
+//message ListProcessInstancesResponse {
+//  ResponseHeader header = 1;
+//  repeated ProcessInstance instances = 2;
+//  string continueToken = 3;
+//}
+//
+//message GetProcessInstanceRequest {
+//  uint64 region = 1;
+//  string definitionId = 2;
+//  uint64 definitionVersion = 3;
+//  string id = 4;
+//}
+//
+//message GetProcessInstanceResponse {
+//  ResponseHeader header = 1;
+//  ProcessInstance instance = 2;
+//}

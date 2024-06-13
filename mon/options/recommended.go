@@ -134,7 +134,7 @@ func (o *RecommendedOptions) ApplyTo(config *genericserver.RecommendedConfig, ex
 		return err
 	}
 
-	informerFactory := informers.NewSharedInformerFactory(clientSet, config.LoopbackClientConfig.Timeout)
+	informerFactory := informers.NewSharedInformerFactory(clientSet, time.Second*15)
 	dynamicClient, err := dynamicclient.NewForConfig(config.LoopbackClientConfig)
 	if err != nil {
 		return err

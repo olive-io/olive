@@ -23,14 +23,17 @@ package runner
 
 import (
 	"context"
+	urlpkg "net/url"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/warning"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
@@ -120,6 +123,29 @@ var _ rest.CategoriesProvider = &REST{}
 // Categories implements the CategoriesProvider interface. Returns a list of categories a resource is part of.
 func (r *REST) Categories() []string {
 	return []string{"all"}
+}
+
+func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
+	runner := obj.(*corev1.Runner)
+	peerURL, err := urlpkg.Parse(runner.Spec.PeerURL)
+	if err != nil {
+		errorList := field.ErrorList{field.InternalError(field.ToPath(), err)}
+		return nil, storage.NewInvalidError(errorList)
+	}
+
+	out, _ := r.List(ctx, nil)
+	if out != nil {
+		for _, item := range out.(*corev1.RunnerList).Items {
+			url, err := urlpkg.Parse(item.Spec.PeerURL)
+			if err != nil {
+				continue
+			}
+			if url.Host == peerURL.Host {
+				return &item, nil
+			}
+		}
+	}
+	return r.Store.Create(ctx, obj, createValidation, options)
 }
 
 func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions) (runtime.Object, bool, error) {

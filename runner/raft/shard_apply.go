@@ -27,9 +27,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
-	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 
 	"github.com/olive-io/olive/pkg/bytesutil"
@@ -49,19 +50,19 @@ type applyResult struct {
 
 type Applier interface {
 	Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyResult
-	Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error)
-	Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPutResponse, *traceutil.Trace, error)
-	Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, *traceutil.Trace, error)
+	Range(ctx context.Context, r *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error)
+	Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutResponse, *traceutil.Trace, error)
+	Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, *traceutil.Trace, error)
 
-	DeployDefinition(ctx context.Context, r *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, *traceutil.Trace, error)
-	ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, *traceutil.Trace, error)
+	DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, *traceutil.Trace, error)
+	ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, *traceutil.Trace, error)
 }
 
 type applier struct {
-	r *Region
+	r *Shard
 }
 
-func (r *Region) newApplier() *applier {
+func (r *Shard) newApplier() *applier {
 	return &applier{r: r}
 }
 
@@ -99,10 +100,10 @@ func (a *applier) Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyRe
 	return ar
 }
 
-func (a *applier) Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error) {
+func (a *applier) Range(ctx context.Context, r *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error) {
 	trace := traceutil.Get(ctx)
 
-	resp := &pb.RegionRangeResponse{}
+	resp := &pb.ShardRangeResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
 
 	limit := r.Limit
@@ -115,8 +116,8 @@ func (a *applier) Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.Regi
 	return resp, nil
 }
 
-func (a *applier) Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPutResponse, *traceutil.Trace, error) {
-	resp := &pb.RegionPutResponse{}
+func (a *applier) Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutResponse, *traceutil.Trace, error) {
+	resp := &pb.ShardPutResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
@@ -136,8 +137,8 @@ func (a *applier) Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPu
 	return resp, trace, nil
 }
 
-func (a *applier) Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, *traceutil.Trace, error) {
-	resp := &pb.RegionDeleteResponse{}
+func (a *applier) Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, *traceutil.Trace, error) {
+	resp := &pb.ShardDeleteResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
@@ -156,8 +157,8 @@ func (a *applier) Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.Re
 	return resp, trace, nil
 }
 
-func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, *traceutil.Trace, error) {
-	resp := &pb.RegionDeployDefinitionResponse{}
+func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, *traceutil.Trace, error) {
+	resp := &pb.ShardDeployDefinitionResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
 	definition := r.Definition
 	trace := traceutil.Get(ctx)
@@ -166,13 +167,13 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefini
 		trace = traceutil.New("deploy_definition",
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
-			traceutil.Field{Key: "definition_id", Value: definition.Id},
-			traceutil.Field{Key: "definition_version", Value: definition.Version},
+			traceutil.Field{Key: "definition_name", Value: definition.Name},
+			traceutil.Field{Key: "definition_version", Value: definition.Spec.Version},
 		)
 	}
 
-	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Id))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", definition.Version)))
+	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Name))
+	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", definition.Spec.Version)))
 
 	kvs, _ := a.r.getRange(prefix, getPrefix(prefix), 0)
 	if len(kvs) > 0 {
@@ -189,38 +190,38 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefini
 	return resp, trace, nil
 }
 
-func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, *traceutil.Trace, error) {
-	resp := &pb.RegionExecuteDefinitionResponse{}
+func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, *traceutil.Trace, error) {
+	resp := &pb.ShardExecuteDefinitionResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
-	process := r.ProcessInstance
+	process := r.Process
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
 		trace = traceutil.New("deploy_definition",
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
-			traceutil.Field{Key: "process_instance", Value: process.Id},
-			traceutil.Field{Key: "definition_id", Value: process.DefinitionsId},
-			traceutil.Field{Key: "definition_version", Value: process.DefinitionsVersion},
+			traceutil.Field{Key: "process", Value: process.Name},
+			traceutil.Field{Key: "definition", Value: process.Spec.Definition},
+			traceutil.Field{Key: "definition_version", Value: process.Spec.Version},
 		)
 	}
 
 	prefix := bytesutil.PathJoin(processPrefix,
-		[]byte(process.DefinitionsId),
-		[]byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(process.Id))
+		[]byte(process.Spec.Definition),
+		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
+	key := bytesutil.PathJoin(prefix, []byte(process.Name))
 
 	if kv, _ := a.r.get(key); kv != nil {
 		return nil, trace, ErrProcessExecuted
 	}
 
 	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
-	process.Status = pb.ProcessInstance_Prepare
+	process.Status.Phase = corev1.ProcessPrepare
 	data, _ := proto.Marshal(process)
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
-	resp.ProcessInstance = process
+	resp.Process = process
 	//a.r.processQ.Set(NewProcessInfo(process))
 
 	return resp, trace, nil

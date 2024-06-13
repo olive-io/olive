@@ -266,11 +266,13 @@ message RegionSpec {
 
 // RegionStat is the stat information of Region
 message RegionStat {
-  optional int64 runningDefinitions = 1;
+  optional BpmnStat bpmn = 1;
 
-  optional BpmnStat bpmn = 2;
+  optional int64 runningDefinitions = 2;
 
-  optional int64 timeout = 3;
+  optional int64 term = 3;
+
+  optional int64 timeout = 4;
 }
 
 message RegionStatus {

@@ -33,6 +33,6 @@ type runnerImpl struct {
 	controller *raft.Controller
 }
 
-func (r *runnerImpl) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
-	return r.controller.GetProcessInstance(ctx, req)
+func (r *runnerImpl) GetProcessInstance(ctx context.Context, req *pb.GetProcessRequest) (resp *pb.GetProcessResponse, err error) {
+	return r.controller.GetProcess(ctx, req)
 }

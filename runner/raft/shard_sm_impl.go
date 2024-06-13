@@ -34,11 +34,11 @@ import (
 	"github.com/olive-io/olive/runner/buckets"
 )
 
-func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
+func (r *Shard) Open(stopc <-chan struct{}) (uint64, error) {
 	return r.initial(stopc)
 }
 
-func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
+func (r *Shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	var committed uint64
 	if length := len(entries); length > 0 {
 		committed = entries[length-1].Index
@@ -55,7 +55,7 @@ func (r *Region) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	return entries, nil
 }
 
-func (r *Region) Lookup(query interface{}) (interface{}, error) {
+func (r *Shard) Lookup(query interface{}) (interface{}, error) {
 	raftReq, ok := query.(*pb.RaftInternalRequest)
 	if !ok {
 		return nil, ErrRequestQuery
@@ -68,20 +68,20 @@ func (r *Region) Lookup(query interface{}) (interface{}, error) {
 	return ar, nil
 }
 
-func (r *Region) Sync() error {
+func (r *Shard) Sync() error {
 	return nil
 }
 
-func (r *Region) Close() error {
+func (r *Shard) Close() error {
 	return nil
 }
 
-func (r *Region) PrepareSnapshot() (interface{}, error) {
+func (r *Shard) PrepareSnapshot() (interface{}, error) {
 	snap := r.be.Snapshot()
 	return snap, nil
 }
 
-func (r *Region) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
+func (r *Shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snap := ctx.(backend.ISnapshot)
 	prefix := bytesutil.PathJoin(buckets.Key.Name(), r.putPrefix())
 	_, err := snap.WriteTo(writer, prefix)
@@ -92,7 +92,7 @@ func (r *Region) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan str
 	return nil
 }
 
-func (r *Region) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
+func (r *Shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
 	err := r.be.Recover(reader)
 	if err != nil {
 		return err

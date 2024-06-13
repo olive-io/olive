@@ -59,7 +59,7 @@ func NewConfig() Config {
 	return cfg
 }
 
-type RegionConfig struct {
+type ShardConfig struct {
 	RaftRTTMillisecond   uint64
 	ElectionRTT          uint64
 	HeartbeatRTT         uint64
@@ -68,8 +68,8 @@ type RegionConfig struct {
 	MaxRequestBytes      int64
 }
 
-func NewRegionConfig() RegionConfig {
-	return RegionConfig{
+func NewRegionConfig() ShardConfig {
+	return ShardConfig{
 		RaftRTTMillisecond:   DefaultRaftRTTMillisecond,
 		StatHeartBeatMs:      DefaultRegionHeartbeatMs,
 		WarningApplyDuration: DefaultRegionWarningApplyDuration,
@@ -77,10 +77,10 @@ func NewRegionConfig() RegionConfig {
 	}
 }
 
-func (cfg RegionConfig) ElectionDuration() time.Duration {
+func (cfg ShardConfig) ElectionDuration() time.Duration {
 	return time.Duration(cfg.RaftRTTMillisecond*cfg.ElectionRTT) * time.Millisecond
 }
 
-func (cfg RegionConfig) ReqTimeout() time.Duration {
+func (cfg ShardConfig) ReqTimeout() time.Duration {
 	return 5*time.Second + 2*cfg.ElectionDuration()
 }

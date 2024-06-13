@@ -1943,6 +1943,11 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
+					"bpmn": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
+						},
+					},
 					"runningDefinitions": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -1950,9 +1955,11 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"bpmn": {
+					"term": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
 						},
 					},
 					"timeout": {
@@ -1962,7 +1969,7 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"runningDefinitions"},
+				Required: []string{"runningDefinitions", "term"},
 			},
 		},
 		Dependencies: []string{
@@ -2020,7 +2027,8 @@ func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common
 					},
 					"stat": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.RegionStat"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionStat"),
 						},
 					},
 				},
@@ -2313,7 +2321,8 @@ func schema_olive_apis_core_v1_RunnerStatus(ref common.ReferenceCallback) common
 					},
 					"stat": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.RunnerStat"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerStat"),
 						},
 					},
 				},

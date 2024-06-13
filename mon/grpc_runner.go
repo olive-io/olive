@@ -21,100 +21,89 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package mon
 
-import (
-	"context"
-
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-
-	pb "github.com/olive-io/olive/apis/pb/olive"
-
-	ort "github.com/olive-io/olive/pkg/runtime"
-)
-
-type runnerServer struct {
-	pb.UnsafeMetaRunnerRPCServer
-	pb.UnsafeMetaRegionRPCServer
-
-	*MonitorServer
-}
-
-func newRunnerServer(s *MonitorServer) (*runnerServer, error) {
-	rs := &runnerServer{MonitorServer: s}
-	return rs, nil
-}
-
-func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
-
-	lg := s.lg
-	resp = &pb.ListRunnerResponse{}
-	key := ort.DefaultMetaRunnerRegistrar
-
-	runners := make([]*pb.Runner, 0)
-	var continueToken string
-	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
-		runner := new(pb.Runner)
-		if e1 := proto.Unmarshal(kv.Value, runner); e1 != nil {
-			lg.Error("unmarshal runner", zap.String("key", string(kv.Key)), zap.Error(err))
-			return e1
-		}
-		runners = append(runners, runner)
-
-		return nil
-	})
-	if err != nil {
-		return
-	}
-
-	resp.Header = s.responseHeader()
-	resp.Runners = runners
-	resp.ContinueToken = continueToken
-
-	return resp, nil
-}
-
-func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
-
-	resp = &pb.GetRunnerResponse{}
-	resp.Header = s.responseHeader()
-	resp.Runner, err = s.getRunner(ctx, req.Id)
-	return
-}
-
-func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
-
-	lg := s.lg
-	resp = &pb.ListRegionResponse{}
-	key := ort.DefaultRunnerRegion
-
-	regions := make([]*pb.Region, 0)
-	var continueToken string
-	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
-		region := new(pb.Region)
-		if e1 := proto.Unmarshal(kv.Value, region); e1 != nil {
-			lg.Error("unmarshal region", zap.String("key", string(kv.Key)), zap.Error(err))
-			return e1
-		}
-		regions = append(regions, region)
-
-		return nil
-	})
-	if err != nil {
-		return
-	}
-
-	resp.Header = s.responseHeader()
-	resp.Regions = regions
-	resp.ContinueToken = continueToken
-
-	return resp, nil
-}
-
-func (s *runnerServer) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
-
-	resp = &pb.GetRegionResponse{}
-	resp.Header = s.responseHeader()
-	resp.Region, err = s.getRegion(ctx, req.Id)
-	return
-}
+//
+//type runnerServer struct {
+//	pb.UnsafeMetaRunnerRPCServer
+//	pb.UnsafeMetaRegionRPCServer
+//
+//	*MonitorServer
+//}
+//
+//func newRunnerServer(s *MonitorServer) (*runnerServer, error) {
+//	rs := &runnerServer{MonitorServer: s}
+//	return rs, nil
+//}
+//
+//func (s *runnerServer) ListRunner(ctx context.Context, req *pb.ListRunnerRequest) (resp *pb.ListRunnerResponse, err error) {
+//
+//	lg := s.lg
+//	resp = &pb.ListRunnerResponse{}
+//	key := ort.DefaultMetaRunnerRegistrar
+//
+//	runners := make([]*pb.Runner, 0)
+//	var continueToken string
+//	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
+//		runner := new(pb.Runner)
+//		if e1 := proto.Unmarshal(kv.Value, runner); e1 != nil {
+//			lg.Error("unmarshal runner", zap.String("key", string(kv.Key)), zap.Error(err))
+//			return e1
+//		}
+//		runners = append(runners, runner)
+//
+//		return nil
+//	})
+//	if err != nil {
+//		return
+//	}
+//
+//	resp.Header = s.responseHeader()
+//	resp.Runners = runners
+//	resp.ContinueToken = continueToken
+//
+//	return resp, nil
+//}
+//
+//func (s *runnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
+//
+//	resp = &pb.GetRunnerResponse{}
+//	resp.Header = s.responseHeader()
+//	resp.Runner, err = s.getRunner(ctx, req.Id)
+//	return
+//}
+//
+//func (s *runnerServer) ListRegion(ctx context.Context, req *pb.ListRegionRequest) (resp *pb.ListRegionResponse, err error) {
+//
+//	lg := s.lg
+//	resp = &pb.ListRegionResponse{}
+//	key := ort.DefaultRunnerRegion
+//
+//	regions := make([]*pb.Region, 0)
+//	var continueToken string
+//	continueToken, err = s.pageList(ctx, key, req.Limit, req.Continue, func(kv *mvccpb.KeyValue) error {
+//		region := new(pb.Region)
+//		if e1 := proto.Unmarshal(kv.Value, region); e1 != nil {
+//			lg.Error("unmarshal region", zap.String("key", string(kv.Key)), zap.Error(err))
+//			return e1
+//		}
+//		regions = append(regions, region)
+//
+//		return nil
+//	})
+//	if err != nil {
+//		return
+//	}
+//
+//	resp.Header = s.responseHeader()
+//	resp.Regions = regions
+//	resp.ContinueToken = continueToken
+//
+//	return resp, nil
+//}
+//
+//func (s *runnerServer) GetRegion(ctx context.Context, req *pb.GetRegionRequest) (resp *pb.GetRegionResponse, err error) {
+//
+//	resp = &pb.GetRegionResponse{}
+//	resp.Header = s.responseHeader()
+//	resp.Region, err = s.getRegion(ctx, req.Id)
+//	return
+//}

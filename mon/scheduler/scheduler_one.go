@@ -173,7 +173,7 @@ func (s *Scheduler) Start() error {
 		processInformer.Informer().HasSynced,
 	}
 
-	if ok := cache.WaitForCacheSync(ctx.Done(), informerSynced...); !ok {
+	if ok := cache.WaitForNamedCacheSync("scheduler controller", ctx.Done(), informerSynced...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -278,7 +278,6 @@ func (s *Scheduler) allocRegion() {
 		},
 		Status: corev1.RegionStatus{
 			Phase: corev1.RegionPending,
-			Stat:  &corev1.RegionStat{},
 		},
 	}
 	region.Name = "region"

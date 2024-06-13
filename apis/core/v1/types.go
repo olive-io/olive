@@ -78,7 +78,7 @@ type RunnerStatus struct {
 	Leaders     []string `json:"leaders" protobuf:"bytes,6,rep,name=leaders"`
 	Definitions int64    `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
 
-	Stat *RunnerStat `json:"stat" protobuf:"bytes,8,opt,name=stat"`
+	Stat RunnerStat `json:"stat" protobuf:"bytes,8,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -170,7 +170,7 @@ type RegionStatus struct {
 	Replicas    int32 `json:"replicas" protobuf:"varint,5,opt,name=replicas"`
 	Definitions int64 `json:"definitions" protobuf:"varint,6,opt,name=definitions"`
 
-	Stat *RegionStat `json:"stat" protobuf:"bytes,7,opt,name=stat"`
+	Stat RegionStat `json:"stat" protobuf:"bytes,7,opt,name=stat"`
 }
 
 func (m *Region) InitialURL() map[int64]string {
@@ -187,10 +187,13 @@ func (m *Region) InitialURL() map[int64]string {
 type RegionStat struct {
 	metav1.TypeMeta `json:",inline"`
 
-	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,1,opt,name=runningDefinitions"`
+	Bpmn *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,1,opt,name=bpmn"`
 
-	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,2,opt,name=bpmn"`
-	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,3,opt,name=timeout"`
+	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,2,opt,name=runningDefinitions"`
+
+	Term int64 `json:"term" protobuf:"varint,3,opt,name=term"`
+
+	Timeout int64 `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -364,6 +367,7 @@ const (
 	ProcessPending ProcessPhase = "Pending"
 	// ProcessTerminated means the node has been removed from the cluster.
 	ProcessTerminated ProcessPhase = "Terminated"
+	ProcessPrepare    ProcessPhase = "Prepare"
 )
 
 // +genclient

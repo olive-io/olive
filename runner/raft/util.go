@@ -26,10 +26,10 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	json "github.com/json-iterator/go"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
 )
@@ -62,7 +62,7 @@ func warnOfFailedRequest(lg *zap.Logger, now time.Time, reqStringer fmt.Stringer
 	)
 }
 
-func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, slowApplies prometheus.Counter, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, rangeResponse *pb.RegionRangeResponse, err error) {
+func warnOfExpensiveReadOnlyRangeRequest(lg *zap.Logger, slowApplies prometheus.Counter, warningApplyDuration time.Duration, now time.Time, reqStringer fmt.Stringer, rangeResponse *pb.ShardRangeResponse, err error) {
 	if time.Since(now) <= warningApplyDuration {
 		return
 	}
@@ -106,7 +106,7 @@ func getPrefix(key []byte) []byte {
 	return noPrefixEnd
 }
 
-func rangePrefix(r *pb.RegionRangeRequest) {
+func rangePrefix(r *pb.ShardRangeRequest) {
 	if len(r.Key) == 0 {
 		r.Key, r.RangeEnd = []byte{0}, []byte{0}
 		return

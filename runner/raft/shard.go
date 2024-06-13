@@ -33,13 +33,13 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/pebble"
+	"github.com/gogo/protobuf/proto"
 	sm "github.com/lni/dragonboat/v4/statemachine"
 	"github.com/olive-io/bpmn/tracing"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 	"go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
@@ -80,15 +80,15 @@ func (pi *ProcessInfo) Score() int64 {
 	return 1
 }
 
-type IRegionRaftKV interface {
-	Range(ctx context.Context, r *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error)
-	Put(ctx context.Context, r *pb.RegionPutRequest) (*pb.RegionPutResponse, error)
-	Delete(ctx context.Context, r *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error)
+type IShardRaftKV interface {
+	Range(ctx context.Context, r *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error)
+	Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutResponse, error)
+	Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, error)
 }
 
-type Region struct {
+type Shard struct {
 	lg  *zap.Logger
-	cfg RegionConfig
+	cfg ShardConfig
 
 	id       uint64
 	memberId uint64
@@ -134,7 +134,7 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 	processQ := queue.NewSync()
 
 	tracer := c.tracer
-	region := &Region{
+	region := &Shard{
 		id:         shardId,
 		memberId:   nodeId,
 		lg:         c.cfg.Logger,
@@ -155,12 +155,12 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 	applyBase := region.newApplier()
 	region.applyBase = applyBase
 
-	c.setRegion(region)
+	c.setShard(region)
 
 	return region
 }
 
-func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.RegionRangeResponse, error) {
+func (r *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error) {
 	trace := traceutil.New("range",
 		r.lg,
 		traceutil.Field{Key: "range_begin", Value: string(req.Key)},
@@ -168,7 +168,7 @@ func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.Reg
 	)
 	ctx = context.WithValue(ctx, traceutil.TraceKey, trace)
 
-	var resp *pb.RegionRangeResponse
+	var resp *pb.ShardRangeResponse
 	var err error
 	defer func(start time.Time) {
 		warnOfExpensiveReadOnlyRangeRequest(r.lg, r.metric.slowApplies, r.cfg.WarningApplyDuration, start, req, resp, err)
@@ -184,28 +184,28 @@ func (r *Region) Range(ctx context.Context, req *pb.RegionRangeRequest) (*pb.Reg
 	if err != nil {
 		return nil, err
 	}
-	resp = result.(*pb.RegionRangeResponse)
+	resp = result.(*pb.ShardRangeResponse)
 	return resp, err
 }
 
-func (r *Region) Put(ctx context.Context, req *pb.RegionPutRequest) (*pb.RegionPutResponse, error) {
+func (r *Shard) Put(ctx context.Context, req *pb.ShardPutRequest) (*pb.ShardPutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
 	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Put: req})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*pb.RegionPutResponse), nil
+	return resp.(*pb.ShardPutResponse), nil
 }
 
-func (r *Region) Delete(ctx context.Context, req *pb.RegionDeleteRequest) (*pb.RegionDeleteResponse, error) {
+func (r *Shard) Delete(ctx context.Context, req *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, error) {
 	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Delete: req})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*pb.RegionDeleteResponse), nil
+	return resp.(*pb.ShardDeleteResponse), nil
 }
 
-func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
+func (r *Shard) initial(stopc <-chan struct{}) (uint64, error) {
 	r.stopc = stopc
 	applyIndex, err := r.readApplyIndex()
 	if err != nil {
@@ -213,7 +213,7 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 		return 0, err
 	}
 
-	r.metric, err = newRegionMetrics(r.id, r.memberId)
+	r.metric, err = newShardMetrics(r.id, r.memberId)
 	if err != nil {
 		r.openWait.Trigger(r.id, err)
 		return 0, err
@@ -265,7 +265,7 @@ func (r *Region) initial(stopc <-chan struct{}) (uint64, error) {
 	return applyIndex, nil
 }
 
-func (r *Region) waitUtilLeader() bool {
+func (r *Shard) waitUtilLeader() bool {
 	for {
 		if r.isLeader() {
 			return true
@@ -279,7 +279,7 @@ func (r *Region) waitUtilLeader() bool {
 	}
 }
 
-func (r *Region) waitLeader(ctx context.Context) (bool, error) {
+func (r *Shard) waitLeader(ctx context.Context) (bool, error) {
 	for {
 		if r.isLeader() {
 			return true, nil
@@ -298,7 +298,7 @@ func (r *Region) waitLeader(ctx context.Context) (bool, error) {
 	}
 }
 
-func (r *Region) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
+func (r *Shard) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
 	trace := newReadTrace(ctx, r.getID(), req)
 	defer trace.Close()
 	r.tracer.Trace(trace)
@@ -324,7 +324,7 @@ func (r *Region) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (pr
 	}
 }
 
-func (r *Region) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
+func (r *Shard) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
 	result, err := r.processInternalRaftRequestOnce(ctx, req)
 	if err != nil {
 		return nil, err
@@ -344,7 +344,7 @@ func (r *Region) raftRequestOnce(ctx context.Context, req *pb.RaftInternalReques
 	return result.resp, nil
 }
 
-func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (*applyResult, error) {
+func (r *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (*applyResult, error) {
 	ai := r.getApplied()
 	ci := r.getCommitted()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
@@ -384,7 +384,7 @@ func (r *Region) processInternalRaftRequestOnce(ctx context.Context, req *pb.Raf
 	}
 }
 
-func (r *Region) parseProposeCtxErr(err error, start time.Time) error {
+func (r *Shard) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
 		return ErrCanceled
@@ -404,7 +404,7 @@ func (r *Region) parseProposeCtxErr(err error, start time.Time) error {
 	}
 }
 
-func (r *Region) applyEntry(entry sm.Entry) {
+func (r *Shard) applyEntry(entry sm.Entry) {
 	index := entry.Index
 	r.writeApplyIndex(index)
 	if index == r.getCommitted() {
@@ -437,13 +437,13 @@ func (r *Region) applyEntry(entry sm.Entry) {
 	r.applyW.Trigger(id, ar)
 }
 
-func (r *Region) Start() {
+func (r *Shard) Start() {
 	go r.heartbeat()
 	go r.scheduleCycle()
 	go r.run()
 }
 
-func (r *Region) run() {
+func (r *Shard) run() {
 	for {
 		select {
 		case <-r.stopc:
@@ -452,7 +452,7 @@ func (r *Region) run() {
 	}
 }
 
-func (r *Region) readApplyIndex() (uint64, error) {
+func (r *Shard) readApplyIndex() (uint64, error) {
 	kv, err := r.get(appliedIndex)
 	if err != nil {
 		if errors.Is(err, pebble.ErrNotFound) {
@@ -466,14 +466,14 @@ func (r *Region) readApplyIndex() (uint64, error) {
 	return applied, nil
 }
 
-func (r *Region) writeApplyIndex(index uint64) {
+func (r *Shard) writeApplyIndex(index uint64) {
 	data := make([]byte, 8)
 	binary.LittleEndian.PutUint64(data, index)
 	r.put(appliedIndex, data, true)
 	r.setApplied(index)
 }
 
-func (r *Region) get(key []byte) (*pb.KeyValue, error) {
+func (r *Shard) get(key []byte) (*pb.KeyValue, error) {
 	tx := r.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
@@ -491,7 +491,7 @@ func (r *Region) get(key []byte) (*pb.KeyValue, error) {
 	return kv, err
 }
 
-func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, error) {
+func (r *Shard) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, error) {
 	tx := r.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
@@ -514,7 +514,7 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue,
 	return kvs, nil
 }
 
-func (r *Region) put(key, value []byte, isSync bool) error {
+func (r *Shard) put(key, value []byte, isSync bool) error {
 	key = bytesutil.PathJoin(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
@@ -529,7 +529,7 @@ func (r *Region) put(key, value []byte, isSync bool) error {
 	return nil
 }
 
-func (r *Region) del(key []byte, isSync bool) error {
+func (r *Shard) del(key []byte, isSync bool) error {
 	key = bytesutil.PathJoin(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
@@ -544,7 +544,7 @@ func (r *Region) del(key []byte, isSync bool) error {
 	return nil
 }
 
-func (r *Region) notifyAboutChange() {
+func (r *Shard) notifyAboutChange() {
 	r.changeCMu.Lock()
 	changeClose := r.changeC
 	r.changeC = make(chan struct{})
@@ -552,13 +552,13 @@ func (r *Region) notifyAboutChange() {
 	close(changeClose)
 }
 
-func (r *Region) changeNotify() <-chan struct{} {
+func (r *Shard) changeNotify() <-chan struct{} {
 	r.changeCMu.RLock()
 	defer r.changeCMu.RUnlock()
 	return r.changeC
 }
 
-func (r *Region) notifyAboutReady() {
+func (r *Shard) notifyAboutReady() {
 	r.readyCMu.Lock()
 	readyClose := r.readyC
 	r.readyC = make(chan struct{})
@@ -566,66 +566,66 @@ func (r *Region) notifyAboutReady() {
 	close(readyClose)
 }
 
-func (r *Region) ReadyNotify() <-chan struct{} {
+func (r *Shard) ReadyNotify() <-chan struct{} {
 	r.readyCMu.RLock()
 	defer r.readyCMu.RUnlock()
 	return r.readyC
 }
 
-func (r *Region) putPrefix() []byte {
+func (r *Shard) putPrefix() []byte {
 	sb := []byte(fmt.Sprintf("%d", r.id))
 	return sb
 }
 
-func (r *Region) updateInfo(info *corev1.Region) {
+func (r *Shard) updateInfo(info *corev1.Region) {
 	r.rimu.Lock()
 	defer r.rimu.Unlock()
 	r.regionInfo = info
 }
 
-func (r *Region) updateConfig(config RegionConfig) {
+func (r *Shard) updateConfig(config ShardConfig) {
 	r.cfg = config
 }
 
-func (r *Region) getInfo() *corev1.Region {
+func (r *Shard) getInfo() *corev1.Region {
 	r.rimu.RLock()
 	defer r.rimu.RUnlock()
-	return r.regionInfo
+	return r.regionInfo.DeepCopy()
 }
 
-func (r *Region) getID() uint64 {
+func (r *Shard) getID() uint64 {
 	return r.id
 }
 
-func (r *Region) getMember() uint64 {
+func (r *Shard) getMember() uint64 {
 	return r.memberId
 }
 
-func (r *Region) setApplied(applied uint64) {
+func (r *Shard) setApplied(applied uint64) {
 	atomic.StoreUint64(&r.applied, applied)
 }
 
-func (r *Region) getApplied() uint64 {
+func (r *Shard) getApplied() uint64 {
 	return atomic.LoadUint64(&r.applied)
 }
 
-func (r *Region) setCommitted(committed uint64) {
+func (r *Shard) setCommitted(committed uint64) {
 	atomic.StoreUint64(&r.committed, committed)
 }
 
-func (r *Region) getCommitted() uint64 {
+func (r *Shard) getCommitted() uint64 {
 	return atomic.LoadUint64(&r.committed)
 }
 
-func (r *Region) setTerm(term uint64) {
+func (r *Shard) setTerm(term uint64) {
 	atomic.StoreUint64(&r.term, term)
 }
 
-func (r *Region) getTerm() uint64 {
+func (r *Shard) getTerm() uint64 {
 	return atomic.LoadUint64(&r.term)
 }
 
-func (r *Region) setLeader(leader uint64, newLead bool) {
+func (r *Shard) setLeader(leader uint64, newLead bool) {
 	atomic.StoreUint64(&r.leader, leader)
 	if newLead && r.isLeader() {
 		t := time.Now()
@@ -635,11 +635,11 @@ func (r *Region) setLeader(leader uint64, newLead bool) {
 	}
 }
 
-func (r *Region) getLeader() uint64 {
+func (r *Shard) getLeader() uint64 {
 	return atomic.LoadUint64(&r.leader)
 }
 
-func (r *Region) isLeader() bool {
+func (r *Shard) isLeader() bool {
 	lead := r.getLeader()
 	return lead != 0 && lead == r.getMember()
 }

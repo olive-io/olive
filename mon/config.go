@@ -36,13 +36,12 @@ import (
 	"github.com/olive-io/olive/apis"
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
-	monscheduler "github.com/olive-io/olive/mon/scheduler"
-	genericdaemon "github.com/olive-io/olive/pkg/daemon"
-
 	"github.com/olive-io/olive/mon/embed"
 	"github.com/olive-io/olive/mon/leader"
 	apidiscoveryrest "github.com/olive-io/olive/mon/registry/apidiscovery/rest"
 	corerest "github.com/olive-io/olive/mon/registry/core/rest"
+	monscheduler "github.com/olive-io/olive/mon/scheduler"
+	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 )
 
 const (

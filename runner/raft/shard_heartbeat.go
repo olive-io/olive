@@ -24,10 +24,12 @@ package raft
 import (
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-func (r *Region) heartbeat() {
+func (r *Shard) heartbeat() {
 	duration := time.Duration(r.cfg.StatHeartBeatMs) * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
@@ -53,25 +55,24 @@ func (r *Region) heartbeat() {
 				break LOOP
 			case <-timer.C:
 				timer.Reset(duration)
-				r.tracer.Trace(&RegionStatTrace{Stat: r.stat()})
+				r.tracer.Trace(&regionStatTrace{Id: r.getID(), stat: r.stat()})
 			}
 		}
 	}
 }
 
-func (r *Region) stat() *corev1.RegionStat {
-	info := r.getInfo()
-	_ = info
+func (r *Shard) stat() *corev1.RegionStat {
 	rs := &corev1.RegionStat{
-		//Id:                 r.getID(),
-		//Leader:             r.getLeader(),
-		//Term:               r.getTerm(),
-		//Definitions:        uint64(r.metric.definition.Get()),
-		//RunningDefinitions: uint64(r.metric.runningDefinition.Get()),
-		//BpmnProcesses:      uint64(r.metric.process.Get()),
-		//BpmnEvents:         uint64(r.metric.event.Get()),
-		//BpmnTasks:          uint64(r.metric.task.Get()),
-		//Timestamp:          time.Now().Unix(),
+		TypeMeta: metav1.TypeMeta{},
+		Bpmn: &corev1.BpmnStat{
+			Definitions: int64(r.metric.definition.Get()),
+			Processes:   int64(r.metric.process.Get()),
+			Events:      int64(r.metric.event.Get()),
+			Tasks:       int64(r.metric.task.Get()),
+		},
+		RunningDefinitions: int64(r.metric.runningDefinition.Get()),
+		Term:               int64(r.getTerm()),
+		Timeout:            time.Now().Unix(),
 	}
 
 	return rs

@@ -32,8 +32,8 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/dustin/go-humanize"
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/apis/pb/olive"
 )

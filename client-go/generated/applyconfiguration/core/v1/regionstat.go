@@ -31,8 +31,9 @@ import (
 // with apply.
 type RegionStatApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration `json:",inline"`
-	RunningDefinitions            *int64                      `json:"runningDefinitions,omitempty"`
 	Bpmn                          *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
+	RunningDefinitions            *int64                      `json:"runningDefinitions,omitempty"`
+	Term                          *int64                      `json:"term,omitempty"`
 	Timeout                       *int64                      `json:"timeout,omitempty"`
 }
 
@@ -61,6 +62,14 @@ func (b *RegionStatApplyConfiguration) WithAPIVersion(value string) *RegionStatA
 	return b
 }
 
+// WithBpmn sets the Bpmn field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Bpmn field is set to the value of the last call.
+func (b *RegionStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguration) *RegionStatApplyConfiguration {
+	b.Bpmn = value
+	return b
+}
+
 // WithRunningDefinitions sets the RunningDefinitions field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the RunningDefinitions field is set to the value of the last call.
@@ -69,11 +78,11 @@ func (b *RegionStatApplyConfiguration) WithRunningDefinitions(value int64) *Regi
 	return b
 }
 
-// WithBpmn sets the Bpmn field in the declarative configuration to the given value
+// WithTerm sets the Term field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Bpmn field is set to the value of the last call.
-func (b *RegionStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguration) *RegionStatApplyConfiguration {
-	b.Bpmn = value
+// If called multiple times, the Term field is set to the value of the last call.
+func (b *RegionStatApplyConfiguration) WithTerm(value int64) *RegionStatApplyConfiguration {
+	b.Term = &value
 	return b
 }
 

@@ -30,20 +30,19 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/errors"
+	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/proto"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	authv1 "github.com/olive-io/olive/apis/pb/auth"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 	"github.com/olive-io/olive/apis/rpctypes"
-
 	"github.com/olive-io/olive/mon/pagation"
-
 	mdutil "github.com/olive-io/olive/pkg/context/metadata"
 	"github.com/olive-io/olive/pkg/crypto"
 	ort "github.com/olive-io/olive/pkg/runtime"
@@ -229,17 +228,17 @@ func (s *MonitorServer) pageList(ctx context.Context, preparedKey string, reqLim
 	return
 }
 
-func (s *MonitorServer) getRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
+func (s *MonitorServer) getRunner(ctx context.Context, id uint64) (runner *corev1.Runner, err error) {
 	key := path.Join(ort.DefaultMetaRunnerRegistrar, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
 	}
-	runner = &pb.Runner{}
+	runner = &corev1.Runner{}
 	_, _, err = s.get(ctx, key, runner, options...)
 	return
 }
 
-func (s *MonitorServer) getRegion(ctx context.Context, id uint64) (region *pb.Region, err error) {
+func (s *MonitorServer) getRegion(ctx context.Context, id uint64) (region *corev1.Region, err error) {
 	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", id))
 	options := []clientv3.OpOption{
 		clientv3.WithSerializable(),
@@ -251,7 +250,7 @@ func (s *MonitorServer) getRegion(ctx context.Context, id uint64) (region *pb.Re
 	if len(rsp.Kvs) == 0 {
 		return nil, rpctypes.ErrKeyNotFound
 	}
-	region = new(pb.Region)
+	region = new(corev1.Region)
 	_, _, err = s.get(ctx, key, region, options...)
 	return
 }

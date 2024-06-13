@@ -38,7 +38,6 @@ import (
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/tracing"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	dsypb "github.com/olive-io/olive/apis/pb/discovery"
@@ -52,27 +51,27 @@ var (
 	processPrefix    = []byte("processes")
 )
 
-func (r *Region) DeployDefinition(ctx context.Context, req *pb.RegionDeployDefinitionRequest) (*pb.RegionDeployDefinitionResponse, error) {
-	resp := &pb.RegionDeployDefinitionResponse{}
+func (r *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, error) {
+	resp := &pb.ShardDeployDefinitionResponse{}
 	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
 	if err != nil {
 		return nil, err
 	}
-	resp = result.(*pb.RegionDeployDefinitionResponse)
+	resp = result.(*pb.ShardDeployDefinitionResponse)
 	return resp, nil
 }
 
-func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDefinitionRequest) (*pb.RegionExecuteDefinitionResponse, error) {
-	resp := &pb.RegionExecuteDefinitionResponse{}
+func (r *Shard) ExecuteDefinition(ctx context.Context, req *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, error) {
+	resp := &pb.ShardExecuteDefinitionResponse{}
 	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{ExecuteDefinition: req})
 	if err != nil {
 		return nil, err
 	}
-	resp = result.(*pb.RegionExecuteDefinitionResponse)
+	resp = result.(*pb.ShardExecuteDefinitionResponse)
 	return resp, nil
 }
 
-func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*pb.ProcessInstance, error) {
+func (r *Shard) GetProcess(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*corev1.Process, error) {
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(definitionId),
 		[]byte(fmt.Sprintf("%d", definitionVersion)))
@@ -84,7 +83,7 @@ func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, de
 		defer cancel()
 	}
 
-	req := &pb.RegionRangeRequest{
+	req := &pb.ShardRangeRequest{
 		Key:          key,
 		Limit:        1,
 		Serializable: true,
@@ -97,13 +96,15 @@ func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, de
 	if len(rsp.Kvs) == 0 {
 		return nil, ErrNotFound
 	}
-	instance := new(pb.ProcessInstance)
-	_ = proto.Unmarshal(rsp.Kvs[0].Value, instance)
+	instance := new(corev1.Process)
+	if err = instance.Unmarshal(rsp.Kvs[0].Value); err != nil {
+		return nil, err
+	}
 
 	return instance, nil
 }
 
-func (r *Region) scheduleCycle() {
+func (r *Shard) scheduleCycle() {
 	duration := 100 * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
@@ -142,7 +143,7 @@ func (r *Region) scheduleCycle() {
 	}
 }
 
-func (r *Region) scheduleDefinition(process *corev1.Process) {
+func (r *Shard) scheduleDefinition(process *corev1.Process) {
 	if len(process.Spec.Definition) == 0 {
 		definitionKey := bytesutil.PathJoin(definitionPrefix,
 			[]byte(process.Spec.Definition), []byte(fmt.Sprintf("%d", process.Spec.Version)))
@@ -154,9 +155,9 @@ func (r *Region) scheduleDefinition(process *corev1.Process) {
 			}
 			return
 		}
-		definition := new(pb.Definition)
-		_ = proto.Unmarshal(kv.Value, definition)
-		process.Spec.Definition = definition.Content
+		definition := new(corev1.Definition)
+		definition.Unmarshal(kv.Value)
+		process.Spec.Definition = definition.Spec.Content
 	}
 
 	var definitions *schema.Definitions
@@ -206,7 +207,7 @@ func (r *Region) scheduleDefinition(process *corev1.Process) {
 	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
 }
 
-func (r *Region) scheduleProcess(ctx context.Context, process *corev1.Process, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
+func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -365,7 +366,7 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
 
 	taskAct := trace.GetActivity()
 	actType := taskAct.Type()
@@ -433,7 +434,7 @@ func (r *Region) handleActivity(ctx context.Context, trace *bact.Trace, inst *bp
 	trace.Do(doOpts...)
 }
 
-func saveProcess(ctx context.Context, kv IRegionRaftKV, process *corev1.Process) error {
+func saveProcess(ctx context.Context, kv IShardRaftKV, process *corev1.Process) error {
 	var err error
 	//pkey := bytesutil.PathJoin(processPrefix,
 	//	[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
@@ -443,7 +444,7 @@ func saveProcess(ctx context.Context, kv IRegionRaftKV, process *corev1.Process)
 	//if err != nil {
 	//	return err
 	//}
-	//_, err = kv.Put(ctx, &pb.RegionPutRequest{Key: pkey, Value: value})
+	//_, err = kv.Put(ctx, &pb.ShardPutRequest{Key: pkey, Value: value})
 	return err
 }
 

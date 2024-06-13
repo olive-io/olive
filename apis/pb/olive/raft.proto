@@ -25,7 +25,7 @@ package olivepb;
 
 option go_package = "github.com/olive-io/olive/apis/pb/olive;olivepb";
 
-import "github.com/olive-io/olive/apis/pb/olive/internal.proto";
+import "github.com/olive-io/olive/apis/core/v1/generated.proto";
 
 message InternalKV {
   bytes key = 1;
@@ -43,12 +43,12 @@ message RaftHeader {
 
 message RaftInternalRequest {
   RaftHeader header = 1;
-  RegionRangeRequest range = 2;
-  RegionPutRequest put = 3;
-  RegionDeleteRequest delete = 4;
+  ShardRangeRequest range = 2;
+  ShardPutRequest put = 3;
+  ShardDeleteRequest delete = 4;
 
-  RegionDeployDefinitionRequest deploy_definition = 11;
-  RegionExecuteDefinitionRequest execute_definition = 12;
+  ShardDeployDefinitionRequest deploy_definition = 11;
+  ShardExecuteDefinitionRequest execute_definition = 12;
 }
 
 message LoggablePutRequest  {
@@ -65,53 +65,69 @@ message RaftResponseHeader {
   uint64 raft_term = 3;
 }
 
-message RegionRangeRequest {
+message ShardRangeRequest {
   bytes key = 1;
   bytes range_end = 2;
   int64 limit = 3;
   bool serializable = 4;
 }
 
-message RegionRangeResponse {
+message ShardRangeResponse {
   RaftResponseHeader header = 1;
   repeated KeyValue kvs = 2;
 }
 
-message RegionPutRequest {
+message ShardPutRequest {
   bytes key = 1;
   bytes value = 2;
   bool is_sync = 3;
 }
 
-message RegionPutResponse {
+message ShardPutResponse {
   RaftResponseHeader header = 1;
   KeyValue preKv = 2;
 }
 
-message RegionDeleteRequest {
+message ShardDeleteRequest {
   bytes key = 1;
   bool is_sync = 2;
 }
 
-message RegionDeleteResponse {
+message ShardDeleteResponse {
   RaftResponseHeader header = 1;
   KeyValue preKv = 2;
 }
 
-message RegionDeployDefinitionRequest {
-  olivepb.Definition definition = 1;
+message ShardDeployDefinitionRequest {
+  github.com.olive_io.olive.apis.core.v1.Definition definition = 1;
 }
 
-message RegionDeployDefinitionResponse {
+message ShardDeployDefinitionResponse {
   RaftResponseHeader header = 1;
-  olivepb.Definition definition = 2;
+  github.com.olive_io.olive.apis.core.v1.Definition definition = 2;
 }
 
-message RegionExecuteDefinitionRequest {
-  olivepb.ProcessInstance process_instance = 1;
+message ShardExecuteDefinitionRequest {
+  github.com.olive_io.olive.apis.core.v1.Process process = 1;
 }
 
-message RegionExecuteDefinitionResponse {
+message ShardExecuteDefinitionResponse {
   RaftResponseHeader header = 1;
-  olivepb.ProcessInstance process_instance = 2;
+  github.com.olive_io.olive.apis.core.v1.Process process = 2;
+}
+
+service RunnerRPC {
+  rpc GetProcessInstance(GetProcessRequest) returns (GetProcessResponse);
+}
+
+message GetProcessRequest {
+  uint64 region = 1;
+  string definitionId = 2;
+  uint64 definitionVersion = 3;
+  string id = 4;
+}
+
+message GetProcessResponse {
+  RaftResponseHeader header = 1;
+  github.com.olive_io.olive.apis.core.v1.Process process = 2;
 }
