@@ -191,7 +191,8 @@ func (sq *schedulingQueue) Free() {
 }
 
 func (sq *schedulingQueue) scaledRegion(region *corev1.Region) {
-	if int(region.Status.Replicas) >= sq.replicaNum {
+	if int(region.Status.Replicas) >= sq.replicaNum &&
+		region.Status.Phase == corev1.RegionActive {
 		return
 	}
 	sq.smu.Lock()

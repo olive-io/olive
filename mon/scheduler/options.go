@@ -30,7 +30,7 @@ import (
 const (
 	DefaultRegionLimit        = 100
 	DefaultDefinitionLimit    = 10000
-	DefaultInitRegionNum      = 1
+	DefaultInitRegionNum      = 3
 	DefaultRegionReplicas     = 3
 	DefaultRegionElectionTTL  = 10 // 10s
 	DefaultRegionHeartbeatTTL = 1  // 1s

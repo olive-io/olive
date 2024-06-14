@@ -21,8 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package scheduler
 
-import corev1 "github.com/olive-io/olive/apis/core/v1"
-
 // scheduler inner event channel
 type imessage interface {
 	payload() any
@@ -46,7 +44,7 @@ func (m *allocRegionAction) payload() any {
 }
 
 type ScaleRegionRequest struct {
-	region *corev1.Region
+	region string
 	scale  int
 }
 
@@ -54,7 +52,7 @@ type scaleRegionAction struct {
 	req *ScaleRegionRequest
 }
 
-func newScaleRegionAction(region *corev1.Region, n int) *scaleRegionAction {
+func newScaleRegionAction(region string, n int) *scaleRegionAction {
 	return &scaleRegionAction{req: &ScaleRegionRequest{region: region, scale: n}}
 }
 

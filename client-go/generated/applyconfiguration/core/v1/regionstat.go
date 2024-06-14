@@ -33,6 +33,7 @@ type RegionStatApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration `json:",inline"`
 	Bpmn                          *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
 	RunningDefinitions            *int64                      `json:"runningDefinitions,omitempty"`
+	Leader                        *int64                      `json:"leader,omitempty"`
 	Term                          *int64                      `json:"term,omitempty"`
 	Timeout                       *int64                      `json:"timeout,omitempty"`
 }
@@ -75,6 +76,14 @@ func (b *RegionStatApplyConfiguration) WithBpmn(value *BpmnStatApplyConfiguratio
 // If called multiple times, the RunningDefinitions field is set to the value of the last call.
 func (b *RegionStatApplyConfiguration) WithRunningDefinitions(value int64) *RegionStatApplyConfiguration {
 	b.RunningDefinitions = &value
+	return b
+}
+
+// WithLeader sets the Leader field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Leader field is set to the value of the last call.
+func (b *RegionStatApplyConfiguration) WithLeader(value int64) *RegionStatApplyConfiguration {
+	b.Leader = &value
 	return b
 }
 

@@ -36,7 +36,7 @@ import (
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
-	"github.com/olive-io/olive/mon/leader"
+	monleader "github.com/olive-io/olive/mon/leader"
 	internalregion "github.com/olive-io/olive/mon/scheduler/internal/region"
 	internalrunner "github.com/olive-io/olive/mon/scheduler/internal/runner"
 )
@@ -47,7 +47,7 @@ type Scheduler struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	leaderNotifier leader.Notifier
+	leaderNotifier monleader.Notifier
 
 	clientSet       clientset.Interface
 	informerFactory informers.SharedInformerFactory
@@ -60,7 +60,7 @@ type Scheduler struct {
 
 func NewScheduler(
 	ctx context.Context,
-	leaderNotifier leader.Notifier,
+	leaderNotifier monleader.Notifier,
 	clientSet clientset.Interface,
 	informerFactory informers.SharedInformerFactory,
 	opts ...Option) (*Scheduler, error) {
@@ -96,26 +96,7 @@ func (s *Scheduler) Start() error {
 	defer utilruntime.HandleCrash()
 
 	runnerInformer := s.informerFactory.Core().V1().Runners()
-	runnerListener := runnerInformer.Lister()
-	runners, err := runnerListener.List(labels.Everything())
-	if err != nil {
-		return err
-	}
-	for _, runner := range runners {
-		s.runnerQ.Add(runner)
-	}
-
-	regionInformer := s.informerFactory.Core().V1().Regions()
-	regionListener := regionInformer.Lister()
-	regions, err := regionListener.List(labels.Everything())
-	if err != nil {
-		return err
-	}
-	for _, region := range regions {
-		s.regionQ.Add(region)
-	}
-
-	_, err = runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.runnerQ.Add(obj.(*corev1.Runner))
 		},
@@ -130,6 +111,7 @@ func (s *Scheduler) Start() error {
 		return err
 	}
 
+	regionInformer := s.informerFactory.Core().V1().Regions()
 	_, err = regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.regionQ.Add(obj.(*corev1.Region))
@@ -173,16 +155,37 @@ func (s *Scheduler) Start() error {
 		processInformer.Informer().HasSynced,
 	}
 
-	if ok := cache.WaitForNamedCacheSync("scheduler controller", ctx.Done(), informerSynced...); !ok {
+	if ok := cache.WaitForNamedCacheSync("monitor-scheduler", ctx.Done(), informerSynced...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	defer s.cancel()
+	runnerListener := runnerInformer.Lister()
+	runners, err := runnerListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, runner := range runners {
+		s.runnerQ.Add(runner)
+	}
 
-	klog.Infof("Start Scheduler")
+	regionListener := regionInformer.Lister()
+	regions, err := regionListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, region := range regions {
+		s.regionQ.Add(region)
+	}
 
 	klog.Infof("start region worker")
 	go wait.UntilWithContext(ctx, s.runnerRegionWorker, time.Second*3)
+	go s.process()
+
+	return nil
+}
+
+func (s *Scheduler) process() {
+	defer s.cancel()
 
 LOOP:
 	for {
@@ -210,7 +213,6 @@ LOOP:
 	}
 
 	klog.Infof("Scheduler Done")
-	return nil
 }
 
 func (s *Scheduler) runnerRegionWorker(ctx context.Context) {
@@ -227,7 +229,7 @@ func (s *Scheduler) runnerRegionWorker(ctx context.Context) {
 	needScaled, ok := s.regionQ.RegionToScale()
 	if ok {
 		replicas := s.options.RegionReplicas - int(needScaled.Status.Replicas)
-		s.putAction(newScaleRegionAction(needScaled, replicas))
+		s.putAction(newScaleRegionAction(needScaled.Name, replicas))
 		return
 	}
 }
@@ -271,7 +273,7 @@ func (s *Scheduler) allocRegion() {
 
 	region := &corev1.Region{
 		Spec: corev1.RegionSpec{
-			Replicas:         []corev1.RegionReplica{},
+			InitialReplicas:  []corev1.RegionReplica{},
 			ElectionRTT:      s.options.RegionElectionTTL,
 			HeartbeatRTT:     s.options.RegionHeartbeatTTL,
 			DefinitionsLimit: int64(s.options.DefinitionLimit),
@@ -288,7 +290,7 @@ func (s *Scheduler) allocRegion() {
 			Runner:      runner.Name,
 			RaftAddress: runner.Spec.PeerURL,
 		}
-		region.Spec.Replicas = append(region.Spec.Replicas, replica)
+		region.Spec.InitialReplicas = append(region.Spec.InitialReplicas, replica)
 	}
 
 	var err error
@@ -298,18 +300,23 @@ func (s *Scheduler) allocRegion() {
 	if err != nil {
 		return
 	}
-	klog.Infof("create new region %s, replica %d", region.Name, len(region.Spec.Replicas))
+	klog.Infof("create new region %s, replica %d", region.Name, len(region.Spec.InitialReplicas))
 	s.regionQ.Add(region)
 }
 
 func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
-	region := req.region
+	rname := req.region
 	scale := req.scale
+
+	region, err := s.clientSet.CoreV1().Regions().Get(s.ctx, rname, metav1.GetOptions{})
+	if err != nil {
+		return
+	}
 
 	opts := make([]internalrunner.NextOption, 0)
 
 	ignores := []string{}
-	for _, replica := range region.Spec.Replicas {
+	for _, replica := range region.Spec.InitialReplicas {
 		ignores = append(ignores, replica.Runner)
 	}
 	opts = append(opts, internalrunner.WithIgnores(ignores...))
@@ -328,9 +335,9 @@ func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
 		return
 	}
 
-	from := len(region.Spec.Replicas)
+	from := len(region.Spec.InitialReplicas)
 	for _, runner := range runners {
-		replicaNum := len(region.Spec.Replicas)
+		replicaNum := len(region.Spec.InitialReplicas)
 
 		isJoin := true
 		if replicaNum == 0 {
@@ -340,15 +347,13 @@ func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
 		newReplica := corev1.RegionReplica{
 			Id:          int64(replicaId),
 			Runner:      runner.Name,
-			Region:      runner.Spec.ID,
 			RaftAddress: runner.Spec.PeerURL,
 			IsJoin:      isJoin,
 		}
-		region.Spec.Replicas = append(region.Spec.Replicas, newReplica)
+		region.Spec.InitialReplicas = append(region.Spec.InitialReplicas, newReplica)
 	}
 
-	klog.Infof("scale region %s: %d -> %d", region.Name, from, len(region.Spec.Replicas))
-	var err error
+	klog.Infof("scale region %s: %d -> %d", region.Name, from, len(region.Spec.InitialReplicas))
 	region, err = s.clientSet.CoreV1().
 		Regions().
 		Update(s.ctx, region, metav1.UpdateOptions{})

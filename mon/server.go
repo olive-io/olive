@@ -167,11 +167,13 @@ func (s *MonitorServer) Start(stopc <-chan struct{}) error {
 }
 
 func (s *MonitorServer) stop() error {
+	s.lg.Debug("Shutdown olive-mon")
 	s.IDaemon.Shutdown()
 	return nil
 }
 
 func (s *MonitorServer) destroy() {
+	s.lg.Debug("Stopping olive-mon")
 	s.cancel()
 	s.etcd.Server.HardStop()
 	<-s.etcd.Server.StopNotify()

@@ -1811,13 +1811,6 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 							Format:  "",
 						},
 					},
-					"region": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 					"raftAddress": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
@@ -1845,7 +1838,7 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 						},
 					},
 				},
-				Required: []string{"id", "runner", "region", "raftAddress", "isNonVoting", "isWitness", "isJoin"},
+				Required: []string{"id", "runner", "raftAddress", "isNonVoting", "isWitness", "isJoin"},
 			},
 		},
 	}
@@ -1872,7 +1865,7 @@ func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
-					"replicas": {
+					"initialReplicas": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
 							Items: &spec.SchemaOrArray{
@@ -1914,7 +1907,7 @@ func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"id", "deploymentId", "replicas", "electionRTT", "heartbeatRTT", "leader", "definitionsLimit"},
+				Required: []string{"id", "deploymentId", "initialReplicas", "electionRTT", "heartbeatRTT", "leader", "definitionsLimit"},
 			},
 		},
 		Dependencies: []string{
@@ -1955,6 +1948,13 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 							Format:  "int64",
 						},
 					},
+					"leader": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
 					"term": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -1969,7 +1969,7 @@ func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.O
 						},
 					},
 				},
-				Required: []string{"runningDefinitions", "term"},
+				Required: []string{"runningDefinitions", "leader", "term"},
 			},
 		},
 		Dependencies: []string{
@@ -1997,20 +1997,6 @@ func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common
 							Format:  "",
 						},
 					},
-					"leader": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"term": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 					"replicas": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
@@ -2032,7 +2018,7 @@ func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"phase", "message", "leader", "term", "replicas", "definitions", "stat"},
+				Required: []string{"phase", "message", "replicas", "definitions", "stat"},
 			},
 		},
 		Dependencies: []string{

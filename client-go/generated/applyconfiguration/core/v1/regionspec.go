@@ -28,7 +28,7 @@ package v1
 type RegionSpecApplyConfiguration struct {
 	Id               *int64                            `json:"id,omitempty"`
 	DeploymentId     *int64                            `json:"deploymentId,omitempty"`
-	Replicas         []RegionReplicaApplyConfiguration `json:"replicas,omitempty"`
+	InitialReplicas  []RegionReplicaApplyConfiguration `json:"initialReplicas,omitempty"`
 	ElectionRTT      *int64                            `json:"electionRTT,omitempty"`
 	HeartbeatRTT     *int64                            `json:"heartbeatRTT,omitempty"`
 	Leader           *int64                            `json:"leader,omitempty"`
@@ -57,15 +57,15 @@ func (b *RegionSpecApplyConfiguration) WithDeploymentId(value int64) *RegionSpec
 	return b
 }
 
-// WithReplicas adds the given value to the Replicas field in the declarative configuration
+// WithInitialReplicas adds the given value to the InitialReplicas field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Replicas field.
-func (b *RegionSpecApplyConfiguration) WithReplicas(values ...*RegionReplicaApplyConfiguration) *RegionSpecApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the InitialReplicas field.
+func (b *RegionSpecApplyConfiguration) WithInitialReplicas(values ...*RegionReplicaApplyConfiguration) *RegionSpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
-			panic("nil value passed to WithReplicas")
+			panic("nil value passed to WithInitialReplicas")
 		}
-		b.Replicas = append(b.Replicas, *values[i])
+		b.InitialReplicas = append(b.InitialReplicas, *values[i])
 	}
 	return b
 }

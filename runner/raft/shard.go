@@ -104,9 +104,7 @@ type Shard struct {
 
 	be backend.IBackend
 
-	rimu       sync.RWMutex
-	regionInfo *corev1.Region
-	metric     *regionMetrics
+	metric *regionMetrics
 
 	processQ *queue.SyncPriorityQueue
 
@@ -135,21 +133,20 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 
 	tracer := c.tracer
 	region := &Shard{
-		id:         shardId,
-		memberId:   nodeId,
-		lg:         c.cfg.Logger,
-		openWait:   c.regionW,
-		tracer:     tracer,
-		proxy:      c.proxy,
-		applyW:     wait.New(),
-		commitW:    wait.New(),
-		reqIDGen:   reqIDGen,
-		be:         c.be,
-		processQ:   processQ,
-		regionInfo: &corev1.Region{},
-		changeC:    make(chan struct{}),
-		readyC:     make(chan struct{}),
-		stopc:      make(<-chan struct{}, 1),
+		id:       shardId,
+		memberId: nodeId,
+		lg:       c.cfg.Logger,
+		openWait: c.regionW,
+		tracer:   tracer,
+		proxy:    c.proxy,
+		applyW:   wait.New(),
+		commitW:  wait.New(),
+		reqIDGen: reqIDGen,
+		be:       c.be,
+		processQ: processQ,
+		changeC:  make(chan struct{}),
+		readyC:   make(chan struct{}),
+		stopc:    make(<-chan struct{}, 1),
 	}
 
 	applyBase := region.newApplier()
@@ -577,20 +574,8 @@ func (r *Shard) putPrefix() []byte {
 	return sb
 }
 
-func (r *Shard) updateInfo(info *corev1.Region) {
-	r.rimu.Lock()
-	defer r.rimu.Unlock()
-	r.regionInfo = info
-}
-
 func (r *Shard) updateConfig(config ShardConfig) {
 	r.cfg = config
-}
-
-func (r *Shard) getInfo() *corev1.Region {
-	r.rimu.RLock()
-	defer r.rimu.RUnlock()
-	return r.regionInfo.DeepCopy()
 }
 
 func (r *Shard) getID() uint64 {

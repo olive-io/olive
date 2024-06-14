@@ -71,6 +71,7 @@ func (r *Shard) stat() *corev1.RegionStat {
 			Tasks:       int64(r.metric.task.Get()),
 		},
 		RunningDefinitions: int64(r.metric.runningDefinition.Get()),
+		Leader:             int64(r.getLeader()),
 		Term:               int64(r.getTerm()),
 		Timeout:            time.Now().Unix(),
 	}

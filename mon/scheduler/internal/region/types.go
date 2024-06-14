@@ -103,6 +103,9 @@ type Selector []regionSelector
 
 func NewSelector(options NextOptions) Selector {
 	selector := Selector{}
+	selector = append(selector, func(r *corev1.Region) bool {
+		return r.Spec.Id > 0
+	})
 	if options.Name != nil && *options.Name != "" {
 		sfn := func(r *corev1.Region) bool { return *options.Name != r.Name }
 		selector = append(selector, sfn)

@@ -35,7 +35,7 @@ const (
 	// RunnerPending means the node has been created/added by the system, but not configured.
 	RunnerPending RunnerPhase = "Pending"
 	// RunnerActive means the olive-runner has been configured and has Olive components active.
-	RunnerActive RunnerPhase = "Running"
+	RunnerActive RunnerPhase = "Active"
 	// RunnerTerminated means the node has been removed from the cluster.
 	RunnerTerminated RunnerPhase = "Terminated"
 )
@@ -121,10 +121,12 @@ const (
 	RegionPending RegionPhase = "Pending"
 	// RegionTerminated means the region has been removed from the cluster.
 	RegionTerminated RegionPhase = "Terminated"
+	// RegionPeer means the region being peering with other replicas
+	RegionPeer RegionPhase = "Peer"
 	// RegionActive means the region is a normal raft machine, it runs definition.
-	RegionActive = "Active"
+	RegionActive RegionPhase = "Active"
 	// RegionFailed means the region in exception mode, we need to fix it.
-	RegionFailed = "Failed"
+	RegionFailed RegionPhase = "Failed"
 )
 
 // +genclient
@@ -144,7 +146,7 @@ type Region struct {
 type RegionSpec struct {
 	Id               int64           `json:"id" protobuf:"varint,1,opt,name=id"`
 	DeploymentId     int64           `json:"deploymentId" protobuf:"varint,2,opt,name=deploymentId"`
-	Replicas         []RegionReplica `json:"replicas" protobuf:"bytes,3,rep,name=replicas"`
+	InitialReplicas  []RegionReplica `json:"initialReplicas" protobuf:"bytes,3,rep,name=initialReplicas"`
 	ElectionRTT      int64           `json:"electionRTT" protobuf:"varint,4,opt,name=electionRTT"`
 	HeartbeatRTT     int64           `json:"heartbeatRTT" protobuf:"varint,5,opt,name=heartbeatRTT"`
 	Leader           int64           `json:"leader" protobuf:"varint,6,opt,name=leader"`
@@ -154,31 +156,20 @@ type RegionSpec struct {
 type RegionReplica struct {
 	Id          int64  `json:"id" protobuf:"varint,1,opt,name=id"`
 	Runner      string `json:"runner" protobuf:"bytes,2,opt,name=runner"`
-	Region      int64  `json:"region" protobuf:"varint,3,opt,name=region"`
-	RaftAddress string `json:"raftAddress" protobuf:"bytes,4,opt,name=raftAddress"`
-	IsNonVoting *bool  `json:"isNonVoting" protobuf:"varint,5,opt,name=isNonVoting"`
-	IsWitness   *bool  `json:"isWitness" protobuf:"varint,6,opt,name=isWitness"`
-	IsJoin      bool   `json:"isJoin" protobuf:"varint,7,opt,name=isJoin"`
+	RaftAddress string `json:"raftAddress" protobuf:"bytes,3,opt,name=raftAddress"`
+	IsNonVoting *bool  `json:"isNonVoting" protobuf:"varint,4,opt,name=isNonVoting"`
+	IsWitness   *bool  `json:"isWitness" protobuf:"varint,5,opt,name=isWitness"`
+	IsJoin      bool   `json:"isJoin" protobuf:"varint,6,opt,name=isJoin"`
 }
 
 type RegionStatus struct {
 	Phase   RegionPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RegionPhase"`
 	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
 
-	Leader      int64 `json:"leader" protobuf:"varint,3,opt,name=leader"`
-	Term        int64 `json:"term" protobuf:"varint,4,opt,name=term"`
-	Replicas    int32 `json:"replicas" protobuf:"varint,5,opt,name=replicas"`
-	Definitions int64 `json:"definitions" protobuf:"varint,6,opt,name=definitions"`
+	Replicas    int32 `json:"replicas" protobuf:"varint,3,opt,name=replicas"`
+	Definitions int64 `json:"definitions" protobuf:"varint,4,opt,name=definitions"`
 
-	Stat RegionStat `json:"stat" protobuf:"bytes,7,opt,name=stat"`
-}
-
-func (m *Region) InitialURL() map[int64]string {
-	initial := map[int64]string{}
-	for _, replica := range m.Spec.Replicas {
-		initial[replica.Id] = replica.RaftAddress
-	}
-	return initial
+	Stat RegionStat `json:"stat" protobuf:"bytes,5,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -191,9 +182,10 @@ type RegionStat struct {
 
 	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,2,opt,name=runningDefinitions"`
 
-	Term int64 `json:"term" protobuf:"varint,3,opt,name=term"`
+	Leader int64 `json:"leader" protobuf:"varint,3,opt,name=leader"`
+	Term   int64 `json:"term" protobuf:"varint,4,opt,name=term"`
 
-	Timeout int64 `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
+	Timeout int64 `json:"timeout,omitempty" protobuf:"varint,5,opt,name=timeout"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -95,6 +95,9 @@ type Selector []runnerSelector
 
 func NewSelector(options NextOptions) Selector {
 	selector := Selector{}
+	selector = append(selector, func(r *corev1.Runner) bool {
+		return r.Status.Phase == corev1.RunnerActive
+	})
 	if options.Name != nil && *options.Name != "" {
 		sfn := func(r *corev1.Runner) bool { return *options.Name != r.Name }
 		selector = append(selector, sfn)

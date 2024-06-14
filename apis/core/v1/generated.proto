@@ -236,15 +236,13 @@ message RegionReplica {
 
   optional string runner = 2;
 
-  optional int64 region = 3;
+  optional string raftAddress = 3;
 
-  optional string raftAddress = 4;
+  optional bool isNonVoting = 4;
 
-  optional bool isNonVoting = 5;
+  optional bool isWitness = 5;
 
-  optional bool isWitness = 6;
-
-  optional bool isJoin = 7;
+  optional bool isJoin = 6;
 }
 
 // RegionSpec is the specification of a Region.
@@ -253,7 +251,7 @@ message RegionSpec {
 
   optional int64 deploymentId = 2;
 
-  repeated RegionReplica replicas = 3;
+  repeated RegionReplica initialReplicas = 3;
 
   optional int64 electionRTT = 4;
 
@@ -270,9 +268,11 @@ message RegionStat {
 
   optional int64 runningDefinitions = 2;
 
-  optional int64 term = 3;
+  optional int64 leader = 3;
 
-  optional int64 timeout = 4;
+  optional int64 term = 4;
+
+  optional int64 timeout = 5;
 }
 
 message RegionStatus {
@@ -280,15 +280,11 @@ message RegionStatus {
 
   optional string message = 2;
 
-  optional int64 leader = 3;
+  optional int32 replicas = 3;
 
-  optional int64 term = 4;
+  optional int64 definitions = 4;
 
-  optional int32 replicas = 5;
-
-  optional int64 definitions = 6;
-
-  optional RegionStat stat = 7;
+  optional RegionStat stat = 5;
 }
 
 // Runner the olive node

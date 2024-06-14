@@ -32,8 +32,6 @@ import (
 type RegionStatusApplyConfiguration struct {
 	Phase       *v1.RegionPhase               `json:"phase,omitempty"`
 	Message     *string                       `json:"message,omitempty"`
-	Leader      *int64                        `json:"leader,omitempty"`
-	Term        *int64                        `json:"term,omitempty"`
 	Replicas    *int32                        `json:"replicas,omitempty"`
 	Definitions *int64                        `json:"definitions,omitempty"`
 	Stat        *RegionStatApplyConfiguration `json:"stat,omitempty"`
@@ -58,22 +56,6 @@ func (b *RegionStatusApplyConfiguration) WithPhase(value v1.RegionPhase) *Region
 // If called multiple times, the Message field is set to the value of the last call.
 func (b *RegionStatusApplyConfiguration) WithMessage(value string) *RegionStatusApplyConfiguration {
 	b.Message = &value
-	return b
-}
-
-// WithLeader sets the Leader field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Leader field is set to the value of the last call.
-func (b *RegionStatusApplyConfiguration) WithLeader(value int64) *RegionStatusApplyConfiguration {
-	b.Leader = &value
-	return b
-}
-
-// WithTerm sets the Term field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Term field is set to the value of the last call.
-func (b *RegionStatusApplyConfiguration) WithTerm(value int64) *RegionStatusApplyConfiguration {
-	b.Term = &value
 	return b
 }
 
