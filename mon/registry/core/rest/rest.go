@@ -31,7 +31,7 @@ import (
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	definitionstore "github.com/olive-io/olive/mon/registry/core"
+	definitionstore "github.com/olive-io/olive/mon/registry/core/definition"
 	namespacestore "github.com/olive-io/olive/mon/registry/core/namespace"
 	processstore "github.com/olive-io/olive/mon/registry/core/process"
 	regionstore "github.com/olive-io/olive/mon/registry/core/region"

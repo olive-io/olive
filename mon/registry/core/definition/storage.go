@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package core
+package definition
 
 import (
 	"context"
@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/mon/registry/core/definition"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
@@ -71,25 +70,25 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
 		NewFunc:                   func() runtime.Object { return &corev1.Definition{} },
 		NewListFunc:               func() runtime.Object { return &corev1.DefinitionList{} },
-		PredicateFunc:             definition.MatchDefinition,
+		PredicateFunc:             MatchDefinition,
 		DefaultQualifiedResource:  corev1.Resource("definitions"),
 		SingularQualifiedResource: corev1.Resource("definition"),
 
-		CreateStrategy:      definition.Strategy,
-		UpdateStrategy:      definition.Strategy,
-		DeleteStrategy:      definition.Strategy,
-		ResetFieldsStrategy: definition.Strategy,
+		CreateStrategy:      Strategy,
+		UpdateStrategy:      Strategy,
+		DeleteStrategy:      Strategy,
+		ResetFieldsStrategy: Strategy,
 
 		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: definition.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 
 	statusStore := *store
-	statusStore.UpdateStrategy = definition.StatusStrategy
-	statusStore.ResetFieldsStrategy = definition.StatusStrategy
+	statusStore.UpdateStrategy = StatusStrategy
+	statusStore.ResetFieldsStrategy = StatusStrategy
 
 	return &REST{store}, &StatusREST{store: &statusStore}, nil
 }
@@ -106,7 +105,7 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 	//nolint:staticcheck // SA1019 backwards compatibility
 	//nolint: staticcheck
 	if options != nil && options.PropagationPolicy == nil && options.OrphanDependents == nil &&
-		definition.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		// Throw a warning if delete options are not explicitly set as Definition deletion strategy by default is orphaning
 		// pods in v1.
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
@@ -116,7 +115,7 @@ func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.Va
 
 func (r *REST) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, deleteOptions *metav1.DeleteOptions, listOptions *internalversion.ListOptions) (runtime.Object, error) {
 	if deleteOptions.PropagationPolicy == nil && deleteOptions.OrphanDependents == nil &&
-		definition.Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
+		Strategy.DefaultGarbageCollectionPolicy(ctx) == rest.OrphanDependents {
 		warning.AddWarning(ctx, "", deleteOptionWarnings)
 	}
 	return r.Store.DeleteCollection(ctx, deleteValidation, deleteOptions, listOptions)

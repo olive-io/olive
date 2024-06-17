@@ -27,8 +27,9 @@ genclients:
 
 generate:
 	cd $(GOPATH)/src && \
-	protoc -I. -I github.com/googleapis/googleapis --gogo_out=. github.com/olive-io/olive/apis/pb/olive/internal.proto && \
-	protoc -I. -I github.com/googleapis/googleapis --gogo_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/apis/pb/olive/raft.proto
+	protoc -I. -I github.com/googleapis/googleapis --gofast_out=.  github.com/olive-io/olive/apis/pb/olive/raft.proto
+
+# protoc -I. -I github.com/googleapis/googleapis --gofast_out=. github.com/olive-io/olive/apis/pb/olive/internal.proto && \
 #	cd $(GOPATH)/src && \
 #	protoc --go_out=. github.com/olive-io/olive/apis/pb/discovery/discovery.proto && \
 #	protoc --go_out=. github.com/olive-io/olive/apis/pb/discovery/activity.proto && \

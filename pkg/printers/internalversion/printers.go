@@ -22,8 +22,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package internalversion
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/duration"
@@ -46,18 +49,23 @@ const (
 func AddHandlers(h printers.PrintHandler) {
 	runnerColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Hostname", Type: "string", Description: "The hostname of the olive-runner."},
 		{Name: "PeerURL", Type: "string", Description: "The peer url of the olive-runner"},
 		{Name: "ClientURL", Type: "string", Description: "The client url of the olive-runner"},
+		{Name: "CPU", Type: "string", Description: "The CPU usage of the olive-runner."},
+		{Name: "Memory", Type: "string", Description: "The memory usage of the olive-runner."},
 		{Name: "Status", Type: "string", Description: "The status of the olive-runner"},
-		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(runnerColumnDefinitions, printRunner)
 	_ = h.TableHandler(runnerColumnDefinitions, printRunnerList)
 
 	regionColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Replica", Type: "string", Description: "The replicas of raft shard"},
+		{Name: "Term", Type: "integer", Description: "The election term of raft shard"},
 		{Name: "Status", Type: "string", Description: "The status of the region"},
-		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(regionColumnDefinitions, printRegion)
 	_ = h.TableHandler(regionColumnDefinitions, printRegionList)
@@ -65,7 +73,7 @@ func AddHandlers(h printers.PrintHandler) {
 	edgeColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the edge"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(edgeColumnDefinitions, printEdge)
 	_ = h.TableHandler(edgeColumnDefinitions, printEdgeList)
@@ -73,7 +81,7 @@ func AddHandlers(h printers.PrintHandler) {
 	endpointColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the endpoint"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(endpointColumnDefinitions, printEndpoint)
 	_ = h.TableHandler(endpointColumnDefinitions, printEndpointList)
@@ -81,7 +89,7 @@ func AddHandlers(h printers.PrintHandler) {
 	serviceColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the service"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(serviceColumnDefinitions, printService)
 	_ = h.TableHandler(serviceColumnDefinitions, printServiceList)
@@ -89,13 +97,15 @@ func AddHandlers(h printers.PrintHandler) {
 	namespaceColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the namespace"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(namespaceColumnDefinitions, printNamespace)
 	_ = h.TableHandler(namespaceColumnDefinitions, printNamespaceList)
 
 	definitionColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Version", Type: "integer", Description: "The latest version of definition"},
+		{Name: "Region", Type: "string", Description: "The region of definition binding"},
 		{Name: "Status", Type: "string", Description: "The status of the bpmn definition"},
 		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
@@ -105,7 +115,7 @@ func AddHandlers(h printers.PrintHandler) {
 	processColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Status", Type: "string", Description: "The status of the bpmn process"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
 	_ = h.TableHandler(processColumnDefinitions, printProcess)
 	_ = h.TableHandler(processColumnDefinitions, printProcessList)
@@ -116,11 +126,17 @@ func printRunner(obj *corev1.Runner, options printers.GenerateOptions) ([]metav1
 		Object: krt.RawExtension{Object: obj},
 	}
 
+	cpuUsage := fmt.Sprintf("%d", int64(obj.Status.CpuTotal))
+	memoryUsage := humanize.Bytes(uint64(obj.Status.MemoryTotal))
+
 	row.Cells = append(row.Cells, obj.Name,
+		obj.Spec.Hostname,
 		obj.Spec.PeerURL,
 		obj.Spec.ClientURL,
+		cpuUsage,
+		memoryUsage,
 		obj.Status.Phase,
-		obj.CreationTimestamp)
+		translateTimestampSince(obj.CreationTimestamp))
 
 	return []metav1.TableRow{row}, nil
 }
@@ -142,10 +158,22 @@ func printRegion(obj *corev1.Region, options printers.GenerateOptions) ([]metav1
 		Object: krt.RawExtension{Object: obj},
 	}
 
+	replicas := []string{}
+	for _, replica := range obj.Spec.InitialReplicas {
+		id := fmt.Sprintf("%d", replica.Id)
+		if obj.Spec.Leader == replica.Id {
+			replicas = append([]string{id}, replicas...)
+		} else {
+			replicas = append(replicas, id)
+		}
+	}
+
 	row.Cells = append(row.Cells,
 		obj.Name,
+		strings.Join(replicas, ","),
+		obj.Status.Stat.Term,
 		obj.Status.Phase,
-		obj.CreationTimestamp)
+		translateTimestampSince(obj.CreationTimestamp))
 
 	return []metav1.TableRow{row}, nil
 }
@@ -252,7 +280,14 @@ func printDefinition(obj *corev1.Definition, options printers.GenerateOptions) (
 	row := metav1.TableRow{
 		Object: krt.RawExtension{Object: obj},
 	}
-	row.Cells = append(row.Cells, obj.Name, string(obj.Status.Phase), translateTimestampSince(obj.CreationTimestamp))
+
+	region := fmt.Sprintf("rn%d", obj.Spec.Region)
+
+	row.Cells = append(row.Cells, obj.Name,
+		obj.Spec.Version,
+		region,
+		string(obj.Status.Phase),
+		translateTimestampSince(obj.CreationTimestamp))
 	return []metav1.TableRow{row}, nil
 }
 

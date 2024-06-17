@@ -41,7 +41,6 @@ import (
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	dsypb "github.com/olive-io/olive/apis/pb/discovery"
-	gatewaypb "github.com/olive-io/olive/apis/pb/gateway"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
@@ -366,72 +365,72 @@ LOOP:
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *pb.ProcessInstance) {
+func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *corev1.Process) {
 
-	taskAct := trace.GetActivity()
-	actType := taskAct.Type()
-	dsyAct := &dsypb.Activity{
-		Type:               actCov(actType),
-		Definitions:        process.DefinitionsId,
-		DefinitionsVersion: process.DefinitionsVersion,
-	}
-	if id, ok := taskAct.Element().Id(); ok {
-		dsyAct.Id = *id
-	}
-	if name, ok := taskAct.Element().Name(); ok {
-		dsyAct.Name = *name
-	}
-	if id, ok := inst.Process().Id(); ok {
-		dsyAct.Process = *id
-	}
-	if extension, ok := taskAct.Element().ExtensionElements(); ok {
-		if td := extension.TaskDefinitionField; td != nil {
-			dsyAct.TaskType = td.Type
-		}
-	}
-
-	fields := []zap.Field{
-		zap.String("definition", process.DefinitionsId),
-		zap.Uint64("version", process.DefinitionsVersion),
-		zap.String("process", process.Id),
-		zap.String("task", dsyAct.Id),
-	}
-
-	headers := toGenericMap[string](trace.GetHeaders())
-	properties := trace.GetProperties()
-	dataObjects := trace.GetDataObjects()
-
-	req := &gatewaypb.TransmitRequest{
-		Activity:    dsyAct,
-		Headers:     headers,
-		Properties:  map[string]*dsypb.Box{},
-		DataObjects: map[string]*dsypb.Box{},
-	}
-	for key, value := range properties {
-		req.Properties[key] = dsypb.BoxFromAny(value)
-	}
-	for key, value := range dataObjects {
-		req.DataObjects[key] = dsypb.BoxFromAny(value)
-	}
-
-	doOpts := make([]bact.DoOption, 0)
-	resp, err := r.proxy.Handle(ctx, req)
-	if err != nil {
-		err = fmt.Errorf("%s", err.Error())
-		r.lg.Error("handle task", append(fields, zap.Error(err))...)
-		doOpts = append(doOpts, bact.WithErr(err))
-	} else {
-		dp := map[string]any{}
-		ddo := map[string]any{}
-		for key, value := range resp.Properties {
-			dp[key] = value.Value()
-		}
-		for key, value := range resp.DataObjects {
-			ddo[key] = value.Value()
-		}
-		doOpts = append(doOpts, bact.WithProperties(dp), bact.WithObjects(ddo))
-	}
-	trace.Do(doOpts...)
+	//taskAct := trace.GetActivity()
+	//actType := taskAct.Type()
+	//dsyAct := &dsypb.Activity{
+	//	Type:               actCov(actType),
+	//	Definitions:        process.DefinitionsId,
+	//	DefinitionsVersion: process.DefinitionsVersion,
+	//}
+	//if id, ok := taskAct.Element().Id(); ok {
+	//	dsyAct.Id = *id
+	//}
+	//if name, ok := taskAct.Element().Name(); ok {
+	//	dsyAct.Name = *name
+	//}
+	//if id, ok := inst.Process().Id(); ok {
+	//	dsyAct.Process = *id
+	//}
+	//if extension, ok := taskAct.Element().ExtensionElements(); ok {
+	//	if td := extension.TaskDefinitionField; td != nil {
+	//		dsyAct.TaskType = td.Type
+	//	}
+	//}
+	//
+	//fields := []zap.Field{
+	//	zap.String("definition", process.DefinitionsId),
+	//	zap.Uint64("version", process.DefinitionsVersion),
+	//	zap.String("process", process.Id),
+	//	zap.String("task", dsyAct.Id),
+	//}
+	//
+	//headers := toGenericMap[string](trace.GetHeaders())
+	//properties := trace.GetProperties()
+	//dataObjects := trace.GetDataObjects()
+	//
+	//req := &gatewaypb.TransmitRequest{
+	//	Activity:    dsyAct,
+	//	Headers:     headers,
+	//	Properties:  map[string]*dsypb.Box{},
+	//	DataObjects: map[string]*dsypb.Box{},
+	//}
+	//for key, value := range properties {
+	//	req.Properties[key] = dsypb.BoxFromAny(value)
+	//}
+	//for key, value := range dataObjects {
+	//	req.DataObjects[key] = dsypb.BoxFromAny(value)
+	//}
+	//
+	//doOpts := make([]bact.DoOption, 0)
+	//resp, err := r.proxy.Handle(ctx, req)
+	//if err != nil {
+	//	err = fmt.Errorf("%s", err.Error())
+	//	r.lg.Error("handle task", append(fields, zap.Error(err))...)
+	//	doOpts = append(doOpts, bact.WithErr(err))
+	//} else {
+	//	dp := map[string]any{}
+	//	ddo := map[string]any{}
+	//	for key, value := range resp.Properties {
+	//		dp[key] = value.Value()
+	//	}
+	//	for key, value := range resp.DataObjects {
+	//		ddo[key] = value.Value()
+	//	}
+	//	doOpts = append(doOpts, bact.WithProperties(dp), bact.WithObjects(ddo))
+	//}
+	//trace.Do(doOpts...)
 }
 
 func saveProcess(ctx context.Context, kv IShardRaftKV, process *corev1.Process) error {

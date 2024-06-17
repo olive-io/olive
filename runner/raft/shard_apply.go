@@ -126,7 +126,7 @@ func (a *applier) Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutR
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "key", Value: string(r.Key)},
-			traceutil.Field{Key: "req_size", Value: proto.Size(r)},
+			traceutil.Field{Key: "req_size", Value: r.XXX_Size()},
 		)
 	}
 
@@ -181,7 +181,7 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinit
 	}
 
 	trace.Step("save definition", traceutil.Field{Key: "key", Value: key})
-	data, _ := proto.Marshal(definition)
+	data, _ := definition.Marshal()
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
@@ -217,7 +217,7 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefin
 
 	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
 	process.Status.Phase = corev1.ProcessPrepare
-	data, _ := proto.Marshal(process)
+	data, _ := process.Marshal()
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}

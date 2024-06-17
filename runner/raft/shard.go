@@ -351,7 +351,7 @@ func (r *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.Raft
 	req.Header = &pb.RaftHeader{
 		ID: r.reqIDGen.Next(),
 	}
-	data, err := proto.Marshal(req)
+	data, err := req.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -412,8 +412,8 @@ func (r *Shard) applyEntry(entry sm.Entry) {
 		return
 	}
 
-	var raftReq pb.RaftInternalRequest
-	if err := proto.Unmarshal(entry.Cmd, &raftReq); err != nil {
+	raftReq := &pb.RaftInternalRequest{}
+	if err := raftReq.Unmarshal(entry.Cmd); err != nil {
 		r.lg.Warn("unmarshal entry cmd", zap.Uint64("index", entry.Index), zap.Error(err))
 		return
 	}
@@ -424,7 +424,7 @@ func (r *Shard) applyEntry(entry sm.Entry) {
 	id := raftReq.Header.ID
 	need := r.applyW.IsRegistered(id)
 	if need {
-		ar = r.applyBase.Apply(ctx, &raftReq)
+		ar = r.applyBase.Apply(ctx, raftReq)
 	}
 
 	if ar == nil {

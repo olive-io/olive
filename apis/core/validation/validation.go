@@ -166,7 +166,7 @@ func validateRegionStatus(region *corev1.Region, fldPath *field.Path) field.Erro
 
 // ValidateDefinition tests if required fields are set.
 func ValidateDefinition(definition *corev1.Definition) field.ErrorList {
-	allErrs := ValidateObjectMeta(&definition.ObjectMeta, false, ValidateDefinitionName, field.NewPath("metadata"))
+	allErrs := ValidateObjectMeta(&definition.ObjectMeta, true, ValidateDefinitionName, field.NewPath("metadata"))
 	return allErrs
 }
 

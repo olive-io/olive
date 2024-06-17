@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The olive Authors
+Copyright 2024 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -21,590 +21,402 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package scheduler
 
-//
-//const (
-//	messageParallel = 20
-//	replicaNum      = 3
-//
-//	defaultRegionElectionTTL  = 10
-//	defaultRegionHeartbeatTTL = 1
-//
-//	defaultRegionIds = "_olive/id/region"
-//)
-//
-//type Config struct {
-//	Logger   *zap.Logger      `json:"-"`
-//	Client   *clientv3.Client `json:"-"`
-//	Notifier leader.Notifier  `json:"-"`
-//
-//	RegionLimit     int `json:"region-limit"`
-//	DefinitionLimit int `json:"definition-limit"`
-//}
-//
-//type Scheduler struct {
-//	*Config
-//
-//	ctx    context.Context
-//	cancel context.CancelFunc
-//
-//	rmu     sync.RWMutex
-//	runners map[uint64]*pb.Runner
-//
-//	rgmu    sync.RWMutex
-//	regions map[uint64]*pb.Region
-//
-//	runnerQ     *queue.SyncPriorityQueue
-//	regionQ     *queue.SyncPriorityQueue
-//	definitionQ *queue.SyncPriorityQueue
-//
-//	messageCh chan imessage
-//
-//	stopC <-chan struct{}
-//}
-//
-//func New(cfg *Config, stopC <-chan struct{}) *Scheduler {
-//
-//	var cancel context.CancelFunc
-//	ctx, cancel := context.WithCancel(context.Background())
-//
-//	sc := &Scheduler{
-//		Config:    cfg,
-//		ctx:       ctx,
-//		cancel:    cancel,
-//		runners:   map[uint64]*pb.Runner{},
-//		regions:   map[uint64]*pb.Region{},
-//		messageCh: make(chan imessage, messageParallel),
-//		stopC:     stopC,
-//	}
-//
-//	sc.runnerQ = queue.NewSync()
-//	sc.regionQ = queue.NewSync()
-//	sc.definitionQ = queue.NewSync()
-//
-//	return sc
-//}
-//
-//func (sc *Scheduler) sync() error {
-//	ctx := sc.ctx
-//	client := sc.Client
-//	runners := make(map[uint64]*pb.Runner)
-//	options := []clientv3.OpOption{
-//		clientv3.WithPrefix(),
-//		clientv3.WithSerializable(),
-//	}
-//
-//	key := ort.DefaultMetaRunnerRegistrar
-//	resp, err := client.Get(ctx, key, options...)
-//	if err != nil {
-//		return err
-//	}
-//	for _, kv := range resp.Kvs {
-//		runner := new(pb.Runner)
-//		err = proto.Unmarshal(kv.Value, runner)
-//		if err != nil {
-//			continue
-//		}
-//		runners[runner.Id] = runner
-//	}
-//	sc.rmu.Lock()
-//	sc.runners = runners
-//	sc.rmu.Unlock()
-//
-//	regions := make(map[uint64]*pb.Region)
-//	key = ort.DefaultRunnerRegion
-//	resp, err = client.Get(ctx, key, options...)
-//	if err != nil {
-//		return err
-//	}
-//	for _, kv := range resp.Kvs {
-//		region := new(pb.Region)
-//		err = proto.Unmarshal(kv.Value, region)
-//		if err != nil {
-//			continue
-//		}
-//		regions[region.Id] = region
-//	}
-//	sc.rgmu.Lock()
-//	sc.regions = regions
-//	sc.rgmu.Unlock()
-//
-//	key = ort.DefaultMetaDefinitionMeta
-//	resp, err = client.Get(ctx, key, options...)
-//	if err != nil {
-//		return err
-//	}
-//	for _, kv := range resp.Kvs {
-//		dm := new(pb.DefinitionMeta)
-//		err = proto.Unmarshal(kv.Value, dm)
-//		if err != nil {
-//			continue
-//		}
-//		if dm.Region == 0 {
-//			sc.definitionQ.Set(dm)
-//		}
-//	}
-//
-//	return nil
-//}
-//
-//func (sc *Scheduler) Start() error {
-//	if err := sc.sync(); err != nil {
-//		return err
-//	}
-//
-//	go sc.run()
-//	return nil
-//}
-//
-//func (sc *Scheduler) dispatchMessage(m imessage) {
-//	select {
-//	case <-sc.stopC:
-//		return
-//	case sc.messageCh <- m:
-//	}
-//}
-//
-//func (sc *Scheduler) GetRunner(ctx context.Context, id uint64) (*pb.Runner, error) {
-//	sc.rmu.RLock()
-//	runner, ok := sc.runners[id]
-//	sc.rmu.RUnlock()
-//	if !ok {
-//		return nil, ErrNoRunner
-//	}
-//	return runner, nil
-//}
-//
-//func (sc *Scheduler) GetRegion(ctx context.Context, id uint64) (*pb.Region, error) {
-//	sc.rgmu.RLock()
-//	region, ok := sc.regions[id]
-//	sc.rgmu.RUnlock()
-//	if !ok {
-//		return nil, ErrNoRegion
-//	}
-//	return region, nil
-//}
-//
-//func (sc *Scheduler) AllocRegion(ctx context.Context) (*pb.Region, error) {
-//	runners, err := sc.schedulingRunnerCycle(ctx)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	// allocates a new region id
-//	rid, err := sc.allocRegionId(ctx)
-//	if err != nil {
-//		return nil, err
-//	}
-//	rname := fmt.Sprintf("r%.2d", rid)
-//
-//	region := &pb.Region{
-//		Id:           rid,
-//		Name:         rname,
-//		Replicas:     []*pb.RegionReplica{},
-//		ElectionRTT:  defaultRegionElectionTTL,
-//		HeartbeatRTT: defaultRegionHeartbeatTTL,
-//
-//		DefinitionsLimit: uint64(sc.DefinitionLimit),
-//
-//		State:     pb.State_NotReady,
-//		Timestamp: time.Now().Unix(),
-//	}
-//	for i, runner := range runners {
-//		mid := uint64(i + 1)
-//		if i == 0 {
-//			region.Leader = mid
-//		}
-//		region.Replicas = append(region.Replicas, &pb.RegionReplica{
-//			Id:          mid,
-//			Runner:      runner.Id,
-//			Region:      rid,
-//			RaftAddress: runner.ListenPeerURL,
-//			IsJoin:      false,
-//		})
-//	}
-//
-//	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-//	data, _ := proto.Marshal(region)
-//	resp, err := sc.Client.Put(ctx, key, string(data))
-//	if err != nil {
-//		return nil, err
-//	}
-//	region.Rev = resp.Header.Revision
-//
-//	sc.rgmu.Lock()
-//	sc.regions[region.Id] = region
-//	sc.rgmu.Unlock()
-//
-//	return region, nil
-//}
-//
-//func (sc *Scheduler) allocRegionId(ctx context.Context) (uint64, error) {
-//	idGen, err := idutil.NewIncrementer(defaultRegionIds, sc.Client, sc.stopC)
-//	if err != nil {
-//		return 0, err
-//	}
-//	return idGen.Next(ctx), nil
-//}
-//
-//func (sc *Scheduler) ExpendRegion(ctx context.Context, id uint64) (*pb.Region, error) {
-//	sc.rgmu.RLock()
-//	region, ok := sc.regions[id]
-//	sc.rgmu.RUnlock()
-//	if !ok {
-//		return nil, ErrNoRegion
-//	}
-//
-//	opts := make([]runnerOption, 0)
-//	for _, replica := range region.Replicas {
-//		opts = append(opts, runnerWithMatch(runnerMatchWithout(replica.Runner)))
-//	}
-//
-//	count := replicaNum - len(region.Replicas)
-//	opts = append(opts, runnerWithCount(count))
-//	runners, err := sc.schedulingRunnerCycle(ctx, opts...)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	next := uint64(len(region.Replicas) + 1)
-//	for _, runner := range runners {
-//		rid := runner.Id
-//		replica := &pb.RegionReplica{
-//			Id:          next,
-//			Runner:      rid,
-//			Region:      region.Id,
-//			RaftAddress: runner.ListenPeerURL,
-//			IsJoin:      true,
-//		}
-//		region.Replicas = append(region.Replicas, replica)
-//		next += 1
-//	}
-//
-//	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-//	data, _ := proto.Marshal(region)
-//	resp, err := sc.Client.Put(ctx, key, string(data))
-//	if err != nil {
-//		return nil, err
-//	}
-//	region.Rev = resp.Header.Revision
-//
-//	sc.rgmu.Lock()
-//	sc.regions[region.Id] = region
-//	sc.rgmu.Unlock()
-//
-//	return region, nil
-//}
-//
-//func (sc *Scheduler) BindRegion(ctx context.Context, dm *pb.DefinitionMeta) (*pb.Region, bool, error) {
-//	region, has, err := sc.schedulingRegionCycle(ctx)
-//	if err != nil {
-//		return nil, false, err
-//	}
-//	if !has {
-//		go func() {
-//			//definition add to schedule queue
-//			sc.definitionQ.Set(dm)
-//
-//			sc.rmu.RLock()
-//			regionTotal := len(sc.regions)
-//			sc.rmu.RUnlock()
-//
-//			if regionTotal == 0 {
-//				sc.Logger.Info("dispatch message, allocates a new region")
-//				sc.dispatchMessage(new(regionAllocMessage))
-//			}
-//		}()
-//		return nil, false, nil
-//	}
-//
-//	// Expends the replica of region to 3
-//	if len(region.Replicas) < replicaNum && sc.runnerQ.Len() >= replicaNum {
-//		m := new(regionExpendMessage)
-//		m.region = region.Id
-//		sc.dispatchMessage(m)
-//	}
-//
-//	dm.Region = region.Id
-//	key := path.Join(ort.DefaultMetaDefinitionMeta, dm.Id)
-//	data, _ := proto.Marshal(dm)
-//	_, err = sc.Client.Put(ctx, key, string(data))
-//	if err != nil {
-//		return nil, false, err
-//	}
-//
-//	return region, true, nil
-//}
-//
-//func (sc *Scheduler) schedulingRunnerCycle(ctx context.Context, options ...runnerOption) ([]*pb.Runner, error) {
-//	option := newRunnerOptions()
-//	for _, opt := range options {
-//		opt(option)
-//	}
-//
-//	lg := sc.Logger
-//
-//	length := sc.runnerQ.Len()
-//	if length == 0 {
-//		return nil, ErrRunnerNotReady
-//	}
-//
-//	rc := replicaNum
-//	if length < replicaNum {
-//		rc = length
-//	}
-//
-//	if rc > option.count {
-//		rc = option.count
-//	}
-//
-//	runners := make([]*pb.Runner, rc)
-//	rts := make([]*pb.RunnerStat, rc)
-//	for i := 0; i < rc; i++ {
-//		rs, ok := sc.runnerQ.Pop()
-//		if !ok {
-//			sc.Logger.Panic("call runnerQ.Pop()")
-//		}
-//		rts[i] = rs.(*pb.RunnerStat)
-//	}
-//
-//	recycle := func(list *[]*pb.RunnerStat) {
-//		for i := range *list {
-//			rs := (*list)[i]
-//			sc.runnerQ.Set(rs)
-//		}
-//	}
-//	defer recycle(&rts)
-//
-//	if score := sc.runnerGetter()(rts[0]); score > 100 {
-//		return nil, ErrRunnerBusy
-//	}
-//
-//	sc.rmu.RLock()
-//	for i, rs := range rts {
-//		runner, ok := sc.runners[rs.Id]
-//		if !ok {
-//			lg.Warn("RunnerStat is invalid", zap.Uint64("id", rs.Id))
-//			continue
-//		}
-//		pass := true
-//		for _, match := range option.matches {
-//			if !match(runner) {
-//				pass = false
-//				break
-//			}
-//		}
-//		if pass {
-//			runners[i] = runner
-//		}
-//	}
-//	sc.rmu.RUnlock()
-//
-//	return runners, nil
-//}
-//
-//func (sc *Scheduler) schedulingRegionCycle(ctx context.Context) (*pb.Region, bool, error) {
-//	if sc.regionQ.Len() == 0 {
-//		return nil, false, nil
-//	}
-//	x, ok := sc.regionQ.Pop()
-//	if !ok {
-//		return nil, false, nil
-//	}
-//	rs := x.(*pb.RegionStat)
-//
-//	sc.rgmu.RLock()
-//	region, has := sc.regions[rs.Id]
-//	sc.rgmu.RUnlock()
-//	if !has {
-//		return nil, false, nil
-//	}
-//
-//	if region.Definitions >= region.DefinitionsLimit {
-//		sc.dispatchMessage(new(regionAllocMessage))
-//		return nil, false, ErrRegionNoSpace
-//	}
-//
-//	region.Definitions += 1
-//
-//	key := path.Join(ort.DefaultRunnerRegion, fmt.Sprintf("%d", region.Id))
-//	data, _ := proto.Marshal(region)
-//	if _, err := sc.Client.Put(ctx, key, string(data)); err != nil {
-//		return nil, false, err
-//	}
-//
-//	sc.rgmu.Lock()
-//	sc.regions[rs.Id] = region
-//	sc.rgmu.Unlock()
-//
-//	return region, true, nil
-//}
-//
-//func (sc *Scheduler) waitUtilLeader() bool {
-//	for {
-//		if sc.Notifier.IsLeader() {
-//			<-sc.Notifier.ReadyNotify()
-//			return true
-//		}
-//
-//		select {
-//		case <-sc.stopC:
-//			return false
-//		case <-sc.Notifier.ChangeNotify():
-//		}
-//	}
-//}
-//
-//func (sc *Scheduler) run() {
-//	tickDuration := time.Millisecond * 500
-//	ticker := time.NewTimer(tickDuration)
-//	defer ticker.Stop()
-//	defer sc.cancel()
-//
-//	for {
-//		if !sc.waitUtilLeader() {
-//			select {
-//			case <-sc.stopC:
-//				return
-//			default:
-//			}
-//			continue
-//		}
-//
-//		ticker.Reset(time.Second)
-//
-//		ctx, cancel := context.WithCancel(sc.ctx)
-//		prefix := ort.DefaultMetaRunnerPrefix
-//		options := []clientv3.OpOption{
-//			clientv3.WithPrefix(),
-//		}
-//		wch := sc.Client.Watch(ctx, prefix, options...)
-//
-//	LOOP:
-//		for {
-//			select {
-//			case <-sc.stopC:
-//				cancel()
-//				return
-//			case <-sc.Notifier.ChangeNotify():
-//				break LOOP
-//			case wr := <-wch:
-//				if wr.Canceled {
-//					break LOOP
-//				}
-//
-//				for _, event := range wr.Events {
-//					sc.processEvent(event)
-//				}
-//
-//			case msg := <-sc.messageCh:
-//				sc.processMsg(msg)
-//
-//			case <-ticker.C:
-//				ticker.Reset(tickDuration)
-//
-//				x, has := sc.definitionQ.Pop()
-//				if !has {
-//					break
-//				}
-//				dm := x.(*pb.DefinitionMeta)
-//
-//				_, ok, err := sc.BindRegion(sc.ctx, dm)
-//				if err != nil {
-//					sc.Logger.Error("binding region",
-//						zap.String("definition", dm.Id),
-//						zap.Error(err))
-//				}
-//
-//				if ok && dm.Region > 0 {
-//					sc.Logger.Info("binding definition",
-//						zap.String("definition", dm.Id),
-//						zap.Uint64("region", dm.Region))
-//				}
-//			}
-//		}
-//
-//		cancel()
-//	}
-//}
-//
-//func (sc *Scheduler) processEvent(event *clientv3.Event) {
-//	lg := sc.Logger
-//	kv := event.Kv
-//	key := string(kv.Key)
-//	switch {
-//	case strings.HasPrefix(key, ort.DefaultMetaRunnerStat):
-//		rs := new(pb.RunnerStat)
-//		if err := proto.Unmarshal(kv.Value, rs); err != nil {
-//			lg.Error("unmarshal RunnerState", zap.Error(err))
-//			return
-//		}
-//
-//		sc.handleRunnerStat(rs)
-//	case strings.HasPrefix(key, ort.DefaultMetaRegionStat):
-//		rs := new(pb.RegionStat)
-//		if err := proto.Unmarshal(kv.Value, rs); err != nil {
-//			lg.Error("unmarshal RegionState", zap.Error(err))
-//			return
-//		}
-//
-//		sc.handleRegionStat(rs)
-//	case strings.HasPrefix(key, ort.DefaultMetaRunnerRegistrar):
-//		runner := new(pb.Runner)
-//		if err := proto.Unmarshal(kv.Value, runner); err != nil {
-//			lg.Error("unmarshal Runner", zap.Error(err))
-//			return
-//		}
-//
-//		sc.handleRunner(runner)
-//	}
-//}
-//
-//func (sc *Scheduler) handleRunnerStat(stat *pb.RunnerStat) {
-//	sc.runnerQ.Set(stat)
-//}
-//
-//func (sc *Scheduler) handleRegionStat(stat *pb.RegionStat) {
-//	sc.regionQ.Set(stat)
-//}
-//
-//func (sc *Scheduler) handleRunner(runner *pb.Runner) {
-//	if runner.Id == 0 {
-//		return
-//	}
-//
-//	sc.rmu.Lock()
-//	defer sc.rmu.Unlock()
-//	sc.runners[runner.Id] = runner
-//}
-//
-//func (sc *Scheduler) processMsg(msg imessage) {
-//	switch vv := msg.(type) {
-//	case *regionAllocMessage:
-//		sc.processAllocRegion(sc.ctx)
-//	case *regionExpendMessage:
-//		sc.processExpendRegion(sc.ctx, vv.region)
-//	case *regionMigrateMessage:
-//	}
-//}
-//
-//func (sc *Scheduler) processAllocRegion(ctx context.Context) {
-//	lg := sc.Logger
-//	region, err := sc.AllocRegion(ctx)
-//	if err != nil {
-//		lg.Error("allocate region", zap.Error(err))
-//		return
-//	}
-//
-//	lg.Info("allocate new region", zap.Stringer("region", region))
-//}
-//
-//func (sc *Scheduler) processExpendRegion(ctx context.Context, id uint64) {
-//	lg := sc.Logger
-//	region, err := sc.ExpendRegion(ctx, id)
-//	if err != nil {
-//		lg.Error("expend region", zap.Error(err))
-//		return
-//	}
-//
-//	lg.Info("expend region", zap.Stringer("region", region))
-//}
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"golang.org/x/time/rate"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
+
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
+	informers "github.com/olive-io/olive/client-go/generated/informers/externalversions"
+	monleader "github.com/olive-io/olive/mon/leader"
+	internalregion "github.com/olive-io/olive/mon/scheduler/internal/region"
+	internalrunner "github.com/olive-io/olive/mon/scheduler/internal/runner"
+)
+
+type Scheduler struct {
+	options *Options
+
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	leaderNotifier monleader.Notifier
+
+	clientSet       clientset.Interface
+	informerFactory informers.SharedInformerFactory
+
+	runnerQ internalrunner.SchedulingQueue
+	regionQ internalregion.SchedulingQueue
+
+	// definitionQ is a rate limited work queue. This is used to queue work to be
+	// processed instead of performing it as soon as a change happens.
+	definitionQ workqueue.RateLimitingInterface
+
+	messageC chan imessage
+}
+
+func NewScheduler(
+	ctx context.Context,
+	leaderNotifier monleader.Notifier,
+	clientSet clientset.Interface,
+	informerFactory informers.SharedInformerFactory,
+	opts ...Option) (*Scheduler, error) {
+
+	options := NewOptions(opts...)
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
+
+	runnerQ := internalrunner.NewSchedulingQueue(options.RegionLimit)
+	regionQ := internalregion.NewSchedulingQueue(options.DefinitionLimit, options.RegionReplicas)
+
+	ratelimiter := workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(50), 300)},
+	)
+
+	definitionQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
+
+	ctx, cancel := context.WithCancel(ctx)
+	scheduler := &Scheduler{
+		options:        options,
+		ctx:            ctx,
+		cancel:         cancel,
+		leaderNotifier: leaderNotifier,
+
+		clientSet:       clientSet,
+		informerFactory: informerFactory,
+
+		runnerQ: runnerQ,
+		regionQ: regionQ,
+
+		definitionQ: definitionQ,
+
+		messageC: make(chan imessage, 20),
+	}
+
+	return scheduler, nil
+}
+
+func (s *Scheduler) Start() error {
+	defer utilruntime.HandleCrash()
+
+	runnerInformer := s.informerFactory.Core().V1().Runners()
+	_, err := runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			s.runnerQ.Add(obj.(*corev1.Runner))
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldRunner := oldObj.(*corev1.Runner)
+			newRunner := newObj.(*corev1.Runner)
+			if oldRunner.ResourceVersion == newRunner.ResourceVersion {
+				return
+			}
+			s.runnerQ.Update(newObj.(*corev1.Runner), s.options.RegionLimit)
+		},
+		DeleteFunc: func(obj interface{}) {
+			s.runnerQ.Remove(obj.(*corev1.Runner))
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	regionInformer := s.informerFactory.Core().V1().Regions()
+	_, err = regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			s.regionQ.Add(obj.(*corev1.Region))
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldRegion := oldObj.(*corev1.Region)
+			newRegion := newObj.(*corev1.Region)
+			if oldRegion.ResourceVersion == newRegion.ResourceVersion {
+				return
+			}
+			s.regionQ.Update(newRegion, s.options.RegionLimit)
+		},
+		DeleteFunc: func(obj interface{}) {
+			s.regionQ.Remove(obj.(*corev1.Region))
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	definitionInformer := s.informerFactory.Core().V1().Definitions()
+	_, err = definitionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: s.enqueueDefinition,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldDef := oldObj.(*corev1.Definition)
+			newDef := newObj.(*corev1.Definition)
+			if oldDef.ResourceVersion == newDef.ResourceVersion {
+				return
+			}
+			if newDef.Status.Phase != corev1.DefPending {
+				return
+			}
+			s.enqueueDefinition(newObj)
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	processInformer := s.informerFactory.Core().V1().Processes()
+	_, err = processInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    nil,
+		UpdateFunc: nil,
+		DeleteFunc: nil,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx := s.ctx
+	informerSynced := []cache.InformerSynced{
+		runnerInformer.Informer().HasSynced,
+		regionInformer.Informer().HasSynced,
+		definitionInformer.Informer().HasSynced,
+		processInformer.Informer().HasSynced,
+	}
+
+	if ok := cache.WaitForNamedCacheSync("monitor-scheduler", ctx.Done(), informerSynced...); !ok {
+		return fmt.Errorf("failed to wait for caches to sync")
+	}
+
+	runnerListener := runnerInformer.Lister()
+	runners, err := runnerListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, runner := range runners {
+		s.runnerQ.Add(runner)
+	}
+
+	regionListener := regionInformer.Lister()
+	regions, err := regionListener.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, region := range regions {
+		s.regionQ.Add(region)
+	}
+
+	klog.Infof("start region worker")
+	go wait.UntilWithContext(ctx, s.runnerRegionWorker, time.Second*3)
+	go wait.UntilWithContext(ctx, s.definitionWorker, time.Second)
+	go s.process()
+
+	return nil
+}
+
+func (s *Scheduler) process() {
+	defer s.cancel()
+
+LOOP:
+	for {
+		if !s.waitUtilLeader() {
+			select {
+			case <-s.ctx.Done():
+				break LOOP
+			case <-s.messageC:
+				// to nothing, when monitor is not leader
+			default:
+			}
+			continue
+		}
+
+		for {
+			select {
+			case <-s.ctx.Done():
+				break LOOP
+			case <-s.leaderNotifier.ChangeNotify():
+				goto LOOP
+			case msg := <-s.messageC:
+				go s.handleAction(msg)
+			}
+		}
+	}
+
+	klog.Infof("Scheduler Done")
+}
+
+func (s *Scheduler) runnerRegionWorker(ctx context.Context) {
+	if !s.leaderReady() {
+		return
+	}
+
+	remind := s.options.InitRegionNum - s.regionQ.Len()
+	if remind > 0 {
+		s.putAction(newAllocRegionAction(remind))
+		return
+	}
+
+	needScaled, ok := s.regionQ.RegionToScale()
+	if ok {
+		replicas := s.options.RegionReplicas - int(needScaled.Status.Replicas)
+		s.putAction(newScaleRegionAction(needScaled.Name, replicas))
+		return
+	}
+}
+
+func (s *Scheduler) putAction(msg imessage) {
+	s.messageC <- msg
+}
+
+func (s *Scheduler) handleAction(msg imessage) {
+	body := msg.payload()
+	switch req := body.(type) {
+	case *AllocRegionRequest:
+		s.AllocRegion(req)
+	case *ScaleRegionRequest:
+		s.ScaleRegion(req)
+	}
+}
+
+func (s *Scheduler) AllocRegion(req *AllocRegionRequest) {
+	for i := 0; i < req.Count; i++ {
+		s.allocRegion()
+	}
+}
+
+func (s *Scheduler) allocRegion() {
+
+	opts := make([]internalrunner.NextOption, 0)
+	runners := make([]*corev1.Runner, 0)
+	for i := 0; i < s.options.RegionReplicas; i++ {
+		snapshot, ok := s.runnerQ.Pop(opts...)
+		if !ok {
+			break
+		}
+		runners = append(runners, snapshot.Get())
+	}
+	defer s.runnerQ.Free()
+
+	if len(runners) == 0 {
+		return
+	}
+
+	region := &corev1.Region{
+		Spec: corev1.RegionSpec{
+			InitialReplicas:  []corev1.RegionReplica{},
+			ElectionRTT:      s.options.RegionElectionTTL,
+			HeartbeatRTT:     s.options.RegionHeartbeatTTL,
+			DefinitionsLimit: int64(s.options.DefinitionLimit),
+		},
+		Status: corev1.RegionStatus{
+			Phase: corev1.RegionPending,
+		},
+	}
+	region.Name = "region"
+	region.Spec.Leader = runners[0].Spec.ID
+	for i, runner := range runners {
+		replica := corev1.RegionReplica{
+			Id:          int64(i) + 1,
+			Runner:      runner.Name,
+			RaftAddress: runner.Spec.PeerURL,
+		}
+		region.Spec.InitialReplicas = append(region.Spec.InitialReplicas, replica)
+	}
+
+	var err error
+	region, err = s.clientSet.CoreV1().
+		Regions().
+		Create(s.ctx, region, metav1.CreateOptions{})
+	if err != nil {
+		return
+	}
+	klog.Infof("create new region %s, replica %d", region.Name, len(region.Spec.InitialReplicas))
+	s.regionQ.Add(region)
+}
+
+func (s *Scheduler) ScaleRegion(req *ScaleRegionRequest) {
+	rname := req.region
+	scale := req.scale
+
+	region, err := s.clientSet.CoreV1().Regions().Get(s.ctx, rname, metav1.GetOptions{})
+	if err != nil {
+		return
+	}
+
+	opts := make([]internalrunner.NextOption, 0)
+
+	ignores := []string{}
+	for _, replica := range region.Spec.InitialReplicas {
+		ignores = append(ignores, replica.Runner)
+	}
+	opts = append(opts, internalrunner.WithIgnores(ignores...))
+
+	runners := make([]*corev1.Runner, 0)
+	for i := 0; i < scale; i++ {
+		snapshot, ok := s.runnerQ.Pop(opts...)
+		if !ok {
+			break
+		}
+		runners = append(runners, snapshot.Get())
+	}
+	defer s.runnerQ.Free()
+
+	if len(runners) == 0 {
+		return
+	}
+
+	from := len(region.Spec.InitialReplicas)
+	for _, runner := range runners {
+		replicaNum := len(region.Spec.InitialReplicas)
+
+		isJoin := true
+		if replicaNum == 0 {
+			isJoin = false
+		}
+		replicaId := replicaNum + 1
+		newReplica := corev1.RegionReplica{
+			Id:          int64(replicaId),
+			Runner:      runner.Name,
+			RaftAddress: runner.Spec.PeerURL,
+			IsJoin:      isJoin,
+		}
+		region.Spec.InitialReplicas = append(region.Spec.InitialReplicas, newReplica)
+	}
+
+	klog.Infof("scale region %s: %d -> %d", region.Name, from, len(region.Spec.InitialReplicas))
+	region, err = s.clientSet.CoreV1().
+		Regions().
+		Update(s.ctx, region, metav1.UpdateOptions{})
+	if err != nil {
+		return
+	}
+	s.regionQ.Update(region, s.options.DefinitionLimit)
+}
+
+func (s *Scheduler) waitUtilLeader() bool {
+	for {
+		if s.leaderNotifier.IsLeader() {
+			<-s.leaderNotifier.ReadyNotify()
+			return true
+		}
+
+		select {
+		case <-s.ctx.Done():
+			return false
+		case <-s.leaderNotifier.ChangeNotify():
+		}
+	}
+}
+
+func (s *Scheduler) leaderReady() bool {
+	if s.leaderNotifier.IsLeader() {
+		<-s.leaderNotifier.ReadyNotify()
+		return true
+	}
+	return false
+}

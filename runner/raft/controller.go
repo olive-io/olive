@@ -24,23 +24,22 @@ package raft
 import (
 	"context"
 	"fmt"
-	urlpkg "net/url"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/cockroachdb/errors"
-	json "github.com/json-iterator/go"
 	"github.com/lni/dragonboat/v4"
 	"github.com/lni/dragonboat/v4/config"
 	"github.com/olive-io/bpmn/tracing"
 	"go.etcd.io/etcd/pkg/v3/idutil"
-	"go.etcd.io/etcd/pkg/v3/wait"
-	"go.uber.org/multierr"
+	v3wait "go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
@@ -49,7 +48,6 @@ import (
 	"github.com/olive-io/olive/pkg/jsonpatch"
 	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/runner/backend"
-	"github.com/olive-io/olive/runner/buckets"
 )
 
 type Controller struct {
@@ -60,7 +58,7 @@ type Controller struct {
 	nh  *dragonboat.NodeHost
 
 	be      backend.IBackend
-	regionW wait.Wait
+	regionW v3wait.Wait
 
 	tracer tracing.ITracer
 	proxy  proxy.IProxy
@@ -68,12 +66,14 @@ type Controller struct {
 	client *clientgo.Client
 
 	reqId *idutil.Generator
-	reqW  wait.Wait
+	reqW  v3wait.Wait
 
 	pr *corev1.Runner
 
 	smu    sync.RWMutex
 	shards map[uint64]*Shard
+
+	definitionQ workqueue.RateLimitingInterface
 
 	stopping <-chan struct{}
 	done     chan struct{}
@@ -127,6 +127,12 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, client 
 	runner := pr.DeepCopy()
 	ctx, cancel := context.WithCancel(ctx)
 
+	ratelimiter := workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(50), 300)},
+	)
+	definitionQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
+
 	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
 	controller := &Controller{
 		ctx:    ctx,
@@ -134,14 +140,16 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, client 
 		cfg:    cfg,
 		nh:     nh,
 		tracer: tracer,
-		//proxy:           py,
+
 		client:  client,
 		be:      be,
-		regionW: wait.New(),
+		regionW: v3wait.New(),
 		reqId:   idutil.NewGenerator(0, time.Now()),
-		reqW:    wait.New(),
+		reqW:    v3wait.New(),
 		pr:      runner,
 		shards:  make(map[uint64]*Shard),
+
+		definitionQ: definitionQ,
 	}
 
 	go controller.watchTrace(traces)
@@ -160,6 +168,7 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	informerFactory := informers.NewSharedInformerFactory(c.client.Clientset, time.Second*15)
 
 	syncs := make([]cache.InformerSynced, 0)
+
 	regionRegistration, err := informerFactory.Core().V1().Regions().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			_ = c.CreateShard(c.ctx, obj.(*corev1.Region))
@@ -177,6 +186,23 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	}
 	syncs = append(syncs, regionRegistration.HasSynced)
 
+	definitionRegistration, err := informerFactory.Core().V1().Definitions().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: c.enqueueDef,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldDef := oldObj.(*corev1.Definition)
+			newDef := newObj.(*corev1.Definition)
+			if oldDef.ResourceVersion == newDef.ResourceVersion {
+				return
+			}
+			c.enqueueDef(newDef)
+		},
+		DeleteFunc: nil,
+	})
+	if err != nil {
+		return err
+	}
+	syncs = append(syncs, definitionRegistration.HasSynced)
+
 	informerFactory.Start(stopping)
 
 	if ok := cache.WaitForNamedCacheSync("runner-raft-controller", c.stopping, syncs...); !ok {
@@ -192,6 +218,7 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 		}
 	}
 
+	go wait.UntilWithContext(c.ctx, c.runDefinitionWorker, time.Second)
 	go c.run()
 	return nil
 }
@@ -316,317 +343,6 @@ func (c *Controller) SubscribeTrace() <-chan tracing.ITrace {
 	return c.tracer.SubscribeChannel(traceChannel)
 }
 
-func (c *Controller) CreateShard(ctx context.Context, region *corev1.Region) error {
-	if !c.isLocalRegion(region) {
-		return nil
-	}
-
-	return c.persistStartShard(ctx, region)
-}
-
-func (c *Controller) SyncShard(ctx context.Context, region *corev1.Region, patch *jsonpatch.Patch) error {
-	if !c.isLocalRegion(region) {
-		return nil
-	}
-
-	regionId := uint64(region.Spec.Id)
-
-	_, ok := c.getShard(regionId)
-	if !ok {
-		return c.persistStartShard(ctx, region)
-	}
-
-	if region.Status.Stat.Leader != region.Spec.Leader &&
-		region.Spec.Leader == c.pr.Spec.ID {
-		if err := c.requestLeaderTransferRegion(ctx, uint64(region.Spec.Id), uint64(region.Spec.Leader)); err != nil {
-			return err
-		}
-	}
-
-	if patch == nil || patch.Len() == 0 {
-		return nil
-	}
-
-	var err, patchErr error
-	patch.Each(func(op string, path string, value any) {
-		data, _ := json.Marshal(value)
-		if op == "add" && strings.HasPrefix(path, "/spec/initialReplicas") {
-			replica := new(corev1.RegionReplica)
-			if err = json.Unmarshal(data, replica); err != nil {
-				patchErr = multierr.Append(patchErr, err)
-				return
-			}
-			if err = c.requestAddRegionReplica(ctx, uint64(region.Spec.Id), replica); err != nil {
-				patchErr = multierr.Append(patchErr, err)
-				return
-			}
-		}
-		if op == "replace" && strings.HasPrefix(path, "/spec/leader") {
-			var leader uint64
-			_ = json.Unmarshal(data, &leader)
-			if err = c.requestLeaderTransferRegion(ctx, uint64(region.Spec.Id), leader); err != nil {
-				patchErr = multierr.Append(patchErr, err)
-				return
-			}
-		}
-	})
-
-	if patchErr != nil {
-		return patchErr
-	}
-
-	return nil
-}
-
-func (c *Controller) RemoveShard(ri *corev1.Region) error {
-	if !c.isLocalRegion(ri) {
-		return nil
-	}
-
-	return nil
-}
-
-func (c *Controller) persistStartShard(ctx context.Context, region *corev1.Region) error {
-
-	_, err := c.startRaftShard(ctx, region)
-	if err != nil {
-		return err
-	}
-
-	key := region.Name
-	data, _ := region.Marshal()
-	tx := c.be.BatchTx()
-	tx.Lock()
-	_ = tx.UnsafePut(buckets.Region, []byte(key), data)
-	tx.Unlock()
-	_ = tx.Commit()
-	c.be.ForceCommit()
-
-	return nil
-}
-
-// prepareShards loads regions from backend.IBackend and start raft shard
-func (c *Controller) prepareShards() error {
-	regions := make([]*corev1.Region, 0)
-	readTx := c.be.ReadTx()
-	readTx.RLock()
-	err := readTx.UnsafeForEach(buckets.Region, func(k, value []byte) error {
-		region := &corev1.Region{}
-		err := region.Unmarshal(value)
-		if err != nil {
-			return err
-		}
-		regions = append(regions, region)
-
-		return nil
-	})
-	readTx.RUnlock()
-
-	if err != nil {
-		return err
-	}
-
-	ctx := c.ctx
-	lg := c.cfg.Logger
-	for i := range regions {
-		region := regions[i]
-		go func() {
-			_, err = c.startRaftShard(ctx, region)
-			if err != nil {
-				lg.Error("start raft region",
-					zap.Int64("id", region.Spec.Id),
-					zap.Error(err))
-				return
-			}
-			DefinitionsCounter.Add(float64(region.Status.Definitions))
-
-			lg.Info("start raft region",
-				zap.Int64("id", region.Spec.Id))
-		}()
-	}
-
-	return nil
-}
-
-func (c *Controller) startRaftShard(ctx context.Context, ri *corev1.Region) (*Shard, error) {
-	replicaId := uint64(0)
-	var join bool
-	for _, replica := range ri.Spec.InitialReplicas {
-		if replica.Runner == c.pr.Name {
-			replicaId = uint64(replica.Id)
-			join = replica.IsJoin
-		}
-	}
-
-	if replicaId == 0 {
-		return nil, fmt.Errorf("missing local replica")
-	}
-
-	members := map[uint64]string{}
-	if !join {
-		for id, urlText := range ri.InitialURL() {
-			url, err := urlpkg.Parse(urlText)
-			if err != nil {
-				return nil, errors.Wrap(ErrRaftAddress, err.Error())
-			}
-			members[uint64(id)] = url.Host
-		}
-	}
-
-	regionId := ri.Spec.Id
-	electRTT := ri.Spec.ElectionRTT
-	heartbeatRTT := ri.Spec.HeartbeatRTT
-	snapshotEntries := uint64(10000)
-	compactionOverhead := uint64(1000)
-	maxInMemLogSize := uint64(1 * 1024 * 1024 * 1024) // 1GB
-
-	cfg := config.Config{
-		ReplicaID:           replicaId,
-		ShardID:             uint64(regionId),
-		CheckQuorum:         true,
-		PreVote:             true,
-		ElectionRTT:         uint64(electRTT),
-		HeartbeatRTT:        uint64(heartbeatRTT),
-		SnapshotEntries:     snapshotEntries,
-		CompactionOverhead:  compactionOverhead,
-		OrderedConfigChange: true,
-		MaxInMemLogSize:     maxInMemLogSize,
-		WaitReady:           false,
-	}
-
-	rcfg := NewRegionConfig()
-	rcfg.RaftRTTMillisecond = c.cfg.RaftRTTMillisecond
-	rcfg.ElectionRTT = uint64(electRTT)
-	rcfg.HeartbeatRTT = uint64(heartbeatRTT)
-	rcfg.StatHeartBeatMs = c.cfg.HeartbeatMs
-
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	err := c.nh.StartOnDiskReplica(members, join, c.initDiskStateMachine, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	var shard *Shard
-	ch := c.regionW.Register(cfg.ShardID)
-	select {
-	case <-c.stopping:
-		return nil, fmt.Errorf("controller Stopping")
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case x := <-ch:
-		switch result := x.(type) {
-		case error:
-			err = result
-		case *Shard:
-			shard = result
-		}
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	<-shard.ReadyNotify()
-	if shard.leader != shard.getMember() && shard.isLeader() {
-		if err = c.nh.RequestLeaderTransfer(shard.id, shard.leader); err != nil {
-			return nil, err
-		}
-		<-shard.ReadyNotify()
-	}
-
-	shard.updateConfig(rcfg)
-	shard.Start()
-	c.setShard(shard)
-
-	return shard, nil
-}
-
-func (c *Controller) requestAddRegionReplica(ctx context.Context, id uint64, replica *corev1.RegionReplica) error {
-	region, ok := c.getShard(id)
-	if !ok {
-		return errors.Wrapf(ErrNoRegion, "id is %d", id)
-	}
-
-	if _, ok = ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, region.cfg.ReqTimeout())
-		defer cancel()
-	}
-
-	ms, err := c.nh.SyncGetShardMembership(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	replicaId := uint64(replica.Id)
-	if _, ok = ms.Nodes[replicaId]; ok {
-		return errors.Wrapf(ErrRegionReplicaAdded, "add replica (%d) to region (%d)", replica.Id, id)
-	}
-
-	cc := ms.ConfigChangeID
-	url, err := urlpkg.Parse(replica.RaftAddress)
-	if err != nil {
-		return errors.Wrap(ErrRaftAddress, err.Error())
-	}
-	target := url.Host
-
-	err = c.nh.SyncRequestAddReplica(ctx, id, replicaId, target, cc)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Controller) requestLeaderTransferRegion(ctx context.Context, id, leader uint64) error {
-	region, ok := c.getShard(id)
-	if !ok {
-		return errors.Wrapf(ErrNoRegion, "id is %d", id)
-	}
-
-	if region.getLeader() == leader || leader == 0 {
-		return nil
-	}
-
-	err := c.nh.RequestLeaderTransfer(id, leader)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Controller) DeployDefinition(ctx context.Context, definition *corev1.Definition) error {
-	lg := c.cfg.Logger
-	if definition.Spec.Region == 0 {
-		lg.Warn("definition missing region",
-			zap.String("name", definition.Name),
-			zap.Int64("version", definition.Spec.Version))
-		return nil
-	}
-
-	shardId := definition.Spec.Region
-	shard, ok := c.getShard(uint64(shardId))
-	if !ok {
-		lg.Info("region running others",
-			zap.Int64("id", shardId))
-		return nil
-	}
-
-	lg.Info("definition deploy",
-		zap.String("name", definition.Name),
-		zap.Int64("version", definition.Spec.Version))
-	req := &pb.ShardDeployDefinitionRequest{Definition: definition}
-	if _, err := shard.DeployDefinition(ctx, req); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *Controller) ExecuteDefinition(ctx context.Context, process *corev1.Process) error {
 	lg := c.cfg.Logger
 	if process.Spec.Definition == "" || process.Status.Region == 0 {
@@ -669,38 +385,4 @@ func (c *Controller) GetProcess(ctx context.Context, req *pb.GetProcessRequest) 
 	resp.Process = instance
 
 	return resp, nil
-}
-
-func (c *Controller) getShard(id uint64) (*Shard, bool) {
-	c.smu.RLock()
-	region, ok := c.shards[id]
-	c.smu.RUnlock()
-	return region, ok
-}
-
-func (c *Controller) popShard(id uint64) (*Shard, bool) {
-	c.smu.Lock()
-	region, ok := c.shards[id]
-	if !ok {
-		c.smu.Unlock()
-		return nil, false
-	}
-	delete(c.shards, id)
-	c.smu.Unlock()
-	return region, ok
-}
-
-func (c *Controller) setShard(shard *Shard) {
-	c.smu.Lock()
-	c.shards[shard.id] = shard
-	c.smu.Unlock()
-}
-
-func (c *Controller) isLocalRegion(region *corev1.Region) bool {
-	for _, replica := range region.Spec.InitialReplicas {
-		if replica.Runner == c.pr.Name {
-			return true
-		}
-	}
-	return false
 }

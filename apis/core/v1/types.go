@@ -311,12 +311,13 @@ type DefPhase string
 const (
 	// DefPending means the node has been created/added by the system, but not configured.
 	DefPending DefPhase = "Pending"
+	DefBinding DefPhase = "Binding"
+	DefActive  DefPhase = "Active"
 	// DefTerminated means the node has been removed from the cluster.
 	DefTerminated DefPhase = "Terminated"
 )
 
 // +genclient
-// +k8s:protobuf-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Definition is bpmn definitions

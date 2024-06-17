@@ -87,11 +87,14 @@ func (definitionStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.S
 }
 
 // PrepareForCreate clears the status of a definition before creation.
-func (definitionStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+func (s definitionStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 	definition := obj.(*corev1.Definition)
 	definition.Status = corev1.DefinitionStatus{}
 
 	definition.Generation = 1
+	definition.Spec.Version = 1
+
+	definition.Status.Phase = corev1.DefPending
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
@@ -105,6 +108,13 @@ func (definitionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime
 		newDefinition.Generation = oldDefinition.Generation + 1
 	}
 
+	if oldDefinition.Spec.Content != newDefinition.Spec.Content {
+		newDefinition.Spec.Version += 1
+	}
+
+	if newDefinition.Spec.Region != 0 && newDefinition.Status.Phase == corev1.DefPending {
+		newDefinition.Status.Phase = corev1.DefBinding
+	}
 }
 
 // Validate validates a new definition.
