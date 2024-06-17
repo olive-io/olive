@@ -39,6 +39,13 @@ import (
 func (c *Controller) enqueueDef(obj interface{}) {
 	var key string
 	var err error
+
+	definition := obj.(*corev1.Definition)
+	if definition.Spec.Region == 0 ||
+		definition.Status.Phase == corev1.DefPending {
+		return
+	}
+
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
 		utilruntime.HandleError(err)
 		return
@@ -53,7 +60,7 @@ func (c *Controller) runDefinitionWorker(ctx context.Context) {
 
 func (c *Controller) processNextDefinitionWorkItem(ctx context.Context) bool {
 	obj, shutdown := c.definitionQ.Get()
-	logger := klog.FromContext(ctx)
+	//logger := klog.FromContext(ctx)
 
 	if shutdown {
 		return false
@@ -73,7 +80,6 @@ func (c *Controller) processNextDefinitionWorkItem(ctx context.Context) bool {
 			return fmt.Errorf("error syncing '%s': %s, requeuing", key, err.Error())
 		}
 		c.definitionQ.Forget(obj)
-		logger.Info("Successfully synced", "resourceName", key)
 		return nil
 	}(obj)
 
@@ -86,7 +92,7 @@ func (c *Controller) processNextDefinitionWorkItem(ctx context.Context) bool {
 }
 
 func (c *Controller) syncDefinitionHandler(ctx context.Context, key string) error {
-	logger := klog.LoggerWithValues(klog.FromContext(ctx), "resourceName", key)
+	logger := klog.LoggerWithValues(klog.FromContext(ctx), "Definition", key)
 
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -111,14 +117,14 @@ func (c *Controller) syncDefinitionHandler(ctx context.Context, key string) erro
 	if err = c.deployDefinition(ctx, definition); err != nil {
 		return err
 	}
-	logger.Info("Successfully deployed", "resourceName", key)
+	logger.Info("Successfully deployed", "Definition", key)
 
 	definition.Status.Phase = corev1.DefActive
 	definition, err = c.client.CoreV1().Definitions(namespace).UpdateStatus(ctx, definition, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
-	logger.Info("Successfully synced", "resourceName", key)
+	logger.Info("Successfully synced", "Definition", key)
 
 	return nil
 }
@@ -147,12 +153,131 @@ func (c *Controller) deployDefinition(ctx context.Context, definition *corev1.De
 	lg.Info("definition deploy",
 		zap.String("name", definition.Name),
 		zap.Int64("version", definition.Spec.Version))
-	defClone := definition.DeepCopy()
-	defClone.TypeMeta = metav1.TypeMeta{}
-	req := &pb.ShardDeployDefinitionRequest{Definition: defClone}
+	req := &pb.ShardDeployDefinitionRequest{Definition: definition}
 	if _, err := shard.DeployDefinition(ctx, req); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (c *Controller) enqueueProcess(obj interface{}) {
+	var key string
+	var err error
+
+	process := obj.(*corev1.Process)
+	if process.Status.Region == 0 ||
+		process.Status.Phase == corev1.ProcessPending {
+		return
+	}
+
+	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+		utilruntime.HandleError(err)
+		return
+	}
+	c.processQ.Add(key)
+}
+
+func (c *Controller) runProcessWorker(ctx context.Context) {
+	for c.processNextBpmnProcessWorkItem(ctx) {
+	}
+}
+
+func (c *Controller) processNextBpmnProcessWorkItem(ctx context.Context) bool {
+	obj, shutdown := c.processQ.Get()
+	//logger := klog.FromContext(ctx)
+
+	if shutdown {
+		return false
+	}
+
+	err := func(obj interface{}) error {
+		defer c.processQ.Done(obj)
+		var key string
+		var ok bool
+		if key, ok = obj.(string); !ok {
+			c.processQ.Forget(obj)
+			utilruntime.HandleError(fmt.Errorf("expected string in defintionQ but got %#v", obj))
+			return nil
+		}
+		if err := c.syncProcessHandler(ctx, key); err != nil {
+			c.processQ.AddRateLimited(key)
+			return fmt.Errorf("error syncing '%s': %s, requeuing", key, err.Error())
+		}
+		c.processQ.Forget(obj)
+		return nil
+	}(obj)
+
+	if err != nil {
+		utilruntime.HandleError(err)
+		return true
+	}
+
+	return true
+}
+
+func (c *Controller) syncProcessHandler(ctx context.Context, key string) error {
+	logger := klog.LoggerWithValues(klog.FromContext(ctx), "Process", key)
+
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		return nil
+	}
+
+	process, err := c.client.CoreV1().Processes(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			utilruntime.HandleError(fmt.Errorf("foo '%s' in work queue no longer exists", key))
+			return nil
+		}
+
+		return err
+	}
+
+	if process.Spec.BpmnProcess == "" {
+		return fmt.Errorf("no bpmn process found for '%s'", key)
+	}
+
+	if err = c.runBpmnProcess(ctx, process); err != nil {
+		return err
+	}
+	logger.Info("Successfully deployed", "Process", key)
+
+	process.Status.Phase = corev1.ProcessRunning
+	process, err = c.client.CoreV1().Processes(namespace).UpdateStatus(ctx, process, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	logger.Info("Successfully synced", "Process", key)
+
+	return nil
+}
+
+func (c *Controller) runBpmnProcess(ctx context.Context, process *corev1.Process) error {
+	lg := c.cfg.Logger
+	if process.Spec.Definition == "" || process.Status.Region == 0 {
+		lg.Warn("invalid process instance")
+		return nil
+	}
+
+	shardId := process.Status.Region
+	shard, ok := c.getShard(uint64(shardId))
+	if !ok {
+		lg.Info("shard running others", zap.Int64("id", shardId))
+		return nil
+	}
+
+	lg.Info("definition executed",
+		zap.String("definition", process.Spec.Definition),
+		zap.Int64("version", process.Spec.Version))
+
+	req := &pb.ShardRunBpmnProcessRequest{Process: process}
+	resp, err := shard.RunBpmnProcess(ctx, req)
+	if err != nil {
+		return err
+	}
+	resp.Process.DeepCopyInto(process)
 
 	return nil
 }

@@ -48,7 +48,7 @@ message RaftInternalRequest {
   ShardDeleteRequest delete = 4;
 
   ShardDeployDefinitionRequest deploy_definition = 11;
-  ShardExecuteDefinitionRequest execute_definition = 12;
+  ShardRunBpmnProcessRequest run_bpmn_process = 12;
 }
 
 message LoggablePutRequest  {
@@ -107,17 +107,27 @@ message ShardDeployDefinitionResponse {
   github.com.olive_io.olive.apis.core.v1.Definition definition = 2;
 }
 
-message ShardExecuteDefinitionRequest {
+message ShardRunBpmnProcessRequest {
   github.com.olive_io.olive.apis.core.v1.Process process = 1;
 }
 
-message ShardExecuteDefinitionResponse {
+message ShardRunBpmnProcessResponse {
   RaftResponseHeader header = 1;
   github.com.olive_io.olive.apis.core.v1.Process process = 2;
 }
 
 service RunnerRPC {
+  rpc GetDefinitionArchive(GetDefinitionArchiveRequest) returns (GetDefinitionArchiveResponse);
   rpc GetProcessInstance(GetProcessRequest) returns (GetProcessResponse);
+}
+
+message GetDefinitionArchiveRequest {
+  string namespace = 1;
+  string name = 2;
+}
+
+message GetDefinitionArchiveResponse {
+  repeated github.com.olive_io.olive.apis.core.v1.Definition definitions = 1;
 }
 
 message GetProcessRequest {

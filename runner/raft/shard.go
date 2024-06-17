@@ -227,7 +227,7 @@ func (r *Shard) initial(stopc <-chan struct{}) (uint64, error) {
 			dm[definitionId] = struct{}{}
 		}
 	}
-	r.metric.definition.Add(float64(len(dm)))
+	r.metric.definition.Set(float64(len(dm)))
 
 	kvs, _ = r.getRange(processPrefix, getPrefix(processPrefix), 0)
 	for _, kv := range kvs {

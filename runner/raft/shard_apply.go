@@ -30,9 +30,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
-
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
 
@@ -55,7 +53,7 @@ type Applier interface {
 	Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, *traceutil.Trace, error)
 
 	DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, *traceutil.Trace, error)
-	ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, *traceutil.Trace, error)
+	RunBpmnProcess(ctx context.Context, r *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, *traceutil.Trace, error)
 }
 
 type applier struct {
@@ -92,9 +90,9 @@ func (a *applier) Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyRe
 	case r.DeployDefinition != nil:
 		op = "DeployDefinition"
 		ar.resp, ar.trace, ar.err = a.DeployDefinition(ctx, r.DeployDefinition)
-	case r.ExecuteDefinition != nil:
-		op = "ExecuteDefinition"
-		ar.resp, ar.trace, ar.err = a.ExecuteDefinition(ctx, r.ExecuteDefinition)
+	case r.RunBpmnProcess != nil:
+		op = "RunBpmnProcess"
+		ar.resp, ar.trace, ar.err = a.RunBpmnProcess(ctx, r.RunBpmnProcess)
 	}
 
 	return ar
@@ -167,16 +165,17 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinit
 		trace = traceutil.New("deploy_definition",
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
-			traceutil.Field{Key: "definition_name", Value: definition.Name},
-			traceutil.Field{Key: "definition_version", Value: definition.Spec.Version},
+			traceutil.Field{Key: "namespace", Value: definition.Namespace},
+			traceutil.Field{Key: "name", Value: definition.Name},
+			traceutil.Field{Key: "version", Value: definition.Spec.Version},
 		)
 	}
 
-	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Name))
+	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Namespace), []byte(definition.Name))
 	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", definition.Spec.Version)))
 
 	kvs, _ := a.r.getRange(prefix, getPrefix(prefix), 0)
-	if len(kvs) > 0 {
+	if len(kvs) == 0 {
 		a.r.metric.definition.Add(1)
 	}
 
@@ -190,14 +189,14 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinit
 	return resp, trace, nil
 }
 
-func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, *traceutil.Trace, error) {
-	resp := &pb.ShardExecuteDefinitionResponse{}
+func (a *applier) RunBpmnProcess(ctx context.Context, r *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, *traceutil.Trace, error) {
+	resp := &pb.ShardRunBpmnProcessResponse{}
 	resp.Header = &pb.RaftResponseHeader{}
 	process := r.Process
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
-		trace = traceutil.New("deploy_definition",
+		trace = traceutil.New("run_bpmn_process",
 			a.r.lg,
 			traceutil.Field{Key: "region", Value: a.r.getID()},
 			traceutil.Field{Key: "process", Value: process.Name},
@@ -207,16 +206,16 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.ShardExecuteDefin
 	}
 
 	prefix := bytesutil.PathJoin(processPrefix,
+		[]byte(process.Namespace),
 		[]byte(process.Spec.Definition),
 		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
 	key := bytesutil.PathJoin(prefix, []byte(process.Name))
 
 	if kv, _ := a.r.get(key); kv != nil {
-		return nil, trace, ErrProcessExecuted
+		//return nil, trace, ErrProcessExecuted
 	}
 
 	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
-	process.Status.Phase = corev1.ProcessPrepare
 	data, _ := process.Marshal()
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err

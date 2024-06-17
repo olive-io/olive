@@ -40,7 +40,6 @@ import (
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	authv1 "github.com/olive-io/olive/apis/pb/auth"
-	pb "github.com/olive-io/olive/apis/pb/olive"
 	"github.com/olive-io/olive/apis/rpctypes"
 	"github.com/olive-io/olive/mon/pagation"
 	mdutil "github.com/olive-io/olive/pkg/context/metadata"
@@ -371,15 +370,15 @@ func (s *MonitorServer) admit(ctx context.Context, role, user string, scope *aut
 	return nil
 }
 
-func (s *MonitorServer) responseHeader() *pb.ResponseHeader {
-	es := s.etcd.Server
-	header := &pb.ResponseHeader{
-		ClusterId: uint64(es.Cluster().ID()),
-		MemberId:  uint64(es.ID()),
-		RaftTerm:  es.Term(),
-	}
-	return header
-}
+//func (s *MonitorServer) responseHeader() *pb.ResponseHeader {
+//	es := s.etcd.Server
+//	header := &pb.ResponseHeader{
+//		ClusterId: uint64(es.Cluster().ID()),
+//		MemberId:  uint64(es.ID()),
+//		RaftTerm:  es.Term(),
+//	}
+//	return header
+//}
 
 func (s *MonitorServer) buildGRPCConn(ctx context.Context, targetURL string) (*grpc.ClientConn, error) {
 	url, err := urlpkg.Parse(targetURL)

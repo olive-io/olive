@@ -44,18 +44,18 @@ import (
 	corevalidation "github.com/olive-io/olive/apis/core/validation"
 )
 
-// processInstanceStrategy implements verification logic for Bpmn Process Instance.
-type processInstanceStrategy struct {
+// processStrategy implements verification logic for Bpmn Process Instance.
+type processStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating Bpmn Process Instance objects.
-var Strategy = processInstanceStrategy{apis.Scheme, names.SimpleNameGenerator}
+var Strategy = processStrategy{apis.Scheme, names.SimpleNameGenerator}
 
 // DefaultGarbageCollectionPolicy returns OrphanDependents for core/v1 for backwards compatibility,
 // and DeleteDependents for all other versions.
-func (processInstanceStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
+func (processStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) rest.GarbageCollectionPolicy {
 	var groupVersion schema.GroupVersion
 	if requestInfo, found := genericapirequest.RequestInfoFrom(ctx); found {
 		groupVersion = schema.GroupVersion{Group: requestInfo.APIGroup, Version: requestInfo.APIVersion}
@@ -69,14 +69,14 @@ func (processInstanceStrategy) DefaultGarbageCollectionPolicy(ctx context.Contex
 	}
 }
 
-// NamespaceScoped returns true because all processInstances need to be within a namespace.
-func (processInstanceStrategy) NamespaceScoped() bool {
+// NamespaceScoped returns true because all processs need to be within a namespace.
+func (processStrategy) NamespaceScoped() bool {
 	return true
 }
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
-func (processInstanceStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (processStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	fields := map[fieldpath.APIVersion]*fieldpath.Set{
 		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("status"),
@@ -86,16 +86,17 @@ func (processInstanceStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldp
 	return fields
 }
 
-// PrepareForCreate clears the status of a processInstance before creation.
-func (processInstanceStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
-	processInstance := obj.(*corev1.Process)
-	processInstance.Status = corev1.ProcessStatus{}
+// PrepareForCreate clears the status of a process before creation.
+func (processStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+	process := obj.(*corev1.Process)
+	process.Status = corev1.ProcessStatus{}
 
-	processInstance.Generation = 1
+	process.Generation = 1
+	process.Status.Phase = corev1.ProcessPending
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (processInstanceStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+func (processStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newProcess := obj.(*corev1.Process)
 	oldProcess := old.(*corev1.Process)
 	newProcess.Status = oldProcess.Status
@@ -105,16 +106,19 @@ func (processInstanceStrategy) PrepareForUpdate(ctx context.Context, obj, old ru
 		newProcess.Generation = oldProcess.Generation + 1
 	}
 
+	if newProcess.Status.Phase == "" {
+		newProcess.Status.Phase = corev1.ProcessPending
+	}
 }
 
-// Validate validates a new processInstance.
-func (processInstanceStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
-	processInstance := obj.(*corev1.Process)
-	return corevalidation.ValidateProcess(processInstance)
+// Validate validates a new process.
+func (processStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
+	process := obj.(*corev1.Process)
+	return corevalidation.ValidateProcess(process)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
-func (processInstanceStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
+func (processStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
 	newProcess := obj.(*corev1.Process)
 	var warnings []string
 	if msgs := utilvalidation.IsDNS1123Label(newProcess.Name); len(msgs) != 0 {
@@ -124,30 +128,30 @@ func (processInstanceStrategy) WarningsOnCreate(ctx context.Context, obj runtime
 }
 
 // Canonicalize normalizes the object after validation.
-func (processInstanceStrategy) Canonicalize(obj runtime.Object) {
+func (processStrategy) Canonicalize(obj runtime.Object) {
 }
 
-func (processInstanceStrategy) AllowUnconditionalUpdate() bool {
+func (processStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
-// AllowCreateOnUpdate is false for processInstances; this means a POST is needed to create one.
-func (processInstanceStrategy) AllowCreateOnUpdate() bool {
+// AllowCreateOnUpdate is false for processs; this means a POST is needed to create one.
+func (processStrategy) AllowCreateOnUpdate() bool {
 	return false
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (processInstanceStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	processInstance := obj.(*corev1.Process)
+func (processStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+	process := obj.(*corev1.Process)
 	oldProcess := old.(*corev1.Process)
 
-	validationErrorList := corevalidation.ValidateProcess(processInstance)
-	updateErrorList := corevalidation.ValidateProcessUpdate(processInstance, oldProcess)
+	validationErrorList := corevalidation.ValidateProcess(process)
+	updateErrorList := corevalidation.ValidateProcessUpdate(process, oldProcess)
 	return append(validationErrorList, updateErrorList...)
 }
 
 // WarningsOnUpdate returns warnings for the given update.
-func (processInstanceStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+func (processStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
 	newProcess := obj.(*corev1.Process)
 	oldProcess := old.(*corev1.Process)
@@ -156,15 +160,15 @@ func (processInstanceStrategy) WarningsOnUpdate(ctx context.Context, obj, old ru
 	return warnings
 }
 
-type processInstanceStatusStrategy struct {
-	processInstanceStrategy
+type processStatusStrategy struct {
+	processStrategy
 }
 
-var StatusStrategy = processInstanceStatusStrategy{Strategy}
+var StatusStrategy = processStatusStrategy{Strategy}
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
-func (processInstanceStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
+func (processStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set {
 	return map[fieldpath.APIVersion]*fieldpath.Set{
 		"core/v1": fieldpath.NewSet(
 			fieldpath.MakePathOrDie("spec"),
@@ -172,13 +176,13 @@ func (processInstanceStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*
 	}
 }
 
-func (processInstanceStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+func (processStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	newProcess := obj.(*corev1.Process)
 	oldProcess := old.(*corev1.Process)
 	newProcess.Spec = oldProcess.Spec
 }
 
-func (processInstanceStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+func (processStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	newProcess := obj.(*corev1.Process)
 	oldProcess := old.(*corev1.Process)
 
@@ -186,24 +190,24 @@ func (processInstanceStatusStrategy) ValidateUpdate(ctx context.Context, obj, ol
 }
 
 // WarningsOnUpdate returns warnings for the given update.
-func (processInstanceStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
+func (processStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	return nil
 }
 
 // ProcessToSelectableFields returns a field set that represents the object for matching purposes.
-func ProcessToSelectableFields(processInstance *corev1.Process) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&processInstance.ObjectMeta, true)
+func ProcessToSelectableFields(process *corev1.Process) fields.Set {
+	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&process.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}
 	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }
 
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
-	processInstance, ok := obj.(*corev1.Process)
+	process, ok := obj.(*corev1.Process)
 	if !ok {
 		return nil, nil, fmt.Errorf("given object is not a process.")
 	}
-	return labels.Set(processInstance.ObjectMeta.Labels), ProcessToSelectableFields(processInstance), nil
+	return labels.Set(process.ObjectMeta.Labels), ProcessToSelectableFields(process), nil
 }
 
 // MatchProcess is the filter used by the generic etcd backend to route

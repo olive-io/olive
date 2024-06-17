@@ -114,6 +114,10 @@ func AddHandlers(h printers.PrintHandler) {
 
 	processColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Definition", Type: "string", Description: "The name of Definition"},
+		{Name: "Version", Type: "integer", Description: "The version of the Definition"},
+		{Name: "Process", Type: "string", Description: "The Bpmn Process process set"},
+		{Name: "Region", Type: "string", Description: "The region of process binding"},
 		{Name: "Status", Type: "string", Description: "The status of the bpmn process"},
 		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
@@ -307,7 +311,20 @@ func printProcess(obj *corev1.Process, options printers.GenerateOptions) ([]meta
 	row := metav1.TableRow{
 		Object: krt.RawExtension{Object: obj},
 	}
-	row.Cells = append(row.Cells, obj.Name, string(obj.Status.Phase), translateTimestampSince(obj.CreationTimestamp))
+
+	definition := obj.Spec.Definition
+	version := obj.Spec.Version
+	bpmnProcess := obj.Spec.BpmnProcess
+	region := fmt.Sprintf("rn%d", obj.Status.Region)
+
+	row.Cells = append(row.Cells,
+		obj.Name,
+		definition,
+		version,
+		bpmnProcess,
+		region,
+		string(obj.Status.Phase),
+		translateTimestampSince(obj.CreationTimestamp))
 	return []metav1.TableRow{row}, nil
 }
 

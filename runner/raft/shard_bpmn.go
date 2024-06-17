@@ -25,6 +25,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/cockroachdb/errors"
@@ -50,6 +51,27 @@ var (
 	processPrefix    = []byte("processes")
 )
 
+func (r *Shard) GetDefinitionArchive(ctx context.Context, namespace, name string) ([]*corev1.Definition, error) {
+	prefix := bytesutil.PathJoin(definitionPrefix, []byte(namespace), []byte(name))
+
+	definitions := make([]*corev1.Definition, 0)
+	kvs, err := r.getRange(prefix, getPrefix(prefix), 0)
+	if err != nil {
+		return nil, err
+	}
+	for _, kv := range kvs {
+		definition := &corev1.Definition{}
+		_ = definition.Unmarshal(kv.Value)
+		definitions = append(definitions, definition)
+	}
+
+	sort.Slice(definitions, func(i, j int) bool {
+		return definitions[i].Spec.Version < definitions[j].Spec.Version
+	})
+
+	return definitions, nil
+}
+
 func (r *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, error) {
 	resp := &pb.ShardDeployDefinitionResponse{}
 	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
@@ -60,13 +82,13 @@ func (r *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinit
 	return resp, nil
 }
 
-func (r *Shard) ExecuteDefinition(ctx context.Context, req *pb.ShardExecuteDefinitionRequest) (*pb.ShardExecuteDefinitionResponse, error) {
-	resp := &pb.ShardExecuteDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{ExecuteDefinition: req})
+func (r *Shard) RunBpmnProcess(ctx context.Context, req *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, error) {
+	resp := &pb.ShardRunBpmnProcessResponse{}
+	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{RunBpmnProcess: req})
 	if err != nil {
 		return nil, err
 	}
-	resp = result.(*pb.ShardExecuteDefinitionResponse)
+	resp = result.(*pb.ShardRunBpmnProcessResponse)
 	return resp, nil
 }
 
@@ -136,31 +158,31 @@ func (r *Shard) scheduleCycle() {
 				}
 				pi := x.(*ProcessInfo)
 
-				go r.scheduleDefinition(pi.Process)
+				go r.runProcess(pi.Process)
 			}
 		}
 	}
 }
 
-func (r *Shard) scheduleDefinition(process *corev1.Process) {
-	if len(process.Spec.Definition) == 0 {
-		definitionKey := bytesutil.PathJoin(definitionPrefix,
-			[]byte(process.Spec.Definition), []byte(fmt.Sprintf("%d", process.Spec.Version)))
+func (r *Shard) runProcess(process *corev1.Process) {
+	definitionKey := bytesutil.PathJoin(definitionPrefix,
+		[]byte(process.Namespace), []byte(process.Spec.Definition),
+		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
 
-		kv, err := r.get(definitionKey)
-		if err != nil {
-			if errors.Is(err, pebble.ErrNotFound) {
+	kv, err := r.get(definitionKey)
+	if err != nil {
+		if errors.Is(err, pebble.ErrNotFound) {
 
-			}
-			return
 		}
-		definition := new(corev1.Definition)
-		definition.Unmarshal(kv.Value)
-		process.Spec.Definition = definition.Spec.Content
+		return
+	}
+	definition := new(corev1.Definition)
+	if err = definition.Unmarshal(kv.Value); err != nil {
+		return
 	}
 
 	var definitions *schema.Definitions
-	err := xml.Unmarshal([]byte(process.Spec.Definition), &definitions)
+	err = xml.Unmarshal([]byte(definition.Spec.Content), &definitions)
 	if err != nil {
 		return
 	}
@@ -222,14 +244,14 @@ func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, de
 	r.lg.Info("start process instance", fields...)
 
 	var err error
-	//if process.Status == pb.ProcessInstance_Prepare {
-	//	process.Status = pb.ProcessInstance_Running
-	//	process.StartTime = time.Now().UnixNano()
-	//	err = saveProcess(ctx, r, process)
-	//	if err != nil {
-	//		r.lg.Error("save process instance", append(fields, zap.Error(err))...)
-	//	}
-	//}
+	if process.Status.Phase == corev1.ProcessPrepare {
+		process.Status.Phase = corev1.ProcessRunning
+		//process.Status.StartTime = time.Now().UnixNano()
+		err = saveProcess(ctx, r, process)
+		if err != nil {
+			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
+		}
+	}
 
 	finish := true
 	defer func() {
@@ -269,7 +291,6 @@ func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, de
 
 	finish = false
 	completed := map[string]struct{}{}
-	_ = completed
 
 LOOP:
 	for {
@@ -331,8 +352,9 @@ LOOP:
 					//process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
 				}
 			case *bact.Trace:
-				//act := tt.GetActivity()
-				//id, _ := act.Element().Id()
+				act := tt.GetActivity()
+				id, _ := act.Element().Id()
+				var ok bool
 				//
 				//flowNode, ok := process.FlowNodes[*id]
 				//if ok {
@@ -343,12 +365,12 @@ LOOP:
 				//	flowNode.DataObjects = toGenericMap[string](dataObjects)
 				//}
 				//
-				//_, ok = completed[*id]
-				//if ok {
-				//	tt.Do()
-				//} else {
-				//	r.handleActivity(ctx, tt, inst, process)
-				//}
+				_, ok = completed[*id]
+				if ok {
+					tt.Do()
+				} else {
+					r.handleActivity(ctx, tt, inst, process)
+				}
 			case tracing.ErrorTrace:
 				finish = true
 				err = tt.Error
@@ -372,7 +394,7 @@ func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi
 	//dsyAct := &dsypb.Activity{
 	//	Type:               actCov(actType),
 	//	Definitions:        process.DefinitionsId,
-	//	DefinitionsVersion: process.DefinitionsVersion,
+	//	DefinitionsVersion: process.Spec.DefinitionsVersion,
 	//}
 	//if id, ok := taskAct.Element().Id(); ok {
 	//	dsyAct.Id = *id
@@ -412,8 +434,8 @@ func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi
 	//for key, value := range dataObjects {
 	//	req.DataObjects[key] = dsypb.BoxFromAny(value)
 	//}
-	//
-	//doOpts := make([]bact.DoOption, 0)
+
+	doOpts := make([]bact.DoOption, 0)
 	//resp, err := r.proxy.Handle(ctx, req)
 	//if err != nil {
 	//	err = fmt.Errorf("%s", err.Error())
@@ -430,20 +452,20 @@ func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi
 	//	}
 	//	doOpts = append(doOpts, bact.WithProperties(dp), bact.WithObjects(ddo))
 	//}
-	//trace.Do(doOpts...)
+	trace.Do(doOpts...)
 }
 
 func saveProcess(ctx context.Context, kv IShardRaftKV, process *corev1.Process) error {
 	var err error
-	//pkey := bytesutil.PathJoin(processPrefix,
-	//	[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)),
-	//	[]byte(process.Id))
-	//
-	//value, err := proto.Marshal(process)
-	//if err != nil {
-	//	return err
-	//}
-	//_, err = kv.Put(ctx, &pb.ShardPutRequest{Key: pkey, Value: value})
+	pkey := bytesutil.PathJoin(processPrefix,
+		[]byte(process.Namespace), []byte(process.Spec.Definition),
+		[]byte(fmt.Sprintf("%d", process.Spec.Version)), []byte(process.Name))
+
+	value, err := process.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = kv.Put(ctx, &pb.ShardPutRequest{Key: pkey, Value: value})
 	return err
 }
 

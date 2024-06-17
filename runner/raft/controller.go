@@ -74,6 +74,7 @@ type Controller struct {
 	shards map[uint64]*Shard
 
 	definitionQ workqueue.RateLimitingInterface
+	processQ    workqueue.RateLimitingInterface
 
 	stopping <-chan struct{}
 	done     chan struct{}
@@ -132,6 +133,7 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, client 
 		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(50), 300)},
 	)
 	definitionQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
+	processQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
 
 	traces := tracer.SubscribeChannel(make(chan tracing.ITrace, 128))
 	controller := &Controller{
@@ -150,6 +152,7 @@ func NewController(ctx context.Context, cfg Config, be backend.IBackend, client 
 		shards:  make(map[uint64]*Shard),
 
 		definitionQ: definitionQ,
+		processQ:    processQ,
 	}
 
 	go controller.watchTrace(traces)
@@ -203,6 +206,23 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	}
 	syncs = append(syncs, definitionRegistration.HasSynced)
 
+	processRegistration, err := informerFactory.Core().V1().Processes().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: c.enqueueProcess,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldPr := oldObj.(*corev1.Process)
+			newPr := newObj.(*corev1.Process)
+			if oldPr.ResourceVersion == newPr.ResourceVersion {
+				return
+			}
+			c.enqueueProcess(newPr)
+		},
+		DeleteFunc: nil,
+	})
+	if err != nil {
+		return err
+	}
+	syncs = append(syncs, processRegistration.HasSynced)
+
 	informerFactory.Start(stopping)
 
 	if ok := cache.WaitForNamedCacheSync("runner-raft-controller", c.stopping, syncs...); !ok {
@@ -219,6 +239,7 @@ func (c *Controller) Start(stopping <-chan struct{}) error {
 	}
 
 	go wait.UntilWithContext(c.ctx, c.runDefinitionWorker, time.Second)
+	go wait.UntilWithContext(c.ctx, c.runProcessWorker, time.Second)
 	go c.run()
 	return nil
 }
@@ -343,32 +364,29 @@ func (c *Controller) SubscribeTrace() <-chan tracing.ITrace {
 	return c.tracer.SubscribeChannel(traceChannel)
 }
 
-func (c *Controller) ExecuteDefinition(ctx context.Context, process *corev1.Process) error {
-	lg := c.cfg.Logger
-	if process.Spec.Definition == "" || process.Status.Region == 0 {
-		lg.Warn("invalid process instance")
-		return nil
-	}
-
-	shardId := process.Status.Region
-	shard, ok := c.getShard(uint64(shardId))
-	if !ok {
-		lg.Info("shard running others", zap.Int64("id", shardId))
-		return nil
-	}
-
-	lg.Info("definition executed",
-		zap.String("id", process.Spec.Definition),
-		zap.Int64("version", process.Spec.Version))
-
-	req := &pb.ShardExecuteDefinitionRequest{Process: process}
-	resp, err := shard.ExecuteDefinition(ctx, req)
+func (c *Controller) GetDefinitionArchive(ctx context.Context, req *pb.GetDefinitionArchiveRequest) (*pb.GetDefinitionArchiveResponse, error) {
+	definition, err := c.client.CoreV1().Definitions(req.Namespace).Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	resp.Process.DeepCopyInto(process)
 
-	return nil
+	if definition.Spec.Region == 0 {
+		return nil, fmt.Errorf("definition not be binded")
+	}
+
+	resp := &pb.GetDefinitionArchiveResponse{}
+	region, ok := c.getShard(uint64(definition.Spec.Region))
+	if !ok {
+		return nil, ErrNoRegion
+	}
+
+	definitions, err := region.GetDefinitionArchive(ctx, req.Namespace, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	resp.Definitions = definitions
+
+	return resp, nil
 }
 
 func (c *Controller) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {

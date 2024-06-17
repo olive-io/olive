@@ -361,6 +361,9 @@ const (
 	// ProcessTerminated means the node has been removed from the cluster.
 	ProcessTerminated ProcessPhase = "Terminated"
 	ProcessPrepare    ProcessPhase = "Prepare"
+	ProcessRunning    ProcessPhase = "Running"
+	ProcessSuccess    ProcessPhase = "Success"
+	ProcessFailed     ProcessPhase = "Failed"
 )
 
 // +genclient

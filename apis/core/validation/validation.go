@@ -205,21 +205,38 @@ func validateDefinitionStatus(definition *corev1.Definition, fldPath *field.Path
 	return allErrs
 }
 
-// ValidateProcessName can be used to check whether the given processInstance name is valid.
+// ValidateProcessName can be used to check whether the given process name is valid.
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
 var ValidateProcessName = apimachineryvalidation.NameIsDNSSubdomain
 
 // ValidateProcess tests if required fields are set.
-func ValidateProcess(processInstance *corev1.Process) field.ErrorList {
-	allErrs := ValidateObjectMeta(&processInstance.ObjectMeta, false, ValidateProcessName, field.NewPath("metadata"))
+func ValidateProcess(process *corev1.Process) field.ErrorList {
+	allErrs := ValidateObjectMeta(&process.ObjectMeta, true, ValidateProcessName, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateProcessSpec(&process.Spec)...)
+	return allErrs
+}
+
+func ValidateProcessSpec(spec *corev1.ProcessSpec) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(spec.Definition) == 0 {
+		allErrs = append(allErrs, field.Required(field.NewPath("spec", "Definition"), ""))
+	}
+	if spec.Version < 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "Version"), spec.Version, "version must >= 0"))
+	}
+	if len(spec.BpmnProcess) == 0 {
+		allErrs = append(allErrs, field.Required(field.NewPath("spec", "BpmnProcess"), ""))
+	}
+
 	return allErrs
 }
 
 // ValidateProcessUpdate validates an update to a Process and returns an ErrorList with any errors.
-func ValidateProcessUpdate(processInstance, oldProcess *corev1.Process) field.ErrorList {
-	allErrs := ValidateObjectMetaUpdate(&processInstance.ObjectMeta, &oldProcess.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateProcessSpecUpdate(processInstance.Spec, oldProcess.Spec, field.NewPath("spec"))...)
+func ValidateProcessUpdate(process, oldProcess *corev1.Process) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&process.ObjectMeta, &oldProcess.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateProcessSpecUpdate(process.Spec, oldProcess.Spec, field.NewPath("spec"))...)
 	return allErrs
 }
 
@@ -230,23 +247,23 @@ func ValidateProcessSpecUpdate(spec, oldSpec corev1.ProcessSpec, fldPath *field.
 }
 
 // ValidateProcessUpdateStatus validates an update to the status of a Process and returns an ErrorList with any errors.
-func ValidateProcessUpdateStatus(processInstance, oldProcess *corev1.Process) field.ErrorList {
-	allErrs := ValidateObjectMetaUpdate(&processInstance.ObjectMeta, &oldProcess.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateProcessStatusUpdate(processInstance, oldProcess)...)
+func ValidateProcessUpdateStatus(process, oldProcess *corev1.Process) field.ErrorList {
+	allErrs := ValidateObjectMetaUpdate(&process.ObjectMeta, &oldProcess.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidateProcessStatusUpdate(process, oldProcess)...)
 	return allErrs
 }
 
 // ValidateProcessStatusUpdate validates an update to a ProcessStatus and returns an ErrorList with any errors.
-func ValidateProcessStatusUpdate(processInstance, oldProcess *corev1.Process) field.ErrorList {
+func ValidateProcessStatusUpdate(process, oldProcess *corev1.Process) field.ErrorList {
 	allErrs := field.ErrorList{}
 	statusFld := field.NewPath("status")
-	allErrs = append(allErrs, validateProcessStatus(processInstance, statusFld)...)
+	allErrs = append(allErrs, validateProcessStatus(process, statusFld)...)
 
 	return allErrs
 }
 
 // validateProcessStatus validates a ProcessStatus and returns an ErrorList with any errors.
-func validateProcessStatus(processInstance *corev1.Process, fldPath *field.Path) field.ErrorList {
+func validateProcessStatus(process *corev1.Process, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	return allErrs
 }

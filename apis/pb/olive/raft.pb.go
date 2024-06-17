@@ -181,15 +181,15 @@ func (m *RaftHeader) GetID() uint64 {
 }
 
 type RaftInternalRequest struct {
-	Header               *RaftHeader                    `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
-	Range                *ShardRangeRequest             `protobuf:"bytes,2,opt,name=range,proto3" json:"range,omitempty"`
-	Put                  *ShardPutRequest               `protobuf:"bytes,3,opt,name=put,proto3" json:"put,omitempty"`
-	Delete               *ShardDeleteRequest            `protobuf:"bytes,4,opt,name=delete,proto3" json:"delete,omitempty"`
-	DeployDefinition     *ShardDeployDefinitionRequest  `protobuf:"bytes,11,opt,name=deploy_definition,json=deployDefinition,proto3" json:"deploy_definition,omitempty"`
-	ExecuteDefinition    *ShardExecuteDefinitionRequest `protobuf:"bytes,12,opt,name=execute_definition,json=executeDefinition,proto3" json:"execute_definition,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
-	XXX_unrecognized     []byte                         `json:"-"`
-	XXX_sizecache        int32                          `json:"-"`
+	Header               *RaftHeader                   `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
+	Range                *ShardRangeRequest            `protobuf:"bytes,2,opt,name=range,proto3" json:"range,omitempty"`
+	Put                  *ShardPutRequest              `protobuf:"bytes,3,opt,name=put,proto3" json:"put,omitempty"`
+	Delete               *ShardDeleteRequest           `protobuf:"bytes,4,opt,name=delete,proto3" json:"delete,omitempty"`
+	DeployDefinition     *ShardDeployDefinitionRequest `protobuf:"bytes,11,opt,name=deploy_definition,json=deployDefinition,proto3" json:"deploy_definition,omitempty"`
+	RunBpmnProcess       *ShardRunBpmnProcessRequest   `protobuf:"bytes,12,opt,name=run_bpmn_process,json=runBpmnProcess,proto3" json:"run_bpmn_process,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
 }
 
 func (m *RaftInternalRequest) Reset()         { *m = RaftInternalRequest{} }
@@ -260,9 +260,9 @@ func (m *RaftInternalRequest) GetDeployDefinition() *ShardDeployDefinitionReques
 	return nil
 }
 
-func (m *RaftInternalRequest) GetExecuteDefinition() *ShardExecuteDefinitionRequest {
+func (m *RaftInternalRequest) GetRunBpmnProcess() *ShardRunBpmnProcessRequest {
 	if m != nil {
-		return m.ExecuteDefinition
+		return m.RunBpmnProcess
 	}
 	return nil
 }
@@ -844,25 +844,25 @@ func (m *ShardDeployDefinitionResponse) GetDefinition() *v1.Definition {
 	return nil
 }
 
-type ShardExecuteDefinitionRequest struct {
+type ShardRunBpmnProcessRequest struct {
 	Process              *v1.Process `protobuf:"bytes,1,opt,name=process,proto3" json:"process,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *ShardExecuteDefinitionRequest) Reset()         { *m = ShardExecuteDefinitionRequest{} }
-func (m *ShardExecuteDefinitionRequest) String() string { return proto.CompactTextString(m) }
-func (*ShardExecuteDefinitionRequest) ProtoMessage()    {}
-func (*ShardExecuteDefinitionRequest) Descriptor() ([]byte, []int) {
+func (m *ShardRunBpmnProcessRequest) Reset()         { *m = ShardRunBpmnProcessRequest{} }
+func (m *ShardRunBpmnProcessRequest) String() string { return proto.CompactTextString(m) }
+func (*ShardRunBpmnProcessRequest) ProtoMessage()    {}
+func (*ShardRunBpmnProcessRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ec2efed0067e6997, []int{14}
 }
-func (m *ShardExecuteDefinitionRequest) XXX_Unmarshal(b []byte) error {
+func (m *ShardRunBpmnProcessRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ShardExecuteDefinitionRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ShardRunBpmnProcessRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ShardExecuteDefinitionRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ShardRunBpmnProcessRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -872,26 +872,26 @@ func (m *ShardExecuteDefinitionRequest) XXX_Marshal(b []byte, deterministic bool
 		return b[:n], nil
 	}
 }
-func (m *ShardExecuteDefinitionRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ShardExecuteDefinitionRequest.Merge(m, src)
+func (m *ShardRunBpmnProcessRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ShardRunBpmnProcessRequest.Merge(m, src)
 }
-func (m *ShardExecuteDefinitionRequest) XXX_Size() int {
+func (m *ShardRunBpmnProcessRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *ShardExecuteDefinitionRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ShardExecuteDefinitionRequest.DiscardUnknown(m)
+func (m *ShardRunBpmnProcessRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ShardRunBpmnProcessRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ShardExecuteDefinitionRequest proto.InternalMessageInfo
+var xxx_messageInfo_ShardRunBpmnProcessRequest proto.InternalMessageInfo
 
-func (m *ShardExecuteDefinitionRequest) GetProcess() *v1.Process {
+func (m *ShardRunBpmnProcessRequest) GetProcess() *v1.Process {
 	if m != nil {
 		return m.Process
 	}
 	return nil
 }
 
-type ShardExecuteDefinitionResponse struct {
+type ShardRunBpmnProcessResponse struct {
 	Header               *RaftResponseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	Process              *v1.Process         `protobuf:"bytes,2,opt,name=process,proto3" json:"process,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
@@ -899,18 +899,18 @@ type ShardExecuteDefinitionResponse struct {
 	XXX_sizecache        int32               `json:"-"`
 }
 
-func (m *ShardExecuteDefinitionResponse) Reset()         { *m = ShardExecuteDefinitionResponse{} }
-func (m *ShardExecuteDefinitionResponse) String() string { return proto.CompactTextString(m) }
-func (*ShardExecuteDefinitionResponse) ProtoMessage()    {}
-func (*ShardExecuteDefinitionResponse) Descriptor() ([]byte, []int) {
+func (m *ShardRunBpmnProcessResponse) Reset()         { *m = ShardRunBpmnProcessResponse{} }
+func (m *ShardRunBpmnProcessResponse) String() string { return proto.CompactTextString(m) }
+func (*ShardRunBpmnProcessResponse) ProtoMessage()    {}
+func (*ShardRunBpmnProcessResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ec2efed0067e6997, []int{15}
 }
-func (m *ShardExecuteDefinitionResponse) XXX_Unmarshal(b []byte) error {
+func (m *ShardRunBpmnProcessResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ShardExecuteDefinitionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ShardRunBpmnProcessResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ShardExecuteDefinitionResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ShardRunBpmnProcessResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -920,28 +920,130 @@ func (m *ShardExecuteDefinitionResponse) XXX_Marshal(b []byte, deterministic boo
 		return b[:n], nil
 	}
 }
-func (m *ShardExecuteDefinitionResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ShardExecuteDefinitionResponse.Merge(m, src)
+func (m *ShardRunBpmnProcessResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ShardRunBpmnProcessResponse.Merge(m, src)
 }
-func (m *ShardExecuteDefinitionResponse) XXX_Size() int {
+func (m *ShardRunBpmnProcessResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *ShardExecuteDefinitionResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ShardExecuteDefinitionResponse.DiscardUnknown(m)
+func (m *ShardRunBpmnProcessResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ShardRunBpmnProcessResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ShardExecuteDefinitionResponse proto.InternalMessageInfo
+var xxx_messageInfo_ShardRunBpmnProcessResponse proto.InternalMessageInfo
 
-func (m *ShardExecuteDefinitionResponse) GetHeader() *RaftResponseHeader {
+func (m *ShardRunBpmnProcessResponse) GetHeader() *RaftResponseHeader {
 	if m != nil {
 		return m.Header
 	}
 	return nil
 }
 
-func (m *ShardExecuteDefinitionResponse) GetProcess() *v1.Process {
+func (m *ShardRunBpmnProcessResponse) GetProcess() *v1.Process {
 	if m != nil {
 		return m.Process
+	}
+	return nil
+}
+
+type GetDefinitionArchiveRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDefinitionArchiveRequest) Reset()         { *m = GetDefinitionArchiveRequest{} }
+func (m *GetDefinitionArchiveRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDefinitionArchiveRequest) ProtoMessage()    {}
+func (*GetDefinitionArchiveRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ec2efed0067e6997, []int{16}
+}
+func (m *GetDefinitionArchiveRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDefinitionArchiveRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDefinitionArchiveRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDefinitionArchiveRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDefinitionArchiveRequest.Merge(m, src)
+}
+func (m *GetDefinitionArchiveRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDefinitionArchiveRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDefinitionArchiveRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDefinitionArchiveRequest proto.InternalMessageInfo
+
+func (m *GetDefinitionArchiveRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *GetDefinitionArchiveRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type GetDefinitionArchiveResponse struct {
+	Definitions          []*v1.Definition `protobuf:"bytes,1,rep,name=definitions,proto3" json:"definitions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *GetDefinitionArchiveResponse) Reset()         { *m = GetDefinitionArchiveResponse{} }
+func (m *GetDefinitionArchiveResponse) String() string { return proto.CompactTextString(m) }
+func (*GetDefinitionArchiveResponse) ProtoMessage()    {}
+func (*GetDefinitionArchiveResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ec2efed0067e6997, []int{17}
+}
+func (m *GetDefinitionArchiveResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDefinitionArchiveResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDefinitionArchiveResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDefinitionArchiveResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDefinitionArchiveResponse.Merge(m, src)
+}
+func (m *GetDefinitionArchiveResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDefinitionArchiveResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDefinitionArchiveResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDefinitionArchiveResponse proto.InternalMessageInfo
+
+func (m *GetDefinitionArchiveResponse) GetDefinitions() []*v1.Definition {
+	if m != nil {
+		return m.Definitions
 	}
 	return nil
 }
@@ -960,7 +1062,7 @@ func (m *GetProcessRequest) Reset()         { *m = GetProcessRequest{} }
 func (m *GetProcessRequest) String() string { return proto.CompactTextString(m) }
 func (*GetProcessRequest) ProtoMessage()    {}
 func (*GetProcessRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ec2efed0067e6997, []int{16}
+	return fileDescriptor_ec2efed0067e6997, []int{18}
 }
 func (m *GetProcessRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1029,7 +1131,7 @@ func (m *GetProcessResponse) Reset()         { *m = GetProcessResponse{} }
 func (m *GetProcessResponse) String() string { return proto.CompactTextString(m) }
 func (*GetProcessResponse) ProtoMessage()    {}
 func (*GetProcessResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ec2efed0067e6997, []int{17}
+	return fileDescriptor_ec2efed0067e6997, []int{19}
 }
 func (m *GetProcessResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1087,8 +1189,10 @@ func init() {
 	proto.RegisterType((*ShardDeleteResponse)(nil), "olivepb.ShardDeleteResponse")
 	proto.RegisterType((*ShardDeployDefinitionRequest)(nil), "olivepb.ShardDeployDefinitionRequest")
 	proto.RegisterType((*ShardDeployDefinitionResponse)(nil), "olivepb.ShardDeployDefinitionResponse")
-	proto.RegisterType((*ShardExecuteDefinitionRequest)(nil), "olivepb.ShardExecuteDefinitionRequest")
-	proto.RegisterType((*ShardExecuteDefinitionResponse)(nil), "olivepb.ShardExecuteDefinitionResponse")
+	proto.RegisterType((*ShardRunBpmnProcessRequest)(nil), "olivepb.ShardRunBpmnProcessRequest")
+	proto.RegisterType((*ShardRunBpmnProcessResponse)(nil), "olivepb.ShardRunBpmnProcessResponse")
+	proto.RegisterType((*GetDefinitionArchiveRequest)(nil), "olivepb.GetDefinitionArchiveRequest")
+	proto.RegisterType((*GetDefinitionArchiveResponse)(nil), "olivepb.GetDefinitionArchiveResponse")
 	proto.RegisterType((*GetProcessRequest)(nil), "olivepb.GetProcessRequest")
 	proto.RegisterType((*GetProcessResponse)(nil), "olivepb.GetProcessResponse")
 }
@@ -1098,59 +1202,64 @@ func init() {
 }
 
 var fileDescriptor_ec2efed0067e6997 = []byte{
-	// 825 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0xcd, 0x8e, 0xe3, 0x44,
-	0x10, 0xc6, 0xf6, 0x4e, 0x26, 0xa9, 0x19, 0xc1, 0xa4, 0x07, 0x41, 0x34, 0x33, 0x1b, 0xad, 0x8c,
-	0x80, 0x15, 0x3f, 0x0e, 0x9b, 0x45, 0x5c, 0x38, 0x20, 0x20, 0x2b, 0xb0, 0x06, 0xa4, 0x51, 0x0f,
-	0xcc, 0x61, 0x2f, 0x91, 0x63, 0x57, 0x32, 0xcd, 0x3a, 0x6d, 0xd3, 0xee, 0x44, 0x64, 0xc5, 0x81,
-	0x17, 0xe0, 0xc6, 0x81, 0x23, 0x47, 0x1e, 0x85, 0x23, 0x8f, 0x80, 0x86, 0x17, 0x41, 0xfd, 0xe3,
-	0x89, 0x9d, 0x64, 0x20, 0x52, 0x10, 0xe2, 0xd6, 0x5d, 0xf5, 0xd5, 0xd7, 0x5f, 0x57, 0x55, 0x97,
-	0x0d, 0xfd, 0x09, 0x93, 0xd7, 0xb3, 0x51, 0x10, 0x67, 0xd3, 0x5e, 0x96, 0xb2, 0x39, 0xbe, 0xcb,
-	0x32, 0xb3, 0xe8, 0x45, 0x39, 0x2b, 0x7a, 0xf9, 0xc8, 0xee, 0x44, 0x34, 0x96, 0x41, 0x2e, 0x32,
-	0x99, 0x91, 0x7d, 0x6d, 0xc9, 0x47, 0x27, 0x1f, 0xfc, 0x43, 0x70, 0x9c, 0x09, 0xec, 0xcd, 0x1f,
-	0xf5, 0x26, 0xc8, 0x51, 0x44, 0x12, 0x13, 0x43, 0xe0, 0xbf, 0x0f, 0x10, 0x72, 0x89, 0x82, 0x47,
-	0xe9, 0xf9, 0x15, 0x39, 0x02, 0xef, 0x19, 0x2e, 0x3a, 0xce, 0x03, 0xe7, 0xe1, 0x21, 0x55, 0x4b,
-	0xf2, 0x32, 0xec, 0xcd, 0xa3, 0x74, 0x86, 0x1d, 0x57, 0xdb, 0xcc, 0xc6, 0xef, 0x43, 0xf3, 0x1c,
-	0x17, 0x57, 0x6a, 0xbd, 0x75, 0xcc, 0x19, 0x00, 0x8d, 0xc6, 0xf2, 0x73, 0x8c, 0x12, 0x14, 0xe4,
-	0x45, 0x70, 0xc3, 0x81, 0x0e, 0xba, 0x47, 0xdd, 0x70, 0xe0, 0xff, 0xe0, 0xc1, 0xb1, 0x72, 0x97,
-	0x62, 0x28, 0x7e, 0x3b, 0xc3, 0x42, 0x92, 0xb7, 0xa1, 0x71, 0xad, 0x23, 0x34, 0xf6, 0xa0, 0x7f,
-	0x1c, 0xd8, 0x1b, 0x07, 0x4b, 0x32, 0x6a, 0x21, 0xe4, 0x3d, 0xd8, 0x13, 0x11, 0x9f, 0x98, 0x83,
-	0x0f, 0xfa, 0x27, 0xb7, 0xd8, 0xcb, 0xeb, 0x48, 0x24, 0x54, 0xb9, 0x2c, 0x2f, 0x35, 0x40, 0xf2,
-	0x16, 0x78, 0xf9, 0x4c, 0x76, 0x3c, 0x8d, 0xef, 0xd4, 0xf1, 0x17, 0x33, 0x59, 0xa2, 0x15, 0x88,
-	0x3c, 0x86, 0x46, 0x82, 0x29, 0x4a, 0xec, 0xdc, 0xd3, 0xf0, 0xd3, 0x3a, 0x7c, 0xa0, 0x7d, 0x65,
-	0x84, 0x85, 0x12, 0x0a, 0xed, 0x04, 0xf3, 0x34, 0x5b, 0x0c, 0x13, 0x1c, 0x33, 0xce, 0x24, 0xcb,
-	0x78, 0xe7, 0x40, 0xc7, 0xbf, 0xbe, 0x1a, 0xaf, 0x60, 0x83, 0x5b, 0x54, 0xc9, 0x74, 0x94, 0xac,
-	0x38, 0xc8, 0xd7, 0x40, 0xf0, 0x3b, 0x8c, 0x67, 0x12, 0xab, 0xa4, 0x87, 0x9a, 0xf4, 0x8d, 0x3a,
-	0xe9, 0x13, 0x83, 0x5b, 0x67, 0x6d, 0xe3, 0xaa, 0xc7, 0x1f, 0x00, 0xf9, 0x22, 0x9b, 0x4c, 0xa2,
-	0x51, 0x8a, 0xcb, 0xab, 0x6f, 0x28, 0xef, 0x19, 0xb4, 0x74, 0x45, 0x2f, 0xd9, 0x73, 0x93, 0x69,
-	0x8f, 0x2e, 0x0d, 0xfe, 0x14, 0x88, 0xaa, 0x0c, 0xc5, 0x22, 0xcf, 0x78, 0x81, 0xb6, 0xdc, 0xa7,
-	0xd0, 0x12, 0x38, 0x61, 0x19, 0x1f, 0xb2, 0xc4, 0x56, 0xbd, 0x69, 0x0c, 0x61, 0x42, 0xee, 0x03,
-	0x08, 0xcc, 0x53, 0x16, 0x47, 0xca, 0xeb, 0x6a, 0x6f, 0xcb, 0x5a, 0xc2, 0x44, 0xc7, 0x46, 0x63,
-	0x39, 0x94, 0x28, 0xa6, 0xba, 0x52, 0x2a, 0x36, 0x1a, 0xcb, 0xaf, 0x50, 0x4c, 0xfd, 0xef, 0xa1,
-	0xbd, 0x56, 0xdc, 0x0d, 0x9a, 0x35, 0x07, 0x9f, 0xe0, 0x10, 0x79, 0x62, 0xdb, 0xb2, 0xa9, 0x0d,
-	0x4f, 0x78, 0xa2, 0xfa, 0x35, 0x65, 0x53, 0x66, 0xda, 0xc0, 0xa3, 0x66, 0x43, 0x7c, 0x38, 0x2c,
-	0x50, 0xb0, 0x28, 0x65, 0xcf, 0x55, 0x4a, 0x74, 0xd1, 0x9b, 0xb4, 0x66, 0xf3, 0x39, 0x90, 0xea,
-	0xe9, 0xe6, 0xca, 0xaa, 0x51, 0x6a, 0x3d, 0x7b, 0x5a, 0xeb, 0xd9, 0x7a, 0x66, 0x6e, 0x7b, 0xf7,
-	0x35, 0xf0, 0x9e, 0xcd, 0x8b, 0x8e, 0xfb, 0xc0, 0x7b, 0x78, 0xd0, 0x6f, 0xdf, 0x46, 0x94, 0xcf,
-	0x8c, 0x2a, 0xaf, 0x4f, 0xe1, 0xa5, 0x95, 0xd6, 0xdc, 0xf6, 0xf9, 0x91, 0x57, 0x61, 0x9f, 0x15,
-	0xc3, 0x62, 0xc1, 0x63, 0x7d, 0xcd, 0x26, 0x6d, 0xb0, 0xe2, 0x72, 0xc1, 0x63, 0x3f, 0x87, 0xa3,
-	0x25, 0xe7, 0x2e, 0x37, 0x78, 0x13, 0xf6, 0x72, 0x81, 0xe7, 0x73, 0xfb, 0xfa, 0x36, 0xdc, 0xc1,
-	0xf8, 0xfd, 0x8f, 0x6c, 0xd6, 0x6a, 0x2f, 0x66, 0xc3, 0x45, 0x2a, 0x92, 0xdd, 0x9a, 0xe4, 0x02,
-	0x8e, 0x6b, 0x04, 0xff, 0x89, 0x6a, 0x01, 0x67, 0x7f, 0xf7, 0x4e, 0x09, 0x05, 0xa8, 0xbc, 0x46,
-	0xa3, 0xa0, 0x1f, 0x2c, 0xc7, 0xb2, 0x21, 0x1e, 0xb2, 0xcc, 0x2c, 0x02, 0x35, 0x96, 0x03, 0x35,
-	0x96, 0x83, 0xf9, 0xa3, 0xa0, 0x42, 0x57, 0x61, 0xf1, 0x7f, 0x75, 0xe0, 0xfe, 0x1d, 0x87, 0xee,
-	0x72, 0xe7, 0xba, 0x54, 0xf7, 0x5f, 0x91, 0xfa, 0x8d, 0x55, 0x7a, 0xd7, 0xc4, 0x21, 0x21, 0xec,
-	0xe7, 0x22, 0x8b, 0xb1, 0x28, 0xac, 0xd4, 0xde, 0xb6, 0x27, 0x5e, 0x98, 0x30, 0x5a, 0xc6, 0xfb,
-	0xbf, 0x38, 0xd0, 0xbd, 0xeb, 0xb0, 0x5d, 0xf2, 0x52, 0x91, 0xe8, 0xee, 0x28, 0xf1, 0x47, 0x07,
-	0xda, 0x9f, 0xa1, 0x2c, 0xed, 0x36, 0x07, 0xaf, 0x40, 0xc3, 0x4c, 0x3d, 0x3b, 0x03, 0xed, 0x4e,
-	0xcd, 0x9a, 0x65, 0x2a, 0x43, 0x33, 0xa1, 0x5a, 0xb4, 0x66, 0x23, 0xef, 0xa8, 0x2f, 0x49, 0xb9,
-	0xbf, 0x42, 0x51, 0x28, 0x1a, 0x33, 0x0e, 0xd7, 0x1d, 0xea, 0xfb, 0xca, 0x12, 0x3d, 0xb3, 0x5a,
-	0xd4, 0x65, 0x89, 0xff, 0x93, 0x03, 0xa4, 0xaa, 0xe7, 0xff, 0x91, 0xa6, 0xfe, 0x53, 0x68, 0xd1,
-	0x19, 0xe7, 0x28, 0xe8, 0xc5, 0xa7, 0xe4, 0xcb, 0xaa, 0xc4, 0x90, 0x17, 0x32, 0xe2, 0x31, 0x92,
-	0xe5, 0x57, 0x7c, 0x2d, 0x9f, 0x27, 0xa7, 0x1b, 0x7d, 0x46, 0xf4, 0x27, 0x1f, 0xff, 0x76, 0xd3,
-	0x75, 0x7e, 0xbf, 0xe9, 0x3a, 0x7f, 0xdc, 0x74, 0x9d, 0x9f, 0xff, 0xec, 0xbe, 0xf0, 0xb4, 0xb7,
-	0xe5, 0x1f, 0xd6, 0x87, 0x96, 0x75, 0xd4, 0xd0, 0x3f, 0x49, 0x8f, 0xff, 0x0a, 0x00, 0x00, 0xff,
-	0xff, 0xec, 0xea, 0x62, 0x6a, 0x9b, 0x09, 0x00, 0x00,
+	// 907 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0x4f, 0x8f, 0xdb, 0x44,
+	0x14, 0xc7, 0xce, 0x6e, 0x36, 0x79, 0x59, 0x95, 0xdd, 0xd9, 0x0a, 0xa2, 0x24, 0x5d, 0x55, 0x2e,
+	0x15, 0x15, 0x7f, 0x1c, 0x9a, 0x22, 0x2e, 0x1c, 0x50, 0x4b, 0x50, 0x89, 0x96, 0x8a, 0xd5, 0x6c,
+	0xb5, 0x07, 0x2e, 0x91, 0x63, 0xbf, 0x64, 0x47, 0x75, 0xc6, 0x66, 0x3c, 0x89, 0x94, 0x8a, 0xaf,
+	0xc0, 0x8d, 0x03, 0x17, 0xee, 0x7c, 0x0b, 0xae, 0x1c, 0xf9, 0x08, 0x68, 0xf9, 0x12, 0x1c, 0xd1,
+	0xfc, 0x71, 0x6c, 0xa7, 0x69, 0xbb, 0x62, 0x11, 0xea, 0x6d, 0xe6, 0xfd, 0xf9, 0xcd, 0xef, 0xcd,
+	0xef, 0xcd, 0xb3, 0x61, 0x30, 0x63, 0xf2, 0x62, 0x31, 0xf1, 0xc3, 0x64, 0xde, 0x4f, 0x62, 0xb6,
+	0xc4, 0x8f, 0x59, 0x62, 0x16, 0xfd, 0x20, 0x65, 0x59, 0x3f, 0x9d, 0xd8, 0x9d, 0x08, 0xa6, 0xd2,
+	0x4f, 0x45, 0x22, 0x13, 0xb2, 0xa7, 0x2d, 0xe9, 0xa4, 0xf3, 0xd9, 0x6b, 0x92, 0xc3, 0x44, 0x60,
+	0x7f, 0x79, 0xbf, 0x3f, 0x43, 0x8e, 0x22, 0x90, 0x18, 0x19, 0x00, 0xef, 0x53, 0x80, 0x11, 0x97,
+	0x28, 0x78, 0x10, 0x9f, 0x9c, 0x93, 0x03, 0xa8, 0x3d, 0xc3, 0x55, 0xdb, 0xb9, 0xed, 0xdc, 0xdb,
+	0xa7, 0x6a, 0x49, 0x6e, 0xc2, 0xee, 0x32, 0x88, 0x17, 0xd8, 0x76, 0xb5, 0xcd, 0x6c, 0xbc, 0x01,
+	0x34, 0x4e, 0x70, 0x75, 0xae, 0xd6, 0x57, 0xce, 0xe9, 0x01, 0xd0, 0x60, 0x2a, 0xbf, 0xc6, 0x20,
+	0x42, 0x41, 0x6e, 0x80, 0x3b, 0x1a, 0xea, 0xa4, 0x1d, 0xea, 0x8e, 0x86, 0xde, 0xdf, 0x2e, 0x1c,
+	0x29, 0x77, 0x4e, 0x86, 0xe2, 0xf7, 0x0b, 0xcc, 0x24, 0xf9, 0x10, 0xea, 0x17, 0x3a, 0x43, 0xc7,
+	0xb6, 0x06, 0x47, 0xbe, 0xad, 0xd8, 0x2f, 0xc0, 0xa8, 0x0d, 0x21, 0x9f, 0xc0, 0xae, 0x08, 0xf8,
+	0xcc, 0x1c, 0xdc, 0x1a, 0x74, 0xd6, 0xb1, 0x67, 0x17, 0x81, 0x88, 0xa8, 0x72, 0x59, 0x5c, 0x6a,
+	0x02, 0xc9, 0x07, 0x50, 0x4b, 0x17, 0xb2, 0x5d, 0xd3, 0xf1, 0xed, 0x6a, 0xfc, 0xe9, 0x42, 0xe6,
+	0xd1, 0x2a, 0x88, 0x3c, 0x80, 0x7a, 0x84, 0x31, 0x4a, 0x6c, 0xef, 0xe8, 0xf0, 0x6e, 0x35, 0x7c,
+	0xa8, 0x7d, 0x79, 0x86, 0x0d, 0x25, 0x14, 0x0e, 0x23, 0x4c, 0xe3, 0x64, 0x35, 0x8e, 0x70, 0xca,
+	0x38, 0x93, 0x2c, 0xe1, 0xed, 0x96, 0xce, 0xbf, 0xbb, 0x99, 0xaf, 0xc2, 0x86, 0xeb, 0xa8, 0x1c,
+	0xe9, 0x20, 0xda, 0x70, 0x90, 0x27, 0x70, 0x20, 0x16, 0x7c, 0x3c, 0x49, 0xe7, 0x7c, 0x9c, 0x8a,
+	0x24, 0xc4, 0x2c, 0x6b, 0xef, 0x6b, 0xc8, 0x3b, 0x1b, 0x15, 0x2f, 0xf8, 0xa3, 0x74, 0xce, 0x4f,
+	0x4d, 0x4c, 0x0e, 0x78, 0x43, 0x54, 0xcc, 0xde, 0x10, 0xc8, 0x37, 0xc9, 0x6c, 0x16, 0x4c, 0x62,
+	0x2c, 0x4a, 0xde, 0x22, 0x6b, 0x0f, 0x9a, 0x5a, 0xc9, 0x33, 0xf6, 0xdc, 0xdc, 0x70, 0x8d, 0x16,
+	0x06, 0x6f, 0x0e, 0x44, 0x29, 0x42, 0x31, 0x4b, 0x13, 0x9e, 0xa1, 0x95, 0xb9, 0x0b, 0x4d, 0x81,
+	0x33, 0x96, 0xf0, 0x31, 0x8b, 0xac, 0xda, 0x0d, 0x63, 0x18, 0x45, 0xe4, 0x16, 0x80, 0xc0, 0x34,
+	0x66, 0x61, 0xa0, 0xbc, 0xae, 0xf6, 0x36, 0xad, 0x65, 0x14, 0xe9, 0xdc, 0x60, 0x2a, 0xc7, 0x12,
+	0xc5, 0x5c, 0x2b, 0xa4, 0x72, 0x83, 0xa9, 0x7c, 0x8a, 0x62, 0xee, 0xfd, 0x00, 0x87, 0x2f, 0x88,
+	0xba, 0x85, 0xb3, 0xc6, 0xe0, 0x33, 0x1c, 0x23, 0x8f, 0x6c, 0x3b, 0x36, 0xb4, 0xe1, 0x2b, 0x1e,
+	0xa9, 0x3e, 0x8d, 0xd9, 0x9c, 0x19, 0xf9, 0x6b, 0xd4, 0x6c, 0x88, 0x07, 0xfb, 0x19, 0x0a, 0x16,
+	0xc4, 0xec, 0xb9, 0xba, 0x12, 0x2d, 0x76, 0x83, 0x56, 0x6c, 0x1e, 0x07, 0x52, 0x3e, 0xdd, 0x94,
+	0xac, 0x1a, 0xa4, 0xd2, 0xab, 0xdd, 0x4a, 0xaf, 0x56, 0x6f, 0x66, 0xdd, 0xb3, 0x77, 0xa0, 0xf6,
+	0x6c, 0x99, 0xb5, 0xdd, 0xdb, 0xb5, 0x7b, 0xad, 0xc1, 0xe1, 0x3a, 0x23, 0x7f, 0x5e, 0x54, 0x79,
+	0x3d, 0x0a, 0x6f, 0x6f, 0xb4, 0xe4, 0x55, 0x9f, 0x1d, 0x79, 0x17, 0xf6, 0x58, 0x36, 0xce, 0x56,
+	0x3c, 0xd4, 0x65, 0x36, 0x68, 0x9d, 0x65, 0x67, 0x2b, 0x1e, 0x7a, 0x29, 0x1c, 0x14, 0x98, 0xd7,
+	0xa9, 0xe0, 0x7d, 0xd8, 0x4d, 0x05, 0x9e, 0x2c, 0xed, 0xab, 0xdb, 0x52, 0x83, 0xf1, 0x7b, 0x5f,
+	0xd8, 0x5b, 0xab, 0xbc, 0x94, 0x2d, 0x85, 0x94, 0x28, 0xbb, 0x15, 0xca, 0x19, 0x1c, 0x55, 0x00,
+	0xfe, 0x17, 0xd6, 0x02, 0x7a, 0xaf, 0x7a, 0x9f, 0x84, 0x02, 0x94, 0x9e, 0xb6, 0x61, 0x30, 0xf0,
+	0x8b, 0x71, 0x6c, 0x80, 0xc7, 0x2c, 0x31, 0x0b, 0x5f, 0x8d, 0x63, 0x5f, 0x8d, 0x63, 0x7f, 0x79,
+	0xdf, 0x2f, 0xc1, 0x95, 0x50, 0xbc, 0x5f, 0x1d, 0xb8, 0xf5, 0x92, 0x43, 0xaf, 0x53, 0x73, 0x95,
+	0xaa, 0xfb, 0x9f, 0x50, 0x9d, 0x41, 0xe7, 0xe5, 0xb3, 0x86, 0x8c, 0x60, 0x2f, 0x9f, 0x50, 0x86,
+	0x67, 0xff, 0xaa, 0xc7, 0xe5, 0x40, 0x79, 0xbe, 0xf7, 0x8b, 0x03, 0xdd, 0xad, 0x27, 0x5d, 0xe7,
+	0x46, 0x4a, 0xfc, 0xdc, 0x6b, 0xf2, 0xfb, 0x16, 0xba, 0x8f, 0x51, 0x16, 0xb7, 0xf4, 0x50, 0x84,
+	0x17, 0x6c, 0xb9, 0x6e, 0xf3, 0x1e, 0x34, 0x79, 0x30, 0xc7, 0x2c, 0x0d, 0x42, 0xd4, 0x0c, 0x9b,
+	0xb4, 0x30, 0x10, 0x02, 0x3b, 0x6a, 0xa3, 0x49, 0x34, 0xa9, 0x5e, 0x7b, 0x12, 0x7a, 0xdb, 0x01,
+	0x6d, 0xc1, 0x4f, 0xa1, 0x55, 0xe8, 0xa0, 0xee, 0xb7, 0xf6, 0x2f, 0xe5, 0x2c, 0xc3, 0x78, 0x3f,
+	0x3a, 0x70, 0xf8, 0x18, 0xe5, 0x86, 0x8e, 0xef, 0x40, 0xdd, 0x8c, 0x6d, 0x3b, 0xc4, 0xed, 0x4e,
+	0x0d, 0xcb, 0x22, 0x79, 0x14, 0x59, 0xfe, 0x15, 0x1b, 0xf9, 0x48, 0x7d, 0x02, 0xf3, 0xfd, 0x39,
+	0x8a, 0x4c, 0xc1, 0x98, 0x79, 0xfe, 0xa2, 0x43, 0xfd, 0x18, 0xb0, 0x48, 0x0f, 0xdd, 0x26, 0x75,
+	0x59, 0xe4, 0xfd, 0xe4, 0x00, 0x29, 0xf3, 0x79, 0x33, 0xd4, 0x1e, 0xfc, 0xe6, 0x40, 0x93, 0x2e,
+	0x38, 0x47, 0x41, 0x4f, 0xbf, 0x24, 0x21, 0xdc, 0xdc, 0x26, 0x15, 0x79, 0x6f, 0xcd, 0xea, 0x15,
+	0xad, 0xd1, 0xb9, 0xfb, 0x9a, 0x28, 0x5b, 0xf2, 0x93, 0xf2, 0x45, 0x8c, 0x78, 0x26, 0x03, 0x1e,
+	0x22, 0xe9, 0x94, 0x93, 0xab, 0xaa, 0x75, 0xba, 0x5b, 0x7d, 0x06, 0xee, 0xd1, 0xc3, 0xdf, 0x2f,
+	0x8f, 0x9d, 0x3f, 0x2e, 0x8f, 0x9d, 0x3f, 0x2f, 0x8f, 0x9d, 0x9f, 0xff, 0x3a, 0x7e, 0xeb, 0xbb,
+	0xfe, 0x15, 0x7f, 0x40, 0x3f, 0xb7, 0xa8, 0x93, 0xba, 0xfe, 0x87, 0x7c, 0xf0, 0x4f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x78, 0x13, 0x9a, 0x01, 0xba, 0x0a, 0x00, 0x00,
 }
 
 func (m *InternalKV) Marshal() (dAtA []byte, err error) {
@@ -1291,9 +1400,9 @@ func (m *RaftInternalRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.ExecuteDefinition != nil {
+	if m.RunBpmnProcess != nil {
 		{
-			size, err := m.ExecuteDefinition.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.RunBpmnProcess.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1843,7 +1952,7 @@ func (m *ShardDeployDefinitionResponse) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
-func (m *ShardExecuteDefinitionRequest) Marshal() (dAtA []byte, err error) {
+func (m *ShardRunBpmnProcessRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1853,12 +1962,12 @@ func (m *ShardExecuteDefinitionRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ShardExecuteDefinitionRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *ShardRunBpmnProcessRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ShardExecuteDefinitionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ShardRunBpmnProcessRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1882,7 +1991,7 @@ func (m *ShardExecuteDefinitionRequest) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
-func (m *ShardExecuteDefinitionResponse) Marshal() (dAtA []byte, err error) {
+func (m *ShardRunBpmnProcessResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1892,12 +2001,12 @@ func (m *ShardExecuteDefinitionResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ShardExecuteDefinitionResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *ShardRunBpmnProcessResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ShardExecuteDefinitionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ShardRunBpmnProcessResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1929,6 +2038,88 @@ func (m *ShardExecuteDefinitionResponse) MarshalToSizedBuffer(dAtA []byte) (int,
 		}
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDefinitionArchiveRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDefinitionArchiveRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDefinitionArchiveRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintRaft(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintRaft(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDefinitionArchiveResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDefinitionArchiveResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDefinitionArchiveResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Definitions) > 0 {
+		for iNdEx := len(m.Definitions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Definitions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRaft(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -2127,8 +2318,8 @@ func (m *RaftInternalRequest) Size() (n int) {
 		l = m.DeployDefinition.Size()
 		n += 1 + l + sovRaft(uint64(l))
 	}
-	if m.ExecuteDefinition != nil {
-		l = m.ExecuteDefinition.Size()
+	if m.RunBpmnProcess != nil {
+		l = m.RunBpmnProcess.Size()
 		n += 1 + l + sovRaft(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -2343,7 +2534,7 @@ func (m *ShardDeployDefinitionResponse) Size() (n int) {
 	return n
 }
 
-func (m *ShardExecuteDefinitionRequest) Size() (n int) {
+func (m *ShardRunBpmnProcessRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2359,7 +2550,7 @@ func (m *ShardExecuteDefinitionRequest) Size() (n int) {
 	return n
 }
 
-func (m *ShardExecuteDefinitionResponse) Size() (n int) {
+func (m *ShardRunBpmnProcessResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2372,6 +2563,44 @@ func (m *ShardExecuteDefinitionResponse) Size() (n int) {
 	if m.Process != nil {
 		l = m.Process.Size()
 		n += 1 + l + sovRaft(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetDefinitionArchiveRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovRaft(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovRaft(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetDefinitionArchiveResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Definitions) > 0 {
+		for _, e := range m.Definitions {
+			l = e.Size()
+			n += 1 + l + sovRaft(uint64(l))
+		}
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -2950,7 +3179,7 @@ func (m *RaftInternalRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExecuteDefinition", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RunBpmnProcess", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2977,10 +3206,10 @@ func (m *RaftInternalRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ExecuteDefinition == nil {
-				m.ExecuteDefinition = &ShardExecuteDefinitionRequest{}
+			if m.RunBpmnProcess == nil {
+				m.RunBpmnProcess = &ShardRunBpmnProcessRequest{}
 			}
-			if err := m.ExecuteDefinition.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.RunBpmnProcess.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4197,7 +4426,7 @@ func (m *ShardDeployDefinitionResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ShardExecuteDefinitionRequest) Unmarshal(dAtA []byte) error {
+func (m *ShardRunBpmnProcessRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4220,10 +4449,10 @@ func (m *ShardExecuteDefinitionRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ShardExecuteDefinitionRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: ShardRunBpmnProcessRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ShardExecuteDefinitionRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ShardRunBpmnProcessRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -4284,7 +4513,7 @@ func (m *ShardExecuteDefinitionRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ShardExecuteDefinitionResponse) Unmarshal(dAtA []byte) error {
+func (m *ShardRunBpmnProcessResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4307,10 +4536,10 @@ func (m *ShardExecuteDefinitionResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ShardExecuteDefinitionResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: ShardRunBpmnProcessResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ShardExecuteDefinitionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ShardRunBpmnProcessResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -4382,6 +4611,206 @@ func (m *ShardExecuteDefinitionResponse) Unmarshal(dAtA []byte) error {
 				m.Process = &v1.Process{}
 			}
 			if err := m.Process.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRaft(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRaft
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDefinitionArchiveRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRaft
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDefinitionArchiveRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDefinitionArchiveRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRaft
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRaft
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRaft
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRaft
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRaft
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRaft
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRaft(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRaft
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDefinitionArchiveResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRaft
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDefinitionArchiveResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDefinitionArchiveResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Definitions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRaft
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRaft
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRaft
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Definitions = append(m.Definitions, &v1.Definition{})
+			if err := m.Definitions[len(m.Definitions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

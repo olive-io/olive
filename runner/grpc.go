@@ -33,6 +33,10 @@ type runnerImpl struct {
 	controller *raft.Controller
 }
 
+func (r *runnerImpl) GetDefinitionArchive(ctx context.Context, req *pb.GetDefinitionArchiveRequest) (*pb.GetDefinitionArchiveResponse, error) {
+	return r.controller.GetDefinitionArchive(ctx, req)
+}
+
 func (r *runnerImpl) GetProcessInstance(ctx context.Context, req *pb.GetProcessRequest) (resp *pb.GetProcessResponse, err error) {
 	return r.controller.GetProcess(ctx, req)
 }

@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RunnerRPCClient interface {
+	GetDefinitionArchive(ctx context.Context, in *GetDefinitionArchiveRequest, opts ...grpc.CallOption) (*GetDefinitionArchiveResponse, error)
 	GetProcessInstance(ctx context.Context, in *GetProcessRequest, opts ...grpc.CallOption) (*GetProcessResponse, error)
 }
 
@@ -31,6 +32,15 @@ type runnerRPCClient struct {
 
 func NewRunnerRPCClient(cc grpc.ClientConnInterface) RunnerRPCClient {
 	return &runnerRPCClient{cc}
+}
+
+func (c *runnerRPCClient) GetDefinitionArchive(ctx context.Context, in *GetDefinitionArchiveRequest, opts ...grpc.CallOption) (*GetDefinitionArchiveResponse, error) {
+	out := new(GetDefinitionArchiveResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/GetDefinitionArchive", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *runnerRPCClient) GetProcessInstance(ctx context.Context, in *GetProcessRequest, opts ...grpc.CallOption) (*GetProcessResponse, error) {
@@ -46,6 +56,7 @@ func (c *runnerRPCClient) GetProcessInstance(ctx context.Context, in *GetProcess
 // All implementations must embed UnimplementedRunnerRPCServer
 // for forward compatibility
 type RunnerRPCServer interface {
+	GetDefinitionArchive(context.Context, *GetDefinitionArchiveRequest) (*GetDefinitionArchiveResponse, error)
 	GetProcessInstance(context.Context, *GetProcessRequest) (*GetProcessResponse, error)
 	mustEmbedUnimplementedRunnerRPCServer()
 }
@@ -54,6 +65,9 @@ type RunnerRPCServer interface {
 type UnimplementedRunnerRPCServer struct {
 }
 
+func (UnimplementedRunnerRPCServer) GetDefinitionArchive(context.Context, *GetDefinitionArchiveRequest) (*GetDefinitionArchiveResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDefinitionArchive not implemented")
+}
 func (UnimplementedRunnerRPCServer) GetProcessInstance(context.Context, *GetProcessRequest) (*GetProcessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProcessInstance not implemented")
 }
@@ -68,6 +82,24 @@ type UnsafeRunnerRPCServer interface {
 
 func RegisterRunnerRPCServer(s grpc.ServiceRegistrar, srv RunnerRPCServer) {
 	s.RegisterService(&RunnerRPC_ServiceDesc, srv)
+}
+
+func _RunnerRPC_GetDefinitionArchive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDefinitionArchiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RunnerRPCServer).GetDefinitionArchive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/olivepb.RunnerRPC/GetDefinitionArchive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RunnerRPCServer).GetDefinitionArchive(ctx, req.(*GetDefinitionArchiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _RunnerRPC_GetProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -95,6 +127,10 @@ var RunnerRPC_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "olivepb.RunnerRPC",
 	HandlerType: (*RunnerRPCServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetDefinitionArchive",
+			Handler:    _RunnerRPC_GetDefinitionArchive_Handler,
+		},
 		{
 			MethodName: "GetProcessInstance",
 			Handler:    _RunnerRPC_GetProcessInstance_Handler,

@@ -60,6 +60,7 @@ type Scheduler struct {
 	// definitionQ is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens.
 	definitionQ workqueue.RateLimitingInterface
+	processQ    workqueue.RateLimitingInterface
 
 	messageC chan imessage
 }
@@ -85,6 +86,7 @@ func NewScheduler(
 	)
 
 	definitionQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
+	processQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
 
 	ctx, cancel := context.WithCancel(ctx)
 	scheduler := &Scheduler{
@@ -100,6 +102,7 @@ func NewScheduler(
 		regionQ: regionQ,
 
 		definitionQ: definitionQ,
+		processQ:    processQ,
 
 		messageC: make(chan imessage, 20),
 	}
@@ -110,8 +113,10 @@ func NewScheduler(
 func (s *Scheduler) Start() error {
 	defer utilruntime.HandleCrash()
 
+	informerSynced := []cache.InformerSynced{}
+
 	runnerInformer := s.informerFactory.Core().V1().Runners()
-	_, err := runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	runnerRegistration, err := runnerInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.runnerQ.Add(obj.(*corev1.Runner))
 		},
@@ -130,9 +135,10 @@ func (s *Scheduler) Start() error {
 	if err != nil {
 		return err
 	}
+	informerSynced = append(informerSynced, runnerRegistration.HasSynced)
 
 	regionInformer := s.informerFactory.Core().V1().Regions()
-	_, err = regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	regionRegistration, err := regionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			s.regionQ.Add(obj.(*corev1.Region))
 		},
@@ -151,9 +157,9 @@ func (s *Scheduler) Start() error {
 	if err != nil {
 		return err
 	}
+	informerSynced = append(informerSynced, regionRegistration.HasSynced)
 
-	definitionInformer := s.informerFactory.Core().V1().Definitions()
-	_, err = definitionInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	definitionRegistration, err := s.informerFactory.Core().V1().Definitions().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: s.enqueueDefinition,
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldDef := oldObj.(*corev1.Definition)
@@ -170,24 +176,28 @@ func (s *Scheduler) Start() error {
 	if err != nil {
 		return err
 	}
+	informerSynced = append(informerSynced, definitionRegistration.HasSynced)
 
-	processInformer := s.informerFactory.Core().V1().Processes()
-	_, err = processInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    nil,
-		UpdateFunc: nil,
-		DeleteFunc: nil,
+	processRegistration, err := s.informerFactory.Core().V1().Processes().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: s.enqueueProcess,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldPr := oldObj.(*corev1.Process)
+			newPr := newObj.(*corev1.Process)
+			if oldPr.ResourceVersion == newPr.ResourceVersion {
+				return
+			}
+			if newPr.Status.Phase != corev1.ProcessPending {
+				return
+			}
+			s.enqueueProcess(newObj)
+		},
 	})
 	if err != nil {
 		return err
 	}
+	informerSynced = append(informerSynced, processRegistration.HasSynced)
 
 	ctx := s.ctx
-	informerSynced := []cache.InformerSynced{
-		runnerInformer.Informer().HasSynced,
-		regionInformer.Informer().HasSynced,
-		definitionInformer.Informer().HasSynced,
-		processInformer.Informer().HasSynced,
-	}
 
 	if ok := cache.WaitForNamedCacheSync("monitor-scheduler", ctx.Done(), informerSynced...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
@@ -214,6 +224,7 @@ func (s *Scheduler) Start() error {
 	klog.Infof("start region worker")
 	go wait.UntilWithContext(ctx, s.runnerRegionWorker, time.Second*3)
 	go wait.UntilWithContext(ctx, s.definitionWorker, time.Second)
+	go wait.UntilWithContext(ctx, s.processWorker, time.Second)
 	go s.process()
 
 	return nil
