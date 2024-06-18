@@ -26,8 +26,8 @@ package v1
 // EdgeSpecApplyConfiguration represents an declarative configuration of the EdgeSpec type for use
 // with apply.
 type EdgeSpecApplyConfiguration struct {
-	Address   *string                               `json:"address,omitempty"`
-	Endpoints map[string]EndpointApplyConfiguration `json:"endpoints,omitempty"`
+	Address   *string  `json:"address,omitempty"`
+	Endpoints []string `json:"endpoints,omitempty"`
 }
 
 // EdgeSpecApplyConfiguration constructs an declarative configuration of the EdgeSpec type for use with
@@ -44,16 +44,12 @@ func (b *EdgeSpecApplyConfiguration) WithAddress(value string) *EdgeSpecApplyCon
 	return b
 }
 
-// WithEndpoints puts the entries into the Endpoints field in the declarative configuration
+// WithEndpoints adds the given value to the Endpoints field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, the entries provided by each call will be put on the Endpoints field,
-// overwriting an existing map entries in Endpoints field with the same key.
-func (b *EdgeSpecApplyConfiguration) WithEndpoints(entries map[string]EndpointApplyConfiguration) *EdgeSpecApplyConfiguration {
-	if b.Endpoints == nil && len(entries) > 0 {
-		b.Endpoints = make(map[string]EndpointApplyConfiguration, len(entries))
-	}
-	for k, v := range entries {
-		b.Endpoints[k] = v
+// If called multiple times, values provided by each call will be appended to the Endpoints field.
+func (b *EdgeSpecApplyConfiguration) WithEndpoints(values ...string) *EdgeSpecApplyConfiguration {
+	for i := range values {
+		b.Endpoints = append(b.Endpoints, values[i])
 	}
 	return b
 }

@@ -136,10 +136,8 @@ func (in *EdgeSpec) DeepCopyInto(out *EdgeSpec) {
 	*out = *in
 	if in.Endpoints != nil {
 		in, out := &in.Endpoints, &out.Endpoints
-		*out = make(map[string]Endpoint, len(*in))
-		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	return
 }
@@ -355,10 +353,8 @@ func (in *ServiceSpec) DeepCopyInto(out *ServiceSpec) {
 	*out = *in
 	if in.Endpoints != nil {
 		in, out := &in.Endpoints, &out.Endpoints
-		*out = make([]Endpoint, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.Nodes != nil {
 		in, out := &in.Nodes, &out.Nodes

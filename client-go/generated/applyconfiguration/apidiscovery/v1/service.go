@@ -24,7 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	apisapidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
@@ -35,8 +34,8 @@ import (
 type ServiceApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *ServiceSpecApplyConfiguration    `json:"spec,omitempty"`
-	Status                           *apisapidiscoveryv1.ServiceStatus `json:"status,omitempty"`
+	Spec                             *ServiceSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *ServiceStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // Service constructs an declarative configuration of the Service type for use with
@@ -219,7 +218,7 @@ func (b *ServiceApplyConfiguration) WithSpec(value *ServiceSpecApplyConfiguratio
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *ServiceApplyConfiguration) WithStatus(value apisapidiscoveryv1.ServiceStatus) *ServiceApplyConfiguration {
-	b.Status = &value
+func (b *ServiceApplyConfiguration) WithStatus(value *ServiceStatusApplyConfiguration) *ServiceApplyConfiguration {
+	b.Status = value
 	return b
 }

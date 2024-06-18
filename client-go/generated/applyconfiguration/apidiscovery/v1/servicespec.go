@@ -26,10 +26,10 @@ package v1
 // ServiceSpecApplyConfiguration represents an declarative configuration of the ServiceSpec type for use
 // with apply.
 type ServiceSpecApplyConfiguration struct {
-	Version   *string                      `json:"version,omitempty"`
-	Endpoints []EndpointApplyConfiguration `json:"endpoints,omitempty"`
-	Nodes     []NodeApplyConfiguration     `json:"nodes,omitempty"`
-	Ttl       *int64                       `json:"ttl,omitempty"`
+	Version   *string                  `json:"version,omitempty"`
+	Endpoints []string                 `json:"endpoints,omitempty"`
+	Nodes     []NodeApplyConfiguration `json:"nodes,omitempty"`
+	Ttl       *int64                   `json:"ttl,omitempty"`
 }
 
 // ServiceSpecApplyConfiguration constructs an declarative configuration of the ServiceSpec type for use with
@@ -49,12 +49,9 @@ func (b *ServiceSpecApplyConfiguration) WithVersion(value string) *ServiceSpecAp
 // WithEndpoints adds the given value to the Endpoints field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Endpoints field.
-func (b *ServiceSpecApplyConfiguration) WithEndpoints(values ...*EndpointApplyConfiguration) *ServiceSpecApplyConfiguration {
+func (b *ServiceSpecApplyConfiguration) WithEndpoints(values ...string) *ServiceSpecApplyConfiguration {
 	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithEndpoints")
-		}
-		b.Endpoints = append(b.Endpoints, *values[i])
+		b.Endpoints = append(b.Endpoints, values[i])
 	}
 	return b
 }

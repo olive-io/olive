@@ -28,13 +28,13 @@ import (
 type BoxType string
 
 const (
-	StringType  = BoxType("string")
-	IntegerType = BoxType("integer")
-	FloatType   = BoxType("float")
-	BooleanType = BoxType("boolean")
-	ArrayType   = BoxType("array")
-	ObjectType  = BoxType("object")
-	MapType     = BoxType("map")
+	StringType  BoxType = "string"
+	IntegerType BoxType = "integer"
+	FloatType   BoxType = "float"
+	BooleanType BoxType = "boolean"
+	ArrayType   BoxType = "array"
+	ObjectType  BoxType = "object"
+	MapType     BoxType = "map"
 )
 
 // +k8s:deepcopy-gen:true
@@ -49,17 +49,17 @@ type Box struct {
 	Parameters map[string]Box `json:"parameters" protobuf:"bytes,4,rep,name=parameters"`
 }
 
-type ActivityTask string
+type ActivityKind string
 
 const (
-	Task         = ActivityTask("Task")
-	ServiceTask  = ActivityTask("ServiceTask")
-	ScriptTask   = ActivityTask("ScriptTask")
-	UserTask     = ActivityTask("UserTask")
-	SendTask     = ActivityTask("SendTask")
-	ReceiveTask  = ActivityTask("ReceiveTask")
-	ManualTask   = ActivityTask("ManualTask")
-	CallActivity = ActivityTask("CallActivity")
+	Task         ActivityKind = "Task"
+	ServiceTask  ActivityKind = "ServiceTask"
+	ScriptTask   ActivityKind = "ScriptTask"
+	UserTask     ActivityKind = "UserTask"
+	SendTask     ActivityKind = "SendTask"
+	ReceiveTask  ActivityKind = "ReceiveTask"
+	ManualTask   ActivityKind = "ManualTask"
+	CallActivity ActivityKind = "CallActivity"
 )
 
 // +k8s:deepcopy-gen:true
@@ -68,21 +68,27 @@ const (
 type Activity struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// the type of activity node, etc ServiceTask, ScriptTask
-	Type ActivityTask `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ActivityTask"`
+	// the kind of activity node, etc ServiceTask, ScriptTask
+	Kind ActivityKind `json:"kind" protobuf:"bytes,1,opt,name=kind,casttype=ActivityKind"`
 	// the id of activity node
 	Id string `json:"id" protobuf:"bytes,2,opt,name=id"`
 	// the name of activity node
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 	// the type of activity node, defines in activity TaskDefinition
 	TaskType string `json:"taskType" protobuf:"bytes,4,opt,name=taskType"`
-	// the id of bpmn definitions
-	Definitions string `json:"definitions" protobuf:"bytes,5,opt,name=definitions"`
+	// the id of bpmn definition
+	Definition string `json:"definition" protobuf:"bytes,5,opt,name=definition"`
 	// the version of bpmn definitions
 	DefinitionsVersion uint64 `json:"definitionsVersion" protobuf:"varint,6,opt,name=definitionsVersion"`
 	// the id if bpmn process
 	Process string `json:"process" protobuf:"bytes,7,opt,name=process"`
 }
+
+type EndpointPhase string
+
+const (
+	EndpointActive EndpointPhase = "Active"
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -104,6 +110,7 @@ type EndpointSpec struct {
 }
 
 type EndpointStatus struct {
+	Phase EndpointPhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -116,6 +123,12 @@ type EndpointList struct {
 	// Items is a list of Endpoint
 	Items []Endpoint `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
+
+type ServicePhase string
+
+const (
+	ServiceActive ServicePhase = "Active"
+)
 
 // +k8s:deepcopy-gen:true
 
@@ -142,13 +155,14 @@ type Service struct {
 }
 
 type ServiceSpec struct {
-	Version   string     `json:"version" protobuf:"bytes,1,opt,name=version"`
-	Endpoints []Endpoint `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
-	Nodes     []Node     `json:"nodes" protobuf:"bytes,3,rep,name=nodes"`
-	Ttl       int64      `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
+	Version   string   `json:"version" protobuf:"bytes,1,opt,name=version"`
+	Endpoints []string `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
+	Nodes     []Node   `json:"nodes" protobuf:"bytes,3,rep,name=nodes"`
+	Ttl       int64    `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
 }
 
 type ServiceStatus struct {
+	Phase ServicePhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -161,6 +175,12 @@ type ServiceList struct {
 	// Items is a list of Service
 	Items []Service `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
+
+type EdgePhase string
+
+const (
+	EdgeActive EdgePhase = "Active"
+)
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -177,15 +197,16 @@ type Edge struct {
 type EdgeSpec struct {
 	Address string `json:"address" protobuf:"bytes,1,opt,name=address"`
 
-	Endpoints map[string]Endpoint `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
+	Endpoints []string `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
 }
 
 type EdgeStatus struct {
+	Phase EdgePhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// YardList is a list of Yard objects.
+// EdgeList is a list of Edge objects.
 type EdgeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`

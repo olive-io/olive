@@ -156,9 +156,9 @@ func schema_olive_apis_apidiscovery_v1_Activity(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"type": {
+					"kind": {
 						SchemaProps: spec.SchemaProps{
-							Description: "the type of activity node, etc ServiceTask, ScriptTask",
+							Description: "the kind of activity node, etc ServiceTask, ScriptTask",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -188,9 +188,9 @@ func schema_olive_apis_apidiscovery_v1_Activity(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"definitions": {
+					"definition": {
 						SchemaProps: spec.SchemaProps{
-							Description: "the id of bpmn definitions",
+							Description: "the id of bpmn definition",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -213,7 +213,7 @@ func schema_olive_apis_apidiscovery_v1_Activity(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"type", "id", "name", "taskType", "definitions", "definitionsVersion", "process"},
+				Required: []string{"kind", "id", "name", "taskType", "definition", "definitionsVersion", "process"},
 			},
 		},
 	}
@@ -324,7 +324,7 @@ func schema_olive_apis_apidiscovery_v1_EdgeList(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "YardList is a list of Yard objects.",
+				Description: "EdgeList is a list of Edge objects.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -385,13 +385,13 @@ func schema_olive_apis_apidiscovery_v1_EdgeSpec(ref common.ReferenceCallback) co
 					},
 					"endpoints": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint"),
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -401,8 +401,6 @@ func schema_olive_apis_apidiscovery_v1_EdgeSpec(ref common.ReferenceCallback) co
 				Required: []string{"address", "endpoints"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint"},
 	}
 }
 
@@ -411,6 +409,16 @@ func schema_olive_apis_apidiscovery_v1_EdgeStatus(ref common.ReferenceCallback) 
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"phase"},
 			},
 		},
 	}
@@ -560,6 +568,16 @@ func schema_olive_apis_apidiscovery_v1_EndpointStatus(ref common.ReferenceCallba
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"phase"},
 			},
 		},
 	}
@@ -746,8 +764,9 @@ func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback)
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint"),
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
 									},
 								},
 							},
@@ -778,7 +797,7 @@ func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint", "github.com/olive-io/olive/apis/apidiscovery/v1.Node"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.Node"},
 	}
 }
 
@@ -787,6 +806,16 @@ func schema_olive_apis_apidiscovery_v1_ServiceStatus(ref common.ReferenceCallbac
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"phase"},
 			},
 		},
 	}
