@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RunnerRPCClient interface {
 	GetDefinitionArchive(ctx context.Context, in *GetDefinitionArchiveRequest, opts ...grpc.CallOption) (*GetDefinitionArchiveResponse, error)
-	GetProcessInstance(ctx context.Context, in *GetProcessRequest, opts ...grpc.CallOption) (*GetProcessResponse, error)
+	GetProcessStat(ctx context.Context, in *GetProcessStatRequest, opts ...grpc.CallOption) (*GetProcessStatResponse, error)
 }
 
 type runnerRPCClient struct {
@@ -43,9 +43,9 @@ func (c *runnerRPCClient) GetDefinitionArchive(ctx context.Context, in *GetDefin
 	return out, nil
 }
 
-func (c *runnerRPCClient) GetProcessInstance(ctx context.Context, in *GetProcessRequest, opts ...grpc.CallOption) (*GetProcessResponse, error) {
-	out := new(GetProcessResponse)
-	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/GetProcessInstance", in, out, opts...)
+func (c *runnerRPCClient) GetProcessStat(ctx context.Context, in *GetProcessStatRequest, opts ...grpc.CallOption) (*GetProcessStatResponse, error) {
+	out := new(GetProcessStatResponse)
+	err := c.cc.Invoke(ctx, "/olivepb.RunnerRPC/GetProcessStat", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *runnerRPCClient) GetProcessInstance(ctx context.Context, in *GetProcess
 // for forward compatibility
 type RunnerRPCServer interface {
 	GetDefinitionArchive(context.Context, *GetDefinitionArchiveRequest) (*GetDefinitionArchiveResponse, error)
-	GetProcessInstance(context.Context, *GetProcessRequest) (*GetProcessResponse, error)
+	GetProcessStat(context.Context, *GetProcessStatRequest) (*GetProcessStatResponse, error)
 	mustEmbedUnimplementedRunnerRPCServer()
 }
 
@@ -68,8 +68,8 @@ type UnimplementedRunnerRPCServer struct {
 func (UnimplementedRunnerRPCServer) GetDefinitionArchive(context.Context, *GetDefinitionArchiveRequest) (*GetDefinitionArchiveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDefinitionArchive not implemented")
 }
-func (UnimplementedRunnerRPCServer) GetProcessInstance(context.Context, *GetProcessRequest) (*GetProcessResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProcessInstance not implemented")
+func (UnimplementedRunnerRPCServer) GetProcessStat(context.Context, *GetProcessStatRequest) (*GetProcessStatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProcessStat not implemented")
 }
 func (UnimplementedRunnerRPCServer) mustEmbedUnimplementedRunnerRPCServer() {}
 
@@ -102,20 +102,20 @@ func _RunnerRPC_GetDefinitionArchive_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RunnerRPC_GetProcessInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProcessRequest)
+func _RunnerRPC_GetProcessStat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProcessStatRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RunnerRPCServer).GetProcessInstance(ctx, in)
+		return srv.(RunnerRPCServer).GetProcessStat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/olivepb.RunnerRPC/GetProcessInstance",
+		FullMethod: "/olivepb.RunnerRPC/GetProcessStat",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RunnerRPCServer).GetProcessInstance(ctx, req.(*GetProcessRequest))
+		return srv.(RunnerRPCServer).GetProcessStat(ctx, req.(*GetProcessStatRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -132,8 +132,8 @@ var RunnerRPC_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RunnerRPC_GetDefinitionArchive_Handler,
 		},
 		{
-			MethodName: "GetProcessInstance",
-			Handler:    _RunnerRPC_GetProcessInstance_Handler,
+			MethodName: "GetProcessStat",
+			Handler:    _RunnerRPC_GetProcessStat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

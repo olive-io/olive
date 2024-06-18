@@ -37,6 +37,6 @@ func (r *runnerImpl) GetDefinitionArchive(ctx context.Context, req *pb.GetDefini
 	return r.controller.GetDefinitionArchive(ctx, req)
 }
 
-func (r *runnerImpl) GetProcessInstance(ctx context.Context, req *pb.GetProcessRequest) (resp *pb.GetProcessResponse, err error) {
-	return r.controller.GetProcess(ctx, req)
+func (r *runnerImpl) GetProcessStat(ctx context.Context, req *pb.GetProcessStatRequest) (resp *pb.GetProcessStatResponse, err error) {
+	return r.controller.GetProcessStat(ctx, req)
 }

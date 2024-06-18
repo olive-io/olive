@@ -38,7 +38,7 @@ import (
 	"github.com/olive-io/bpmn/tracing"
 	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
-	"go.etcd.io/etcd/pkg/v3/wait"
+	v3wait "go.etcd.io/etcd/pkg/v3/wait"
 	"go.uber.org/zap"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
@@ -65,15 +65,15 @@ const (
 )
 
 type ProcessInfo struct {
-	Process *corev1.Process
+	Stat *corev1.ProcessStat
 }
 
-func NewProcessInfo(process *corev1.Process) *ProcessInfo {
-	return &ProcessInfo{Process: process}
+func NewProcessInfo(stat *corev1.ProcessStat) *ProcessInfo {
+	return &ProcessInfo{Stat: stat}
 }
 
 func (pi *ProcessInfo) UID() string {
-	return pi.Process.Name
+	return pi.Stat.Name
 }
 
 func (pi *ProcessInfo) Score() int64 {
@@ -93,9 +93,9 @@ type Shard struct {
 	id       uint64
 	memberId uint64
 
-	applyW   wait.Wait
-	commitW  wait.Wait
-	openWait wait.Wait
+	applyW   v3wait.Wait
+	commitW  v3wait.Wait
+	openWait v3wait.Wait
 
 	tracer tracing.ITracer
 	proxy  proxy.IProxy
@@ -139,8 +139,8 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 		openWait: c.regionW,
 		tracer:   tracer,
 		proxy:    c.proxy,
-		applyW:   wait.New(),
-		commitW:  wait.New(),
+		applyW:   v3wait.New(),
+		commitW:  v3wait.New(),
 		reqIDGen: reqIDGen,
 		be:       c.be,
 		processQ: processQ,
@@ -157,9 +157,9 @@ func (c *Controller) initDiskStateMachine(shardId, nodeId uint64) sm.IOnDiskStat
 	return region
 }
 
-func (r *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error) {
+func (s *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error) {
 	trace := traceutil.New("range",
-		r.lg,
+		s.lg,
 		traceutil.Field{Key: "range_begin", Value: string(req.Key)},
 		traceutil.Field{Key: "range_end", Value: string(req.RangeEnd)},
 	)
@@ -168,7 +168,7 @@ func (r *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.Shard
 	var resp *pb.ShardRangeResponse
 	var err error
 	defer func(start time.Time) {
-		warnOfExpensiveReadOnlyRangeRequest(r.lg, r.metric.slowApplies, r.cfg.WarningApplyDuration, start, req, resp, err)
+		warnOfExpensiveReadOnlyRangeRequest(s.lg, s.metric.slowApplies, s.cfg.WarningApplyDuration, start, req, resp, err)
 		if resp != nil {
 			trace.AddField(
 				traceutil.Field{Key: "response_count", Value: len(resp.Kvs)},
@@ -177,7 +177,7 @@ func (r *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.Shard
 		trace.LogIfLong(traceThreshold)
 	}(time.Now())
 
-	result, err := r.raftQuery(ctx, &pb.RaftInternalRequest{Range: req})
+	result, err := s.raftQuery(ctx, &pb.RaftInternalRequest{Range: req})
 	if err != nil {
 		return nil, err
 	}
@@ -185,120 +185,106 @@ func (r *Shard) Range(ctx context.Context, req *pb.ShardRangeRequest) (*pb.Shard
 	return resp, err
 }
 
-func (r *Shard) Put(ctx context.Context, req *pb.ShardPutRequest) (*pb.ShardPutResponse, error) {
+func (s *Shard) Put(ctx context.Context, req *pb.ShardPutRequest) (*pb.ShardPutResponse, error) {
 	ctx = context.WithValue(ctx, traceutil.StartTimeKey, time.Now())
-	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Put: req})
+	resp, err := s.raftRequestOnce(ctx, &pb.RaftInternalRequest{Put: req})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.ShardPutResponse), nil
 }
 
-func (r *Shard) Delete(ctx context.Context, req *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, error) {
-	resp, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{Delete: req})
+func (s *Shard) Delete(ctx context.Context, req *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, error) {
+	resp, err := s.raftRequestOnce(ctx, &pb.RaftInternalRequest{Delete: req})
 	if err != nil {
 		return nil, err
 	}
 	return resp.(*pb.ShardDeleteResponse), nil
 }
 
-func (r *Shard) initial(stopc <-chan struct{}) (uint64, error) {
-	r.stopc = stopc
-	applyIndex, err := r.readApplyIndex()
+func (s *Shard) initial(stopc <-chan struct{}) (uint64, error) {
+	s.stopc = stopc
+	applyIndex, err := s.readApplyIndex()
 	if err != nil {
-		r.openWait.Trigger(r.id, err)
+		s.openWait.Trigger(s.id, err)
 		return 0, err
 	}
 
-	r.metric, err = newShardMetrics(r.id, r.memberId)
+	s.metric, err = newShardMetrics(s.id, s.memberId)
 	if err != nil {
-		r.openWait.Trigger(r.id, err)
+		s.openWait.Trigger(s.id, err)
 		return 0, err
 	}
 
-	r.setApplied(applyIndex)
-	r.openWait.Trigger(r.id, r)
+	s.setApplied(applyIndex)
+	s.openWait.Trigger(s.id, s)
 
 	dm := make(map[string]struct{})
-	kvs, _ := r.getRange(definitionPrefix, getPrefix(definitionPrefix), 0)
+	kvs, _ := s.getRange(definitionPrefix, getPrefix(definitionPrefix), 0)
 	for _, kv := range kvs {
 		definitionId := path.Dir(string(kv.Key))
 		if _, ok := dm[definitionId]; !ok {
 			dm[definitionId] = struct{}{}
 		}
 	}
-	r.metric.definition.Set(float64(len(dm)))
+	s.metric.definition.Set(float64(len(dm)))
 
-	kvs, _ = r.getRange(processPrefix, getPrefix(processPrefix), 0)
+	kvs, _ = s.getRange(processPrefix, getPrefix(processPrefix), 0)
 	for _, kv := range kvs {
-		pi := new(corev1.Process)
-		err = pi.Unmarshal(kv.Value)
+		ps := new(corev1.ProcessStat)
+		err = ps.Unmarshal(kv.Value)
 		if err != nil {
-			r.lg.Error("unmarshal process instance", zap.Error(err))
-			_ = r.del(kv.Key, true)
+			s.lg.Error("unmarshal process stat", zap.Error(err))
+			_ = s.del(kv.Key, true)
 			continue
 		}
 
-		//if pi.Status == pb.ProcessInstance_Unknown ||
-		//	pi.Status == pb.ProcessInstance_Ok ||
-		//	pi.Status == pb.ProcessInstance_Fail ||
-		//	pi.DefinitionsId == "" ||
-		//	pi.DefinitionsVersion == 0 {
-		//	continue
-		//}
-		//
-		//if pi.RunningState == nil {
-		//	pi.RunningState = &pb.ProcessRunningState{}
-		//}
-		//if pi.FlowNodes == nil {
-		//	pi.FlowNodes = map[string]*pb.FlowNodeStat{}
-		//}
-		//if pi.Status == pb.ProcessInstance_Waiting {
-		//	pi.Status = pb.ProcessInstance_Prepare
-		//}
-		r.processQ.Push(NewProcessInfo(pi))
+		if ps.Status.FlowNodes == nil {
+			ps.Status.FlowNodes = []*corev1.FlowNodeStat{}
+		}
+		s.processQ.Push(NewProcessInfo(ps))
 	}
 
 	return applyIndex, nil
 }
 
-func (r *Shard) waitUtilLeader() bool {
+func (s *Shard) waitUtilLeader() bool {
 	for {
-		if r.isLeader() {
+		if s.isLeader() {
 			return true
 		}
 
 		select {
-		case <-r.stopc:
+		case <-s.stopc:
 			return false
-		case <-r.changeNotify():
+		case <-s.changeNotify():
 		}
 	}
 }
 
-func (r *Shard) waitLeader(ctx context.Context) (bool, error) {
+func (s *Shard) waitLeader(ctx context.Context) (bool, error) {
 	for {
-		if r.isLeader() {
+		if s.isLeader() {
 			return true, nil
 		}
-		if r.getLeader() != 0 {
+		if s.getLeader() != 0 {
 			return false, nil
 		}
 
 		select {
 		case <-ctx.Done():
 			return false, context.Canceled
-		case <-r.stopc:
+		case <-s.stopc:
 			return false, ErrStopped
-		case <-r.changeNotify():
+		case <-s.changeNotify():
 		}
 	}
 }
 
-func (r *Shard) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
-	trace := newReadTrace(ctx, r.getID(), req)
+func (s *Shard) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
+	trace := newReadTrace(ctx, s.getID(), req)
 	defer trace.Close()
-	r.tracer.Trace(trace)
+	s.tracer.Trace(trace)
 
 	arch, ech := trace.Trigger()
 	select {
@@ -321,8 +307,8 @@ func (r *Shard) raftQuery(ctx context.Context, req *pb.RaftInternalRequest) (pro
 	}
 }
 
-func (r *Shard) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
-	result, err := r.processInternalRaftRequestOnce(ctx, req)
+func (s *Shard) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (proto.Message, error) {
+	result, err := s.processInternalRaftRequestOnce(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -341,15 +327,15 @@ func (r *Shard) raftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest
 	return result.resp, nil
 }
 
-func (r *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (*applyResult, error) {
-	ai := r.getApplied()
-	ci := r.getCommitted()
+func (s *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.RaftInternalRequest) (*applyResult, error) {
+	ai := s.getApplied()
+	ci := s.getCommitted()
 	if ci > ai+maxGapBetweenApplyAndCommitIndex {
 		return nil, ErrTooManyRequests
 	}
 
 	req.Header = &pb.RaftHeader{
-		ID: r.reqIDGen.Next(),
+		ID: s.reqIDGen.Next(),
 	}
 	data, err := req.Marshal()
 	if err != nil {
@@ -357,16 +343,16 @@ func (r *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.Raft
 	}
 
 	id := req.Header.ID
-	ch := r.applyW.Register(id)
+	ch := s.applyW.Register(id)
 
-	cctx, cancel := context.WithTimeout(ctx, r.cfg.ReqTimeout())
+	cctx, cancel := context.WithTimeout(ctx, s.cfg.ReqTimeout())
 	defer cancel()
 
 	start := time.Now()
 	ech := make(chan error, 1)
-	r.tracer.Trace(newProposeTrace(cctx, r.getID(), data, ech))
+	s.tracer.Trace(newProposeTrace(cctx, s.getID(), data, ech))
 	if err = <-ech; err != nil {
-		r.applyW.Trigger(id, nil)
+		s.applyW.Trigger(id, nil)
 		return nil, err
 	}
 
@@ -374,23 +360,23 @@ func (r *Shard) processInternalRaftRequestOnce(ctx context.Context, req *pb.Raft
 	case x := <-ch:
 		return x.(*applyResult), nil
 	case <-cctx.Done():
-		r.applyW.Trigger(id, nil)
-		return nil, r.parseProposeCtxErr(err, start)
-	case <-r.stopc:
+		s.applyW.Trigger(id, nil)
+		return nil, s.parseProposeCtxErr(err, start)
+	case <-s.stopc:
 		return nil, ErrStopped
 	}
 }
 
-func (r *Shard) parseProposeCtxErr(err error, start time.Time) error {
+func (s *Shard) parseProposeCtxErr(err error, start time.Time) error {
 	switch err {
 	case context.Canceled:
 		return ErrCanceled
 
 	case context.DeadlineExceeded:
-		r.leadTimeMu.RLock()
-		curLeadElected := r.leadElectedTime
-		r.leadTimeMu.RUnlock()
-		prevLeadLost := curLeadElected.Add(-2 * r.cfg.ElectionDuration())
+		s.leadTimeMu.RLock()
+		curLeadElected := s.leadElectedTime
+		s.leadTimeMu.RUnlock()
+		prevLeadLost := curLeadElected.Add(-2 * s.cfg.ElectionDuration())
 		if start.After(prevLeadLost) && start.Before(curLeadElected) {
 			return ErrTimeoutDueToLeaderFail
 		}
@@ -401,11 +387,11 @@ func (r *Shard) parseProposeCtxErr(err error, start time.Time) error {
 	}
 }
 
-func (r *Shard) applyEntry(entry sm.Entry) {
+func (s *Shard) applyEntry(entry sm.Entry) {
 	index := entry.Index
-	r.writeApplyIndex(index)
-	if index == r.getCommitted() {
-		r.commitW.Trigger(r.id, nil)
+	s.writeApplyIndex(index)
+	if index == s.getCommitted() {
+		s.commitW.Trigger(s.id, nil)
 	}
 
 	if len(entry.Cmd) == 0 {
@@ -414,7 +400,7 @@ func (r *Shard) applyEntry(entry sm.Entry) {
 
 	raftReq := &pb.RaftInternalRequest{}
 	if err := raftReq.Unmarshal(entry.Cmd); err != nil {
-		r.lg.Warn("unmarshal entry cmd", zap.Uint64("index", entry.Index), zap.Error(err))
+		s.lg.Warn("unmarshal entry cmd", zap.Uint64("index", entry.Index), zap.Error(err))
 		return
 	}
 
@@ -422,35 +408,35 @@ func (r *Shard) applyEntry(entry sm.Entry) {
 
 	ctx := context.Background()
 	id := raftReq.Header.ID
-	need := r.applyW.IsRegistered(id)
+	need := s.applyW.IsRegistered(id)
 	if need {
-		ar = r.applyBase.Apply(ctx, raftReq)
+		ar = s.applyBase.Apply(ctx, raftReq)
 	}
 
 	if ar == nil {
 		return
 	}
 
-	r.applyW.Trigger(id, ar)
+	s.applyW.Trigger(id, ar)
 }
 
-func (r *Shard) Start() {
-	go r.heartbeat()
-	go r.scheduleCycle()
-	go r.run()
+func (s *Shard) Start() {
+	go s.heartbeat()
+	go s.scheduleCycle()
+	go s.run()
 }
 
-func (r *Shard) run() {
+func (s *Shard) run() {
 	for {
 		select {
-		case <-r.stopc:
+		case <-s.stopc:
 			return
 		}
 	}
 }
 
-func (r *Shard) readApplyIndex() (uint64, error) {
-	kv, err := r.get(appliedIndex)
+func (s *Shard) readApplyIndex() (uint64, error) {
+	kv, err := s.get(appliedIndex)
 	if err != nil {
 		if errors.Is(err, pebble.ErrNotFound) {
 			return 0, nil
@@ -463,39 +449,39 @@ func (r *Shard) readApplyIndex() (uint64, error) {
 	return applied, nil
 }
 
-func (r *Shard) writeApplyIndex(index uint64) {
+func (s *Shard) writeApplyIndex(index uint64) {
 	data := make([]byte, 8)
 	binary.LittleEndian.PutUint64(data, index)
-	r.put(appliedIndex, data, true)
-	r.setApplied(index)
+	s.put(appliedIndex, data, true)
+	s.setApplied(index)
 }
 
-func (r *Shard) get(key []byte) (*pb.KeyValue, error) {
-	tx := r.be.ReadTx()
+func (s *Shard) get(key []byte) (*pb.KeyValue, error) {
+	tx := s.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
 
-	key = bytesutil.PathJoin(r.putPrefix(), key)
+	key = bytesutil.PathJoin(s.putPrefix(), key)
 	value, err := tx.UnsafeGet(buckets.Key, key)
 	if err != nil {
 		return nil, err
 	}
 	kv := &pb.KeyValue{
-		Key:   bytes.TrimPrefix(key, r.putPrefix()),
+		Key:   bytes.TrimPrefix(key, s.putPrefix()),
 		Value: value,
 	}
 
 	return kv, err
 }
 
-func (r *Shard) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, error) {
-	tx := r.be.ReadTx()
+func (s *Shard) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, error) {
+	tx := s.be.ReadTx()
 	tx.RLock()
 	defer tx.RUnlock()
 
-	startKey = bytesutil.PathJoin(r.putPrefix(), startKey)
+	startKey = bytesutil.PathJoin(s.putPrefix(), startKey)
 	if len(endKey) > 0 {
-		endKey = bytesutil.PathJoin(r.putPrefix(), endKey)
+		endKey = bytesutil.PathJoin(s.putPrefix(), endKey)
 	}
 	keys, values, err := tx.UnsafeRange(buckets.Key, startKey, endKey, limit)
 	if err != nil {
@@ -504,16 +490,16 @@ func (r *Shard) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue, 
 	kvs := make([]*pb.KeyValue, len(keys))
 	for i, key := range keys {
 		kvs[i] = &pb.KeyValue{
-			Key:   bytes.TrimPrefix(key, r.putPrefix()),
+			Key:   bytes.TrimPrefix(key, s.putPrefix()),
 			Value: values[i],
 		}
 	}
 	return kvs, nil
 }
 
-func (r *Shard) put(key, value []byte, isSync bool) error {
-	key = bytesutil.PathJoin(r.putPrefix(), key)
-	tx := r.be.BatchTx()
+func (s *Shard) put(key, value []byte, isSync bool) error {
+	key = bytesutil.PathJoin(s.putPrefix(), key)
+	tx := s.be.BatchTx()
 	tx.Lock()
 	if err := tx.UnsafePut(buckets.Key, key, value); err != nil {
 		tx.Unlock()
@@ -526,9 +512,9 @@ func (r *Shard) put(key, value []byte, isSync bool) error {
 	return nil
 }
 
-func (r *Shard) del(key []byte, isSync bool) error {
-	key = bytesutil.PathJoin(r.putPrefix(), key)
-	tx := r.be.BatchTx()
+func (s *Shard) del(key []byte, isSync bool) error {
+	key = bytesutil.PathJoin(s.putPrefix(), key)
+	tx := s.be.BatchTx()
 	tx.Lock()
 	if err := tx.UnsafeDelete(buckets.Key, key); err != nil {
 		tx.Unlock()
@@ -541,90 +527,90 @@ func (r *Shard) del(key []byte, isSync bool) error {
 	return nil
 }
 
-func (r *Shard) notifyAboutChange() {
-	r.changeCMu.Lock()
-	changeClose := r.changeC
-	r.changeC = make(chan struct{})
-	r.changeCMu.Unlock()
+func (s *Shard) notifyAboutChange() {
+	s.changeCMu.Lock()
+	changeClose := s.changeC
+	s.changeC = make(chan struct{})
+	s.changeCMu.Unlock()
 	close(changeClose)
 }
 
-func (r *Shard) changeNotify() <-chan struct{} {
-	r.changeCMu.RLock()
-	defer r.changeCMu.RUnlock()
-	return r.changeC
+func (s *Shard) changeNotify() <-chan struct{} {
+	s.changeCMu.RLock()
+	defer s.changeCMu.RUnlock()
+	return s.changeC
 }
 
-func (r *Shard) notifyAboutReady() {
-	r.readyCMu.Lock()
-	readyClose := r.readyC
-	r.readyC = make(chan struct{})
-	r.readyCMu.Unlock()
+func (s *Shard) notifyAboutReady() {
+	s.readyCMu.Lock()
+	readyClose := s.readyC
+	s.readyC = make(chan struct{})
+	s.readyCMu.Unlock()
 	close(readyClose)
 }
 
-func (r *Shard) ReadyNotify() <-chan struct{} {
-	r.readyCMu.RLock()
-	defer r.readyCMu.RUnlock()
-	return r.readyC
+func (s *Shard) ReadyNotify() <-chan struct{} {
+	s.readyCMu.RLock()
+	defer s.readyCMu.RUnlock()
+	return s.readyC
 }
 
-func (r *Shard) putPrefix() []byte {
-	sb := []byte(fmt.Sprintf("%d", r.id))
+func (s *Shard) putPrefix() []byte {
+	sb := []byte(fmt.Sprintf("%d", s.id))
 	return sb
 }
 
-func (r *Shard) updateConfig(config ShardConfig) {
-	r.cfg = config
+func (s *Shard) updateConfig(config ShardConfig) {
+	s.cfg = config
 }
 
-func (r *Shard) getID() uint64 {
-	return r.id
+func (s *Shard) getID() uint64 {
+	return s.id
 }
 
-func (r *Shard) getMember() uint64 {
-	return r.memberId
+func (s *Shard) getMember() uint64 {
+	return s.memberId
 }
 
-func (r *Shard) setApplied(applied uint64) {
-	atomic.StoreUint64(&r.applied, applied)
+func (s *Shard) setApplied(applied uint64) {
+	atomic.StoreUint64(&s.applied, applied)
 }
 
-func (r *Shard) getApplied() uint64 {
-	return atomic.LoadUint64(&r.applied)
+func (s *Shard) getApplied() uint64 {
+	return atomic.LoadUint64(&s.applied)
 }
 
-func (r *Shard) setCommitted(committed uint64) {
-	atomic.StoreUint64(&r.committed, committed)
+func (s *Shard) setCommitted(committed uint64) {
+	atomic.StoreUint64(&s.committed, committed)
 }
 
-func (r *Shard) getCommitted() uint64 {
-	return atomic.LoadUint64(&r.committed)
+func (s *Shard) getCommitted() uint64 {
+	return atomic.LoadUint64(&s.committed)
 }
 
-func (r *Shard) setTerm(term uint64) {
-	atomic.StoreUint64(&r.term, term)
+func (s *Shard) setTerm(term uint64) {
+	atomic.StoreUint64(&s.term, term)
 }
 
-func (r *Shard) getTerm() uint64 {
-	return atomic.LoadUint64(&r.term)
+func (s *Shard) getTerm() uint64 {
+	return atomic.LoadUint64(&s.term)
 }
 
-func (r *Shard) setLeader(leader uint64, newLead bool) {
-	atomic.StoreUint64(&r.leader, leader)
-	if newLead && r.isLeader() {
+func (s *Shard) setLeader(leader uint64, newLead bool) {
+	atomic.StoreUint64(&s.leader, leader)
+	if newLead && s.isLeader() {
 		t := time.Now()
-		r.leadTimeMu.Lock()
-		r.leadElectedTime = t
-		r.leadTimeMu.Unlock()
+		s.leadTimeMu.Lock()
+		s.leadElectedTime = t
+		s.leadTimeMu.Unlock()
 	}
 }
 
-func (r *Shard) getLeader() uint64 {
-	return atomic.LoadUint64(&r.leader)
+func (s *Shard) getLeader() uint64 {
+	return atomic.LoadUint64(&s.leader)
 }
 
-func (r *Shard) isLeader() bool {
-	lead := r.getLeader()
-	return lead != 0 && lead == r.getMember()
+func (s *Shard) isLeader() bool {
+	lead := s.getLeader()
+	return lead != 0 && lead == s.getMember()
 }

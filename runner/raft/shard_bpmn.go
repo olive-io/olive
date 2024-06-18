@@ -28,8 +28,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cockroachdb/errors"
-	"github.com/cockroachdb/pebble"
 	json "github.com/json-iterator/go"
 	"github.com/olive-io/bpmn/data"
 	"github.com/olive-io/bpmn/flow"
@@ -51,11 +49,11 @@ var (
 	processPrefix    = []byte("processes")
 )
 
-func (r *Shard) GetDefinitionArchive(ctx context.Context, namespace, name string) ([]*corev1.Definition, error) {
+func (s *Shard) GetDefinitionArchive(ctx context.Context, namespace, name string) ([]*corev1.Definition, error) {
 	prefix := bytesutil.PathJoin(definitionPrefix, []byte(namespace), []byte(name))
 
 	definitions := make([]*corev1.Definition, 0)
-	kvs, err := r.getRange(prefix, getPrefix(prefix), 0)
+	kvs, err := s.getRange(prefix, getPrefix(prefix), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +70,9 @@ func (r *Shard) GetDefinitionArchive(ctx context.Context, namespace, name string
 	return definitions, nil
 }
 
-func (r *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, error) {
+func (s *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, error) {
 	resp := &pb.ShardDeployDefinitionResponse{}
-	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
+	result, err := s.raftRequestOnce(ctx, &pb.RaftInternalRequest{DeployDefinition: req})
 	if err != nil {
 		return nil, err
 	}
@@ -82,9 +80,9 @@ func (r *Shard) DeployDefinition(ctx context.Context, req *pb.ShardDeployDefinit
 	return resp, nil
 }
 
-func (r *Shard) RunBpmnProcess(ctx context.Context, req *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, error) {
+func (s *Shard) RunBpmnProcess(ctx context.Context, req *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, error) {
 	resp := &pb.ShardRunBpmnProcessResponse{}
-	result, err := r.raftRequestOnce(ctx, &pb.RaftInternalRequest{RunBpmnProcess: req})
+	result, err := s.raftRequestOnce(ctx, &pb.RaftInternalRequest{RunBpmnProcess: req})
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +90,7 @@ func (r *Shard) RunBpmnProcess(ctx context.Context, req *pb.ShardRunBpmnProcessR
 	return resp, nil
 }
 
-func (r *Shard) GetProcess(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*corev1.Process, error) {
+func (s *Shard) GetProcessStat(ctx context.Context, definitionId string, definitionVersion uint64, id string) (*corev1.ProcessStat, error) {
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(definitionId),
 		[]byte(fmt.Sprintf("%d", definitionVersion)))
@@ -100,7 +98,7 @@ func (r *Shard) GetProcess(ctx context.Context, definitionId string, definitionV
 
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, r.cfg.ReqTimeout())
+		ctx, cancel = context.WithTimeout(ctx, s.cfg.ReqTimeout())
 		defer cancel()
 	}
 
@@ -110,30 +108,30 @@ func (r *Shard) GetProcess(ctx context.Context, definitionId string, definitionV
 		Serializable: true,
 	}
 	rangePrefix(req)
-	rsp, err := r.Range(ctx, req)
+	rsp, err := s.Range(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	if len(rsp.Kvs) == 0 {
 		return nil, ErrNotFound
 	}
-	instance := new(corev1.Process)
-	if err = instance.Unmarshal(rsp.Kvs[0].Value); err != nil {
+	ps := new(corev1.ProcessStat)
+	if err = ps.Unmarshal(rsp.Kvs[0].Value); err != nil {
 		return nil, err
 	}
 
-	return instance, nil
+	return ps, nil
 }
 
-func (r *Shard) scheduleCycle() {
+func (s *Shard) scheduleCycle() {
 	duration := 100 * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 
 	for {
-		if !r.waitUtilLeader() {
+		if !s.waitUtilLeader() {
 			select {
-			case <-r.stopc:
+			case <-s.stopc:
 				return
 			default:
 			}
@@ -145,49 +143,33 @@ func (r *Shard) scheduleCycle() {
 	LOOP:
 		for {
 			select {
-			case <-r.stopc:
+			case <-s.stopc:
 				return
-			case <-r.changeC:
+			case <-s.changeC:
 				break LOOP
 			case <-timer.C:
 				timer.Reset(duration)
 
-				x, ok := r.processQ.Pop()
+				x, ok := s.processQ.Pop()
 				if !ok {
 					break
 				}
 				pi := x.(*ProcessInfo)
 
-				go r.runProcess(pi.Process)
+				go s.runProcess(pi.Stat)
 			}
 		}
 	}
 }
 
-func (r *Shard) runProcess(process *corev1.Process) {
-	definitionKey := bytesutil.PathJoin(definitionPrefix,
-		[]byte(process.Namespace), []byte(process.Spec.Definition),
-		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
-
-	kv, err := r.get(definitionKey)
-	if err != nil {
-		if errors.Is(err, pebble.ErrNotFound) {
-
-		}
-		return
-	}
-	definition := new(corev1.Definition)
-	if err = definition.Unmarshal(kv.Value); err != nil {
-		return
-	}
-
+func (s *Shard) runProcess(stat *corev1.ProcessStat) {
 	var definitions *schema.Definitions
-	err = xml.Unmarshal([]byte(definition.Spec.Content), &definitions)
+	err := xml.Unmarshal([]byte(stat.Status.DefinitionContent), &definitions)
 	if err != nil {
 		return
 	}
-	r.metric.runningDefinition.Inc()
-	defer r.metric.runningDefinition.Dec()
+	s.metric.runningDefinition.Inc()
+	defer s.metric.runningDefinition.Dec()
 
 	locator := data.NewFlowDataLocator()
 	if len(*definitions.Processes()) == 0 {
@@ -197,27 +179,28 @@ func (r *Shard) runProcess(process *corev1.Process) {
 	//if id, ok := processElement.Id(); ok {
 	//	process.DefinitionsProcess = *id
 	//}
+	initContext := stat.Spec.InitContext
 	var dataObjects map[string][]byte
-	for name, value := range process.Spec.DataObjects {
+	for name, value := range initContext.DataObjects {
 		dataObjects[name] = []byte(value)
 	}
 
 	variables := make(map[string][]byte)
-	for name, value := range process.Spec.Properties {
+	for name, value := range initContext.Properties {
 		box, _ := json.Marshal(value)
 		variables[name] = box
 	}
-	//if state := process.RunningState; state != nil {
-	//	for key, value := range state.Properties {
-	//		variables[key] = []byte(value)
-	//	}
-	//	for key, value := range state.DataObjects {
-	//		dataObjects[key] = []byte(value)
-	//	}
-	//	for key, value := range state.Variables {
-	//		variables[key] = []byte(value)
-	//	}
-	//}
+
+	runningContext := stat.Status.Context
+	for key, value := range runningContext.Properties {
+		variables[key] = []byte(value)
+	}
+	for key, value := range runningContext.DataObjects {
+		dataObjects[key] = []byte(value)
+	}
+	for key, value := range runningContext.Headers {
+		variables[key] = []byte(value)
+	}
 
 	ctx := context.Background()
 	options := []bpi.Option{
@@ -225,32 +208,37 @@ func (r *Shard) runProcess(process *corev1.Process) {
 		bpi.WithDataObjects(toAnyMap[[]byte](dataObjects)),
 		bpi.WithVariables(toAnyMap[[]byte](variables)),
 	}
-	r.scheduleProcess(ctx, process, definitions, &processElement, options...)
+	s.scheduleProcess(ctx, stat, definitions, &processElement, options...)
 }
 
-func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *Shard) scheduleProcess(ctx context.Context, stat *corev1.ProcessStat, definitions *schema.Definitions, processElement *schema.Process, options ...bpi.Option) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	r.metric.process.Inc()
-	defer r.metric.process.Dec()
+	s.metric.process.Inc()
+	defer s.metric.process.Dec()
 
 	fields := []zap.Field{
-		zap.String("definition", process.Spec.Definition),
-		zap.Int64("version", process.Spec.Version),
-		zap.String("process", process.Name),
+		zap.String("definition", stat.Spec.DefinitionName),
+		zap.Int64("version", stat.Spec.DefinitionVersion),
+		zap.String("process", stat.Spec.ProcessName),
 	}
 
-	r.lg.Info("start process instance", fields...)
+	s.lg.Info("start process instance", fields...)
 
 	var err error
-	if process.Status.Phase == corev1.ProcessPrepare {
-		process.Status.Phase = corev1.ProcessRunning
+	if stat.Status.Phase == corev1.ProcessPrepare {
+		stat.Status.Phase = corev1.ProcessRunning
 		//process.Status.StartTime = time.Now().UnixNano()
-		err = saveProcess(ctx, r, process)
+		err = s.saveProcess(ctx, stat)
 		if err != nil {
-			r.lg.Error("save process instance", append(fields, zap.Error(err))...)
+			s.lg.Error("save process instance", append(fields, zap.Error(err))...)
 		}
+	}
+
+	flowNodes := map[string]*corev1.FlowNodeStat{}
+	for _, node := range stat.Status.FlowNodes {
+		flowNodes[node.Id] = node
 	}
 
 	finish := true
@@ -259,33 +247,35 @@ func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, de
 			return
 		}
 
-		//process.EndTime = time.Now().UnixNano()
-		//process.Status = pb.ProcessInstance_Ok
-		//if err != nil {
-		//	process.Status = pb.ProcessInstance_Fail
-		//	process.Message = err.Error()
-		//}
+		stat.Status.EndTime = time.Now().UnixNano()
+		stat.Status.Phase = corev1.ProcessSuccess
+		if err != nil {
+			stat.Status.Phase = corev1.ProcessFailed
+			stat.Status.Message = err.Error()
+		}
 
-		//err = saveProcess(ctx, r, process)
-		//if err != nil {
-		//	r.lg.Error("finish process instance", append(fields, zap.Error(err))...)
-		//} else {
-		//	r.lg.Info("finish process instance", fields...)
-		//}
+		err = s.saveProcess(ctx, stat)
+		if err != nil {
+			s.lg.Error("finish process instance", append(fields, zap.Error(err))...)
+		} else {
+			s.lg.Info("finish process instance", fields...)
+		}
+
+		s.tracer.Trace(&processStatTrace{stat: stat})
 	}()
 
 	proc := bp.New(processElement, definitions)
 	var inst *bpi.Instance
 	inst, err = proc.Instantiate(options...)
 	if err != nil {
-		r.lg.Error("failed to instantiate the process", append(fields, zap.Error(err))...)
+		s.lg.Error("failed to instantiate the process", append(fields, zap.Error(err))...)
 		return
 	}
 	traces := inst.Tracer.Subscribe()
 	err = inst.StartAll(ctx)
 	if err != nil {
 		cancel()
-		r.lg.Error("failed to run the instance", append(fields, zap.Error(err))...)
+		s.lg.Error("failed to run the instance", append(fields, zap.Error(err))...)
 		return
 	}
 
@@ -295,12 +285,12 @@ func (r *Shard) scheduleProcess(ctx context.Context, process *corev1.Process, de
 LOOP:
 	for {
 		select {
-		case <-r.changeNotify():
-			r.processQ.Push(NewProcessInfo(process))
+		case <-s.changeNotify():
+			s.processQ.Push(NewProcessInfo(stat))
 			break LOOP
 		case trace := <-traces:
 			trace = tracing.Unwrap(trace)
-			r.lg.Sugar().Debugf("%#v", trace)
+			s.lg.Sugar().Debugf("%#v", trace)
 			switch tt := trace.(type) {
 			case flow.VisitTrace:
 				id, _ := tt.Node.Id()
@@ -308,86 +298,84 @@ LOOP:
 				switch tt.Node.(type) {
 				case schema.EndEventInterface:
 				case schema.EventInterface:
-					r.metric.event.Inc()
+					s.metric.event.Inc()
 				}
-				_ = id
-
-				//if process.Status.FlowNodes == nil {
-				//	process.FlowNodes = map[string]*pb.FlowNodeStat{}
-				//}
-				//flowNode, ok := process.FlowNodes[*id]
-				//if ok {
-				//	completed[*id] = struct{}{}
-				//} else {
-				//	flowNode = &pb.FlowNodeStat{
-				//		Id:        *id,
-				//		StartTime: time.Now().UnixNano(),
-				//	}
-				//	if name, has := tt.Node.Name(); has {
-				//		flowNode.Name = *name
-				//	}
-				//	process.FlowNodes[*id] = flowNode
-				//}
+				flowNode, ok := flowNodes[*id]
+				if ok {
+					completed[*id] = struct{}{}
+				} else {
+					flowNode = &corev1.FlowNodeStat{
+						Id:        *id,
+						StartTime: time.Now().UnixNano(),
+					}
+					if name, has := tt.Node.Name(); has {
+						flowNode.Name = *name
+					}
+					flowNodes[*id] = flowNode
+					stat.Status.FlowNodes = append(stat.Status.FlowNodes, flowNode)
+				}
 
 			case flow.LeaveTrace:
-				//id, _ := tt.Node.Id()
-				//
-				//flowNode, ok := process.FlowNodes[*id]
-				//if ok {
-				//	flowNode.EndTime = time.Now().UnixNano()
-				//}
-				//
-				//switch tt.Node.(type) {
-				//case schema.EventInterface:
-				//	r.metric.event.Dec()
-				//}
+				id, _ := tt.Node.Id()
+
+				flowNode, ok := flowNodes[*id]
+				if ok {
+					flowNode.EndTime = time.Now().UnixNano()
+				}
+
+				switch tt.Node.(type) {
+				case schema.EventInterface:
+					s.metric.event.Dec()
+				}
 
 			case bact.ActiveBoundaryTrace:
 				if tt.Start {
-					r.metric.task.Inc()
+					s.metric.task.Inc()
 				} else {
-					r.metric.task.Dec()
-					//process.RunningState.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
-					//process.RunningState.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
-					//process.RunningState.Variables = toGenericMap[string](inst.Locator.CloneVariables())
+					s.metric.task.Dec()
+					stat.Status.Context.DataObjects = toGenericMap[string](inst.Locator.CloneItems(data.LocatorObject))
+					stat.Status.Context.Properties = toGenericMap[string](inst.Locator.CloneItems(data.LocatorProperty))
+					stat.Status.Context.Headers = toGenericMap[string](inst.Locator.CloneVariables())
 				}
 			case *bact.Trace:
 				act := tt.GetActivity()
 				id, _ := act.Element().Id()
 				var ok bool
-				//
-				//flowNode, ok := process.FlowNodes[*id]
-				//if ok {
-				//	flowNode.EndTime = time.Now().UnixNano()
-				//	headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
-				//	flowNode.Headers = toGenericMap[string](headers)
-				//	flowNode.Properties = toGenericMap[string](dataSets)
-				//	flowNode.DataObjects = toGenericMap[string](dataObjects)
-				//}
-				//
+
+				flowNode, ok := flowNodes[*id]
+				if ok {
+					flowNode.EndTime = time.Now().UnixNano()
+					headers, dataSets, dataObjects := bact.FetchTaskDataInput(inst.Locator, act.Element())
+					flowNode.Context = &corev1.ProcessContext{
+						Headers:     toGenericMap[string](headers),
+						Properties:  toGenericMap[string](dataSets),
+						DataObjects: toGenericMap[string](dataObjects),
+					}
+				}
+
 				_, ok = completed[*id]
 				if ok {
 					tt.Do()
 				} else {
-					r.handleActivity(ctx, tt, inst, process)
+					s.handleActivity(ctx, tt, inst, stat)
 				}
 			case tracing.ErrorTrace:
 				finish = true
 				err = tt.Error
-				r.lg.Error("process error occurred", append(fields, zap.Error(err))...)
+				s.lg.Error("process error occurred", append(fields, zap.Error(err))...)
 			case flow.CeaseFlowTrace:
 				finish = true
 				break LOOP
 			default:
 			}
 
-			_ = saveProcess(ctx, r, process)
+			_ = s.saveProcess(ctx, stat)
 		}
 	}
 	inst.Tracer.Unsubscribe(traces)
 }
 
-func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, process *corev1.Process) {
+func (s *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi.Instance, stat *corev1.ProcessStat) {
 
 	//taskAct := trace.GetActivity()
 	//actType := taskAct.Type()
@@ -455,17 +443,18 @@ func (r *Shard) handleActivity(ctx context.Context, trace *bact.Trace, inst *bpi
 	trace.Do(doOpts...)
 }
 
-func saveProcess(ctx context.Context, kv IShardRaftKV, process *corev1.Process) error {
+func (s *Shard) saveProcess(ctx context.Context, stat *corev1.ProcessStat) error {
 	var err error
 	pkey := bytesutil.PathJoin(processPrefix,
-		[]byte(process.Namespace), []byte(process.Spec.Definition),
-		[]byte(fmt.Sprintf("%d", process.Spec.Version)), []byte(process.Name))
+		[]byte(stat.Namespace), []byte(stat.Spec.DefinitionName),
+		[]byte(fmt.Sprintf("%d", stat.Spec.DefinitionVersion)), []byte(stat.Spec.ProcessName))
 
-	value, err := process.Marshal()
+	value, err := stat.Marshal()
 	if err != nil {
 		return err
 	}
-	_, err = kv.Put(ctx, &pb.ShardPutRequest{Key: pkey, Value: value})
+	_, err = s.Put(ctx, &pb.ShardPutRequest{Key: pkey, Value: value})
+
 	return err
 }
 

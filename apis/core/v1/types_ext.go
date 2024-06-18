@@ -31,3 +31,11 @@ func (m *Region) InitialURL() map[int64]string {
 	}
 	return initial
 }
+
+func (m *Process) NeedScheduler() bool {
+	switch m.Status.Phase {
+	case ProcessPending, ProcessPrepare:
+		return true
+	}
+	return false
+}

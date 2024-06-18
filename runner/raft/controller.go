@@ -40,6 +40,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
@@ -299,6 +300,24 @@ func (c *Controller) watchTrace(traces <-chan tracing.ITrace) {
 				if err != nil {
 
 				}
+
+			case *processStatTrace:
+				stat := tt.stat
+
+				ctx := c.ctx
+				process, err := c.client.CoreV1().Processes(stat.Namespace).Get(ctx, stat.Spec.ProcessName, metav1.GetOptions{})
+				if err != nil {
+
+				} else {
+					process.Status.Phase = stat.Status.Phase
+					process.Status.Message = stat.Status.Message
+					process, err = c.client.CoreV1().Processes(stat.Namespace).UpdateStatus(ctx, process, metav1.UpdateOptions{})
+					if err != nil {
+
+					}
+
+					klog.Infof("update process %s/%s", process.Namespace, process.Name)
+				}
 			}
 		}
 	}
@@ -389,18 +408,18 @@ func (c *Controller) GetDefinitionArchive(ctx context.Context, req *pb.GetDefini
 	return resp, nil
 }
 
-func (c *Controller) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {
-	resp := &pb.GetProcessResponse{}
+func (c *Controller) GetProcessStat(ctx context.Context, req *pb.GetProcessStatRequest) (*pb.GetProcessStatResponse, error) {
+	resp := &pb.GetProcessStatResponse{}
 	region, ok := c.getShard(req.Region)
 	if !ok {
 		return nil, ErrNoRegion
 	}
 
-	instance, err := region.GetProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
+	stat, err := region.GetProcessStat(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
 	if err != nil {
 		return nil, err
 	}
-	resp.Process = instance
+	resp.Stat = stat
 
 	return resp, nil
 }

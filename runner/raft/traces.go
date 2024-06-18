@@ -41,6 +41,12 @@ type regionStatTrace struct {
 
 func (t *regionStatTrace) TraceInterface() {}
 
+type processStatTrace struct {
+	stat *corev1.ProcessStat
+}
+
+func (t *processStatTrace) TraceInterface() {}
+
 type proposeTrace struct {
 	ctx    context.Context
 	region uint64

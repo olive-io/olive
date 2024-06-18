@@ -166,8 +166,11 @@ func (c *Controller) enqueueProcess(obj interface{}) {
 	var err error
 
 	process := obj.(*corev1.Process)
-	if process.Status.Region == 0 ||
-		process.Status.Phase == corev1.ProcessPending {
+	if process.Status.Region == 0 {
+		return
+	}
+
+	if !process.NeedScheduler() {
 		return
 	}
 
@@ -277,7 +280,7 @@ func (c *Controller) runBpmnProcess(ctx context.Context, process *corev1.Process
 	if err != nil {
 		return err
 	}
-	resp.Process.DeepCopyInto(process)
+	process.Status.Phase = resp.Stat.Status.Phase
 
 	return nil
 }

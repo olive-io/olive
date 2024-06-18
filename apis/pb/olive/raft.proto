@@ -113,12 +113,12 @@ message ShardRunBpmnProcessRequest {
 
 message ShardRunBpmnProcessResponse {
   RaftResponseHeader header = 1;
-  github.com.olive_io.olive.apis.core.v1.Process process = 2;
+  github.com.olive_io.olive.apis.core.v1.ProcessStat stat = 2;
 }
 
 service RunnerRPC {
   rpc GetDefinitionArchive(GetDefinitionArchiveRequest) returns (GetDefinitionArchiveResponse);
-  rpc GetProcessInstance(GetProcessRequest) returns (GetProcessResponse);
+  rpc GetProcessStat(GetProcessStatRequest) returns (GetProcessStatResponse);
 }
 
 message GetDefinitionArchiveRequest {
@@ -130,14 +130,14 @@ message GetDefinitionArchiveResponse {
   repeated github.com.olive_io.olive.apis.core.v1.Definition definitions = 1;
 }
 
-message GetProcessRequest {
+message GetProcessStatRequest {
   uint64 region = 1;
   string definitionId = 2;
   uint64 definitionVersion = 3;
   string id = 4;
 }
 
-message GetProcessResponse {
+message GetProcessStatResponse {
   RaftResponseHeader header = 1;
-  github.com.olive_io.olive.apis.core.v1.Process process = 2;
+  github.com.olive_io.olive.apis.core.v1.ProcessStat stat = 2;
 }

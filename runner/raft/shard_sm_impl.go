@@ -34,56 +34,56 @@ import (
 	"github.com/olive-io/olive/runner/buckets"
 )
 
-func (r *Shard) Open(stopc <-chan struct{}) (uint64, error) {
-	return r.initial(stopc)
+func (s *Shard) Open(stopc <-chan struct{}) (uint64, error) {
+	return s.initial(stopc)
 }
 
-func (r *Shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
+func (s *Shard) Update(entries []sm.Entry) ([]sm.Entry, error) {
 	var committed uint64
 	if length := len(entries); length > 0 {
 		committed = entries[length-1].Index
-		r.setCommitted(committed)
+		s.setCommitted(committed)
 	}
 
 	for i := range entries {
-		if entries[i].Index <= r.getApplied() {
+		if entries[i].Index <= s.getApplied() {
 			continue
 		}
-		r.applyEntry(entries[i])
+		s.applyEntry(entries[i])
 	}
 
 	return entries, nil
 }
 
-func (r *Shard) Lookup(query interface{}) (interface{}, error) {
+func (s *Shard) Lookup(query interface{}) (interface{}, error) {
 	raftReq, ok := query.(*pb.RaftInternalRequest)
 	if !ok {
 		return nil, ErrRequestQuery
 	}
 
-	ar := r.applyBase.Apply(context.TODO(), raftReq)
+	ar := s.applyBase.Apply(context.TODO(), raftReq)
 	if ar.err != nil {
 		return nil, ar.err
 	}
 	return ar, nil
 }
 
-func (r *Shard) Sync() error {
+func (s *Shard) Sync() error {
 	return nil
 }
 
-func (r *Shard) Close() error {
+func (s *Shard) Close() error {
 	return nil
 }
 
-func (r *Shard) PrepareSnapshot() (interface{}, error) {
-	snap := r.be.Snapshot()
+func (s *Shard) PrepareSnapshot() (interface{}, error) {
+	snap := s.be.Snapshot()
 	return snap, nil
 }
 
-func (r *Shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
+func (s *Shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snap := ctx.(backend.ISnapshot)
-	prefix := bytesutil.PathJoin(buckets.Key.Name(), r.putPrefix())
+	prefix := bytesutil.PathJoin(buckets.Key.Name(), s.putPrefix())
 	_, err := snap.WriteTo(writer, prefix)
 	if err != nil {
 		return err
@@ -92,17 +92,17 @@ func (r *Shard) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan stru
 	return nil
 }
 
-func (r *Shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
-	err := r.be.Recover(reader)
+func (s *Shard) RecoverFromSnapshot(reader io.Reader, done <-chan struct{}) error {
+	err := s.be.Recover(reader)
 	if err != nil {
 		return err
 	}
 
-	applyIndex, err := r.readApplyIndex()
+	applyIndex, err := s.readApplyIndex()
 	if err != nil {
 		return err
 	}
-	r.setApplied(applyIndex)
+	s.setApplied(applyIndex)
 
 	return nil
 }

@@ -29,15 +29,15 @@ import (
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-func (r *Shard) heartbeat() {
-	duration := time.Duration(r.cfg.StatHeartBeatMs) * time.Millisecond
+func (s *Shard) heartbeat() {
+	duration := time.Duration(s.cfg.StatHeartBeatMs) * time.Millisecond
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 
 	for {
-		if !r.waitUtilLeader() {
+		if !s.waitUtilLeader() {
 			select {
-			case <-r.stopc:
+			case <-s.stopc:
 				return
 			default:
 			}
@@ -49,30 +49,30 @@ func (r *Shard) heartbeat() {
 	LOOP:
 		for {
 			select {
-			case <-r.stopc:
+			case <-s.stopc:
 				return
-			case <-r.changeC:
+			case <-s.changeC:
 				break LOOP
 			case <-timer.C:
 				timer.Reset(duration)
-				r.tracer.Trace(&regionStatTrace{Id: r.getID(), stat: r.stat()})
+				s.tracer.Trace(&regionStatTrace{Id: s.getID(), stat: s.stat()})
 			}
 		}
 	}
 }
 
-func (r *Shard) stat() *corev1.RegionStat {
+func (s *Shard) stat() *corev1.RegionStat {
 	rs := &corev1.RegionStat{
 		TypeMeta: metav1.TypeMeta{},
 		Bpmn: &corev1.BpmnStat{
-			Definitions: int64(r.metric.definition.Get()),
-			Processes:   int64(r.metric.process.Get()),
-			Events:      int64(r.metric.event.Get()),
-			Tasks:       int64(r.metric.task.Get()),
+			Definitions: int64(s.metric.definition.Get()),
+			Processes:   int64(s.metric.process.Get()),
+			Events:      int64(s.metric.event.Get()),
+			Tasks:       int64(s.metric.task.Get()),
 		},
-		RunningDefinitions: int64(r.metric.runningDefinition.Get()),
-		Leader:             int64(r.getLeader()),
-		Term:               int64(r.getTerm()),
+		RunningDefinitions: int64(s.metric.runningDefinition.Get()),
+		Leader:             int64(s.getLeader()),
+		Term:               int64(s.getTerm()),
 		Timeout:            time.Now().Unix(),
 	}
 

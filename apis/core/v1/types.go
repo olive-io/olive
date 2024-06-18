@@ -412,32 +412,52 @@ type ProcessList struct {
 
 // ProcessStat is stat information of Process
 type ProcessStat struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
-	// The id of Process
-	Id                string `json:"id" protobuf:"bytes,1,opt,name=id"`
-	DefinitionContent string `json:"definitionContent" protobuf:"bytes,2,opt,name=definitionContent"`
+	Spec ProcessStatSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 
-	State ProcessRunningState `json:"processState" protobuf:"bytes,3,opt,name=processState"`
-
-	Attempts  int64                   `json:"attempts" protobuf:"varint,4,opt,name=attempts"`
-	FlowNodes map[string]FlowNodeStat `json:"flowNodes" protobuf:"bytes,5,rep,name=flowNodes"`
-	StartTime int64                   `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
-	EndTime   int64                   `json:"endTime" protobuf:"varint,7,opt,name=endTime"`
+	Status ProcessStatStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
-type ProcessRunningState struct {
-	Properties  map[string]string `json:"properties" protobuf:"bytes,1,rep,name=properties"`
-	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,2,rep,name=dataObjects"`
-	Variables   map[string]string `json:"variables" protobuf:"bytes,3,rep,name=variables"`
+type ProcessStatSpec struct {
+	DefinitionName    string `json:"definitionName" protobuf:"bytes,1,opt,name=definitionName"`
+	DefinitionVersion int64  `json:"definitionVersion" protobuf:"varint,2,opt,name=definitionVersion"`
+
+	ProcessName string `json:"processName" protobuf:"bytes,3,opt,name=processName"`
+	// The id of Bpmn Process
+	BpmnProcessId string `json:"bpmnProcessId" protobuf:"bytes,4,opt,name=bpmnProcessId"`
+
+	InitContext ProcessContext `json:"processState" protobuf:"bytes,5,opt,name=processState"`
+}
+
+type ProcessStatStatus struct {
+	// Bpmn Schema
+	DefinitionContent string `json:"definitionContent" protobuf:"bytes,1,opt,name=definitionContent"`
+
+	FlowNodes []*FlowNodeStat `json:"flowNodes" protobuf:"bytes,2,rep,name=flowNodes"`
+
+	Context ProcessContext `json:"context" protobuf:"bytes,3,opt,name=context"`
+
+	Phase   ProcessPhase `json:"phase" protobuf:"bytes,4,opt,name=phase,casttype=ProcessPhase"`
+	Message string       `json:"message" protobuf:"bytes,5,opt,name=message"`
+
+	Attempts int64 `json:"attempts" protobuf:"varint,6,opt,name=attempts"`
+
+	StartTime int64 `json:"startTime" protobuf:"varint,7,opt,name=startTime"`
+	EndTime   int64 `json:"endTime" protobuf:"varint,8,opt,name=endTime"`
+}
+
+type ProcessContext struct {
+	Headers     map[string]string `json:"headers" protobuf:"bytes,1,rep,name=headers"`
+	Properties  map[string]string `json:"properties" protobuf:"bytes,2,rep,name=properties"`
+	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,3,rep,name=dataObjects"`
 }
 
 type FlowNodeStat struct {
-	Id          string            `json:"id" protobuf:"bytes,1,opt,name=id"`
-	Name        string            `json:"name" protobuf:"bytes,2,opt,name=name"`
-	Headers     map[string]string `json:"headers" protobuf:"bytes,3,rep,name=headers"`
-	Properties  map[string]string `json:"properties" protobuf:"bytes,4,rep,name=properties"`
-	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,5,rep,name=dataObjects"`
-	StartTime   int64             `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
-	EndTime     int64             `json:"endTime" protobuf:"varint,7,opt,name=endTime"`
+	Id        string          `json:"id" protobuf:"bytes,1,opt,name=id"`
+	Name      string          `json:"name" protobuf:"bytes,2,opt,name=name"`
+	Context   *ProcessContext `json:"context" protobuf:"bytes,3,opt,name=context"`
+	StartTime int64           `json:"startTime" protobuf:"varint,4,opt,name=startTime"`
+	EndTime   int64           `json:"endTime" protobuf:"varint,5,opt,name=endTime"`
 }

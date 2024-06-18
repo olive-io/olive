@@ -27,9 +27,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/gogo/protobuf/proto"
 	"go.etcd.io/etcd/pkg/v3/traceutil"
 
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 	pb "github.com/olive-io/olive/apis/pb/olive"
 	"github.com/olive-io/olive/pkg/bytesutil"
 )
@@ -60,8 +62,8 @@ type applier struct {
 	r *Shard
 }
 
-func (r *Shard) newApplier() *applier {
-	return &applier{r: r}
+func (s *Shard) newApplier() *applier {
+	return &applier{r: s}
 }
 
 func (a *applier) Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyResult {
@@ -101,22 +103,21 @@ func (a *applier) Apply(ctx context.Context, r *pb.RaftInternalRequest) *applyRe
 func (a *applier) Range(ctx context.Context, r *pb.ShardRangeRequest) (*pb.ShardRangeResponse, error) {
 	trace := traceutil.Get(ctx)
 
-	resp := &pb.ShardRangeResponse{}
-	resp.Header = &pb.RaftResponseHeader{}
-
 	limit := r.Limit
 	kvs, err := a.r.getRange(r.Key, mkGteRange(r.RangeEnd), limit)
 	if err != nil {
 		return nil, err
 	}
-	resp.Kvs = kvs
+
+	resp := &pb.ShardRangeResponse{
+		Header: a.toHeader(),
+		Kvs:    kvs,
+	}
 	trace.Step("assemble the response")
 	return resp, nil
 }
 
 func (a *applier) Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutResponse, *traceutil.Trace, error) {
-	resp := &pb.ShardPutResponse{}
-	resp.Header = &pb.RaftResponseHeader{}
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
@@ -132,12 +133,15 @@ func (a *applier) Put(ctx context.Context, r *pb.ShardPutRequest) (*pb.ShardPutR
 	if err != nil {
 		return nil, nil, err
 	}
+
+	resp := &pb.ShardPutResponse{
+		Header: a.toHeader(),
+	}
+
 	return resp, trace, nil
 }
 
 func (a *applier) Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.ShardDeleteResponse, *traceutil.Trace, error) {
-	resp := &pb.ShardDeleteResponse{}
-	resp.Header = &pb.RaftResponseHeader{}
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
 	if trace.IsEmpty() {
@@ -152,12 +156,15 @@ func (a *applier) Delete(ctx context.Context, r *pb.ShardDeleteRequest) (*pb.Sha
 	if err != nil {
 		return nil, trace, err
 	}
+
+	resp := &pb.ShardDeleteResponse{
+		Header: a.toHeader(),
+	}
+
 	return resp, trace, nil
 }
 
 func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinitionRequest) (*pb.ShardDeployDefinitionResponse, *traceutil.Trace, error) {
-	resp := &pb.ShardDeployDefinitionResponse{}
-	resp.Header = &pb.RaftResponseHeader{}
 	definition := r.Definition
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
@@ -184,14 +191,16 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.ShardDeployDefinit
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
-	resp.Definition = definition
+
+	resp := &pb.ShardDeployDefinitionResponse{
+		Header:     a.toHeader(),
+		Definition: definition,
+	}
 
 	return resp, trace, nil
 }
 
 func (a *applier) RunBpmnProcess(ctx context.Context, r *pb.ShardRunBpmnProcessRequest) (*pb.ShardRunBpmnProcessResponse, *traceutil.Trace, error) {
-	resp := &pb.ShardRunBpmnProcessResponse{}
-	resp.Header = &pb.RaftResponseHeader{}
 	process := r.Process
 	trace := traceutil.Get(ctx)
 	// create put tracing if the trace in context is empty
@@ -205,25 +214,76 @@ func (a *applier) RunBpmnProcess(ctx context.Context, r *pb.ShardRunBpmnProcessR
 		)
 	}
 
+	definitionKey := bytesutil.PathJoin(definitionPrefix,
+		[]byte(process.Namespace),
+		[]byte(process.Spec.Definition),
+		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
+	kv, err := a.r.get(definitionKey)
+	if err != nil {
+		return nil, trace, errors.Wrapf(err, "Definition not found")
+	}
+	definition := new(corev1.Definition)
+	if err = definition.Unmarshal(kv.Value); err != nil {
+		return nil, trace, errors.Wrapf(err, "Definition unmarshal failed")
+	}
+
 	prefix := bytesutil.PathJoin(processPrefix,
 		[]byte(process.Namespace),
 		[]byte(process.Spec.Definition),
 		[]byte(fmt.Sprintf("%d", process.Spec.Version)))
 	key := bytesutil.PathJoin(prefix, []byte(process.Name))
-
-	if kv, _ := a.r.get(key); kv != nil {
+	if kv, _ = a.r.get(key); kv != nil {
 		//return nil, trace, ErrProcessExecuted
 	}
 
-	trace.Step("save process", traceutil.Field{Key: "key", Value: key})
-	data, _ := process.Marshal()
+	stat := &corev1.ProcessStat{
+		Spec: corev1.ProcessStatSpec{
+			DefinitionName:    definition.Name,
+			DefinitionVersion: definition.Spec.Version,
+
+			ProcessName:   process.Name,
+			BpmnProcessId: process.Spec.BpmnProcess,
+			InitContext:   corev1.ProcessContext{},
+		},
+		Status: corev1.ProcessStatStatus{
+			DefinitionContent: definition.Spec.Content,
+			FlowNodes:         []*corev1.FlowNodeStat{},
+			Phase:             corev1.ProcessPrepare,
+		},
+	}
+	stat.Name = process.Name
+	stat.Namespace = process.Namespace
+
+	stat.Spec.InitContext.Headers = process.Spec.Headers
+	stat.Spec.InitContext.Properties = make(map[string]string)
+	stat.Spec.InitContext.DataObjects = process.Spec.DataObjects
+	for name, value := range process.Spec.Properties {
+		stat.Spec.InitContext.Properties[name] = value.String()
+	}
+
+	stat.Status.Context = *stat.Spec.InitContext.DeepCopy()
+
+	trace.Step("save process stat", traceutil.Field{Key: "key", Value: key})
+	data, _ := stat.Marshal()
 	if err := a.r.put(key, data, true); err != nil {
 		return nil, trace, err
 	}
-	resp.Process = process
-	//a.r.processQ.Set(NewProcessInfo(process))
+
+	resp := &pb.ShardRunBpmnProcessResponse{
+		Header: a.toHeader(),
+		Stat:   stat,
+	}
+	a.r.processQ.Set(NewProcessInfo(stat))
 
 	return resp, trace, nil
+}
+
+func (a *applier) toHeader() *pb.RaftResponseHeader {
+	return &pb.RaftResponseHeader{
+		RegionId:  a.r.getID(),
+		ReplicaId: a.r.getMember(),
+		RaftTerm:  a.r.getTerm(),
+	}
 }
 
 // mkGteRange determines if the range end is a >= range. This works around grpc
