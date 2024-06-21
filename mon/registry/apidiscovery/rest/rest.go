@@ -68,7 +68,7 @@ func (p *APIRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorage
 	}
 
 	// service
-	if resource := "services"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
+	if resource := "pluginservices"; apiResourceConfigSource.ResourceEnabled(apidiscoveryv1.SchemeGroupVersion.WithResource(resource)) {
 		servicesStorage, servicesStatusStorage, err := servicestore.NewREST(restOptionsGetter)
 		if err != nil {
 			return storage, err

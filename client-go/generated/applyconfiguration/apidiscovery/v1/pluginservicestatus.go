@@ -27,22 +27,22 @@ import (
 	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 )
 
-// ServiceStatusApplyConfiguration represents an declarative configuration of the ServiceStatus type for use
+// PluginServiceStatusApplyConfiguration represents an declarative configuration of the PluginServiceStatus type for use
 // with apply.
-type ServiceStatusApplyConfiguration struct {
-	Phase *v1.ServicePhase `json:"phase,omitempty"`
+type PluginServiceStatusApplyConfiguration struct {
+	Phase *v1.PluginServicePhase `json:"phase,omitempty"`
 }
 
-// ServiceStatusApplyConfiguration constructs an declarative configuration of the ServiceStatus type for use with
+// PluginServiceStatusApplyConfiguration constructs an declarative configuration of the PluginServiceStatus type for use with
 // apply.
-func ServiceStatus() *ServiceStatusApplyConfiguration {
-	return &ServiceStatusApplyConfiguration{}
+func PluginServiceStatus() *PluginServiceStatusApplyConfiguration {
+	return &PluginServiceStatusApplyConfiguration{}
 }
 
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *ServiceStatusApplyConfiguration) WithPhase(value v1.ServicePhase) *ServiceStatusApplyConfiguration {
+func (b *PluginServiceStatusApplyConfiguration) WithPhase(value v1.PluginServicePhase) *PluginServiceStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

@@ -42,24 +42,28 @@ const (
 // Box is an opaque value for a request or response
 type Box struct {
 	Type BoxType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=BoxType"`
-	// Box Value by json.Marshal
+	// Box Value by json format
 	Data string `json:"data" protobuf:"bytes,2,opt,name=data"`
+	// Example Value by json format
+	Example string `json:"example" protobuf:"bytes,3,opt,name=example"`
+	// Default Value by json format
+	Default string `json:"default" protobuf:"bytes,4,opt,name=default"`
 	// the reference, points to OpenAPI Component when type is Object
-	Ref        string         `json:"ref" protobuf:"bytes,3,opt,name=ref"`
-	Parameters map[string]Box `json:"parameters" protobuf:"bytes,4,rep,name=parameters"`
+	Ref        string         `json:"ref" protobuf:"bytes,5,opt,name=ref"`
+	Parameters map[string]Box `json:"parameters" protobuf:"bytes,6,rep,name=parameters"`
 }
 
-type ActivityKind string
+type ActivityType string
 
 const (
-	Task         ActivityKind = "Task"
-	ServiceTask  ActivityKind = "ServiceTask"
-	ScriptTask   ActivityKind = "ScriptTask"
-	UserTask     ActivityKind = "UserTask"
-	SendTask     ActivityKind = "SendTask"
-	ReceiveTask  ActivityKind = "ReceiveTask"
-	ManualTask   ActivityKind = "ManualTask"
-	CallActivity ActivityKind = "CallActivity"
+	Task         ActivityType = "Task"
+	ServiceTask  ActivityType = "ServiceTask"
+	ScriptTask   ActivityType = "ScriptTask"
+	UserTask     ActivityType = "UserTask"
+	SendTask     ActivityType = "SendTask"
+	ReceiveTask  ActivityType = "ReceiveTask"
+	ManualTask   ActivityType = "ManualTask"
+	CallActivity ActivityType = "CallActivity"
 )
 
 // +k8s:deepcopy-gen:true
@@ -68,8 +72,8 @@ const (
 type Activity struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// the kind of activity node, etc ServiceTask, ScriptTask
-	Kind ActivityKind `json:"kind" protobuf:"bytes,1,opt,name=kind,casttype=ActivityKind"`
+	// the type of activity node, etc ServiceTask, ScriptTask
+	Type ActivityType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ActivityType"`
 	// the id of activity node
 	Id string `json:"id" protobuf:"bytes,2,opt,name=id"`
 	// the name of activity node
@@ -103,6 +107,10 @@ type Endpoint struct {
 }
 
 type EndpointSpec struct {
+	Http *EndpointHttp `json:"http,omitempty" protobuf:"bytes,1,opt,name=http"`
+}
+
+type EndpointHttp struct {
 	URL      string `json:"url" protobuf:"bytes,1,opt,name=url"`
 	Method   string `json:"method" protobuf:"bytes,2,opt,name=method"`
 	Request  Box    `json:"request" protobuf:"bytes,3,opt,name=request"`
@@ -110,7 +118,7 @@ type EndpointSpec struct {
 }
 
 type EndpointStatus struct {
-	Phase EndpointPhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
+	Phase EndpointPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=EndpointPhase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -124,10 +132,10 @@ type EndpointList struct {
 	Items []Endpoint `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
-type ServicePhase string
+type PluginServicePhase string
 
 const (
-	ServiceActive ServicePhase = "Active"
+	ServiceActive PluginServicePhase = "Active"
 )
 
 // +k8s:deepcopy-gen:true
@@ -145,35 +153,35 @@ type Node struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Service represents a olive service
-type Service struct {
+// PluginService represents the pluggable service
+type PluginService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
-	Spec   ServiceSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status ServiceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Spec   PluginServiceSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status PluginServiceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
-type ServiceSpec struct {
-	Version   string   `json:"version" protobuf:"bytes,1,opt,name=version"`
-	Endpoints []string `json:"endpoints" protobuf:"bytes,2,rep,name=endpoints"`
-	Nodes     []Node   `json:"nodes" protobuf:"bytes,3,rep,name=nodes"`
-	Ttl       int64    `json:"ttl" protobuf:"varint,4,opt,name=ttl"`
+type PluginServiceSpec struct {
+	Runner    string   `json:"runner" protobuf:"bytes,1,opt,name=runner"`
+	Version   string   `json:"version" protobuf:"bytes,2,opt,name=version"`
+	Endpoints []string `json:"endpoints" protobuf:"bytes,3,rep,name=endpoints"`
+	Nodes     []Node   `json:"nodes" protobuf:"bytes,4,rep,name=nodes"`
 }
 
-type ServiceStatus struct {
-	Phase ServicePhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
+type PluginServiceStatus struct {
+	Phase PluginServicePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=ServicePhase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ServiceList is a list of Service objects.
-type ServiceList struct {
+// PluginServiceList is a list of PluginService objects.
+type PluginServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
-	// Items is a list of Service
-	Items []Service `json:"items" protobuf:"bytes,2,rep,name=items"`
+	// Items is a list of PluginServicePhase
+	Items []PluginService `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 type EdgePhase string
@@ -201,7 +209,7 @@ type EdgeSpec struct {
 }
 
 type EdgeStatus struct {
-	Phase EdgePhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
+	Phase EdgePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=EdgePhase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

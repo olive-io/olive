@@ -91,8 +91,8 @@ func AddHandlers(h printers.PrintHandler) {
 		{Name: "Status", Type: "string", Description: "The status of the service"},
 		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
-	_ = h.TableHandler(serviceColumnDefinitions, printService)
-	_ = h.TableHandler(serviceColumnDefinitions, printServiceList)
+	_ = h.TableHandler(serviceColumnDefinitions, printPluginService)
+	_ = h.TableHandler(serviceColumnDefinitions, printPluginServiceList)
 
 	namespaceColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
@@ -238,7 +238,7 @@ func printEndpointList(list *apidiscoveryv1.EndpointList, options printers.Gener
 	return rows, nil
 }
 
-func printService(obj *apidiscoveryv1.Service, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printPluginService(obj *apidiscoveryv1.PluginService, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	row := metav1.TableRow{
 		Object: krt.RawExtension{Object: obj},
 	}
@@ -248,10 +248,10 @@ func printService(obj *apidiscoveryv1.Service, options printers.GenerateOptions)
 	return []metav1.TableRow{row}, nil
 }
 
-func printServiceList(list *apidiscoveryv1.ServiceList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+func printPluginServiceList(list *apidiscoveryv1.PluginServiceList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
 	rows := make([]metav1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
-		r, err := printService(&list.Items[i], options)
+		r, err := printPluginService(&list.Items[i], options)
 		if err != nil {
 			return nil, err
 		}

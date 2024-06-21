@@ -36,6 +36,8 @@ const (
 	RunnerPending RunnerPhase = "Pending"
 	// RunnerActive means the olive-runner has been configured and has Olive components active.
 	RunnerActive RunnerPhase = "Active"
+	// RunnerDown means the olive-runner doesn't interval update status
+	RunnerDown RunnerPhase = "Down"
 	// RunnerTerminated means the node has been removed from the cluster.
 	RunnerTerminated RunnerPhase = "Terminated"
 )
@@ -123,6 +125,8 @@ const (
 	RegionTerminated RegionPhase = "Terminated"
 	// RegionPeer means the region being peering with other replicas
 	RegionPeer RegionPhase = "Peer"
+	// RegionDown meas the region doesn't interval update status
+	RegionDown RegionPhase = "Down"
 	// RegionActive means the region is a normal raft machine, it runs definition.
 	RegionActive RegionPhase = "Active"
 	// RegionFailed means the region in exception mode, we need to fix it.

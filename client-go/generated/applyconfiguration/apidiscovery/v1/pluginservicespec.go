@@ -23,25 +23,33 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// ServiceSpecApplyConfiguration represents an declarative configuration of the ServiceSpec type for use
+// PluginServiceSpecApplyConfiguration represents an declarative configuration of the PluginServiceSpec type for use
 // with apply.
-type ServiceSpecApplyConfiguration struct {
+type PluginServiceSpecApplyConfiguration struct {
+	Runner    *string                  `json:"runner,omitempty"`
 	Version   *string                  `json:"version,omitempty"`
 	Endpoints []string                 `json:"endpoints,omitempty"`
 	Nodes     []NodeApplyConfiguration `json:"nodes,omitempty"`
-	Ttl       *int64                   `json:"ttl,omitempty"`
 }
 
-// ServiceSpecApplyConfiguration constructs an declarative configuration of the ServiceSpec type for use with
+// PluginServiceSpecApplyConfiguration constructs an declarative configuration of the PluginServiceSpec type for use with
 // apply.
-func ServiceSpec() *ServiceSpecApplyConfiguration {
-	return &ServiceSpecApplyConfiguration{}
+func PluginServiceSpec() *PluginServiceSpecApplyConfiguration {
+	return &PluginServiceSpecApplyConfiguration{}
+}
+
+// WithRunner sets the Runner field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Runner field is set to the value of the last call.
+func (b *PluginServiceSpecApplyConfiguration) WithRunner(value string) *PluginServiceSpecApplyConfiguration {
+	b.Runner = &value
+	return b
 }
 
 // WithVersion sets the Version field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Version field is set to the value of the last call.
-func (b *ServiceSpecApplyConfiguration) WithVersion(value string) *ServiceSpecApplyConfiguration {
+func (b *PluginServiceSpecApplyConfiguration) WithVersion(value string) *PluginServiceSpecApplyConfiguration {
 	b.Version = &value
 	return b
 }
@@ -49,7 +57,7 @@ func (b *ServiceSpecApplyConfiguration) WithVersion(value string) *ServiceSpecAp
 // WithEndpoints adds the given value to the Endpoints field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Endpoints field.
-func (b *ServiceSpecApplyConfiguration) WithEndpoints(values ...string) *ServiceSpecApplyConfiguration {
+func (b *PluginServiceSpecApplyConfiguration) WithEndpoints(values ...string) *PluginServiceSpecApplyConfiguration {
 	for i := range values {
 		b.Endpoints = append(b.Endpoints, values[i])
 	}
@@ -59,20 +67,12 @@ func (b *ServiceSpecApplyConfiguration) WithEndpoints(values ...string) *Service
 // WithNodes adds the given value to the Nodes field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Nodes field.
-func (b *ServiceSpecApplyConfiguration) WithNodes(values ...*NodeApplyConfiguration) *ServiceSpecApplyConfiguration {
+func (b *PluginServiceSpecApplyConfiguration) WithNodes(values ...*NodeApplyConfiguration) *PluginServiceSpecApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithNodes")
 		}
 		b.Nodes = append(b.Nodes, *values[i])
 	}
-	return b
-}
-
-// WithTtl sets the Ttl field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Ttl field is set to the value of the last call.
-func (b *ServiceSpecApplyConfiguration) WithTtl(value int64) *ServiceSpecApplyConfiguration {
-	b.Ttl = &value
 	return b
 }

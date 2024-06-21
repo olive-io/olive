@@ -68,11 +68,11 @@ type REST struct {
 // NewREST returns a RESTStorage object that will work against Services.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, error) {
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.Service{} },
-		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.ServiceList{} },
-		PredicateFunc:             MatchService,
-		DefaultQualifiedResource:  apidiscoveryv1.Resource("services"),
-		SingularQualifiedResource: apidiscoveryv1.Resource("service"),
+		NewFunc:                   func() runtime.Object { return &apidiscoveryv1.PluginService{} },
+		NewListFunc:               func() runtime.Object { return &apidiscoveryv1.PluginServiceList{} },
+		PredicateFunc:             MatchPluginService,
+		DefaultQualifiedResource:  apidiscoveryv1.Resource("pluginservices"),
+		SingularQualifiedResource: apidiscoveryv1.Resource("pluginservice"),
 
 		CreateStrategy:      Strategy,
 		UpdateStrategy:      Strategy,
@@ -126,7 +126,7 @@ var _ rest.ShortNamesProvider = &REST{}
 
 // ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
 func (r *REST) ShortNames() []string {
-	return []string{"svc"}
+	return []string{"psvc"}
 }
 
 // StatusREST implements the REST endpoint for changing the status of a resourcequota.
@@ -136,7 +136,7 @@ type StatusREST struct {
 
 // New creates a new Service object.
 func (r *StatusREST) New() runtime.Object {
-	return &apidiscoveryv1.Service{}
+	return &apidiscoveryv1.PluginService{}
 }
 
 // Destroy cleans up resources on shutdown.

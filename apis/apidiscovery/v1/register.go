@@ -63,8 +63,8 @@ func addKnownTypes(scheme *krt.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Endpoint{},
 		&EndpointList{},
-		&Service{},
-		&ServiceList{},
+		&PluginService{},
+		&PluginServiceList{},
 		&Edge{},
 		&EdgeList{},
 	)

@@ -52,12 +52,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apidiscoveryv1.EndpointStatusApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Node"):
 		return &apidiscoveryv1.NodeApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("Service"):
-		return &apidiscoveryv1.ServiceApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ServiceSpec"):
-		return &apidiscoveryv1.ServiceSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ServiceStatus"):
-		return &apidiscoveryv1.ServiceStatusApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("PluginService"):
+		return &apidiscoveryv1.PluginServiceApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("PluginServiceSpec"):
+		return &apidiscoveryv1.PluginServiceSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("PluginServiceStatus"):
+		return &apidiscoveryv1.PluginServiceStatusApplyConfiguration{}
 
 		// Group=core.olive.io, Version=v1
 	case corev1.SchemeGroupVersion.WithKind("BpmnStat"):

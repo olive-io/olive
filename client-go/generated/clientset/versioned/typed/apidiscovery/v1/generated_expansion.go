@@ -27,4 +27,4 @@ type EdgeExpansion interface{}
 
 type EndpointExpansion interface{}
 
-type ServiceExpansion interface{}
+type PluginServiceExpansion interface{}

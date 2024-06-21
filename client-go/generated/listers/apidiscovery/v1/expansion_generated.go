@@ -39,10 +39,10 @@ type EndpointListerExpansion interface{}
 // EndpointNamespaceLister.
 type EndpointNamespaceListerExpansion interface{}
 
-// ServiceListerExpansion allows custom methods to be added to
-// ServiceLister.
-type ServiceListerExpansion interface{}
+// PluginServiceListerExpansion allows custom methods to be added to
+// PluginServiceLister.
+type PluginServiceListerExpansion interface{}
 
-// ServiceNamespaceListerExpansion allows custom methods to be added to
-// ServiceNamespaceLister.
-type ServiceNamespaceListerExpansion interface{}
+// PluginServiceNamespaceListerExpansion allows custom methods to be added to
+// PluginServiceNamespaceLister.
+type PluginServiceNamespaceListerExpansion interface{}

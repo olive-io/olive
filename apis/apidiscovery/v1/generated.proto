@@ -33,8 +33,8 @@ option go_package = "github.com/olive-io/olive/apis/apidiscovery/v1";
 
 // Activity defines bpmn Activity of specification
 message Activity {
-  // the kind of activity node, etc ServiceTask, ScriptTask
-  optional string kind = 1;
+  // the type of activity node, etc ServiceTask, ScriptTask
+  optional string type = 1;
 
   // the id of activity node
   optional string id = 2;
@@ -59,13 +59,19 @@ message Activity {
 message Box {
   optional string type = 1;
 
-  // Box Value by json.Marshal
+  // Box Value by json format
   optional string data = 2;
 
-  // the reference, points to OpenAPI Component when type is Object
-  optional string ref = 3;
+  // Example Value by json format
+  optional string example = 3;
 
-  map<string, Box> parameters = 4;
+  // Default Value by json format
+  optional string default = 4;
+
+  // the reference, points to OpenAPI Component when type is Object
+  optional string ref = 5;
+
+  map<string, Box> parameters = 6;
 }
 
 // Edge defines the sets of Endpoint
@@ -113,7 +119,8 @@ message EndpointList {
 }
 
 message EndpointSpec {
-  optional string url = 1;
+  // object identify
+  optional string oid = 1;
 
   optional string method = 2;
 
@@ -137,34 +144,34 @@ message Node {
   optional int64 port = 4;
 }
 
-// Service represents a olive service
-message Service {
+// PluginService represents the pluggable service
+message PluginService {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional ServiceSpec spec = 2;
+  optional PluginServiceSpec spec = 2;
 
-  optional ServiceStatus status = 3;
+  optional PluginServiceStatus status = 3;
 }
 
-// ServiceList is a list of Service objects.
-message ServiceList {
+// PluginServiceList is a list of PluginService objects.
+message PluginServiceList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  // Items is a list of Service
-  repeated Service items = 2;
+  // Items is a list of PluginServicePhase
+  repeated PluginService items = 2;
 }
 
-message ServiceSpec {
-  optional string version = 1;
+message PluginServiceSpec {
+  optional string runner = 1;
 
-  repeated string endpoints = 2;
+  optional string version = 2;
 
-  repeated Node nodes = 3;
+  repeated string endpoints = 3;
 
-  optional int64 ttl = 4;
+  repeated Node nodes = 4;
 }
 
-message ServiceStatus {
+message PluginServiceStatus {
   optional string phase = 1;
 }
 

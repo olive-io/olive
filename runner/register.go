@@ -176,7 +176,7 @@ func (r *Runner) process() {
 func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 	lg := r.Logger()
 	runner := r.getRunner()
-	stat := runner.Status.Stat
+	stat := runner.Status.Stat.DeepCopy()
 
 	updateOptions := metav1.UpdateOptions{}
 
@@ -209,6 +209,7 @@ func (r *Runner) updateRunnerStat() (*corev1.Runner, metav1.UpdateOptions) {
 		stat.MemoryUsed = float64(vm.Used)
 	}
 	stat.Timeout = time.Now().Unix()
+	runner.Status.Stat = *stat
 
 	return runner, updateOptions
 }

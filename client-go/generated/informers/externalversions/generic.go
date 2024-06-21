@@ -63,8 +63,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Edges().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("endpoints"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Endpoints().Informer()}, nil
-	case v1.SchemeGroupVersion.WithResource("services"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().Services().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("pluginservices"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Apidiscovery().V1().PluginServices().Informer()}, nil
 
 		// Group=core.olive.io, Version=v1
 	case corev1.SchemeGroupVersion.WithResource("definitions"):

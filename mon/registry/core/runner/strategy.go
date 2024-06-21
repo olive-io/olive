@@ -78,10 +78,8 @@ func (rs *runnerStrategy) DefaultGarbageCollectionPolicy(ctx context.Context) re
 	return rest.DeleteDependents
 }
 
-// NamespaceScoped returns true because all runners need to be within a namespace.
-func (rs *runnerStrategy) NamespaceScoped() bool {
-	return false
-}
+// NamespaceScoped returns false.
+func (rs *runnerStrategy) NamespaceScoped() bool { return false }
 
 // GetResetFields returns the set of fields that get reset by the strategy
 // and should not be modified by the user.
@@ -207,6 +205,7 @@ func (rs *runnerStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old r
 	newRunner := obj.(*corev1.Runner)
 	oldRunner := old.(*corev1.Runner)
 	newRunner.Status.DeepCopyInto(&oldRunner.Status)
+
 }
 
 func (rs *runnerStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {

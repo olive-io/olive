@@ -44,13 +44,13 @@ import (
 	apidiscoveryvalidation "github.com/olive-io/olive/apis/apidiscovery/validation"
 )
 
-// serviceStrategy implements verification logic for Service.
+// serviceStrategy implements verification logic for PluginService.
 type serviceStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
 }
 
-// Strategy is the default logic that applies when creating and updating Service objects.
+// Strategy is the default logic that applies when creating and updating PluginService objects.
 var Strategy = serviceStrategy{apis.Scheme, names.SimpleNameGenerator}
 
 // DefaultGarbageCollectionPolicy returns OrphanDependents for apidiscovery/v1 for backwards compatibility,
@@ -88,37 +88,37 @@ func (serviceStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpath.Set 
 
 // PrepareForCreate clears the status of a service before creation.
 func (serviceStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
-	service := obj.(*apidiscoveryv1.Service)
-	service.Status = apidiscoveryv1.ServiceStatus{}
+	service := obj.(*apidiscoveryv1.PluginService)
+	service.Status = apidiscoveryv1.PluginServiceStatus{}
 
 	service.Generation = 1
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
 func (serviceStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
-	newService := obj.(*apidiscoveryv1.Service)
-	oldService := old.(*apidiscoveryv1.Service)
-	newService.Status = oldService.Status
+	newPluginService := obj.(*apidiscoveryv1.PluginService)
+	oldPluginService := old.(*apidiscoveryv1.PluginService)
+	newPluginService.Status = oldPluginService.Status
 
 	// See metav1.ObjectMeta description for more information on Generation.
-	if !apiequality.Semantic.DeepEqual(newService.Spec, oldService.Spec) {
-		newService.Generation = oldService.Generation + 1
+	if !apiequality.Semantic.DeepEqual(newPluginService.Spec, oldPluginService.Spec) {
+		newPluginService.Generation = oldPluginService.Generation + 1
 	}
 
 }
 
 // Validate validates a new service.
 func (serviceStrategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
-	service := obj.(*apidiscoveryv1.Service)
-	return apidiscoveryvalidation.ValidateService(service)
+	service := obj.(*apidiscoveryv1.PluginService)
+	return apidiscoveryvalidation.ValidatePluginService(service)
 }
 
 // WarningsOnCreate returns warnings for the creation of the given object.
 func (serviceStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
-	newService := obj.(*apidiscoveryv1.Service)
+	newPluginService := obj.(*apidiscoveryv1.PluginService)
 	var warnings []string
-	if msgs := utilvalidation.IsDNS1123Label(newService.Name); len(msgs) != 0 {
-		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in Service names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
+	if msgs := utilvalidation.IsDNS1123Label(newPluginService.Name); len(msgs) != 0 {
+		warnings = append(warnings, fmt.Sprintf("metadata.name: this is used in PluginService names and hostnames, which can result in surprising behavior; a DNS label is recommended: %v", msgs))
 	}
 	return warnings
 }
@@ -138,20 +138,20 @@ func (serviceStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (serviceStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	service := obj.(*apidiscoveryv1.Service)
-	oldService := old.(*apidiscoveryv1.Service)
+	service := obj.(*apidiscoveryv1.PluginService)
+	oldPluginService := old.(*apidiscoveryv1.PluginService)
 
-	validationErrorList := apidiscoveryvalidation.ValidateService(service)
-	updateErrorList := apidiscoveryvalidation.ValidateServiceUpdate(service, oldService)
+	validationErrorList := apidiscoveryvalidation.ValidatePluginService(service)
+	updateErrorList := apidiscoveryvalidation.ValidatePluginServiceUpdate(service, oldPluginService)
 	return append(validationErrorList, updateErrorList...)
 }
 
 // WarningsOnUpdate returns warnings for the given update.
 func (serviceStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
 	var warnings []string
-	newService := obj.(*apidiscoveryv1.Service)
-	oldService := old.(*apidiscoveryv1.Service)
-	if newService.Generation != oldService.Generation {
+	newPluginService := obj.(*apidiscoveryv1.PluginService)
+	oldPluginService := old.(*apidiscoveryv1.PluginService)
+	if newPluginService.Generation != oldPluginService.Generation {
 	}
 	return warnings
 }
@@ -173,16 +173,16 @@ func (serviceStatusStrategy) GetResetFields() map[fieldpath.APIVersion]*fieldpat
 }
 
 func (serviceStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
-	newService := obj.(*apidiscoveryv1.Service)
-	oldService := old.(*apidiscoveryv1.Service)
-	newService.Spec = oldService.Spec
+	newPluginService := obj.(*apidiscoveryv1.PluginService)
+	oldPluginService := old.(*apidiscoveryv1.PluginService)
+	newPluginService.Spec = oldPluginService.Spec
 }
 
 func (serviceStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	newService := obj.(*apidiscoveryv1.Service)
-	oldService := old.(*apidiscoveryv1.Service)
+	newPluginService := obj.(*apidiscoveryv1.PluginService)
+	oldPluginService := old.(*apidiscoveryv1.PluginService)
 
-	return apidiscoveryvalidation.ValidateServiceUpdateStatus(newService, oldService)
+	return apidiscoveryvalidation.ValidatePluginServiceUpdateStatus(newPluginService, oldPluginService)
 }
 
 // WarningsOnUpdate returns warnings for the given update.
@@ -190,8 +190,8 @@ func (serviceStatusStrategy) WarningsOnUpdate(ctx context.Context, obj, old runt
 	return nil
 }
 
-// ServiceToSelectableFields returns a field set that represents the object for matching purposes.
-func ServiceToSelectableFields(service *apidiscoveryv1.Service) fields.Set {
+// PluginServiceToSelectableFields returns a field set that represents the object for matching purposes.
+func PluginServiceToSelectableFields(service *apidiscoveryv1.PluginService) fields.Set {
 	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&service.ObjectMeta, true)
 	specificFieldsSet := fields.Set{}
 	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
@@ -199,17 +199,17 @@ func ServiceToSelectableFields(service *apidiscoveryv1.Service) fields.Set {
 
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
-	service, ok := obj.(*apidiscoveryv1.Service)
+	service, ok := obj.(*apidiscoveryv1.PluginService)
 	if !ok {
 		return nil, nil, fmt.Errorf("given object is not a service.")
 	}
-	return labels.Set(service.ObjectMeta.Labels), ServiceToSelectableFields(service), nil
+	return labels.Set(service.ObjectMeta.Labels), PluginServiceToSelectableFields(service), nil
 }
 
-// MatchService is the filter used by the generic etcd backend to route
+// MatchPluginService is the filter used by the generic etcd backend to route
 // watch events from etcd to clients of the apiserver only interested in specific
 // labels/fields.
-func MatchService(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
+func MatchPluginService(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
 	return storage.SelectionPredicate{
 		Label:    label,
 		Field:    field,

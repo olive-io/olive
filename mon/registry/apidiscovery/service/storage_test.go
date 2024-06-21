@@ -48,12 +48,12 @@ func newStorage(t *testing.T) (*ServiceStorage, *etcd3testing.EtcdTestServer) {
 	return &jobStorage, server
 }
 
-func validNewRunner() *apidiscoveryv1.Service {
-	return &apidiscoveryv1.Service{
+func validNewRunner() *apidiscoveryv1.PluginService {
+	return &apidiscoveryv1.PluginService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
-		Spec: apidiscoveryv1.ServiceSpec{},
+		Spec: apidiscoveryv1.PluginServiceSpec{},
 	}
 }

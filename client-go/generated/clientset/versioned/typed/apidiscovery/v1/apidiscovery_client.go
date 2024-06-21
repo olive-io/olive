@@ -35,7 +35,7 @@ type ApidiscoveryV1Interface interface {
 	RESTClient() rest.Interface
 	EdgesGetter
 	EndpointsGetter
-	ServicesGetter
+	PluginServicesGetter
 }
 
 // ApidiscoveryV1Client is used to interact with features provided by the apidiscovery.olive.io group.
@@ -51,8 +51,8 @@ func (c *ApidiscoveryV1Client) Endpoints(namespace string) EndpointInterface {
 	return newEndpoints(c, namespace)
 }
 
-func (c *ApidiscoveryV1Client) Services(namespace string) ServiceInterface {
-	return newServices(c, namespace)
+func (c *ApidiscoveryV1Client) PluginServices(namespace string) PluginServiceInterface {
+	return newPluginServices(c, namespace)
 }
 
 // NewForConfig creates a new ApidiscoveryV1Client for the given config.

@@ -33,8 +33,8 @@ type Interface interface {
 	Edges() EdgeInformer
 	// Endpoints returns a EndpointInformer.
 	Endpoints() EndpointInformer
-	// Services returns a ServiceInformer.
-	Services() ServiceInformer
+	// PluginServices returns a PluginServiceInformer.
+	PluginServices() PluginServiceInformer
 }
 
 type version struct {
@@ -58,7 +58,7 @@ func (v *version) Endpoints() EndpointInformer {
 	return &endpointInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Services returns a ServiceInformer.
-func (v *version) Services() ServiceInformer {
-	return &serviceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// PluginServices returns a PluginServiceInformer.
+func (v *version) PluginServices() PluginServiceInformer {
+	return &pluginServiceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

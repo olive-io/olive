@@ -40,10 +40,10 @@ import (
 // value that were not valid.  Otherwise this returns an empty list or nil.
 type ValidateNameFunc apimachineryvalidation.ValidateNameFunc
 
-// ValidateServiceName can be used to check whether the given service name is valid.
+// ValidatePluginServiceName can be used to check whether the given service name is valid.
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
-var ValidateServiceName = apimachineryvalidation.NameIsDNSSubdomain
+var ValidatePluginServiceName = apimachineryvalidation.NameIsDNSSubdomain
 
 // ValidateObjectMeta validates an object's metadata on creation. It expects that name generation has already
 // been performed.
@@ -57,43 +57,43 @@ func ValidateObjectMeta(meta *metav1.ObjectMeta, requiresNamespace bool, nameFn 
 	return allErrs
 }
 
-// ValidateService tests if required fields are set.
-func ValidateService(service *apidiscoveryv1.Service) field.ErrorList {
-	allErrs := ValidateObjectMeta(&service.ObjectMeta, false, ValidateServiceName, field.NewPath("metadata"))
+// ValidatePluginService tests if required fields are set.
+func ValidatePluginService(service *apidiscoveryv1.PluginService) field.ErrorList {
+	allErrs := ValidateObjectMeta(&service.ObjectMeta, true, ValidatePluginServiceName, field.NewPath("metadata"))
 	return allErrs
 }
 
-// ValidateServiceUpdate validates an update to a Service and returns an ErrorList with any errors.
-func ValidateServiceUpdate(service, oldService *apidiscoveryv1.Service) field.ErrorList {
-	allErrs := apivalidation.ValidateObjectMetaUpdate(&service.ObjectMeta, &oldService.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateServiceSpecUpdate(service.Spec, oldService.Spec, field.NewPath("spec"))...)
+// ValidatePluginServiceUpdate validates an update to a PluginService and returns an ErrorList with any errors.
+func ValidatePluginServiceUpdate(service, oldPluginService *apidiscoveryv1.PluginService) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&service.ObjectMeta, &oldPluginService.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidatePluginServiceSpecUpdate(service.Spec, oldPluginService.Spec, field.NewPath("spec"))...)
 	return allErrs
 }
 
-// ValidateServiceSpecUpdate validates an update to a ServiceSpec and returns an ErrorList with any errors.
-func ValidateServiceSpecUpdate(spec, oldSpec apidiscoveryv1.ServiceSpec, fldPath *field.Path) field.ErrorList {
+// ValidatePluginServiceSpecUpdate validates an update to a PluginServiceSpec and returns an ErrorList with any errors.
+func ValidatePluginServiceSpecUpdate(spec, oldSpec apidiscoveryv1.PluginServiceSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	return allErrs
 }
 
-// ValidateServiceUpdateStatus validates an update to the status of a Service and returns an ErrorList with any errors.
-func ValidateServiceUpdateStatus(service, oldService *apidiscoveryv1.Service) field.ErrorList {
-	allErrs := apivalidation.ValidateObjectMetaUpdate(&service.ObjectMeta, &oldService.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateServiceStatusUpdate(service, oldService)...)
+// ValidatePluginServiceUpdateStatus validates an update to the status of a PluginService and returns an ErrorList with any errors.
+func ValidatePluginServiceUpdateStatus(service, oldPluginService *apidiscoveryv1.PluginService) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&service.ObjectMeta, &oldPluginService.ObjectMeta, field.NewPath("metadata"))
+	allErrs = append(allErrs, ValidatePluginServiceStatusUpdate(service, oldPluginService)...)
 	return allErrs
 }
 
-// ValidateServiceStatusUpdate validates an update to a ServiceStatus and returns an ErrorList with any errors.
-func ValidateServiceStatusUpdate(service, oldService *apidiscoveryv1.Service) field.ErrorList {
+// ValidatePluginServiceStatusUpdate validates an update to a PluginServiceStatus and returns an ErrorList with any errors.
+func ValidatePluginServiceStatusUpdate(service, oldPluginService *apidiscoveryv1.PluginService) field.ErrorList {
 	allErrs := field.ErrorList{}
 	statusFld := field.NewPath("status")
-	allErrs = append(allErrs, validateServiceStatus(service, statusFld)...)
+	allErrs = append(allErrs, validatePluginServiceStatus(service, statusFld)...)
 
 	return allErrs
 }
 
-// validateServiceStatus validates a ServiceStatus and returns an ErrorList with any errors.
-func validateServiceStatus(service *apidiscoveryv1.Service, fldPath *field.Path) field.ErrorList {
+// validatePluginServiceStatus validates a PluginServiceStatus and returns an ErrorList with any errors.
+func validatePluginServiceStatus(service *apidiscoveryv1.PluginService, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 	return allErrs
 }
@@ -105,7 +105,7 @@ var ValidateEndpointName = apimachineryvalidation.NameIsDNSSubdomain
 
 // ValidateEndpoint tests if required fields are set.
 func ValidateEndpoint(endpoint *apidiscoveryv1.Endpoint) field.ErrorList {
-	allErrs := ValidateObjectMeta(&endpoint.ObjectMeta, false, ValidateEndpointName, field.NewPath("metadata"))
+	allErrs := ValidateObjectMeta(&endpoint.ObjectMeta, true, ValidateEndpointName, field.NewPath("metadata"))
 	return allErrs
 }
 
@@ -151,7 +151,7 @@ var ValidateEdgeName = apimachineryvalidation.NameIsDNSSubdomain
 
 // ValidateEdge tests if required fields are set.
 func ValidateEdge(edge *apidiscoveryv1.Edge) field.ErrorList {
-	allErrs := ValidateObjectMeta(&edge.ObjectMeta, false, ValidateEdgeName, field.NewPath("metadata"))
+	allErrs := ValidateObjectMeta(&edge.ObjectMeta, true, ValidateEdgeName, field.NewPath("metadata"))
 	return allErrs
 }
 

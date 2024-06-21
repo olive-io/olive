@@ -34,104 +34,104 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":        schema_olive_apis_apidiscovery_v1_Activity(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":             schema_olive_apis_apidiscovery_v1_Box(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":            schema_olive_apis_apidiscovery_v1_Edge(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeList":        schema_olive_apis_apidiscovery_v1_EdgeList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":        schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":      schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":        schema_olive_apis_apidiscovery_v1_Endpoint(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":    schema_olive_apis_apidiscovery_v1_EndpointList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":    schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":  schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Node":            schema_olive_apis_apidiscovery_v1_Node(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.Service":         schema_olive_apis_apidiscovery_v1_Service(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceList":     schema_olive_apis_apidiscovery_v1_ServiceList(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec":     schema_olive_apis_apidiscovery_v1_ServiceSpec(ref),
-		"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus":   schema_olive_apis_apidiscovery_v1_ServiceStatus(ref),
-		"github.com/olive-io/olive/apis/config/v1.EtcdCluster":           schema_olive_apis_config_v1_EtcdCluster(ref),
-		"github.com/olive-io/olive/apis/core/v1.BpmnStat":                schema_olive_apis_core_v1_BpmnStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.Definition":              schema_olive_apis_core_v1_Definition(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionList":          schema_olive_apis_core_v1_DefinitionList(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":          schema_olive_apis_core_v1_DefinitionSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":        schema_olive_apis_core_v1_DefinitionStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":            schema_olive_apis_core_v1_FlowNodeStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.Namespace":               schema_olive_apis_core_v1_Namespace(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":      schema_olive_apis_core_v1_NamespaceCondition(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceList":           schema_olive_apis_core_v1_NamespaceList(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceSpec":           schema_olive_apis_core_v1_NamespaceSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":         schema_olive_apis_core_v1_NamespaceStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Process":                 schema_olive_apis_core_v1_Process(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessContext":          schema_olive_apis_core_v1_ProcessContext(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessList":             schema_olive_apis_core_v1_ProcessList(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":             schema_olive_apis_core_v1_ProcessSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStat":             schema_olive_apis_core_v1_ProcessStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatSpec":         schema_olive_apis_core_v1_ProcessStatSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatStatus":       schema_olive_apis_core_v1_ProcessStatStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":           schema_olive_apis_core_v1_ProcessStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Region":                  schema_olive_apis_core_v1_Region(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionList":              schema_olive_apis_core_v1_RegionList(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionReplica":           schema_olive_apis_core_v1_RegionReplica(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionSpec":              schema_olive_apis_core_v1_RegionSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStat":              schema_olive_apis_core_v1_RegionStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStatus":            schema_olive_apis_core_v1_RegionStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Runner":                  schema_olive_apis_core_v1_Runner(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerList":              schema_olive_apis_core_v1_RunnerList(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":              schema_olive_apis_core_v1_RunnerSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerStat":              schema_olive_apis_core_v1_RunnerStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":            schema_olive_apis_core_v1_RunnerStatus(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                  schema_pkg_apis_meta_v1_APIGroup(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":              schema_pkg_apis_meta_v1_APIGroupList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":               schema_pkg_apis_meta_v1_APIResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResourceList":           schema_pkg_apis_meta_v1_APIResourceList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.APIVersions":               schema_pkg_apis_meta_v1_APIVersions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ApplyOptions":              schema_pkg_apis_meta_v1_ApplyOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Condition":                 schema_pkg_apis_meta_v1_Condition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.CreateOptions":             schema_pkg_apis_meta_v1_CreateOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.DeleteOptions":             schema_pkg_apis_meta_v1_DeleteOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Duration":                  schema_pkg_apis_meta_v1_Duration(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.FieldsV1":                  schema_pkg_apis_meta_v1_FieldsV1(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions":                schema_pkg_apis_meta_v1_GetOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupKind":                 schema_pkg_apis_meta_v1_GroupKind(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupResource":             schema_pkg_apis_meta_v1_GroupResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersion":              schema_pkg_apis_meta_v1_GroupVersion(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionForDiscovery":  schema_pkg_apis_meta_v1_GroupVersionForDiscovery(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind":          schema_pkg_apis_meta_v1_GroupVersionKind(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionResource":      schema_pkg_apis_meta_v1_GroupVersionResource(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent":             schema_pkg_apis_meta_v1_InternalEvent(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector":             schema_pkg_apis_meta_v1_LabelSelector(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelectorRequirement":  schema_pkg_apis_meta_v1_LabelSelectorRequirement(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.List":                      schema_pkg_apis_meta_v1_List(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta":                  schema_pkg_apis_meta_v1_ListMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ListOptions":               schema_pkg_apis_meta_v1_ListOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ManagedFieldsEntry":        schema_pkg_apis_meta_v1_ManagedFieldsEntry(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime":                 schema_pkg_apis_meta_v1_MicroTime(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta":                schema_pkg_apis_meta_v1_ObjectMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference":            schema_pkg_apis_meta_v1_OwnerReference(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadata":     schema_pkg_apis_meta_v1_PartialObjectMetadata(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadataList": schema_pkg_apis_meta_v1_PartialObjectMetadataList(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Patch":                     schema_pkg_apis_meta_v1_Patch(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.PatchOptions":              schema_pkg_apis_meta_v1_PatchOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Preconditions":             schema_pkg_apis_meta_v1_Preconditions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.RootPaths":                 schema_pkg_apis_meta_v1_RootPaths(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.ServerAddressByClientCIDR": schema_pkg_apis_meta_v1_ServerAddressByClientCIDR(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Status":                    schema_pkg_apis_meta_v1_Status(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusCause":               schema_pkg_apis_meta_v1_StatusCause(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusDetails":             schema_pkg_apis_meta_v1_StatusDetails(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Table":                     schema_pkg_apis_meta_v1_Table(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableColumnDefinition":     schema_pkg_apis_meta_v1_TableColumnDefinition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableOptions":              schema_pkg_apis_meta_v1_TableOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRow":                  schema_pkg_apis_meta_v1_TableRow(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRowCondition":         schema_pkg_apis_meta_v1_TableRowCondition(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Time":                      schema_pkg_apis_meta_v1_Time(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.Timestamp":                 schema_pkg_apis_meta_v1_Timestamp(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta":                  schema_pkg_apis_meta_v1_TypeMeta(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.UpdateOptions":             schema_pkg_apis_meta_v1_UpdateOptions(ref),
-		"k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent":                schema_pkg_apis_meta_v1_WatchEvent(ref),
-		"k8s.io/apimachinery/pkg/runtime.RawExtension":                   schema_k8sio_apimachinery_pkg_runtime_RawExtension(ref),
-		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                       schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
-		"k8s.io/apimachinery/pkg/runtime.Unknown":                        schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
-		"k8s.io/apimachinery/pkg/version.Info":                           schema_k8sio_apimachinery_pkg_version_Info(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":            schema_olive_apis_apidiscovery_v1_Activity(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":                 schema_olive_apis_apidiscovery_v1_Box(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":                schema_olive_apis_apidiscovery_v1_Edge(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeList":            schema_olive_apis_apidiscovery_v1_EdgeList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":            schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":          schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":            schema_olive_apis_apidiscovery_v1_Endpoint(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":        schema_olive_apis_apidiscovery_v1_EndpointList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":        schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":      schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.Node":                schema_olive_apis_apidiscovery_v1_Node(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginService":       schema_olive_apis_apidiscovery_v1_PluginService(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceList":   schema_olive_apis_apidiscovery_v1_PluginServiceList(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceSpec":   schema_olive_apis_apidiscovery_v1_PluginServiceSpec(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceStatus": schema_olive_apis_apidiscovery_v1_PluginServiceStatus(ref),
+		"github.com/olive-io/olive/apis/config/v1.EtcdCluster":               schema_olive_apis_config_v1_EtcdCluster(ref),
+		"github.com/olive-io/olive/apis/core/v1.BpmnStat":                    schema_olive_apis_core_v1_BpmnStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.Definition":                  schema_olive_apis_core_v1_Definition(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionList":              schema_olive_apis_core_v1_DefinitionList(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":              schema_olive_apis_core_v1_DefinitionSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":            schema_olive_apis_core_v1_DefinitionStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":                schema_olive_apis_core_v1_FlowNodeStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.Namespace":                   schema_olive_apis_core_v1_Namespace(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":          schema_olive_apis_core_v1_NamespaceCondition(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceList":               schema_olive_apis_core_v1_NamespaceList(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceSpec":               schema_olive_apis_core_v1_NamespaceSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":             schema_olive_apis_core_v1_NamespaceStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Process":                     schema_olive_apis_core_v1_Process(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessContext":              schema_olive_apis_core_v1_ProcessContext(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessList":                 schema_olive_apis_core_v1_ProcessList(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":                 schema_olive_apis_core_v1_ProcessSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStat":                 schema_olive_apis_core_v1_ProcessStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStatSpec":             schema_olive_apis_core_v1_ProcessStatSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStatStatus":           schema_olive_apis_core_v1_ProcessStatStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":               schema_olive_apis_core_v1_ProcessStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Region":                      schema_olive_apis_core_v1_Region(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionList":                  schema_olive_apis_core_v1_RegionList(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionReplica":               schema_olive_apis_core_v1_RegionReplica(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionSpec":                  schema_olive_apis_core_v1_RegionSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionStat":                  schema_olive_apis_core_v1_RegionStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RegionStatus":                schema_olive_apis_core_v1_RegionStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.Runner":                      schema_olive_apis_core_v1_Runner(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerList":                  schema_olive_apis_core_v1_RunnerList(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":                  schema_olive_apis_core_v1_RunnerSpec(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStat":                  schema_olive_apis_core_v1_RunnerStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":                schema_olive_apis_core_v1_RunnerStatus(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                      schema_pkg_apis_meta_v1_APIGroup(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":                  schema_pkg_apis_meta_v1_APIGroupList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":                   schema_pkg_apis_meta_v1_APIResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResourceList":               schema_pkg_apis_meta_v1_APIResourceList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.APIVersions":                   schema_pkg_apis_meta_v1_APIVersions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ApplyOptions":                  schema_pkg_apis_meta_v1_ApplyOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Condition":                     schema_pkg_apis_meta_v1_Condition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.CreateOptions":                 schema_pkg_apis_meta_v1_CreateOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.DeleteOptions":                 schema_pkg_apis_meta_v1_DeleteOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Duration":                      schema_pkg_apis_meta_v1_Duration(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.FieldsV1":                      schema_pkg_apis_meta_v1_FieldsV1(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GetOptions":                    schema_pkg_apis_meta_v1_GetOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupKind":                     schema_pkg_apis_meta_v1_GroupKind(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupResource":                 schema_pkg_apis_meta_v1_GroupResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersion":                  schema_pkg_apis_meta_v1_GroupVersion(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionForDiscovery":      schema_pkg_apis_meta_v1_GroupVersionForDiscovery(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionKind":              schema_pkg_apis_meta_v1_GroupVersionKind(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.GroupVersionResource":          schema_pkg_apis_meta_v1_GroupVersionResource(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.InternalEvent":                 schema_pkg_apis_meta_v1_InternalEvent(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector":                 schema_pkg_apis_meta_v1_LabelSelector(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelectorRequirement":      schema_pkg_apis_meta_v1_LabelSelectorRequirement(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.List":                          schema_pkg_apis_meta_v1_List(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta":                      schema_pkg_apis_meta_v1_ListMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ListOptions":                   schema_pkg_apis_meta_v1_ListOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ManagedFieldsEntry":            schema_pkg_apis_meta_v1_ManagedFieldsEntry(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.MicroTime":                     schema_pkg_apis_meta_v1_MicroTime(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta":                    schema_pkg_apis_meta_v1_ObjectMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference":                schema_pkg_apis_meta_v1_OwnerReference(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadata":         schema_pkg_apis_meta_v1_PartialObjectMetadata(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PartialObjectMetadataList":     schema_pkg_apis_meta_v1_PartialObjectMetadataList(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Patch":                         schema_pkg_apis_meta_v1_Patch(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.PatchOptions":                  schema_pkg_apis_meta_v1_PatchOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Preconditions":                 schema_pkg_apis_meta_v1_Preconditions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.RootPaths":                     schema_pkg_apis_meta_v1_RootPaths(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.ServerAddressByClientCIDR":     schema_pkg_apis_meta_v1_ServerAddressByClientCIDR(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Status":                        schema_pkg_apis_meta_v1_Status(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusCause":                   schema_pkg_apis_meta_v1_StatusCause(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.StatusDetails":                 schema_pkg_apis_meta_v1_StatusDetails(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Table":                         schema_pkg_apis_meta_v1_Table(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableColumnDefinition":         schema_pkg_apis_meta_v1_TableColumnDefinition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableOptions":                  schema_pkg_apis_meta_v1_TableOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRow":                      schema_pkg_apis_meta_v1_TableRow(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TableRowCondition":             schema_pkg_apis_meta_v1_TableRowCondition(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Time":                          schema_pkg_apis_meta_v1_Time(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.Timestamp":                     schema_pkg_apis_meta_v1_Timestamp(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.TypeMeta":                      schema_pkg_apis_meta_v1_TypeMeta(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.UpdateOptions":                 schema_pkg_apis_meta_v1_UpdateOptions(ref),
+		"k8s.io/apimachinery/pkg/apis/meta/v1.WatchEvent":                    schema_pkg_apis_meta_v1_WatchEvent(ref),
+		"k8s.io/apimachinery/pkg/runtime.RawExtension":                       schema_k8sio_apimachinery_pkg_runtime_RawExtension(ref),
+		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                           schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
+		"k8s.io/apimachinery/pkg/runtime.Unknown":                            schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
+		"k8s.io/apimachinery/pkg/version.Info":                               schema_k8sio_apimachinery_pkg_version_Info(ref),
 	}
 }
 
@@ -156,9 +156,9 @@ func schema_olive_apis_apidiscovery_v1_Activity(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"kind": {
+					"type": {
 						SchemaProps: spec.SchemaProps{
-							Description: "the kind of activity node, etc ServiceTask, ScriptTask",
+							Description: "the type of activity node, etc ServiceTask, ScriptTask",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -213,7 +213,7 @@ func schema_olive_apis_apidiscovery_v1_Activity(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"kind", "id", "name", "taskType", "definition", "definitionsVersion", "process"},
+				Required: []string{"type", "id", "name", "taskType", "definition", "definitionsVersion", "process"},
 			},
 		},
 	}
@@ -235,7 +235,23 @@ func schema_olive_apis_apidiscovery_v1_Box(ref common.ReferenceCallback) common.
 					},
 					"data": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Box Value by json.Marshal",
+							Description: "Box Value by json format",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"example": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Example Value by json format",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"default": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Default Value by json format",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -264,7 +280,7 @@ func schema_olive_apis_apidiscovery_v1_Box(ref common.ReferenceCallback) common.
 						},
 					},
 				},
-				Required: []string{"type", "data", "ref", "parameters"},
+				Required: []string{"type", "data", "example", "default", "ref", "parameters"},
 			},
 		},
 		Dependencies: []string{
@@ -528,11 +544,12 @@ func schema_olive_apis_apidiscovery_v1_EndpointSpec(ref common.ReferenceCallback
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"url": {
+					"oid": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "object identify",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"method": {
@@ -555,7 +572,7 @@ func schema_olive_apis_apidiscovery_v1_EndpointSpec(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"url", "method", "request", "response"},
+				Required: []string{"oid", "method", "request", "response"},
 			},
 		},
 		Dependencies: []string{
@@ -647,11 +664,11 @@ func schema_olive_apis_apidiscovery_v1_Node(ref common.ReferenceCallback) common
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_Service(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_PluginService(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Service represents a olive service",
+				Description: "PluginService represents the pluggable service",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -677,13 +694,13 @@ func schema_olive_apis_apidiscovery_v1_Service(ref common.ReferenceCallback) com
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec"),
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus"),
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceStatus"),
 						},
 					},
 				},
@@ -691,15 +708,15 @@ func schema_olive_apis_apidiscovery_v1_Service(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.ServiceSpec", "github.com/olive-io/olive/apis/apidiscovery/v1.ServiceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceSpec", "github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_ServiceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_PluginServiceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ServiceList is a list of Service objects.",
+				Description: "PluginServiceList is a list of PluginService objects.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -724,13 +741,13 @@ func schema_olive_apis_apidiscovery_v1_ServiceList(ref common.ReferenceCallback)
 					},
 					"items": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Service",
+							Description: "Items is a list of PluginServicePhase",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Service"),
+										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.PluginService"),
 									},
 								},
 							},
@@ -741,16 +758,23 @@ func schema_olive_apis_apidiscovery_v1_ServiceList(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Service", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.PluginService", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_PluginServiceSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"runner": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
 					"version": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
@@ -785,15 +809,8 @@ func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback)
 							},
 						},
 					},
-					"ttl": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 				},
-				Required: []string{"version", "endpoints", "nodes", "ttl"},
+				Required: []string{"runner", "version", "endpoints", "nodes"},
 			},
 		},
 		Dependencies: []string{
@@ -801,7 +818,7 @@ func schema_olive_apis_apidiscovery_v1_ServiceSpec(ref common.ReferenceCallback)
 	}
 }
 
-func schema_olive_apis_apidiscovery_v1_ServiceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_apidiscovery_v1_PluginServiceStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{

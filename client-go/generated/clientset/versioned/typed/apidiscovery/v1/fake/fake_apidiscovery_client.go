@@ -41,8 +41,8 @@ func (c *FakeApidiscoveryV1) Endpoints(namespace string) v1.EndpointInterface {
 	return &FakeEndpoints{c, namespace}
 }
 
-func (c *FakeApidiscoveryV1) Services(namespace string) v1.ServiceInterface {
-	return &FakeServices{c, namespace}
+func (c *FakeApidiscoveryV1) PluginServices(namespace string) v1.PluginServiceInterface {
+	return &FakePluginServices{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

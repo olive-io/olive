@@ -37,59 +37,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// ServiceInformer provides access to a shared informer and lister for
-// Services.
-type ServiceInformer interface {
+// PluginServiceInformer provides access to a shared informer and lister for
+// PluginServices.
+type PluginServiceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.ServiceLister
+	Lister() v1.PluginServiceLister
 }
 
-type serviceInformer struct {
+type pluginServiceInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewServiceInformer constructs a new informer for Service type.
+// NewPluginServiceInformer constructs a new informer for PluginService type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredServiceInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewPluginServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredPluginServiceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredServiceInformer constructs a new informer for Service type.
+// NewFilteredPluginServiceInformer constructs a new informer for PluginService type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredPluginServiceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ApidiscoveryV1().Services(namespace).List(context.TODO(), options)
+				return client.ApidiscoveryV1().PluginServices(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ApidiscoveryV1().Services(namespace).Watch(context.TODO(), options)
+				return client.ApidiscoveryV1().PluginServices(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&apidiscoveryv1.Service{},
+		&apidiscoveryv1.PluginService{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *serviceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredServiceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *pluginServiceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredPluginServiceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *serviceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apidiscoveryv1.Service{}, f.defaultInformer)
+func (f *pluginServiceInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apidiscoveryv1.PluginService{}, f.defaultInformer)
 }
 
-func (f *serviceInformer) Lister() v1.ServiceLister {
-	return v1.NewServiceLister(f.Informer().GetIndexer())
+func (f *pluginServiceInformer) Lister() v1.PluginServiceLister {
+	return v1.NewPluginServiceLister(f.Informer().GetIndexer())
 }

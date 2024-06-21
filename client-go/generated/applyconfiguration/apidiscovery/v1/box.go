@@ -32,6 +32,8 @@ import (
 type BoxApplyConfiguration struct {
 	Type       *v1.BoxType                      `json:"type,omitempty"`
 	Data       *string                          `json:"data,omitempty"`
+	Example    *string                          `json:"example,omitempty"`
+	Default    *string                          `json:"default,omitempty"`
 	Ref        *string                          `json:"ref,omitempty"`
 	Parameters map[string]BoxApplyConfiguration `json:"parameters,omitempty"`
 }
@@ -55,6 +57,22 @@ func (b *BoxApplyConfiguration) WithType(value v1.BoxType) *BoxApplyConfiguratio
 // If called multiple times, the Data field is set to the value of the last call.
 func (b *BoxApplyConfiguration) WithData(value string) *BoxApplyConfiguration {
 	b.Data = &value
+	return b
+}
+
+// WithExample sets the Example field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Example field is set to the value of the last call.
+func (b *BoxApplyConfiguration) WithExample(value string) *BoxApplyConfiguration {
+	b.Example = &value
+	return b
+}
+
+// WithDefault sets the Default field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Default field is set to the value of the last call.
+func (b *BoxApplyConfiguration) WithDefault(value string) *BoxApplyConfiguration {
+	b.Default = &value
 	return b
 }
 
