@@ -46,6 +46,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apidiscoveryv1.EdgeStatusApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("Endpoint"):
 		return &apidiscoveryv1.EndpointApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("EndpointHttp"):
+		return &apidiscoveryv1.EndpointHttpApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("EndpointSpec"):
 		return &apidiscoveryv1.EndpointSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("EndpointStatus"):

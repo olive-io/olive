@@ -41,6 +41,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeSpec":            schema_olive_apis_apidiscovery_v1_EdgeSpec(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EdgeStatus":          schema_olive_apis_apidiscovery_v1_EdgeStatus(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Endpoint":            schema_olive_apis_apidiscovery_v1_Endpoint(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointHttp":        schema_olive_apis_apidiscovery_v1_EndpointHttp(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointList":        schema_olive_apis_apidiscovery_v1_EndpointList(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointSpec":        schema_olive_apis_apidiscovery_v1_EndpointSpec(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointStatus":      schema_olive_apis_apidiscovery_v1_EndpointStatus(ref),
@@ -488,6 +489,47 @@ func schema_olive_apis_apidiscovery_v1_Endpoint(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_olive_apis_apidiscovery_v1_EndpointHttp(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"method": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"request": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
+						},
+					},
+					"response": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
+						},
+					},
+				},
+				Required: []string{"url", "method", "request", "response"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/apidiscovery/v1.Box"},
+	}
+}
+
 func schema_olive_apis_apidiscovery_v1_EndpointList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -544,39 +586,16 @@ func schema_olive_apis_apidiscovery_v1_EndpointSpec(ref common.ReferenceCallback
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"oid": {
+					"http": {
 						SchemaProps: spec.SchemaProps{
-							Description: "object identify",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"method": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"request": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
-						},
-					},
-					"response": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
+							Ref: ref("github.com/olive-io/olive/apis/apidiscovery/v1.EndpointHttp"),
 						},
 					},
 				},
-				Required: []string{"oid", "method", "request", "response"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Box"},
+			"github.com/olive-io/olive/apis/apidiscovery/v1.EndpointHttp"},
 	}
 }
 

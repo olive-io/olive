@@ -26,10 +26,7 @@ package v1
 // EndpointSpecApplyConfiguration represents an declarative configuration of the EndpointSpec type for use
 // with apply.
 type EndpointSpecApplyConfiguration struct {
-	OID      *string                `json:"oid,omitempty"`
-	Method   *string                `json:"method,omitempty"`
-	Request  *BoxApplyConfiguration `json:"request,omitempty"`
-	Response *BoxApplyConfiguration `json:"response,omitempty"`
+	Http *EndpointHttpApplyConfiguration `json:"http,omitempty"`
 }
 
 // EndpointSpecApplyConfiguration constructs an declarative configuration of the EndpointSpec type for use with
@@ -38,34 +35,10 @@ func EndpointSpec() *EndpointSpecApplyConfiguration {
 	return &EndpointSpecApplyConfiguration{}
 }
 
-// WithOID sets the OID field in the declarative configuration to the given value
+// WithHttp sets the Http field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OID field is set to the value of the last call.
-func (b *EndpointSpecApplyConfiguration) WithOID(value string) *EndpointSpecApplyConfiguration {
-	b.OID = &value
-	return b
-}
-
-// WithMethod sets the Method field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Method field is set to the value of the last call.
-func (b *EndpointSpecApplyConfiguration) WithMethod(value string) *EndpointSpecApplyConfiguration {
-	b.Method = &value
-	return b
-}
-
-// WithRequest sets the Request field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Request field is set to the value of the last call.
-func (b *EndpointSpecApplyConfiguration) WithRequest(value *BoxApplyConfiguration) *EndpointSpecApplyConfiguration {
-	b.Request = value
-	return b
-}
-
-// WithResponse sets the Response field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Response field is set to the value of the last call.
-func (b *EndpointSpecApplyConfiguration) WithResponse(value *BoxApplyConfiguration) *EndpointSpecApplyConfiguration {
-	b.Response = value
+// If called multiple times, the Http field is set to the value of the last call.
+func (b *EndpointSpecApplyConfiguration) WithHttp(value *EndpointHttpApplyConfiguration) *EndpointSpecApplyConfiguration {
+	b.Http = value
 	return b
 }

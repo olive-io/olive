@@ -110,6 +110,16 @@ message Endpoint {
   optional EndpointStatus status = 3;
 }
 
+message EndpointHttp {
+  optional string url = 1;
+
+  optional string method = 2;
+
+  optional Box request = 3;
+
+  optional Box response = 4;
+}
+
 // EndpointList is a list of Endpoint objects.
 message EndpointList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
@@ -119,14 +129,7 @@ message EndpointList {
 }
 
 message EndpointSpec {
-  // object identify
-  optional string oid = 1;
-
-  optional string method = 2;
-
-  optional Box request = 3;
-
-  optional Box response = 4;
+  optional EndpointHttp http = 1;
 }
 
 message EndpointStatus {
