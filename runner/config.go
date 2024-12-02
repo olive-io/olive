@@ -22,22 +22,17 @@
 package runner
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/gofrs/flock"
-	"github.com/lni/dragonboat/v4/logger"
 	"github.com/spf13/pflag"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/cliutil/flags"
-	"github.com/olive-io/olive/pkg/logutil"
+	"github.com/olive-io/olive/x/cli/flags"
+	"github.com/olive-io/olive/x/logutil"
 )
 
 var (
@@ -49,14 +44,10 @@ const (
 	DefaultCacheSize = 4 * 1024 * 1024
 
 	DefaultBackendBatchInterval = time.Minute * 10
-	DefaultBackendBatchLimit    = 10000
 
-	DefaultListenPeerURL   = "http://127.0.0.1:5380"
-	DefaultListenClientURL = "http://127.0.0.1:5379"
+	DefaultListenURL = "http://127.0.0.1:5380"
 
 	DefaultHeartbeatMs = 5000
-
-	DefaultRaftRTTMillisecond = 500
 )
 
 type Config struct {
@@ -68,19 +59,13 @@ type Config struct {
 
 	DataDir   string
 	CacheSize uint64
-
-	// BackendBatchInterval is the maximum time before commit the backend transaction.
+	// BackendGChInterval is the maximum gc time for backend kv database.
 	BackendBatchInterval time.Duration
-	// BackendBatchLimit is the maximum operations before commit the backend transaction.
-	BackendBatchLimit int
 
-	ListenPeerURL      string
-	AdvertisePeerURL   string
-	ListenClientURL    string
-	AdvertiseClientURL string
+	AdvertiseURL string
+	ListenURL    string
 
-	HeartbeatMs        int64
-	RaftRTTMillisecond uint64
+	HeartbeatMs int64
 }
 
 func NewConfig() *Config {
@@ -100,12 +85,10 @@ func NewConfig() *Config {
 		CacheSize: DefaultCacheSize,
 
 		BackendBatchInterval: DefaultBackendBatchInterval,
-		BackendBatchLimit:    DefaultBackendBatchLimit,
 
-		ListenPeerURL:      DefaultListenPeerURL,
-		ListenClientURL:    DefaultListenClientURL,
-		HeartbeatMs:        DefaultHeartbeatMs,
-		RaftRTTMillisecond: DefaultRaftRTTMillisecond,
+		AdvertiseURL: DefaultListenURL,
+		ListenURL:    DefaultListenURL,
+		HeartbeatMs:  DefaultHeartbeatMs,
 	}
 	cfg.fs = cfg.newFlagSet()
 
@@ -122,16 +105,11 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	// Runner
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
-	fs.StringVar(&cfg.ListenClientURL, "listen-client-url", cfg.ListenClientURL, "Set the URL to listen on for client traffic.")
-	fs.StringVar(&cfg.AdvertiseClientURL, "advertise-client-url", cfg.AdvertiseClientURL, "Set advertise URL to listen on for client traffic.")
+	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for grpc traffic.")
+	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for grpc traffic.")
 
 	// Backend
 	fs.DurationVar(&cfg.BackendBatchInterval, "backend-batch-interval", cfg.BackendBatchInterval, "the maximum time before commit the backend transaction.")
-	fs.IntVar(&cfg.BackendBatchLimit, "backend-batch-limit", cfg.BackendBatchLimit, "the maximum operations before commit the backend transaction.")
-
-	// Region
-	fs.StringVar(&cfg.ListenPeerURL, "listen-peer-url", cfg.ListenPeerURL, "Set the URL to listen on for peer traffic.")
-	fs.StringVar(&cfg.AdvertisePeerURL, "advertise-peer-url", cfg.AdvertisePeerURL, "Set advertise URL to listen on for peer traffic.")
 
 	// logging
 	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
@@ -180,36 +158,9 @@ func (cfg *Config) setupLogging() error {
 	lg := cfg.GetLogger()
 	cfg.Client.Logger = lg
 
-	level := lg.Level()
-	logger.SetLoggerFactory(func(pkgName string) logger.ILogger {
-		options := []zap.Option{
-			zap.WithCaller(true),
-			zap.AddCallerSkip(2),
-			zap.Fields(zap.String("pkg", pkgName)),
-		}
-		sugarLog := cfg.GetLogger().Sugar().
-			WithOptions(options...)
-		return &raftLogger{level: raftLevel(level), log: sugarLog}
-	})
-	logger.GetLogger("raft").SetLevel(raftLevel(level))
-	logger.GetLogger("rsm").SetLevel(raftLevel(level))
-	logger.GetLogger("transport").SetLevel(raftLevel(level))
-	logger.GetLogger("grpc").SetLevel(raftLevel(level))
+	//level := lg.Level()
 
 	return nil
-}
-
-func (cfg *Config) LockDataDir() (*flock.Flock, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-
-	lock := flock.New(filepath.Join(cfg.DataDir, "olive-runner.lock"))
-	ok, err := lock.TryLockContext(ctx, time.Millisecond*100)
-	if err != nil || !ok {
-		return nil, errors.New("data directory be used")
-	}
-
-	return lock, nil
 }
 
 func (cfg *Config) DBDir() string {
@@ -232,60 +183,60 @@ func (cfg *Config) configFromCmdLine() error {
 	return nil
 }
 
-type raftLogger struct {
-	level logger.LogLevel
-	log   *zap.SugaredLogger
-}
-
-func (lg *raftLogger) SetLevel(level logger.LogLevel) {
-	lg.level = level
-}
-
-func (lg *raftLogger) Debugf(format string, args ...interface{}) {
-	if lg.level < logger.DEBUG {
-		return
-	}
-	lg.log.Debugf(format, args...)
-}
-
-func (lg *raftLogger) Infof(format string, args ...interface{}) {
-	if lg.level < logger.INFO {
-		return
-	}
-	lg.log.Infof(format, args...)
-}
-
-func (lg *raftLogger) Warningf(format string, args ...interface{}) {
-	if lg.level < logger.WARNING {
-		return
-	}
-	lg.log.Warnf(format, args...)
-}
-
-func (lg *raftLogger) Errorf(format string, args ...interface{}) {
-	if lg.level < logger.ERROR {
-		return
-	}
-	lg.log.Errorf(format, args...)
-}
-
-func (lg *raftLogger) Panicf(format string, args ...interface{}) {
-	lg.log.Panicf(format, args...)
-}
-
-func raftLevel(level zapcore.Level) logger.LogLevel {
-	switch level {
-	case zapcore.DebugLevel:
-		return logger.DEBUG
-	case zapcore.InfoLevel:
-		return logger.INFO
-	case zapcore.WarnLevel:
-		return logger.WARNING
-	case zapcore.ErrorLevel:
-		return logger.ERROR
-	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
-		return logger.CRITICAL
-	default:
-		return logger.WARNING
-	}
-}
+//type raftLogger struct {
+//	level logger.LogLevel
+//	log   *zap.SugaredLogger
+//}
+//
+//func (lg *raftLogger) SetLevel(level logger.LogLevel) {
+//	lg.level = level
+//}
+//
+//func (lg *raftLogger) Debugf(format string, args ...interface{}) {
+//	if lg.level < logger.DEBUG {
+//		return
+//	}
+//	lg.log.Debugf(format, args...)
+//}
+//
+//func (lg *raftLogger) Infof(format string, args ...interface{}) {
+//	if lg.level < logger.INFO {
+//		return
+//	}
+//	lg.log.Infof(format, args...)
+//}
+//
+//func (lg *raftLogger) Warningf(format string, args ...interface{}) {
+//	if lg.level < logger.WARNING {
+//		return
+//	}
+//	lg.log.Warnf(format, args...)
+//}
+//
+//func (lg *raftLogger) Errorf(format string, args ...interface{}) {
+//	if lg.level < logger.ERROR {
+//		return
+//	}
+//	lg.log.Errorf(format, args...)
+//}
+//
+//func (lg *raftLogger) Panicf(format string, args ...interface{}) {
+//	lg.log.Panicf(format, args...)
+//}
+//
+//func raftLevel(level zapcore.Level) logger.LogLevel {
+//	switch level {
+//	case zapcore.DebugLevel:
+//		return logger.DEBUG
+//	case zapcore.InfoLevel:
+//		return logger.INFO
+//	case zapcore.WarnLevel:
+//		return logger.WARNING
+//	case zapcore.ErrorLevel:
+//		return logger.ERROR
+//	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+//		return logger.CRITICAL
+//	default:
+//		return logger.WARNING
+//	}
+//}

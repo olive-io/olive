@@ -28,8 +28,8 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/types"
 	"go.etcd.io/etcd/server/v3/embed"
 
-	"github.com/olive-io/olive/pkg/cliutil/flags"
-	"github.com/olive-io/olive/pkg/logutil"
+	"github.com/olive-io/olive/x/cli/flags"
+	"github.com/olive-io/olive/x/logutil"
 )
 
 const (

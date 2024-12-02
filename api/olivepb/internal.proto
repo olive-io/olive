@@ -29,8 +29,7 @@ import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 message OliveHeader {
   uint64 runner = 1;
-  uint64 region = 2;
-  int64 rev = 3;
+  int64 rev = 2;
 }
 
 message ResponseHeader {
@@ -68,14 +67,17 @@ message MetaMember {
 }
 
 message Runner {
-  uint64 id = 1;
-  string listenPeerURL = 2;
-  string listenClientURL = 3;
+  // unique name of the runner
+  string name = 1;
+  // listenURL is the URL the runner is listening on.
+  string listenURL = 2;
+  string version = 3;
   int64 heartbeatMs = 4;
   string hostname = 5;
-  uint64 cpu = 6;
-  uint64 memory = 7;
-  string version = 8;
+
+  uint64 cpu = 21;
+  uint64 memory = 22;
+  uint64 diskSize = 23;
 }
 
 enum State {
@@ -85,65 +87,14 @@ enum State {
   Alarm = 3;
 }
 
-message RunnerStat {
-  uint64 id = 1;
-  double cpuPer = 11;
-  double memoryPer = 12;
+message RunnerStatistics {
+  string id = 1;
+  double cpuUsed = 11;
+  double memoryUsed = 12;
 
-  repeated uint64 regions = 21;
-  repeated string leaders = 22;
-  uint64 definitions = 23;
-  uint64 bpmnProcesses = 24;
-  uint64 bpmnEvents = 25;
-  uint64 bpmnTasks = 26;
-
-  State state = 101;
-  string error = 102;
-  int64 timestamp = 103;
-}
-
-message Region {
-  uint64 id = 1;
-  string name = 2;
-  uint64 deploymentId = 3;
-
-  map<uint64, RegionReplica> replicas = 5;
-
-  uint64 electionRTT = 6;
-  uint64 heartbeatRTT = 7;
-  uint64 leader = 8;
-
-  uint64 definitions = 11;
-  uint64 definitionsLimit = 13;
-  int64 rev = 12;
-
-  State state = 21;
-  string error = 22;
-  int64 timestamp = 23;
-}
-
-message RegionReplica {
-  uint64 id = 1;
-  uint64 runner = 2;
-  uint64 region = 3;
-  string raftAddress = 4;
-  bool isNonVoting = 5;
-  bool isWitness = 6;
-  bool isJoin = 7;
-  map<uint64, string> initial = 8;
-}
-
-message RegionStat {
-  uint64 id = 1;
-  uint64 leader = 2;
-  uint64 term = 3;
-  int32 replicas = 4;
-
-  uint64 definitions = 11;
-  uint64 runningDefinitions = 12;
-  uint64 bpmnProcesses = 13;
-  uint64 bpmnEvents = 14;
-  uint64 bpmnTasks = 15;
+  uint64 bpmnProcesses = 21;
+  uint64 bpmnEvents = 22;
+  uint64 bpmnTasks = 23;
 
   State state = 101;
   string error = 102;
@@ -159,12 +110,10 @@ message Definition {
   uint64 version = 4;
 }
 
-message DefinitionMeta {
-  string id = 1;
-  uint64 version = 2;
-  uint64 region = 3;
-  int64 startRev = 4;
-  int64 endRev = 5;
+message BpmnArgs {
+  map<string, string> headers = 1;
+  map<string, bytes> properties = 2;
+  map<string, bytes> dataObjects = 3;
 }
 
 message ProcessInstance {
@@ -184,9 +133,7 @@ message ProcessInstance {
   uint64 definitionsVersion = 4;
   string definitionsProcess = 5;
   bytes definitionsContent = 6;
-  map<string, string> headers = 7;
-  map<string, discoverypb.Box> properties = 8;
-  map<string, bytes> dataObjects = 9;
+  BpmnArgs args = 7;
 
   ProcessRunningState runningState = 16;
   map<string, FlowNodeStat> flowNodes = 17;
@@ -207,9 +154,7 @@ message ProcessRunningState {
 message FlowNodeStat {
   string id = 1;
   string name = 2;
-  map<string, string> headers = 3;
-  map<string, bytes> properties = 4;
-  map<string, bytes> dataObjects = 5;
+  BpmnArgs context = 3;
 
   int64 startTime = 11;
   int64 endTime = 12;

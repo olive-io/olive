@@ -43,7 +43,7 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	"github.com/olive-io/olive/api/gatewaypb"
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 var (
@@ -72,10 +72,10 @@ func (r *Region) ExecuteDefinition(ctx context.Context, req *pb.RegionExecuteDef
 }
 
 func (r *Region) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error) {
-	prefix := bytesutil.PathJoin(processPrefix,
+	prefix := xpath.Join(processPrefix,
 		[]byte(definitionId),
 		[]byte(fmt.Sprintf("%d", definitionVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", id)))
+	key := xpath.Join(prefix, []byte(fmt.Sprintf("%d", id)))
 
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -143,7 +143,7 @@ func (r *Region) scheduleCycle() {
 
 func (r *Region) scheduleDefinition(process *pb.ProcessInstance) {
 	if len(process.DefinitionsContent) == 0 {
-		definitionKey := bytesutil.PathJoin(definitionPrefix,
+		definitionKey := xpath.Join(definitionPrefix,
 			[]byte(process.DefinitionsId), []byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
 
 		kv, err := r.get(definitionKey)

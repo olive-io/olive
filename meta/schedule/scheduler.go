@@ -36,9 +36,9 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/pkg/idutil"
-	"github.com/olive-io/olive/pkg/queue"
-	"github.com/olive-io/olive/pkg/runtime"
+	"github.com/olive-io/olive/x/idutil"
+	"github.com/olive-io/olive/x/queue"
+	"github.com/olive-io/olive/x/runtime"
 )
 
 const (

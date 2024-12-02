@@ -1,0 +1,10 @@
+go 1.23
+
+use (
+	x
+	client
+	api
+	meta
+	runner
+	gateway
+)

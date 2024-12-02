@@ -30,7 +30,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/pkg/bytesutil"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 type IBatchTx interface {
@@ -134,7 +134,7 @@ func (t *batchTx) UnsafePut(bucket IBucket, key []byte, value []byte) error {
 }
 
 func (t *batchTx) unsafePut(bucketType IBucket, key []byte, value []byte) error {
-	key = bytesutil.PathJoin(bucketType.Name(), key)
+	key = xpath.Join(bucketType.Name(), key)
 	if err := t.tx.Set(key, value, t.pwo); err != nil {
 		t.backend.lg.Error(
 			"failed to write to a bucket",
@@ -174,7 +174,7 @@ func (t *batchTx) UnsafeRange(bucketType IBucket, key, endKey []byte, limit int6
 
 // UnsafeDelete must be called holding the lock on the tx.
 func (t *batchTx) UnsafeDelete(bucketType IBucket, key []byte) error {
-	key = bytesutil.PathJoin(bucketType.Name(), key)
+	key = xpath.Join(bucketType.Name(), key)
 	wo := &pebble.WriteOptions{}
 	err := t.tx.Delete(key, wo)
 	if err != nil {

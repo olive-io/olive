@@ -25,7 +25,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	json "github.com/json-iterator/go"
 
-	"github.com/olive-io/olive/pkg/bytesutil"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 var (
@@ -72,7 +72,7 @@ func (b *localBucket) IsSafeRangeBucket() bool {
 }
 
 func readBucket(tx *pebble.Batch, name []byte) (*localBucket, error) {
-	key := bytesutil.PathJoin(defaultBucketPrefix, name)
+	key := xpath.Join(defaultBucketPrefix, name)
 	value, closer, err := tx.Get(key)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func readBucket(tx *pebble.Batch, name []byte) (*localBucket, error) {
 }
 
 func createBucket(tx *pebble.Batch, bucket IBucket) error {
-	key := bytesutil.PathJoin(defaultBucketPrefix, bucket.Name())
+	key := xpath.Join(defaultBucketPrefix, bucket.Name())
 	lb := &localBucket{
 		Name_:  string(bucket.Name()),
 		ID_:    bucket.ID(),
@@ -102,7 +102,7 @@ func createBucket(tx *pebble.Batch, bucket IBucket) error {
 }
 
 func deleteBucket(tx *pebble.Batch, bucket IBucket) error {
-	key := bytesutil.PathJoin(defaultBucketPrefix, bucket.Name())
+	key := xpath.Join(defaultBucketPrefix, bucket.Name())
 	wo := &pebble.WriteOptions{Sync: true}
 	return tx.Delete(key, wo)
 }

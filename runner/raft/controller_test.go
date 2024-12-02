@@ -31,10 +31,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/discovery/testdata"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/raft"
+	dsy "github.com/olive-io/olive/x/discovery"
+	"github.com/olive-io/olive/x/discovery/testdata"
 )
 
 const (

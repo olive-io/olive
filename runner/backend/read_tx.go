@@ -29,7 +29,7 @@ import (
 
 	"github.com/cockroachdb/pebble"
 
-	"github.com/olive-io/olive/pkg/bytesutil"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 type IReadTx interface {
@@ -52,11 +52,11 @@ func unsafeRange(tx *pebble.Batch, bucket IBucket, startKey, endKey []byte, limi
 	iter := tx.NewIter(options)
 	defer iter.Close()
 
-	startKey = bytesutil.PathJoin(bucket.Name(), startKey)
+	startKey = xpath.Join(bucket.Name(), startKey)
 
 	var isMatch func(b []byte) bool
 	if len(endKey) > 0 {
-		endKey = bytesutil.PathJoin(bucket.Name(), endKey)
+		endKey = xpath.Join(bucket.Name(), endKey)
 		isMatch = func(b []byte) bool { return bytes.Compare(b, endKey) < 0 }
 	} else {
 		isMatch = func(b []byte) bool { return bytes.Equal(b, startKey) }
@@ -83,7 +83,7 @@ func unsafeForEach(tx *pebble.Batch, bucket IBucket, visitor func(k, v []byte) e
 	iter := tx.NewIter(options)
 	defer iter.Close()
 
-	prefix := bytesutil.PathJoin(bucket.Name())
+	prefix := xpath.Join(bucket.Name())
 	for iter.SeekPrefixGE(prefix); iteratorIsValid(iter); iter.Next() {
 		key := bytes.TrimPrefix(bytes.Clone(iter.Key()), append(bucket.Name(), '/'))
 		value := iter.Value()

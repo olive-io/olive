@@ -1,0 +1,99 @@
+/*
+   Copyright 2023 The olive Authors
+
+   This program is offered under a commercial and under the AGPL license.
+   For AGPL licensing, see below.
+
+   AGPL licensing:
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Affero General Public License for more details.
+
+   You should have received a copy of the GNU Affero General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package olivepb;
+
+import "github.com/olive-io/olive/api/olivepb/internal.proto";
+
+option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+service RunnerRPC {
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner"
+    };
+  };
+
+  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/list"
+      body: "*"
+    };
+  };
+
+  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/get"
+      body: "*"
+    };
+  };
+
+  rpc RunProcessInstance(RunProcessInstanceRequest) returns (RunProcessInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/run"
+      body: "*"
+    };
+  };
+}
+
+message GetRunnerRequest {}
+
+message GetRunnerResponse {
+  olivepb.Runner runner = 1;
+  olivepb.RunnerStatistics statistics = 2;
+}
+
+message ListProcessInstancesRequest {
+  string definitionId = 1;
+  uint64 definitionVersion = 2;
+}
+
+message ListProcessInstancesResponse {
+  repeated olivepb.ProcessInstance instance = 1;
+}
+
+message GetProcessInstanceRequest {
+  string definitionId = 1;
+  uint64 definitionVersion = 2;
+  uint64 id = 3;
+}
+
+message GetProcessInstanceResponse {
+  olivepb.ProcessInstance instance = 1;
+}
+
+message RunProcessInstanceRequest {
+  string definitionId = 1;
+  uint64 definitionVersion = 2;
+  string content = 3;
+  string process = 4;
+  string instanceName = 5;
+  olivepb.BpmnArgs args = 6;
+}
+
+message RunProcessInstanceResponse {
+  olivepb.ProcessInstance instance = 1;
+}

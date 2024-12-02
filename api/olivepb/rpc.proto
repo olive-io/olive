@@ -144,21 +144,11 @@ service MetaRPC {
       get: "/v1/runners"
     };
   };
-  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
-    option (google.api.http) = {
-      get: "/v1/runner/{id}"
-    };
-  };
-  rpc ListRegion(ListRegionRequest) returns (ListRegionResponse) {
-    option (google.api.http) = {
-      get: "/v1/regions"
-    };
-  };
-  rpc GetRegion(GetRegionRequest) returns (GetRegionResponse) {
-    option (google.api.http) = {
-      get: "/v1/region/{id}"
-    };
-  };
+//  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+//    option (google.api.http) = {
+//      get: "/v1/runner/{id}"
+//    };
+//  };
 }
 
 message GetMetaRequest {}
@@ -173,27 +163,13 @@ message ListRunnerResponse {
   repeated olivepb.Runner runners = 1;
 }
 
-message GetRunnerRequest {
-  uint64 id = 1;
-}
-
-message GetRunnerResponse {
-  olivepb.Runner runner = 1;
-}
-
-message ListRegionRequest {}
-
-message ListRegionResponse {
-  repeated olivepb.Region regions = 1;
-}
-
-message GetRegionRequest {
-  uint64 id = 1;
-}
-
-message GetRegionResponse {
-  olivepb.Region region = 1;
-}
+//message GetRunnerRequest {
+//  uint64 id = 1;
+//}
+//
+//message GetRunnerResponse {
+//  olivepb.Runner runner = 1;
+//}
 
 service BpmnRPC {
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
@@ -221,12 +197,6 @@ service BpmnRPC {
   rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse) {
     option (google.api.http) = {
       post: "/v1/definition/execute"
-      body: "*"
-    };
-  };
-  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
-    option (google.api.http) = {
-      post: "/v1/processInstance/get"
       body: "*"
     };
   };
@@ -284,24 +254,4 @@ message ExecuteDefinitionRequest {
 message ExecuteDefinitionResponse {
   olivepb.ResponseHeader header = 1;
   olivepb.ProcessInstance instance = 2;
-}
-
-service RunnerRPC {
-  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
-    option (google.api.http) = {
-      post: "/v1/processInstance/get"
-      body: "*"
-    };
-  };
-}
-
-message GetProcessInstanceRequest {
-  uint64 region = 1;
-  string definitionId = 2;
-  uint64 definitionVersion = 3;
-  uint64 id = 4;
-}
-
-message GetProcessInstanceResponse {
-  olivepb.ProcessInstance instance = 1;
 }

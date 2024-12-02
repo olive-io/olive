@@ -38,7 +38,7 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
 	"github.com/olive-io/olive/meta/schedule"
-	genericserver "github.com/olive-io/olive/pkg/server"
+	genericserver "github.com/olive-io/olive/x/server"
 )
 
 type Server struct {

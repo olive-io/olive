@@ -35,8 +35,8 @@ import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/gateway/consumer"
-	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/proxy/api"
+	dsy "github.com/olive-io/olive/x/discovery"
+	"github.com/olive-io/olive/x/proxy/api"
 )
 
 type gatewayImpl struct {

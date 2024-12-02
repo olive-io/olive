@@ -27,9 +27,7 @@ import (
 	"net"
 	"net/http"
 	urlpkg "net/url"
-	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/gofrs/flock"
 	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olive-io/bpmn/tracing"
@@ -41,12 +39,11 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
-	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/runtime"
-	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
 	"github.com/olive-io/olive/runner/raft"
+	"github.com/olive-io/olive/x/runtime"
+	genericserver "github.com/olive-io/olive/x/server"
 )
 
 type Runner struct {
@@ -143,10 +140,10 @@ func (r *Runner) start() error {
 		return err
 	}
 
-	r.controller, r.traces, err = r.startRaftController()
-	if err != nil {
-		return err
-	}
+	//r.controller, r.traces, err = r.startRaftController()
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
@@ -178,7 +175,7 @@ func (r *Runner) startGRPCServer() error {
 
 	mux := r.createMux(gwmux, handler)
 	r.serve = &http.Server{
-		Handler:        genericserver.GRPCHandlerFunc(gs, mux),
+		Handler:        genericserver.HybridHandler(gs, mux),
 		MaxHeaderBytes: 1024 * 1024 * 20,
 	}
 
@@ -210,16 +207,16 @@ func (r *Runner) createListener() (string, net.Listener, error) {
 func (r *Runner) buildGRPCServer() *grpc.Server {
 	sopts := []grpc.ServerOption{}
 	gs := grpc.NewServer(sopts...)
-	pb.RegisterRunnerRPCServer(gs, r)
+	//pb.RegisterRunnerRPCServer(gs, r)
 
 	return gs
 }
 
 func (r *Runner) buildGRPCGateway() (*gw.ServeMux, error) {
 	gwmux := gw.NewServeMux()
-	if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, r); err != nil {
-		return nil, err
-	}
+	//if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, r); err != nil {
+	//	return nil, err
+	//}
 	return gwmux, nil
 }
 
@@ -255,105 +252,105 @@ func (r *Runner) createMux(gwmux *gw.ServeMux, handler http.Handler) *http.Serve
 	return mux
 }
 
-func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
-	cfg := r.cfg
-	lg := r.Logger()
-
-	dopts := []dsy.Option{
-		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
-		dsy.SetLogger(lg),
-	}
-	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	listenPeerURL, err := urlpkg.Parse(cfg.ListenPeerURL)
-	if err != nil {
-		return nil, nil, err
-	}
-	raftAddr := listenPeerURL.Host
-
-	cc := raft.NewConfig()
-	cc.DataDir = cfg.RegionDir()
-	cc.RaftAddress = raftAddr
-	cc.HeartbeatMs = cfg.HeartbeatMs
-	cc.RaftRTTMillisecond = cfg.RaftRTTMillisecond
-	cc.Logger = lg
-
-	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	lg.Info("start raft container")
-	if err = controller.Start(r.StoppingNotify()); err != nil {
-		return nil, nil, err
-	}
-
-	ctx := r.ctx
-	prefix := runtime.DefaultRunnerRegion
-	rev := r.getRev()
-
-	options := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-		clientv3.WithRev(rev),
-	}
-
-	rsp, err := r.oct.Get(ctx, prefix, append(options, clientv3.WithMinModRev(rev+1))...)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	regions := make([]*pb.Region, 0)
-	definitions := make([]*pb.Definition, 0)
-	processes := make([]*pb.ProcessInstance, 0)
-	for _, kv := range rsp.Kvs {
-		rev = kv.ModRevision
-		key := string(kv.Value)
-		switch {
-		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
-			region, match, err := parseRegionKV(kv, r.pr.Id)
-			if err != nil || !match {
-				continue
-			}
-			regions = append(regions, region)
-		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-			definition, match, err := parseDefinitionKV(kv)
-			if err != nil || !match {
-				continue
-			}
-			definitions = append(definitions, definition)
-		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
-			proc, match, err := parseProcessInstanceKV(kv)
-			if err != nil || !match {
-				continue
-			}
-			processes = append(processes, proc)
-		}
-	}
-	for _, region := range regions {
-		if err = controller.SyncRegion(ctx, region); err != nil {
-			return nil, nil, errors.Wrap(err, "sync region")
-		}
-	}
-	for _, definition := range definitions {
-		if err = controller.DeployDefinition(ctx, definition); err != nil {
-			lg.Error("deploy definition", zap.Error(err))
-		}
-	}
-	for _, process := range processes {
-		if err = controller.ExecuteDefinition(ctx, process); err != nil {
-			lg.Error("execute definition", zap.Error(err))
-		} else {
-			commitProcessInstance(ctx, lg, r.oct, process)
-		}
-	}
-
-	r.setRev(rev)
-	return controller, controller.SubscribeTrace(), nil
-}
+//func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
+//	cfg := r.cfg
+//	lg := r.Logger()
+//
+//	dopts := []dsy.Option{
+//		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
+//		dsy.SetLogger(lg),
+//	}
+//	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//
+//	listenPeerURL, err := urlpkg.Parse(cfg.ListenPeerURL)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//	raftAddr := listenPeerURL.Host
+//
+//	cc := raft.NewConfig()
+//	cc.DataDir = cfg.RegionDir()
+//	cc.RaftAddress = raftAddr
+//	cc.HeartbeatMs = cfg.HeartbeatMs
+//	cc.RaftRTTMillisecond = cfg.RaftRTTMillisecond
+//	cc.Logger = lg
+//
+//	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//
+//	lg.Info("start raft container")
+//	if err = controller.Start(r.StoppingNotify()); err != nil {
+//		return nil, nil, err
+//	}
+//
+//	ctx := r.ctx
+//	prefix := runtime.DefaultRunnerRegion
+//	rev := r.getRev()
+//
+//	options := []clientv3.OpOption{
+//		clientv3.WithPrefix(),
+//		clientv3.WithSerializable(),
+//		clientv3.WithRev(rev),
+//	}
+//
+//	rsp, err := r.oct.Get(ctx, prefix, append(options, clientv3.WithMinModRev(rev+1))...)
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//
+//	regions := make([]*pb.Region, 0)
+//	definitions := make([]*pb.Definition, 0)
+//	processes := make([]*pb.ProcessInstance, 0)
+//	for _, kv := range rsp.Kvs {
+//		rev = kv.ModRevision
+//		key := string(kv.Value)
+//		switch {
+//		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+//			region, match, err := parseRegionKV(kv, r.pr.Id)
+//			if err != nil || !match {
+//				continue
+//			}
+//			regions = append(regions, region)
+//		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+//			definition, match, err := parseDefinitionKV(kv)
+//			if err != nil || !match {
+//				continue
+//			}
+//			definitions = append(definitions, definition)
+//		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+//			proc, match, err := parseProcessInstanceKV(kv)
+//			if err != nil || !match {
+//				continue
+//			}
+//			processes = append(processes, proc)
+//		}
+//	}
+//	for _, region := range regions {
+//		if err = controller.SyncRegion(ctx, region); err != nil {
+//			return nil, nil, errors.Wrap(err, "sync region")
+//		}
+//	}
+//	for _, definition := range definitions {
+//		if err = controller.DeployDefinition(ctx, definition); err != nil {
+//			lg.Error("deploy definition", zap.Error(err))
+//		}
+//	}
+//	for _, process := range processes {
+//		if err = controller.ExecuteDefinition(ctx, process); err != nil {
+//			lg.Error("execute definition", zap.Error(err))
+//		} else {
+//			commitProcessInstance(ctx, lg, r.oct, process)
+//		}
+//	}
+//
+//	r.setRev(rev)
+//	return controller, controller.SubscribeTrace(), nil
+//}
 
 func (r *Runner) watching() {
 	ctx, cancel := context.WithCancel(r.ctx)
@@ -414,8 +411,8 @@ func (r *Runner) destroy() {
 }
 
 func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
-	kv := event.Kv
-	key := string(kv.Key)
+	//kv := event.Kv
+	//key := string(kv.Key)
 	//if event.Type == clientv3.EventTypeDelete {
 	//	rev := event.Kv.CreateRevision
 	//	options := []clientv3.OpOption{clientv3.WithRev(rev)}
@@ -427,97 +424,97 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 	//		event.Kv = rsp.Kvs[0]
 	//	}
 	//}
-	switch {
-	case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
-		r.processRegion(ctx, event)
-	case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-		r.processBpmnDefinition(ctx, event)
-	case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
-		r.processBpmnProcess(ctx, event)
-	}
+	//switch {
+	//case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
+	//	r.processRegion(ctx, event)
+	//case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
+	//	r.processBpmnDefinition(ctx, event)
+	//case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
+	//	r.processBpmnProcess(ctx, event)
+	//}
 }
 
-func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
-	lg := r.Logger()
-	kv := event.Kv
-	if event.Type == clientv3.EventTypeDelete {
-		return
-	}
-
-	region, match, err := parseRegionKV(kv, r.pr.Id)
-	if err != nil {
-		lg.Error("parse region data", zap.Error(err))
-		return
-	}
-	if !match {
-		return
-	}
-
-	if event.IsCreate() {
-		lg.Info("create region", zap.Stringer("body", region))
-		if err = r.controller.CreateRegion(ctx, region); err != nil {
-			lg.Error("create region", zap.Error(err))
-		}
-		return
-	}
-
-	if event.IsModify() {
-		lg.Info("sync region", zap.Stringer("body", region))
-		if err = r.controller.SyncRegion(ctx, region); err != nil {
-			lg.Error("sync region", zap.Error(err))
-		}
-		return
-	}
-}
-
-func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
-	lg := r.Logger()
-	kv := event.Kv
-	if event.Type == clientv3.EventTypeDelete {
-		return
-	}
-
-	definition, match, err := parseDefinitionKV(kv)
-	if err != nil {
-		lg.Error("parse definition data", zap.Error(err))
-		return
-	}
-	if !match {
-		return
-	}
-
-	if err = r.controller.DeployDefinition(ctx, definition); err != nil {
-		lg.Error("definition deploy",
-			zap.String("id", definition.Id),
-			zap.Uint64("version", definition.Version),
-			zap.Error(err))
-		return
-	}
-}
-
-func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) {
-	lg := r.Logger()
-	kv := event.Kv
-	if event.Type == clientv3.EventTypeDelete {
-		return
-	}
-
-	process, match, err := parseProcessInstanceKV(kv)
-	if err != nil {
-		lg.Error("parse process data", zap.Error(err))
-		return
-	}
-	if !match {
-		return
-	}
-
-	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
-		lg.Error("execute definition",
-			zap.String("id", process.DefinitionsId),
-			zap.Uint64("version", process.DefinitionsVersion),
-			zap.Error(err))
-		return
-	}
-
-	commitProcessInstance(ctx, lg, r.oct, process)
-}
+//func (r *Runner) processRegion(ctx context.Context, event *clientv3.Event) {
+//	lg := r.Logger()
+//	kv := event.Kv
+//	if event.Type == clientv3.EventTypeDelete {
+//		return
+//	}
+//
+//	region, match, err := parseRegionKV(kv, r.pr.Id)
+//	if err != nil {
+//		lg.Error("parse region data", zap.Error(err))
+//		return
+//	}
+//	if !match {
+//		return
+//	}
+//
+//	if event.IsCreate() {
+//		lg.Info("create region", zap.Stringer("body", region))
+//		if err = r.controller.CreateRegion(ctx, region); err != nil {
+//			lg.Error("create region", zap.Error(err))
+//		}
+//		return
+//	}
+//
+//	if event.IsModify() {
+//		lg.Info("sync region", zap.Stringer("body", region))
+//		if err = r.controller.SyncRegion(ctx, region); err != nil {
+//			lg.Error("sync region", zap.Error(err))
+//		}
+//		return
+//	}
+//}
+//
+//func (r *Runner) processBpmnDefinition(ctx context.Context, event *clientv3.Event) {
+//	lg := r.Logger()
+//	kv := event.Kv
+//	if event.Type == clientv3.EventTypeDelete {
+//		return
+//	}
+//
+//	definition, match, err := parseDefinitionKV(kv)
+//	if err != nil {
+//		lg.Error("parse definition data", zap.Error(err))
+//		return
+//	}
+//	if !match {
+//		return
+//	}
+//
+//	if err = r.controller.DeployDefinition(ctx, definition); err != nil {
+//		lg.Error("definition deploy",
+//			zap.String("id", definition.Id),
+//			zap.Uint64("version", definition.Version),
+//			zap.Error(err))
+//		return
+//	}
+//}
+//
+//func (r *Runner) processBpmnProcess(ctx context.Context, event *clientv3.Event) {
+//	lg := r.Logger()
+//	kv := event.Kv
+//	if event.Type == clientv3.EventTypeDelete {
+//		return
+//	}
+//
+//	process, match, err := parseProcessInstanceKV(kv)
+//	if err != nil {
+//		lg.Error("parse process data", zap.Error(err))
+//		return
+//	}
+//	if !match {
+//		return
+//	}
+//
+//	if err = r.controller.ExecuteDefinition(ctx, process); err != nil {
+//		lg.Error("execute definition",
+//			zap.String("id", process.DefinitionsId),
+//			zap.Uint64("version", process.DefinitionsVersion),
+//			zap.Error(err))
+//		return
+//	}
+//
+//	commitProcessInstance(ctx, lg, r.oct, process)
+//}

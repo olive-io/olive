@@ -28,8 +28,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/meta"
-	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/pkg/version"
+	genericserver "github.com/olive-io/olive/x/server"
+	"github.com/olive-io/olive/x/version"
 )
 
 func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {

@@ -5,7 +5,7 @@ go 1.21
 replace (
 	github.com/olive-io/olive/api => ../api
 	github.com/olive-io/olive/client => ../client
-	github.com/olive-io/olive/pkg => ../pkg
+	github.com/olive-io/olive/x => ../x
 )
 
 require (
@@ -16,7 +16,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/client v0.0.0-00010101000000-000000000000
-	github.com/olive-io/olive/pkg v0.0.0-00010101000000-000000000000
+	github.com/olive-io/olive/x v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.27.0

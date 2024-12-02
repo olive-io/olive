@@ -42,11 +42,11 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	dsy "github.com/olive-io/olive/pkg/discovery"
-	"github.com/olive-io/olive/pkg/jsonpatch"
-	"github.com/olive-io/olive/pkg/proxy"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	dsy "github.com/olive-io/olive/x/discovery"
+	"github.com/olive-io/olive/x/jsonpatch"
+	"github.com/olive-io/olive/x/proxy"
 )
 
 type Controller struct {

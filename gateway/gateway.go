@@ -41,10 +41,10 @@ import (
 	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/gateway/consumer"
-	dsy "github.com/olive-io/olive/pkg/discovery"
-	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
-	"github.com/olive-io/olive/pkg/runtime"
-	genericserver "github.com/olive-io/olive/pkg/server"
+	dsy "github.com/olive-io/olive/x/discovery"
+	grpcproxy "github.com/olive-io/olive/x/proxy/server/grpc"
+	"github.com/olive-io/olive/x/runtime"
+	genericserver "github.com/olive-io/olive/x/server"
 )
 
 type Gateway struct {

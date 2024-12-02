@@ -21,88 +21,75 @@
 
 package runner
 
-import (
-	"context"
-	"fmt"
-	"path"
-
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-
-	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/pkg/runtime"
-)
-
-func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
-	region := new(pb.Region)
-	err := proto.Unmarshal(kv.Value, region)
-	if err != nil {
-		return nil, false, err
-	}
-	match := false
-	for _, replica := range region.Replicas {
-		if replica.Runner == runnerId {
-			match = true
-			break
-		}
-	}
-	return region, match, nil
-}
-
-func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
-	definition := new(pb.Definition)
-	err := proto.Unmarshal(kv.Value, definition)
-	if err != nil {
-		return nil, false, err
-	}
-	if definition.Header == nil || definition.Header.Region == 0 {
-		return definition, false, nil
-	}
-	if definition.Header.Rev == 0 {
-		definition.Header.Rev = kv.ModRevision
-	}
-	return definition, true, nil
-}
-
-func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
-	process := new(pb.ProcessInstance)
-	err := proto.Unmarshal(kv.Value, process)
-	if err != nil {
-		return nil, false, err
-	}
-	if process.Status != pb.ProcessInstance_Waiting ||
-		process.DefinitionsId == "" ||
-		process.OliveHeader == nil ||
-		process.OliveHeader.Region == 0 {
-		return process, false, nil
-	}
-	if process.OliveHeader.Rev == 0 {
-		process.OliveHeader.Rev = kv.ModRevision
-	}
-	return process, true, nil
-}
-
-func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.Client, process *pb.ProcessInstance) {
-	if lg == nil {
-		lg = zap.NewNop()
-	}
-
-	if process.Status == pb.ProcessInstance_Waiting {
-		process.Status = pb.ProcessInstance_Prepare
-	}
-	key := path.Join(runtime.DefaultRunnerProcessInstance,
-		process.DefinitionsId, fmt.Sprintf("%d", process.DefinitionsVersion),
-		fmt.Sprintf("%d", process.Id))
-	data, _ := proto.Marshal(process)
-	_, err := client.Put(ctx, key, string(data))
-	if err != nil {
-		lg.Error("update process instance",
-			zap.String("definition", process.DefinitionsId),
-			zap.Uint64("version", process.DefinitionsVersion),
-			zap.Uint64("id", process.Id),
-			zap.Error(err))
-		return
-	}
-}
+//
+//func parseRegionKV(kv *mvccpb.KeyValue, runnerId uint64) (*pb.Region, bool, error) {
+//	region := new(pb.Region)
+//	err := proto.Unmarshal(kv.Value, region)
+//	if err != nil {
+//		return nil, false, err
+//	}
+//	match := false
+//	for _, replica := range region.Replicas {
+//		if replica.Runner == runnerId {
+//			match = true
+//			break
+//		}
+//	}
+//	return region, match, nil
+//}
+//
+//func parseDefinitionKV(kv *mvccpb.KeyValue) (*pb.Definition, bool, error) {
+//	definition := new(pb.Definition)
+//	err := proto.Unmarshal(kv.Value, definition)
+//	if err != nil {
+//		return nil, false, err
+//	}
+//	if definition.Header == nil || definition.Header.Region == 0 {
+//		return definition, false, nil
+//	}
+//	if definition.Header.Rev == 0 {
+//		definition.Header.Rev = kv.ModRevision
+//	}
+//	return definition, true, nil
+//}
+//
+//func parseProcessInstanceKV(kv *mvccpb.KeyValue) (*pb.ProcessInstance, bool, error) {
+//	process := new(pb.ProcessInstance)
+//	err := proto.Unmarshal(kv.Value, process)
+//	if err != nil {
+//		return nil, false, err
+//	}
+//	if process.Status != pb.ProcessInstance_Waiting ||
+//		process.DefinitionsId == "" ||
+//		process.OliveHeader == nil ||
+//		process.OliveHeader.Region == 0 {
+//		return process, false, nil
+//	}
+//	if process.OliveHeader.Rev == 0 {
+//		process.OliveHeader.Rev = kv.ModRevision
+//	}
+//	return process, true, nil
+//}
+//
+//func commitProcessInstance(ctx context.Context, lg *zap.Logger, client *client.Client, process *pb.ProcessInstance) {
+//	if lg == nil {
+//		lg = zap.NewNop()
+//	}
+//
+//	if process.Status == pb.ProcessInstance_Waiting {
+//		process.Status = pb.ProcessInstance_Prepare
+//	}
+//	key := path.Join(runtime.DefaultRunnerProcessInstance,
+//		process.DefinitionsId, fmt.Sprintf("%d", process.DefinitionsVersion),
+//		fmt.Sprintf("%d", process.Id))
+//	data, _ := proto.Marshal(process)
+//	_, err := client.Put(ctx, key, string(data))
+//	if err != nil {
+//		lg.Error("update process instance",
+//			zap.String("definition", process.DefinitionsId),
+//			zap.Uint64("version", process.DefinitionsVersion),
+//			zap.Uint64("id", process.Id),
+//			zap.Error(err))
+//		return
+//	}
+//}

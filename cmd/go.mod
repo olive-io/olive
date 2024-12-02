@@ -7,14 +7,14 @@ replace (
 	github.com/olive-io/olive/client => ../client
 	github.com/olive-io/olive/gateway => ../gateway
 	github.com/olive-io/olive/meta => ../meta
-	github.com/olive-io/olive/pkg => ../pkg
+	github.com/olive-io/olive/x => ../x
 	github.com/olive-io/olive/runner => ../runner
 )
 
 require (
 	github.com/olive-io/olive/gateway v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/meta v0.0.0-00010101000000-000000000000
-	github.com/olive-io/olive/pkg v0.0.0-00010101000000-000000000000
+	github.com/olive-io/olive/x v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/runner v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.8.0
 	go.etcd.io/etcd/server/v3 v3.5.13

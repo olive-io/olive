@@ -28,9 +28,9 @@ import (
 	sm "github.com/lni/dragonboat/v4/statemachine"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 func (r *Region) Open(stopc <-chan struct{}) (uint64, error) {
@@ -82,7 +82,7 @@ func (r *Region) PrepareSnapshot() (interface{}, error) {
 
 func (r *Region) SaveSnapshot(ctx interface{}, writer io.Writer, done <-chan struct{}) error {
 	snap := ctx.(backend.ISnapshot)
-	prefix := bytesutil.PathJoin(buckets.Key.Name(), r.putPrefix())
+	prefix := xpath.Join(buckets.Key.Name(), r.putPrefix())
 	_, err := snap.WriteTo(writer, prefix)
 	if err != nil {
 		return err

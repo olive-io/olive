@@ -32,7 +32,7 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/meta/leader"
-	"github.com/olive-io/olive/pkg/runtime"
+	"github.com/olive-io/olive/x/runtime"
 )
 
 var (

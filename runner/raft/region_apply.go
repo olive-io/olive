@@ -31,7 +31,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
+	xpath "github.com/olive-io/olive/x/path"
 )
 
 const v1Version = "v1"
@@ -170,8 +170,8 @@ func (a *applier) DeployDefinition(ctx context.Context, r *pb.RegionDeployDefini
 		)
 	}
 
-	prefix := bytesutil.PathJoin(definitionPrefix, []byte(definition.Id))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", definition.Version)))
+	prefix := xpath.Join(definitionPrefix, []byte(definition.Id))
+	key := xpath.Join(prefix, []byte(fmt.Sprintf("%d", definition.Version)))
 
 	kvs, _ := a.r.getRange(prefix, getPrefix(prefix), 0)
 	if len(kvs) > 0 {
@@ -204,10 +204,10 @@ func (a *applier) ExecuteDefinition(ctx context.Context, r *pb.RegionExecuteDefi
 		)
 	}
 
-	prefix := bytesutil.PathJoin(processPrefix,
+	prefix := xpath.Join(processPrefix,
 		[]byte(process.DefinitionsId),
 		[]byte(fmt.Sprintf("%d", process.DefinitionsVersion)))
-	key := bytesutil.PathJoin(prefix, []byte(fmt.Sprintf("%d", process.Id)))
+	key := xpath.Join(prefix, []byte(fmt.Sprintf("%d", process.Id)))
 
 	if kv, _ := a.r.get(key); kv != nil {
 		return nil, trace, ErrProcessExecuted

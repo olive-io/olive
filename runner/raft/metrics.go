@@ -26,7 +26,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/olive-io/olive/pkg/metrics"
+	"github.com/olive-io/olive/x/metrics"
 )
 
 var (

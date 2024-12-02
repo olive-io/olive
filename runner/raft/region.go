@@ -42,11 +42,11 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/pkg/bytesutil"
-	"github.com/olive-io/olive/pkg/proxy"
-	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/buckets"
+	xpath "github.com/olive-io/olive/x/path"
+	"github.com/olive-io/olive/x/proxy"
+	"github.com/olive-io/olive/x/queue"
 )
 
 var (
@@ -463,7 +463,7 @@ func (r *Region) get(key []byte) (*pb.KeyValue, error) {
 	tx.RLock()
 	defer tx.RUnlock()
 
-	key = bytesutil.PathJoin(r.putPrefix(), key)
+	key = xpath.Join(r.putPrefix(), key)
 	value, err := tx.UnsafeGet(buckets.Key, key)
 	if err != nil {
 		return nil, err
@@ -481,9 +481,9 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue,
 	tx.RLock()
 	defer tx.RUnlock()
 
-	startKey = bytesutil.PathJoin(r.putPrefix(), startKey)
+	startKey = xpath.Join(r.putPrefix(), startKey)
 	if len(endKey) > 0 {
-		endKey = bytesutil.PathJoin(r.putPrefix(), endKey)
+		endKey = xpath.Join(r.putPrefix(), endKey)
 	}
 	keys, values, err := tx.UnsafeRange(buckets.Key, startKey, endKey, limit)
 	if err != nil {
@@ -500,7 +500,7 @@ func (r *Region) getRange(startKey, endKey []byte, limit int64) ([]*pb.KeyValue,
 }
 
 func (r *Region) put(key, value []byte, isSync bool) error {
-	key = bytesutil.PathJoin(r.putPrefix(), key)
+	key = xpath.Join(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
 	if err := tx.UnsafePut(buckets.Key, key, value); err != nil {
@@ -515,7 +515,7 @@ func (r *Region) put(key, value []byte, isSync bool) error {
 }
 
 func (r *Region) del(key []byte, isSync bool) error {
-	key = bytesutil.PathJoin(r.putPrefix(), key)
+	key = xpath.Join(r.putPrefix(), key)
 	tx := r.be.BatchTx()
 	tx.Lock()
 	if err := tx.UnsafeDelete(buckets.Key, key); err != nil {

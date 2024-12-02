@@ -25,7 +25,7 @@ import (
 	"os"
 
 	"github.com/olive-io/olive/cmd/gateway/app"
-	"github.com/olive-io/olive/pkg/cliutil"
+	"github.com/olive-io/olive/x/cli"
 )
 
 func main() {
