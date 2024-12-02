@@ -27,6 +27,8 @@ testdata
 /vendor
 dist
 dist/
+bin
 
 *.pb.go
 *.pb.gw.go
+
