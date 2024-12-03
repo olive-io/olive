@@ -43,7 +43,7 @@ const (
 	DefaultDataDir   = "default"
 	DefaultCacheSize = 4 * 1024 * 1024
 
-	DefaultBackendBatchInterval = time.Minute * 10
+	DefaultBackendGCInterval = time.Minute * 10
 
 	DefaultListenURL = "http://127.0.0.1:5380"
 
@@ -60,7 +60,7 @@ type Config struct {
 	DataDir   string
 	CacheSize uint64
 	// BackendGChInterval is the maximum gc time for backend kv database.
-	BackendBatchInterval time.Duration
+	BackendGCInterval time.Duration
 
 	AdvertiseURL string
 	ListenURL    string
@@ -84,7 +84,7 @@ func NewConfig() *Config {
 		DataDir:   DefaultDataDir,
 		CacheSize: DefaultCacheSize,
 
-		BackendBatchInterval: DefaultBackendBatchInterval,
+		BackendGCInterval: DefaultBackendGCInterval,
 
 		AdvertiseURL: DefaultListenURL,
 		ListenURL:    DefaultListenURL,
@@ -109,7 +109,7 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for grpc traffic.")
 
 	// Backend
-	fs.DurationVar(&cfg.BackendBatchInterval, "backend-batch-interval", cfg.BackendBatchInterval, "the maximum time before commit the backend transaction.")
+	fs.DurationVar(&cfg.BackendGCInterval, "backend-gc-interval", cfg.BackendGCInterval, "the interval time for backend gc.")
 
 	// logging
 	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",

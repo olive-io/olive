@@ -27,26 +27,19 @@ import (
 	"github.com/olive-io/olive/runner/backend"
 )
 
-func newBackend(cfg *Config) backend.IBackend {
-	bcfg := backend.BackendConfig{
+func newBackend(cfg *Config) (backend.IBackend, error) {
+	bcfg := &backend.Config{
 		Dir:       cfg.DBDir(),
-		WAL:       cfg.WALDir(),
-		CacheSize: cfg.CacheSize,
+		CacheSize: int64(cfg.CacheSize),
 		Logger:    cfg.GetLogger(),
 	}
 
-	if cfg.BackendBatchInterval != 0 {
-		bcfg.BatchInterval = cfg.BackendBatchInterval
+	if cfg.BackendGCInterval != 0 {
+		bcfg.GCInterval = cfg.BackendGCInterval
 		if cfg.GetLogger() != nil {
-			cfg.GetLogger().Info("setting backend batch interval", zap.Duration("batch interval", cfg.BackendBatchInterval))
-		}
-	}
-	if cfg.BackendBatchLimit != 0 {
-		bcfg.BatchLimit = cfg.BackendBatchLimit
-		if cfg.GetLogger() != nil {
-			cfg.GetLogger().Info("setting backend batch limit", zap.Int("batch limit", cfg.BackendBatchLimit))
+			cfg.GetLogger().Info("setting backend gc interval", zap.Duration("batch interval", cfg.BackendGCInterval))
 		}
 	}
 
-	return backend.New(bcfg)
+	return backend.NewBackend(bcfg)
 }

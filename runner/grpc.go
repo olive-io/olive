@@ -28,5 +28,5 @@ import (
 )
 
 func (r *Runner) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
-	return r.controller.GetProcessInstance(ctx, req)
+	return
 }

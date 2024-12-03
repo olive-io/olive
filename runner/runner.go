@@ -28,7 +28,6 @@ import (
 	"net/http"
 	urlpkg "net/url"
 
-	"github.com/gofrs/flock"
 	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/olive-io/bpmn/tracing"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -40,9 +39,6 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/runner/backend"
-	"github.com/olive-io/olive/runner/buckets"
-	"github.com/olive-io/olive/runner/raft"
-	"github.com/olive-io/olive/x/runtime"
 	genericserver "github.com/olive-io/olive/x/server"
 )
 
@@ -55,26 +51,19 @@ type Runner struct {
 
 	cfg Config
 
-	gLock *flock.Flock
-
 	oct *client.Client
 
 	be backend.IBackend
 
 	serve *http.Server
 
-	controller *raft.Controller
-	traces     <-chan tracing.ITrace
-	pr         *pb.Runner
+	traces <-chan tracing.ITrace
+	pr     *pb.Runner
 }
 
 func NewRunner(cfg Config) (*Runner, error) {
 	lg := cfg.GetLogger()
 
-	gLock, err := cfg.LockDataDir()
-	if err != nil {
-		return nil, err
-	}
 	lg.Debug("protected directory: " + cfg.DataDir)
 
 	oct, err := client.New(cfg.Client)
@@ -82,16 +71,18 @@ func NewRunner(cfg Config) (*Runner, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	be := newBackend(&cfg)
+	be, err := newBackend(&cfg)
+	if err != nil {
+		return nil, err
+	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
 		IEmbedServer: embedServer,
 		ctx:          ctx,
 		cancel:       cancel,
 		cfg:          cfg,
-		gLock:        gLock,
 
 		oct: oct,
 		be:  be,
@@ -124,17 +115,6 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 func (r *Runner) start() error {
 	var err error
 
-	defer r.be.ForceCommit()
-	tx := r.be.BatchTx()
-	tx.Lock()
-	tx.UnsafeCreateBucket(buckets.Meta)
-	tx.UnsafeCreateBucket(buckets.Region)
-	tx.UnsafeCreateBucket(buckets.Key)
-	tx.Unlock()
-	if err = tx.Commit(); err != nil {
-		r.Logger().Error("pebble commit", zap.Error(err))
-	}
-
 	r.pr, err = r.register()
 	if err != nil {
 		return err
@@ -163,7 +143,7 @@ func (r *Runner) startGRPCServer() error {
 
 	lg.Info("Server [grpc] Listening", zap.String("addr", ts.Addr().String()))
 
-	r.cfg.ListenClientURL = scheme + ts.Addr().String()
+	r.cfg.ListenURL = scheme + ts.Addr().String()
 
 	gs := r.buildGRPCServer()
 
@@ -189,7 +169,7 @@ func (r *Runner) startGRPCServer() error {
 func (r *Runner) createListener() (string, net.Listener, error) {
 	cfg := r.cfg
 	lg := r.Logger()
-	url, err := urlpkg.Parse(cfg.ListenClientURL)
+	url, err := urlpkg.Parse(cfg.ListenURL)
 	if err != nil {
 		return "", nil, err
 	}
@@ -353,38 +333,37 @@ func (r *Runner) createMux(gwmux *gw.ServeMux, handler http.Handler) *http.Serve
 //}
 
 func (r *Runner) watching() {
-	ctx, cancel := context.WithCancel(r.ctx)
-	defer cancel()
-
-	rev := r.getRev()
-	wopts := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithPrevKV(),
-		clientv3.WithRev(rev + 1),
-	}
-	wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
-	for {
-		select {
-		case <-r.StoppingNotify():
-			return
-		case resp := <-wch:
-			for _, event := range resp.Events {
-				if event.Kv.ModRevision > rev {
-					rev = event.Kv.ModRevision
-					r.setRev(rev)
-				}
-				r.processEvent(r.ctx, event)
-			}
-		}
-	}
+	//ctx, cancel := context.WithCancel(r.ctx)
+	//defer cancel()
+	//
+	//rev := r.getRev()
+	//wopts := []clientv3.OpOption{
+	//	clientv3.WithPrefix(),
+	//	clientv3.WithPrevKV(),
+	//	clientv3.WithRev(rev + 1),
+	//}
+	//wch := r.oct.Watch(ctx, runtime.DefaultRunnerPrefix, wopts...)
+	//for {
+	//	select {
+	//	case <-r.StoppingNotify():
+	//		return
+	//	case resp := <-wch:
+	//		for _, event := range resp.Events {
+	//			if event.Kv.ModRevision > rev {
+	//				rev = event.Kv.ModRevision
+	//				r.setRev(rev)
+	//			}
+	//			r.processEvent(r.ctx, event)
+	//		}
+	//	}
+	//}
 }
 
 func (r *Runner) getRev() int64 {
 	key := []byte("cur_rev")
-	tx := r.be.ReadTx()
-	tx.RLock()
-	value, err := tx.UnsafeGet(buckets.Meta, key)
-	tx.RUnlock()
+	_ = key
+	var err error
+	var value []byte
 	if err != nil || len(value) == 0 {
 		return 0
 	}
@@ -394,20 +373,13 @@ func (r *Runner) getRev() int64 {
 
 func (r *Runner) setRev(rev int64) {
 	key := []byte("cur_rev")
+	_ = key
 	value := make([]byte, 8)
 	binary.LittleEndian.PutUint64(value, uint64(rev))
-	tx := r.be.BatchTx()
-	tx.Lock()
-	tx.UnsafePut(buckets.Meta, key, value)
-	tx.Unlock()
-	tx.Commit()
 }
 
 func (r *Runner) destroy() {
 	r.cancel()
-	if err := r.gLock.Unlock(); err != nil {
-		r.Logger().Error("released "+r.cfg.DataDir, zap.Error(err))
-	}
 }
 
 func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
