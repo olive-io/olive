@@ -2,10 +2,12 @@ package backend
 
 import (
 	"context"
+	"io"
 	"time"
 
 	json "github.com/bytedance/sonic"
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/pb"
 	"go.uber.org/zap"
 )
 
@@ -98,6 +100,9 @@ func (b *backend) Get(ctx context.Context, key string, opts ...GetOption) (*Resp
 
 		for iter.Seek(prefix); iter.ValidForPrefix(prefix); iter.Next() {
 			item := iter.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
 			kv := itemToKV(item)
 			resp.Kvs = append(resp.Kvs, kv)
 		}
@@ -106,6 +111,9 @@ func (b *backend) Get(ctx context.Context, key string, opts ...GetOption) (*Resp
 		if err != nil {
 			return nil, err
 		}
+		if item.IsDeletedOrExpired() {
+			return nil, ErrNotFound
+		}
 		kv := itemToKV(item)
 		resp.Kvs = append(resp.Kvs, kv)
 	}
@@ -113,8 +121,50 @@ func (b *backend) Get(ctx context.Context, key string, opts ...GetOption) (*Resp
 	return resp, nil
 }
 
-func (b *backend) Set(ctx context.Context, key string, value any, opts ...SetOption) error {
-	var options SetOptions
+func (b *backend) Watch(ctx context.Context, key string, opts ...WatchOption) (Watcher, error) {
+	var options WatchOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	matches := make([]pb.Match, 0)
+	matches = append(matches, pb.Match{Prefix: []byte(key)})
+
+	wch := make(chan *Event, 10)
+	ech := make(chan error, 1)
+
+	cb := func(kvList *badger.KVList) error {
+		for _, item := range kvList.Kv {
+			kv := &KV{
+				Key:     item.Key,
+				Value:   item.Value,
+				Version: item.Version,
+			}
+			event := &Event{}
+			if len(item.Value) == 0 {
+				event.Op = OpDel
+			} else {
+				event.Op = OpPut
+			}
+			event.Kv = kv
+			wch <- event
+		}
+		return nil
+	}
+
+	go func() {
+		err := b.db.Subscribe(ctx, cb, matches)
+		if err != nil {
+			ech <- err
+		}
+	}()
+
+	w := newWatcher(ctx, wch, ech)
+	return w, nil
+}
+
+func (b *backend) Put(ctx context.Context, key string, value any, opts ...PutOption) error {
+	var options PutOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -200,6 +250,33 @@ func (b *backend) ForceSync() error {
 
 func (b *backend) Close() error {
 	return b.db.Close()
+}
+
+type watcher struct {
+	ctx context.Context
+	wch chan *Event
+	ech chan error
+}
+
+func newWatcher(ctx context.Context, wch chan *Event, ech chan error) *watcher {
+	w := &watcher{
+		ctx: ctx,
+		wch: wch,
+		ech: ech,
+	}
+
+	return w
+}
+
+func (w *watcher) Next() (*Event, error) {
+	select {
+	case <-w.ctx.Done():
+		return nil, io.EOF
+	case event := <-w.wch:
+		return event, nil
+	case err := <-w.ech:
+		return nil, err
+	}
 }
 
 func itemToKV(item *badger.Item) *KV {

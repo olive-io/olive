@@ -20,9 +20,38 @@ type Response struct {
 	Kvs []*KV
 }
 
+type EventOp int
+
+const (
+	OpPut EventOp = iota + 1
+	OpDel
+)
+
+func (op EventOp) String() string {
+	switch op {
+	case OpPut:
+		return "put"
+	case OpDel:
+		return "del"
+	default:
+		return "unknown"
+	}
+}
+
+type Event struct {
+	Op EventOp
+	Kv *KV
+}
+
+type Watcher interface {
+	Next() (*Event, error)
+}
+
 type IBackend interface {
 	Get(ctx context.Context, key string, opts ...GetOption) (*Response, error)
-	Set(ctx context.Context, key string, value any, opts ...SetOption) error
+	Watch(ctx context.Context, key string, opts ...WatchOption) (Watcher, error)
+
+	Put(ctx context.Context, key string, value any, opts ...PutOption) error
 	Del(ctx context.Context, key string, opts ...DelOption) error
 
 	ForceSync() error
@@ -49,14 +78,19 @@ func GetReserve() GetOption {
 	}
 }
 
-type SetOptions struct {
+type WatchOptions struct {
+}
+
+type WatchOption func(opts *WatchOptions)
+
+type PutOptions struct {
 	TTL time.Duration
 }
 
-type SetOption func(opts *SetOptions)
+type PutOption func(opts *PutOptions)
 
-func SetDuration(ttl time.Duration) SetOption {
-	return func(opts *SetOptions) {
+func PutDuration(ttl time.Duration) PutOption {
+	return func(opts *PutOptions) {
 		opts.TTL = ttl
 	}
 }

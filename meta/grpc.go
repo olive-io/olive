@@ -38,7 +38,7 @@ import (
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/api/rpctypes"
 	"github.com/olive-io/olive/meta/pagation"
-	"github.com/olive-io/olive/x/runtime"
+	"github.com/olive-io/olive/pkg/runtime"
 )
 
 const (

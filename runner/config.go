@@ -31,8 +31,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/olive-io/olive/client"
-	"github.com/olive-io/olive/x/cli/flags"
-	"github.com/olive-io/olive/x/logutil"
+	"github.com/olive-io/olive/pkg/cli/flags"
+	"github.com/olive-io/olive/pkg/logutil"
 )
 
 var (

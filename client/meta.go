@@ -33,8 +33,6 @@ type MetaRPC interface {
 	GetMeta(ctx context.Context) (*pb.Meta, error)
 	ListRunner(ctx context.Context) ([]*pb.Runner, error)
 	GetRunner(ctx context.Context, id uint64) (*pb.Runner, error)
-	ListRegion(ctx context.Context) ([]*pb.Region, error)
-	GetRegion(ctx context.Context, id uint64) (*pb.Region, error)
 }
 
 type metaRPC struct {
@@ -71,29 +69,12 @@ func (mc *metaRPC) ListRunner(ctx context.Context) ([]*pb.Runner, error) {
 	return rsp.Runners, nil
 }
 
-func (mc *metaRPC) GetRunner(ctx context.Context, id uint64) (*pb.Runner, error) {
-	in := &pb.GetRunnerRequest{Id: id}
-	rsp, err := mc.remote.GetRunner(ctx, in, mc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return rsp.Runner, nil
-}
-
-func (mc *metaRPC) ListRegion(ctx context.Context) ([]*pb.Region, error) {
-	in := &pb.ListRegionRequest{}
-	rsp, err := mc.remote.ListRegion(ctx, in, mc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return rsp.Regions, nil
-}
-
-func (mc *metaRPC) GetRegion(ctx context.Context, id uint64) (*pb.Region, error) {
-	in := &pb.GetRegionRequest{Id: id}
-	rsp, err := mc.remote.GetRegion(ctx, in, mc.callOpts...)
-	if err != nil {
-		return nil, toErr(ctx, err)
-	}
-	return rsp.Region, nil
+func (mc *metaRPC) GetRunner(ctx context.Context, id uint64) (runner *pb.Runner, err error) {
+	//in := &pb.GetRunnerRequest{Id: id}
+	//rsp, err := mc.remote.GetRunner(ctx, in, mc.callOpts...)
+	//if err != nil {
+	//	return nil, toErr(ctx, err)
+	//}
+	//return rsp.Runner, nil
+	return
 }

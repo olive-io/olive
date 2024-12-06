@@ -49,16 +49,10 @@ Runner:
     Path to the data directory.
   --endpoints [` + strings.Join(runner.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
-  --listen-client-urls '` + runner.DefaultListenClientURL + `'
-    List of URLs to listen on for client traffic.
-  --advertise-client-url
-    Set advertise URL to listen on for client traffic.
-
-Region:
-  --listen-peer-urls '` + runner.DefaultListenPeerURL + `'
-    List of URLs to listen on for peer traffic.
-  --advertise-peer-url
-    Set advertise URL to listen on for peer traffic.
+  --listen-url '` + runner.DefaultListenURL + `'
+    List of URLs to listen on for http traffic.
+  --advertise-url` + runner.DefaultListenURL + `'
+    Set advertise URL to listen on for http traffic.
 
 Logging:
   --log-outputs 'default'

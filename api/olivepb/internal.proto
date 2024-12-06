@@ -110,23 +110,50 @@ message Definition {
   uint64 version = 4;
 }
 
+enum FlowNodeType {
+  FlowNodeUnknown = 0;
+  StartEvent = 1;
+  EndEvent = 2;
+  BoundaryEvent = 3;
+
+  Task = 100;
+  UserTask = 101;
+  ServiceTask = 102;
+  ScriptTask = 103;
+  SendTask = 104;
+  ReceiveTask = 105;
+  ManualTask = 106;
+  CallActivity = 107;
+  SubProcess = 108;
+
+  EventBasedGateway = 200;
+  ParallelGateway = 201;
+  InclusiveGateway = 202;
+  ExclusiveGateway = 203;
+}
+
 message BpmnArgs {
   map<string, string> headers = 1;
   map<string, bytes> properties = 2;
   map<string, bytes> dataObjects = 3;
 }
 
-message ProcessInstance {
-  enum Status {
-    Unknown = 0;
-    Waiting = 1;
-    Prepare = 2;
-    Running = 3;
-    Ok = 4;
-    Fail = 5;
-  }
+message ProcessContext {
+  map<string, bytes> properties = 1;
+  map<string, bytes> dataObjects = 2;
+  map<string, bytes> variables = 3;
+}
 
-  OliveHeader oliveHeader = 100;
+enum ProcessStatus {
+  ProcessUnknown = 0;
+  Waiting = 1;
+  Prepare = 2;
+  Running = 3;
+  Ok = 4;
+  Fail = 5;
+}
+
+message ProcessInstance {
   uint64 id = 1;
   string name = 2;
   string definitionsId = 3;
@@ -135,26 +162,28 @@ message ProcessInstance {
   bytes definitionsContent = 6;
   BpmnArgs args = 7;
 
-  ProcessRunningState runningState = 16;
-  map<string, FlowNodeStat> flowNodes = 17;
-  uint64 attempts = 18;
+  ProcessContext context = 15;
+  repeated string flowNodes = 16;
+  map<string, FlowNodeStat> flowNodeStatMap = 17;
+  int32 attempts = 18;
   int64 startTime = 19;
   int64 endTime = 20;
 
-  Status status = 21;
+  ProcessStatus status = 21;
   string message = 22;
 }
 
-message ProcessRunningState {
-  map<string, bytes> properties = 1;
-  map<string, bytes> dataObjects = 2;
-  map<string, bytes> variables = 3;
+message FlowNode {
+  FlowNodeType type = 1;
+  string id = 2;
 }
 
 message FlowNodeStat {
   string id = 1;
   string name = 2;
-  BpmnArgs context = 3;
+  ProcessContext context = 3;
+  int32 retries = 4;
+  string message = 5;
 
   int64 startTime = 11;
   int64 endTime = 12;

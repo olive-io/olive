@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/x/proxy/api"
+	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
 func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {

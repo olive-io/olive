@@ -23,7 +23,7 @@ package client
 
 import (
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-	"github.com/olive-io/olive/x/proxy/api"
+	"github.com/olive-io/olive/pkg/proxy/api"
 )
 
 type CBuilder struct {

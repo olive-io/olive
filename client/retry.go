@@ -97,17 +97,18 @@ func (rmc *retryMetaClient) ListRunner(ctx context.Context, in *pb.ListRunnerReq
 	return rmc.mc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (*pb.GetRunnerResponse, error) {
-	return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
+	//return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+	return
 }
 
-func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
-	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-}
-
-func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
-	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-}
+//func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
+//	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+//}
+//
+//func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
+//	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+//}
 
 type retryBpmnClient struct {
 	bc pb.BpmnRPCClient
@@ -140,6 +141,7 @@ func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.Execut
 	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (*pb.GetProcessInstanceResponse, error) {
-	return rbc.bc.GetProcessInstance(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (resp *pb.GetProcessInstanceResponse, err error) {
+	//return rbc.bc.GetProcessInstance(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+	return
 }

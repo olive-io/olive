@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -40,7 +41,7 @@ func TestBackendOp(t *testing.T) {
 	defer cancel()
 
 	ctx := context.TODO()
-	if err := b.Set(ctx, "foo", []byte("bar")); err != nil {
+	if err := b.Put(ctx, "foo", []byte("bar")); err != nil {
 		t.Fatalf("error setting value: %v", err)
 	}
 
@@ -78,10 +79,10 @@ func TestBackendMarshal(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := b.Set(ctx, "foo1", td1); err != nil {
+	if err := b.Put(ctx, "foo1", td1); err != nil {
 		t.Fatalf("error setting value: %v", err)
 	}
-	if err := b.Set(ctx, "foo2", td2); err != nil {
+	if err := b.Put(ctx, "foo2", td2); err != nil {
 		t.Fatalf("error setting value: %v", err)
 	}
 
@@ -109,4 +110,50 @@ func TestBackendMarshal(t *testing.T) {
 	assert.Equal(t, len(ts), 2)
 	assert.Equal(t, ts[0].Field1, td1.Field1)
 	assert.Equal(t, ts[1].Field1, td2.Field1)
+}
+
+func TestWatch(t *testing.T) {
+	b, cancel := newBackend(t)
+	defer cancel()
+
+	ctx := context.Background()
+	w, err := b.Watch(ctx, "/")
+	if err != nil {
+		t.Fatalf("error starting watch: %v", err)
+	}
+
+	go func() {
+		for {
+			event, err := w.Next()
+			if err != nil {
+				t.Fatalf("error getting next: %v", err)
+			}
+			kv := event.Kv
+			t.Logf("op: %s key: %s, value: %s", event.Op, kv.Key, kv.Value)
+		}
+	}()
+
+	td1 := &TestData{
+		Field1: "foo",
+		Field2: 1,
+	}
+
+	td2 := &TestData{
+		Field1: "bar",
+		Field2: 1,
+	}
+
+	if err := b.Put(ctx, "/foo1", td1); err != nil {
+		t.Fatalf("error setting value: %v", err)
+	}
+	if err := b.Put(ctx, "/foo2", td2); err != nil {
+		t.Fatalf("error setting value: %v", err)
+	}
+	if err := b.Put(ctx, "/foo3", nil); err != nil {
+		t.Fatalf("error setting value: %v", err)
+	}
+
+	_ = b.Del(ctx, "/foo1")
+
+	time.Sleep(time.Second)
 }

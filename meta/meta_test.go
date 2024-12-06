@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	genericserver "github.com/olive-io/olive/x/server"
+	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 func TestNewOliveMetaServer(t *testing.T) {

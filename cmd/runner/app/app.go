@@ -27,9 +27,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	genericserver "github.com/olive-io/olive/pkg/server"
+	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
-	genericserver "github.com/olive-io/olive/x/server"
-	"github.com/olive-io/olive/x/version"
 )
 
 func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {

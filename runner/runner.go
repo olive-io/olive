@@ -38,8 +38,8 @@ import (
 
 	pb "github.com/olive-io/olive/api/olivepb"
 	"github.com/olive-io/olive/client"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/backend"
-	genericserver "github.com/olive-io/olive/x/server"
 )
 
 type Runner struct {
@@ -65,7 +65,6 @@ func NewRunner(cfg Config) (*Runner, error) {
 	lg := cfg.GetLogger()
 
 	lg.Debug("protected directory: " + cfg.DataDir)
-
 	oct, err := client.New(cfg.Client)
 	if err != nil {
 		return nil, err
