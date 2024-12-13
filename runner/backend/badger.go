@@ -2,6 +2,8 @@ package backend
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -49,7 +51,7 @@ func NewBackend(cfg *Config) (IBackend, error) {
 
 	db, err := badger.Open(options)
 	if err != nil {
-		return nil, err
+		return nil, parseBadgerErr(err)
 	}
 
 	b := &backend{
@@ -109,7 +111,7 @@ func (b *backend) Get(ctx context.Context, key string, opts ...GetOption) (*Resp
 	} else {
 		item, err := tx.Get(keyBytes)
 		if err != nil {
-			return nil, err
+			return nil, parseBadgerErr(err)
 		}
 		if item.IsDeletedOrExpired() {
 			return nil, ErrNotFound
@@ -155,7 +157,7 @@ func (b *backend) Watch(ctx context.Context, key string, opts ...WatchOption) (W
 	go func() {
 		err := b.db.Subscribe(ctx, cb, matches)
 		if err != nil {
-			ech <- err
+			ech <- parseBadgerErr(err)
 		}
 	}()
 
@@ -195,11 +197,11 @@ func (b *backend) Put(ctx context.Context, key string, value any, opts ...PutOpt
 		entry = entry.WithTTL(options.TTL)
 	}
 	if err := tx.SetEntry(entry); err != nil {
-		return err
+		return parseBadgerErr(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return parseBadgerErr(err)
 	}
 
 	return nil
@@ -227,18 +229,18 @@ func (b *backend) Del(ctx context.Context, key string, opts ...DelOption) error 
 
 		for _, item := range keys {
 			if err := tx.Delete(item); err != nil {
-				return err
+				return parseBadgerErr(err)
 			}
 		}
 
 	} else {
 		if err := tx.Delete([]byte(key)); err != nil {
-			return err
+			return parseBadgerErr(err)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return parseBadgerErr(err)
 	}
 
 	return nil
@@ -285,4 +287,17 @@ func itemToKV(item *badger.Item) *KV {
 	kv.Value, _ = item.ValueCopy(nil)
 	kv.Version = item.Version()
 	return kv
+}
+
+func parseBadgerErr(err error) error {
+	if errors.Is(err, badger.ErrKeyNotFound) {
+		return ErrNotFound
+	}
+	if errors.Is(err, badger.ErrConflict) {
+		return ErrConflict
+	}
+	if errors.Is(err, badger.ErrEmptyKey) {
+		return ErrEmptyKey
+	}
+	return fmt.Errorf("badger: %w", err)
 }

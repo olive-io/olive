@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 syntax = "proto3";
@@ -25,7 +25,7 @@ package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 
-import "github.com/olive-io/olive/api/olivepb/internal.proto";
+import "github.com/olive-io/olive/api/types/internal.proto";
 
 message InternalKV {
   bytes key = 1;
@@ -99,19 +99,19 @@ message RegionDeleteResponse {
 }
 
 message RegionDeployDefinitionRequest {
-  olivepb.Definition definition = 1;
+  types.Definition definition = 1;
 }
 
 message RegionDeployDefinitionResponse {
   RaftResponseHeader header = 1;
-  olivepb.Definition definition = 2;
+  types.Definition definition = 2;
 }
 
 message RegionExecuteDefinitionRequest {
-  olivepb.ProcessInstance process_instance = 1;
+  types.ProcessInstance process_instance = 1;
 }
 
 message RegionExecuteDefinitionResponse {
   RaftResponseHeader header = 1;
-  olivepb.ProcessInstance process_instance = 2;
+  types.ProcessInstance process_instance = 2;
 }

@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package idutil
@@ -29,8 +29,6 @@ import (
 
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
-
-	"github.com/olive-io/olive/pkg/runtime"
 )
 
 func newEtcd() (*embed.Etcd, func()) {
@@ -55,7 +53,7 @@ func TestNewGenerator(t *testing.T) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
+	key := path.Join("/", "runner", "id")
 
 	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {
@@ -73,7 +71,7 @@ func BenchmarkNext(b *testing.B) {
 	etcd, cancel := newEtcd()
 	defer cancel()
 
-	key := path.Join(runtime.DefaultOlivePrefix, "runner", "id")
+	key := path.Join("/", "runner", "id")
 
 	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
 	if err != nil {

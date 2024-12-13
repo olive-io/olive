@@ -1,0 +1,388 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "github.com/olive-io/olive/api/gatewaypb/rpc.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Gateway"
+    },
+    {
+      "name": "EndpointRouter"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/olive/gateway/ping": {
+      "get": {
+        "operationId": "Gateway_Ping",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewaypbPingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Gateway"
+        ]
+      }
+    },
+    "/v1/olive/gateway/router/dig_out": {
+      "post": {
+        "summary": "DigOut digs out extension http router endpoint",
+        "operationId": "EndpointRouter_DigOut",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewaypbDigOutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewaypbDigOutRequest"
+            }
+          }
+        ],
+        "tags": [
+          "EndpointRouter"
+        ]
+      }
+    },
+    "/v1/olive/gateway/router/inject": {
+      "post": {
+        "summary": "Inject injects extension http router endpoint",
+        "operationId": "EndpointRouter_Inject",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewaypbInjectResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewaypbInjectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "EndpointRouter"
+        ]
+      }
+    },
+    "/v1/olive/gateway/transmit": {
+      "post": {
+        "operationId": "Gateway_Transmit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewaypbTransmitResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewaypbTransmitRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Gateway"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "discoverypbActivity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/discoverypbActivityType",
+          "title": "the type of activity node, etc ServiceTask, ScriptTask"
+        },
+        "id": {
+          "type": "string",
+          "title": "the id of activity node"
+        },
+        "name": {
+          "type": "string",
+          "title": "the name of activity node"
+        },
+        "taskType": {
+          "type": "string",
+          "title": "the type of activity node, defines in activity TaskDefinition"
+        },
+        "definitions": {
+          "type": "string",
+          "title": "the id of bpmn definitions"
+        },
+        "definitionsVersion": {
+          "type": "string",
+          "format": "uint64",
+          "title": "the version of bpmn definitions"
+        },
+        "process": {
+          "type": "string",
+          "title": "the id if bpmn process"
+        }
+      }
+    },
+    "discoverypbActivityType": {
+      "type": "string",
+      "enum": [
+        "Task",
+        "ServiceTask",
+        "ScriptTask",
+        "UserTask",
+        "SendTask",
+        "ReceiveTask",
+        "ManualTask",
+        "CallActivity"
+      ],
+      "default": "Task"
+    },
+    "discoverypbBox": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/discoverypbBoxType"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "title": "Box Value by json.Marshal"
+        },
+        "ref": {
+          "type": "string",
+          "title": "the reference, points to OpenAPI Component when type is Object"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbBox"
+          }
+        }
+      },
+      "title": "Box is an opaque value for a request or response"
+    },
+    "discoverypbBoxType": {
+      "type": "string",
+      "enum": [
+        "string",
+        "integer",
+        "float",
+        "boolean",
+        "array",
+        "object",
+        "map"
+      ],
+      "default": "string"
+    },
+    "discoverypbConsumer": {
+      "type": "object",
+      "properties": {
+        "activity": {
+          "$ref": "#/definitions/discoverypbActivityType"
+        },
+        "action": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "title": "the id of Consumer"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "request": {
+          "$ref": "#/definitions/discoverypbBox"
+        },
+        "response": {
+          "$ref": "#/definitions/discoverypbBox"
+        }
+      },
+      "title": "Consumer"
+    },
+    "discoverypbYard": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "consumers": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbConsumer"
+          }
+        }
+      },
+      "title": "the sets of http consumers"
+    },
+    "gatewaypbDigOutRequest": {
+      "type": "object",
+      "properties": {
+        "yard": {
+          "$ref": "#/definitions/discoverypbYard"
+        }
+      }
+    },
+    "gatewaypbDigOutResponse": {
+      "type": "object"
+    },
+    "gatewaypbInjectRequest": {
+      "type": "object",
+      "properties": {
+        "yard": {
+          "$ref": "#/definitions/discoverypbYard"
+        },
+        "ttl": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "gatewaypbInjectResponse": {
+      "type": "object"
+    },
+    "gatewaypbPingResponse": {
+      "type": "object",
+      "properties": {
+        "reply": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewaypbTransmitRequest": {
+      "type": "object",
+      "properties": {
+        "activity": {
+          "$ref": "#/definitions/discoverypbActivity"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbBox"
+          }
+        },
+        "dataObjects": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbBox"
+          }
+        }
+      }
+    },
+    "gatewaypbTransmitResponse": {
+      "type": "object",
+      "properties": {
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbBox"
+          }
+        },
+        "dataObjects": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/discoverypbBox"
+          }
+        }
+      },
+      "title": "Response save the data from gateway Handle function"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

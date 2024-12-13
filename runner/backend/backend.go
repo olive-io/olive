@@ -4,10 +4,15 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	json "github.com/bytedance/sonic"
 )
 
 var (
-	ErrNotFound = errors.New("key not found")
+	ErrNotFound   = errors.New("key not found")
+	ErrConflict   = errors.New("transaction Conflict. Please retry")
+	ErrEmptyKey   = errors.New("key is empty")
+	ErrEmptyValue = errors.New("value is empty")
 )
 
 type KV struct {
@@ -18,6 +23,14 @@ type KV struct {
 
 type Response struct {
 	Kvs []*KV
+}
+
+func (r *Response) Unmarshal(v any) error {
+	if len(r.Kvs) == 0 {
+		return ErrEmptyValue
+	}
+
+	return json.Unmarshal(r.Kvs[0].Value, v)
 }
 
 type EventOp int

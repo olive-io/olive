@@ -22,6 +22,16 @@ lint:
 
 install:
 
+genclients:
+	cd api && ./hack/update-codegen.sh
+
+proto:
+	goproto-gen -p github.com/olive-io/olive/api/meta
+	goproto-gen --metadata-packages github.com/olive-io/olive/api/meta -p github.com/olive-io/olive/api/types
+	deepcopy-gen -i github.com/olive-io/olive/api/meta,github.com/olive-io/olive/api/types
+
+	cd $(GOPATH)/src && \
+	protoc -I . -I github.com/googleapis/googleapis  --gogo_out=. github.com/olive-io/olive/api/runnerpb/runner.proto
 
 generate:
 	cd $(GOPATH)/src && \
@@ -29,10 +39,11 @@ generate:
 	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/openapi.proto && \
 	protoc --go_out=. github.com/olive-io/olive/api/discoverypb/activity.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go-olive_out=. --go-olive_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative --openapiv2_out=. --openapiv2_opt use_go_templates=true github.com/olive-io/olive/api/gatewaypb/rpc.proto && \
-	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/internal.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/types/internal.proto && \
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/types/meta.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/raft.proto && \
 	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/rpc.proto && \
-	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/olivepb/runner.proto
+	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/runnerpb/runner.proto
 
 	goimports -w api/*/**.go
 	sed -i.bak 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go

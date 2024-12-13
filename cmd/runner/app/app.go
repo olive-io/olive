@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package app
@@ -30,10 +30,11 @@ import (
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
+	"github.com/olive-io/olive/runner/config"
 )
 
 func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
-	cfg := runner.NewConfig()
+	cfg := config.NewConfig()
 
 	app := &cobra.Command{
 		Use:     "olive-runner",
@@ -65,14 +66,14 @@ func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
 	return app
 }
 
-func setup(cfg runner.Config) error {
+func setup(cfg config.Config) error {
 	var err error
 	stopc := genericserver.SetupSignalHandler()
 	if err = cfg.Validate(); err != nil {
 		return err
 	}
 
-	server, err := runner.NewRunner(cfg)
+	server, err := runner.NewRunner(&cfg)
 	if err != nil {
 		return err
 	}

@@ -6,15 +6,15 @@ replace (
 	github.com/olive-io/olive/api => ../api
 	github.com/olive-io/olive/client => ../client
 	github.com/olive-io/olive/gateway => ../gateway
-	github.com/olive-io/olive/meta => ../meta
+	github.com/olive-io/olive/plane => ../plane
 	github.com/olive-io/olive/pkg => ../pkg
 	github.com/olive-io/olive/runner => ../runner
 )
 
 require (
 	github.com/olive-io/olive/gateway v0.0.0-00010101000000-000000000000
-	github.com/olive-io/olive/meta v0.0.0-00010101000000-000000000000
-	github.com/olive-io/olive/pkg v0.0.0-00010101000000-000000000000
+	github.com/olive-io/olive/plane v0.0.0-00010101000000-000000000000
+	github.com/olive-io/olive/pkg v0.1.1
 	github.com/olive-io/olive/runner v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.8.1
 	go.etcd.io/etcd/server/v3 v3.5.17
@@ -65,7 +65,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/olive-io/bpmn v1.3.4 // indirect
-	github.com/olive-io/bpmn/schema v1.3.4 // indirect
+	github.com/olive-io/bpmn/schema v1.4.1 // indirect
 	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000 // indirect
 	github.com/olive-io/olive/client v0.0.0-00010101000000-000000000000 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -104,7 +104,7 @@ require (
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect

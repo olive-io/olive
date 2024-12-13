@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package app
@@ -24,7 +24,7 @@ package app
 import (
 	"strings"
 
-	"github.com/olive-io/olive/runner"
+	"github.com/olive-io/olive/runner/config"
 )
 
 var (
@@ -47,11 +47,11 @@ var (
 Runner:
   --data-dir 'default'
     Path to the data directory.
-  --endpoints [` + strings.Join(runner.DefaultEndpoints, ",") + `]
+  --endpoints [` + strings.Join(config.DefaultEndpoints, ",") + `]
     Set gRPC endpoints to connect the cluster of olive-meta
-  --listen-url '` + runner.DefaultListenURL + `'
+  --listen-url '` + config.DefaultListenURL + `'
     List of URLs to listen on for http traffic.
-  --advertise-url` + runner.DefaultListenURL + `'
+  --advertise-url` + config.DefaultListenURL + `'
     Set advertise URL to listen on for http traffic.
 
 Logging:

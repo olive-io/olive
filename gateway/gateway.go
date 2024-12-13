@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package gateway
@@ -37,13 +37,13 @@ import (
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/gatewaypb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/gateway/consumer"
+
+	dsypb "github.com/olive-io/olive/api/discoverypb"
+	pb "github.com/olive-io/olive/api/gatewaypb"
 	dsy "github.com/olive-io/olive/pkg/discovery"
 	grpcproxy "github.com/olive-io/olive/pkg/proxy/server/grpc"
-	"github.com/olive-io/olive/pkg/runtime"
 	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
@@ -82,7 +82,7 @@ func NewGateway(cfg *Config) (*Gateway, error) {
 		return nil, err
 	}
 
-	prefix := runtime.DefaultRunnerDiscoveryNode
+	prefix := "/"
 	discovery, err := dsy.NewDiscovery(oct.Client, dsy.SetLogger(lg), dsy.Prefix(prefix))
 	if err != nil {
 		return nil, err

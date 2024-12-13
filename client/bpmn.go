@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package client
@@ -30,17 +30,18 @@ import (
 	"google.golang.org/grpc"
 
 	dsypb "github.com/olive-io/olive/api/discoverypb"
-
+	"github.com/olive-io/olive/api/meta"
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/types"
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.Definition, error)
-	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*pb.Definition, string, error)
-	GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error)
+	DeployDefinition(ctx context.Context, id, name string, body []byte) (*types.Definition, error)
+	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, string, error)
+	GetDefinition(ctx context.Context, id string, version uint64) (*types.Definition, error)
 	RemoveDefinition(ctx context.Context, id string) error
-	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error)
-	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*pb.ProcessInstance, error)
+	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
+	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*types.ProcessInstance, error)
 }
 
 type bpmnRPC struct {
@@ -56,7 +57,7 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*pb.Definition, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*types.Definition, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -70,29 +71,27 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 	}
 
 	var definitions schema.Definitions
-	if err := xml.Unmarshal(body, &definitions); err != nil {
+	if err := xml.Unmarshal([]byte(body), &definitions); err != nil {
 		return nil, errors.Wrap(ErrBadFormatDefinitions, err.Error())
 	}
 
 	r := &pb.DeployDefinitionRequest{
-		Id:      id,
-		Name:    name,
-		Content: body,
+		Id:   id,
+		Name: name,
+		//Content: body,
 	}
 	resp, err := bc.remoteClient(conn).DeployDefinition(ctx, r, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
 
-	definition := &pb.Definition{
-		Header: &pb.OliveHeader{
-			Runner: 0,
-			//Region: resp.Region,
+	definition := &types.Definition{
+		ObjectMeta: meta.ObjectMeta{
+			Name: name,
+			UID:  id,
 		},
-		Id:      id,
-		Name:    name,
-		Content: body,
-		Version: resp.Version,
+		Content: string(body),
+		Version: int64(resp.Version),
 	}
 
 	return definition, nil
@@ -112,7 +111,7 @@ func WithContinue(token string) ListDefinitionOption {
 	}
 }
 
-func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*pb.Definition, string, error) {
+func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, string, error) {
 	conn := bc.client.conn
 	in := pb.ListDefinitionRequest{}
 	for _, option := range options {
@@ -126,7 +125,7 @@ func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitio
 	return rsp.Definitions, rsp.ContinueToken, nil
 }
 
-func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*pb.Definition, error) {
+func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*types.Definition, error) {
 	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
@@ -192,7 +191,7 @@ func WithProperties(properties map[string]any) ExecDefinitionOption {
 	}
 }
 
-func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*pb.ProcessInstance, error) {
+func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*types.ProcessInstance, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -216,7 +215,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	return rsp.Instance, nil
 }
 
-func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (instance *pb.ProcessInstance, err error) {
+func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (instance *types.ProcessInstance, err error) {
 	//conn := bc.client.conn
 	//leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	//if err != nil {
@@ -228,7 +227,7 @@ func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, 
 	//		return nil, err
 	//	}
 	//}
-	//in := &pb.GetProcessInstanceRequest{
+	//in := &types.GetProcessInstanceRequest{
 	//	DefinitionId:      definitionId,
 	//	DefinitionVersion: definitionVersion,
 	//	Id:                id,

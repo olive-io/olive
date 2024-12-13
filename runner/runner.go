@@ -1,22 +1,22 @@
 /*
-   Copyright 2023 The olive Authors
+Copyright 2023 The olive Authors
 
-   This program is offered under a commercial and under the AGPL license.
-   For AGPL licensing, see below.
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
 
-   AGPL licensing:
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package runner
@@ -24,44 +24,53 @@ package runner
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"net/http"
 	urlpkg "net/url"
 
-	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/olive-io/bpmn/tracing"
+	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/runnerpb"
 	"github.com/olive-io/olive/client"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/backend"
+	"github.com/olive-io/olive/runner/config"
+	"github.com/olive-io/olive/runner/gather"
+	"github.com/olive-io/olive/runner/scheduler"
+	"github.com/olive-io/olive/runner/server"
+)
+
+const (
+	curRevKey = "/watch/revision"
 )
 
 type Runner struct {
 	genericserver.IEmbedServer
-	pb.UnsafeRunnerRPCServer
 
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	cfg Config
+	cfg *config.Config
 
 	oct *client.Client
 
 	be backend.IBackend
 
-	serve *http.Server
+	// bpmn process scheduler
+	sch *scheduler.Scheduler
 
-	traces <-chan tracing.ITrace
-	pr     *pb.Runner
+	gather *gather.Gather
+
+	serve *http.Server
 }
 
-func NewRunner(cfg Config) (*Runner, error) {
+func NewRunner(cfg *config.Config) (*Runner, error) {
 	lg := cfg.GetLogger()
 
 	lg.Debug("protected directory: " + cfg.DataDir)
@@ -70,7 +79,7 @@ func NewRunner(cfg Config) (*Runner, error) {
 		return nil, err
 	}
 
-	be, err := newBackend(&cfg)
+	be, err := newBackend(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -114,15 +123,25 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 func (r *Runner) start() error {
 	var err error
 
-	r.pr, err = r.register()
+	gcfg := &gather.Config{
+		Name:        r.cfg.Name,
+		HeartbeatMs: r.cfg.HeartbeatMs,
+	}
+	listenURL := r.cfg.AdvertiseURL
+	if listenURL == "" {
+		listenURL = r.cfg.ListenURL
+	}
+	gcfg.ListenURL = listenURL
+
+	r.gather, err = gather.NewGather(r.ctx, gcfg, r.be)
 	if err != nil {
-		return err
+		return fmt.Errorf("create delegate: %w", err)
 	}
 
-	//r.controller, r.traces, err = r.startRaftController()
-	//if err != nil {
-	//	return err
-	//}
+	r.sch, err = r.startScheduler()
+	if err != nil {
+		return fmt.Errorf("start scheduler: %w", err)
+	}
 
 	return nil
 }
@@ -144,17 +163,13 @@ func (r *Runner) startGRPCServer() error {
 
 	r.cfg.ListenURL = scheme + ts.Addr().String()
 
-	gs := r.buildGRPCServer()
-
-	gwmux, err := r.buildGRPCGateway()
+	handler, err := r.buildHandler()
 	if err != nil {
 		return err
 	}
-	handler := r.buildUserHandler()
 
-	mux := r.createMux(gwmux, handler)
 	r.serve = &http.Server{
-		Handler:        genericserver.HybridHandler(gs, mux),
+		Handler:        handler,
 		MaxHeaderBytes: 1024 * 1024 * 20,
 	}
 
@@ -183,153 +198,59 @@ func (r *Runner) createListener() (string, net.Listener, error) {
 	return "http://", listener, nil
 }
 
-func (r *Runner) buildGRPCServer() *grpc.Server {
+func (r *Runner) buildHandler() (http.Handler, error) {
 	sopts := []grpc.ServerOption{}
 	gs := grpc.NewServer(sopts...)
-	//pb.RegisterRunnerRPCServer(gs, r)
 
-	return gs
-}
+	runnerRPC := server.NewGRPCRunnerServer(r.sch, r.gather)
+	runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
 
-func (r *Runner) buildGRPCGateway() (*gw.ServeMux, error) {
-	gwmux := gw.NewServeMux()
-	//if err := pb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, r); err != nil {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	muxOpts := []gwrt.ServeMuxOption{}
+	gwmux := gwrt.NewServeMux(muxOpts...)
+
+	//if err := runnerpb.RegisterRunnerRPCServer(r.ctx, gwmux, runnerRPC); err != nil {
 	//	return nil, err
 	//}
-	return gwmux, nil
-}
 
-func (r *Runner) buildUserHandler() http.Handler {
-	handler := http.NewServeMux()
-	handler.Handle("/metrics", promhttp.Handler())
-
-	return handler
-}
-
-func (r *Runner) createMux(gwmux *gw.ServeMux, handler http.Handler) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	if gwmux != nil {
-		mux.Handle(
-			"/v1/",
-			wsproxy.WebsocketProxy(
-				gwmux,
-				wsproxy.WithRequestMutator(
-					// Default to the POST method for streams
-					func(_ *http.Request, outgoing *http.Request) *http.Request {
-						outgoing.Method = "POST"
-						return outgoing
-					},
-				),
-				wsproxy.WithMaxRespBodyBufferSize(0x7fffffff),
+	mux.Handle(
+		"/v1/",
+		wsproxy.WebsocketProxy(
+			gwmux,
+			wsproxy.WithRequestMutator(
+				// Default to the POST method for streams
+				func(_ *http.Request, outgoing *http.Request) *http.Request {
+					outgoing.Method = "POST"
+					return outgoing
+				},
 			),
-		)
-	}
-	if handler != nil {
-		mux.Handle("/", handler)
-	}
-	return mux
+			wsproxy.WithMaxRespBodyBufferSize(0x7fffffff),
+		),
+	)
+
+	root := http.NewServeMux()
+	root.Handle("/", mux)
+
+	handler := genericserver.HybridHandler(gs, root)
+
+	return handler, nil
 }
 
-//func (r *Runner) startRaftController() (*raft.Controller, <-chan tracing.ITrace, error) {
-//	cfg := r.cfg
-//	lg := r.Logger()
-//
-//	dopts := []dsy.Option{
-//		dsy.Prefix(runtime.DefaultRunnerDiscoveryNode),
-//		dsy.SetLogger(lg),
-//	}
-//	discovery, err := dsy.NewDiscovery(r.oct.Client, dopts...)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	listenPeerURL, err := urlpkg.Parse(cfg.ListenPeerURL)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//	raftAddr := listenPeerURL.Host
-//
-//	cc := raft.NewConfig()
-//	cc.DataDir = cfg.RegionDir()
-//	cc.RaftAddress = raftAddr
-//	cc.HeartbeatMs = cfg.HeartbeatMs
-//	cc.RaftRTTMillisecond = cfg.RaftRTTMillisecond
-//	cc.Logger = lg
-//
-//	controller, err := raft.NewController(r.ctx, cc, r.be, discovery, r.pr)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	lg.Info("start raft container")
-//	if err = controller.Start(r.StoppingNotify()); err != nil {
-//		return nil, nil, err
-//	}
-//
-//	ctx := r.ctx
-//	prefix := runtime.DefaultRunnerRegion
-//	rev := r.getRev()
-//
-//	options := []clientv3.OpOption{
-//		clientv3.WithPrefix(),
-//		clientv3.WithSerializable(),
-//		clientv3.WithRev(rev),
-//	}
-//
-//	rsp, err := r.oct.Get(ctx, prefix, append(options, clientv3.WithMinModRev(rev+1))...)
-//	if err != nil {
-//		return nil, nil, err
-//	}
-//
-//	regions := make([]*pb.Region, 0)
-//	definitions := make([]*pb.Definition, 0)
-//	processes := make([]*pb.ProcessInstance, 0)
-//	for _, kv := range rsp.Kvs {
-//		rev = kv.ModRevision
-//		key := string(kv.Value)
-//		switch {
-//		case strings.HasPrefix(key, runtime.DefaultRunnerRegion):
-//			region, match, err := parseRegionKV(kv, r.pr.Id)
-//			if err != nil || !match {
-//				continue
-//			}
-//			regions = append(regions, region)
-//		case strings.HasPrefix(key, runtime.DefaultRunnerDefinitions):
-//			definition, match, err := parseDefinitionKV(kv)
-//			if err != nil || !match {
-//				continue
-//			}
-//			definitions = append(definitions, definition)
-//		case strings.HasPrefix(key, runtime.DefaultRunnerProcessInstance):
-//			proc, match, err := parseProcessInstanceKV(kv)
-//			if err != nil || !match {
-//				continue
-//			}
-//			processes = append(processes, proc)
-//		}
-//	}
-//	for _, region := range regions {
-//		if err = controller.SyncRegion(ctx, region); err != nil {
-//			return nil, nil, errors.Wrap(err, "sync region")
-//		}
-//	}
-//	for _, definition := range definitions {
-//		if err = controller.DeployDefinition(ctx, definition); err != nil {
-//			lg.Error("deploy definition", zap.Error(err))
-//		}
-//	}
-//	for _, process := range processes {
-//		if err = controller.ExecuteDefinition(ctx, process); err != nil {
-//			lg.Error("execute definition", zap.Error(err))
-//		} else {
-//			commitProcessInstance(ctx, lg, r.oct, process)
-//		}
-//	}
-//
-//	r.setRev(rev)
-//	return controller, controller.SubscribeTrace(), nil
-//}
+func (r *Runner) startScheduler() (*scheduler.Scheduler, error) {
+	scfg := scheduler.NewConfig(r.ctx, r.Logger(), r.be)
+	sc, err := scheduler.NewScheduler(scfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = sc.Start(); err != nil {
+		return nil, err
+	}
+
+	return sc, nil
+}
 
 func (r *Runner) watching() {
 	//ctx, cancel := context.WithCancel(r.ctx)
@@ -359,26 +280,32 @@ func (r *Runner) watching() {
 }
 
 func (r *Runner) getRev() int64 {
-	key := []byte("cur_rev")
-	_ = key
-	var err error
-	var value []byte
-	if err != nil || len(value) == 0 {
+	key := curRevKey
+
+	rsp, _ := r.be.Get(r.ctx, key)
+	if rsp == nil || len(rsp.Kvs) == 0 {
 		return 0
 	}
+
+	value := rsp.Kvs[0].Value
 	value = value[:8]
 	return int64(binary.LittleEndian.Uint64(value))
 }
 
 func (r *Runner) setRev(rev int64) {
-	key := []byte("cur_rev")
-	_ = key
 	value := make([]byte, 8)
 	binary.LittleEndian.PutUint64(value, uint64(rev))
+
+	key := curRevKey
+	_ = r.be.Put(r.ctx, key, value)
 }
 
 func (r *Runner) destroy() {
 	r.cancel()
+
+	if err := r.sch.Stop(); err != nil {
+		r.Logger().Error("stop scheduler", zap.Error(err))
+	}
 }
 
 func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {

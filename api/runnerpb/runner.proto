@@ -1,0 +1,132 @@
+/*
+Copyright 2023 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package runnerpb;
+
+import "github.com/olive-io/olive/api/types/generated.proto";
+
+option go_package = "github.com/olive-io/olive/api/runnerpb;runnerpb";
+
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+service RunnerRPC {
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner"
+    };
+  };
+
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/list"
+      body: "*"
+    };
+  };
+
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/get"
+      body: "*"
+    };
+  };
+
+  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/list"
+      body: "*"
+    };
+  };
+
+  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/get"
+      body: "*"
+    };
+  };
+
+  rpc RunProcessInstance(RunProcessInstanceRequest) returns (RunProcessInstanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/processInstance/run"
+      body: "*"
+    };
+  };
+}
+
+message GetRunnerRequest {}
+
+message GetRunnerResponse {
+  github.com.olive_io.olive.api.types.Runner runner = 1;
+  github.com.olive_io.olive.api.types.RunnerStatistics statistics = 2;
+}
+
+message ListDefinitionsRequest {
+  string id = 1;
+}
+
+message ListDefinitionsResponse {
+  repeated github.com.olive_io.olive.api.types.Definition definitions = 1;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+  int64 version = 2;
+}
+
+message GetDefinitionResponse {
+  github.com.olive_io.olive.api.types.Definition definition = 1;
+}
+
+message ListProcessInstancesRequest {
+  string definitionId = 1;
+  int64 definitionVersion = 2;
+}
+
+message ListProcessInstancesResponse {
+  repeated github.com.olive_io.olive.api.types.ProcessInstance instances = 1;
+}
+
+message GetProcessInstanceRequest {
+  string definitionId = 1;
+  int64 definitionVersion = 2;
+  string id = 3;
+}
+
+message GetProcessInstanceResponse {
+  github.com.olive_io.olive.api.types.ProcessInstance instance = 1;
+}
+
+message RunProcessInstanceRequest {
+  string definitionId = 1;
+  int64 definitionVersion = 2;
+  string content = 3;
+  string process = 4;
+  string instanceName = 5;
+  map<string, string> headers = 6;
+  map<string, bytes> properties = 7;
+  map<string, bytes> dataObjects = 8;
+}
+
+message RunProcessInstanceResponse {
+  github.com.olive_io.olive.api.types.ProcessInstance instance = 1;
+}

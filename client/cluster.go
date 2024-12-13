@@ -24,14 +24,15 @@ package client
 import (
 	"context"
 
-	"go.etcd.io/etcd/client/pkg/v3/types"
+	v3types "go.etcd.io/etcd/client/pkg/v3/types"
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
+	"github.com/olive-io/olive/api/types"
 )
 
 type (
-	Member                pb.Member
+	Member                types.Member
 	MemberListResponse    pb.MemberListResponse
 	MemberAddResponse     pb.MemberAddResponse
 	MemberRemoveResponse  pb.MemberRemoveResponse
@@ -90,7 +91,7 @@ func (c *cluster) MemberAddAsLearner(ctx context.Context, peerAddrs []string) (*
 
 func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner bool) (*MemberAddResponse, error) {
 	// fail-fast before panic in rafthttp
-	if _, err := types.NewURLs(peerAddrs); err != nil {
+	if _, err := v3types.NewURLs(peerAddrs); err != nil {
 		return nil, err
 	}
 
@@ -116,7 +117,7 @@ func (c *cluster) MemberRemove(ctx context.Context, id uint64) (*MemberRemoveRes
 
 func (c *cluster) MemberUpdate(ctx context.Context, id uint64, peerAddrs []string) (*MemberUpdateResponse, error) {
 	// fail-fast before panic in rafthttp
-	if _, err := types.NewURLs(peerAddrs); err != nil {
+	if _, err := v3types.NewURLs(peerAddrs); err != nil {
 		return nil, err
 	}
 
