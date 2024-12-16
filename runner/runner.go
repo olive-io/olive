@@ -36,14 +36,16 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/runnerpb"
 	"github.com/olive-io/olive/client"
 	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/config"
 	"github.com/olive-io/olive/runner/gather"
 	"github.com/olive-io/olive/runner/scheduler"
 	"github.com/olive-io/olive/runner/server"
+	"github.com/olive-io/olive/runner/storage"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 const (
@@ -61,6 +63,7 @@ type Runner struct {
 	oct *client.Client
 
 	be backend.IBackend
+	bs *storage.Storage
 
 	// bpmn process scheduler
 	sch *scheduler.Scheduler
@@ -70,7 +73,7 @@ type Runner struct {
 	serve *http.Server
 }
 
-func NewRunner(cfg *config.Config) (*Runner, error) {
+func NewRunner(cfg *config.Config, scheme *api.Scheme) (*Runner, error) {
 	lg := cfg.GetLogger()
 
 	lg.Debug("protected directory: " + cfg.DataDir)
@@ -84,6 +87,8 @@ func NewRunner(cfg *config.Config) (*Runner, error) {
 		return nil, err
 	}
 
+	bs := storage.New(scheme, be)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
@@ -94,6 +99,7 @@ func NewRunner(cfg *config.Config) (*Runner, error) {
 
 		oct: oct,
 		be:  be,
+		bs:  bs,
 	}
 
 	return runner, nil
@@ -202,7 +208,7 @@ func (r *Runner) buildHandler() (http.Handler, error) {
 	sopts := []grpc.ServerOption{}
 	gs := grpc.NewServer(sopts...)
 
-	runnerRPC := server.NewGRPCRunnerServer(r.sch, r.gather)
+	runnerRPC := server.NewGRPCRunnerServer(r.sch, r.gather, r.bs)
 	runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
 
 	mux := http.NewServeMux()
@@ -211,9 +217,9 @@ func (r *Runner) buildHandler() (http.Handler, error) {
 	muxOpts := []gwrt.ServeMuxOption{}
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
-	//if err := runnerpb.RegisterRunnerRPCServer(r.ctx, gwmux, runnerRPC); err != nil {
-	//	return nil, err
-	//}
+	if err := runnerpb.RegisterRunnerRPCHandlerServer(r.ctx, gwmux, runnerRPC); err != nil {
+		return nil, err
+	}
 
 	mux.Handle(
 		"/v1/",

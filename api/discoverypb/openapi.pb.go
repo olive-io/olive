@@ -27,10 +27,11 @@
 package discoverypb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -978,9 +979,9 @@ type PathRequestBodyContent struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ApplicationJson *ApplicationContent `protobuf:"bytes,1,opt,name=applicationJson,proto3" json:"applicationJson,omitempty"`
-	ApplicationXml  *ApplicationContent `protobuf:"bytes,2,opt,name=applicationXml,proto3" json:"applicationXml,omitempty"`
-	ApplicationYaml *ApplicationContent `protobuf:"bytes,3,opt,name=applicationYaml,proto3" json:"applicationYaml,omitempty"`
+	ApplicationJson *ApplicationContent `protobuf:"bytes,1,opt,name=applicationJson,proto3" json:"application/json,omitempty"`
+	ApplicationXml  *ApplicationContent `protobuf:"bytes,2,opt,name=applicationXml,proto3" json:"application/xml,omitempty"`
+	ApplicationYaml *ApplicationContent `protobuf:"bytes,3,opt,name=applicationYaml,proto3" json:"application/yaml,omitempty"`
 }
 
 func (x *PathRequestBodyContent) Reset() {
@@ -1517,7 +1518,7 @@ type SchemaObject struct {
 	ReadOnly             bool              `protobuf:"varint,7,opt,name=readOnly,proto3" json:"readOnly,omitempty"`
 	WriteOnly            bool              `protobuf:"varint,8,opt,name=writeOnly,proto3" json:"writeOnly,omitempty"`
 	Required             bool              `protobuf:"varint,9,opt,name=required,proto3" json:"required,omitempty"`
-	Ref                  string            `protobuf:"bytes,10,opt,name=ref,proto3" json:"ref,omitempty"`
+	Ref                  string            `protobuf:"bytes,10,opt,name=ref,proto3" json:"$ref,omitempty"`
 	Default              string            `protobuf:"bytes,11,opt,name=default,proto3" json:"default,omitempty"`
 	MinLength            int32             `protobuf:"varint,20,opt,name=minLength,proto3" json:"minLength,omitempty"`
 	MaxLength            int32             `protobuf:"varint,21,opt,name=maxLength,proto3" json:"maxLength,omitempty"`

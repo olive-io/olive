@@ -19,34 +19,31 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package scheduler
+package v1
 
 import (
-	"context"
-
-	"go.uber.org/zap"
-
-	"github.com/olive-io/olive/runner/storage/backend"
+	"github.com/olive-io/olive/api"
 )
 
-const (
-	DefaultPoolSize = 100
+// GroupName is the group name for this API
+const GroupName = "core.olive.io"
+
+// GroupVersion is group version used to register these objects
+var GroupVersion = api.GroupVersion{Group: GroupName, Version: "v1"}
+
+var (
+	SchemaBuilder = api.NewSchemeBuilder(addKnownTypes)
+	AddToScheme   = SchemaBuilder.AddToScheme
+	sets          = make([]api.Object, 0)
 )
 
-type Config struct {
-	Context  context.Context
-	Logger   *zap.Logger
-	DB       backend.IBackend
-	PoolSize int
+func addKnownTypes(scheme *api.Scheme) error {
+	return scheme.AddKnownTypes(GroupVersion, sets...)
 }
 
-func NewConfig(ctx context.Context, logger *zap.Logger, db backend.IBackend) *Config {
-	cfg := &Config{
-		Context:  ctx,
-		Logger:   logger,
-		DB:       db,
-		PoolSize: DefaultPoolSize,
-	}
-
-	return cfg
+func init() {
+	sets = append(sets,
+		&Definition{},
+		&ProcessInstance{},
+	)
 }

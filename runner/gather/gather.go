@@ -31,11 +31,10 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 
-	"github.com/olive-io/olive/api/meta"
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/metrics"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 const runnerPrefix = "/runner"
@@ -52,22 +51,19 @@ type Gather struct {
 	cfg *Config
 	be  backend.IBackend
 
-	runner *types.Runner
+	runner *corev1.Runner
 }
 
 func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, error) {
-	runner := new(types.Runner)
+	runner := new(corev1.Runner)
 	resp, err := be.Get(ctx, runnerPrefix)
 	if err != nil {
 		if !errors.Is(err, backend.ErrNotFound) {
 			return nil, err
 		}
 
-		runner = &types.Runner{
-			ObjectMeta: meta.ObjectMeta{
-				Name:   cfg.Name,
-				Labels: map[string]string{},
-			},
+		runner = &corev1.Runner{
+			Name: cfg.Name,
 		}
 
 	} else {
@@ -114,13 +110,10 @@ func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, 
 	return delegate, nil
 }
 
-func (d *Gather) GetRunner() *types.Runner {
+func (d *Gather) GetRunner() *corev1.Runner {
 	in := d.runner
-	out := &types.Runner{
-		ObjectMeta: meta.ObjectMeta{
-			Name:   in.Name,
-			Labels: in.Labels,
-		},
+	out := &corev1.Runner{
+		Name:        in.Name,
 		ListenURL:   in.ListenURL,
 		Version:     in.Version,
 		HeartbeatMs: in.HeartbeatMs,
@@ -132,8 +125,8 @@ func (d *Gather) GetRunner() *types.Runner {
 	return out
 }
 
-func (d *Gather) GetStat() (*types.RunnerStatistics, error) {
-	rs := &types.RunnerStatistics{
+func (d *Gather) GetStat() (*corev1.RunnerStatistics, error) {
+	rs := &corev1.RunnerStatistics{
 		Name:          d.runner.Name,
 		BpmnProcesses: uint64(metrics.ProcessCounter.Get()),
 		BpmnEvents:    uint64(metrics.EventCounter.Get()),

@@ -25,7 +25,7 @@ package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 
-import "github.com/olive-io/olive/api/types/internal.proto";
+import "github.com/olive-io/olive/api/types/core/v1/generated.proto";
 
 message InternalKV {
   bytes key = 1;
@@ -99,19 +99,19 @@ message RegionDeleteResponse {
 }
 
 message RegionDeployDefinitionRequest {
-  types.Definition definition = 1;
+  github.com.olive_io.olive.api.types.core.v1.Definition definition = 1;
 }
 
 message RegionDeployDefinitionResponse {
   RaftResponseHeader header = 1;
-  types.Definition definition = 2;
+  github.com.olive_io.olive.api.types.core.v1.Definition definition = 2;
 }
 
 message RegionExecuteDefinitionRequest {
-  types.ProcessInstance process_instance = 1;
+  github.com.olive_io.olive.api.types.core.v1.ProcessInstance process_instance = 1;
 }
 
 message RegionExecuteDefinitionResponse {
   RaftResponseHeader header = 1;
-  types.ProcessInstance process_instance = 2;
+  github.com.olive_io.olive.api.types.core.v1.ProcessInstance process_instance = 2;
 }

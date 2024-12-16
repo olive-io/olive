@@ -30,9 +30,9 @@ import (
 
 	json "github.com/bytedance/sonic"
 
-	"github.com/olive-io/olive/api/meta"
-	"github.com/olive-io/olive/api/types"
-	"github.com/olive-io/olive/runner/backend"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
+	metav1 "github.com/olive-io/olive/api/types/meta/v1"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 	processMetaPrefix = "/pm"
 )
 
-func (s *Scheduler) ListDefinition(ctx context.Context, id string) ([]*types.Definition, error) {
+func (s *Scheduler) ListDefinition(ctx context.Context, id string) ([]*corev1.Definition, error) {
 
 	key := path.Join(definitionPrefix, id)
 	resp, err := s.db.Get(ctx, key, backend.GetPrefix())
@@ -49,9 +49,9 @@ func (s *Scheduler) ListDefinition(ctx context.Context, id string) ([]*types.Def
 		return nil, err
 	}
 
-	ds := make([]*types.Definition, 0)
+	ds := make([]*corev1.Definition, 0)
 	for _, kv := range resp.Kvs {
-		d := &types.Definition{}
+		d := &corev1.Definition{}
 		if err = json.Unmarshal(kv.Value, d); err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (s *Scheduler) ListDefinition(ctx context.Context, id string) ([]*types.Def
 	return ds, nil
 }
 
-func (s *Scheduler) GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error) {
+func (s *Scheduler) GetDefinition(ctx context.Context, id string, version int64) (*corev1.Definition, error) {
 
 	key := path.Join(definitionPrefix, fmt.Sprintf("%s/%010d", id, version))
 	resp, err := s.db.Get(ctx, key)
@@ -69,7 +69,7 @@ func (s *Scheduler) GetDefinition(ctx context.Context, id string, version int64)
 		return nil, err
 	}
 
-	definition := types.Definition{}
+	definition := corev1.Definition{}
 	if err = resp.Unmarshal(&definition); err != nil {
 		return nil, err
 	}
@@ -78,8 +78,8 @@ func (s *Scheduler) GetDefinition(ctx context.Context, id string, version int64)
 }
 
 func (s *Scheduler) saveDefinition(ctx context.Context, id, name string, version int64, content string) error {
-	definition := &types.Definition{
-		ObjectMeta: meta.ObjectMeta{
+	definition := &corev1.Definition{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:  id,
 			Name: name,
 		},
@@ -108,14 +108,14 @@ type ProcessMeta struct {
 	DefinitionsId      string `json:"id"`
 	DefinitionsVersion int64  `json:"version"`
 
-	Instance string              `json:"instance"`
-	Status   types.ProcessStatus `json:"status"`
+	Instance string               `json:"instance"`
+	Status   corev1.ProcessStatus `json:"status"`
 }
 
 func (pm *ProcessMeta) finished() bool {
 	switch pm.Status {
-	case types.ProcessOk,
-		types.ProcessFail:
+	case corev1.ProcessOk,
+		corev1.ProcessFail:
 		return true
 	default:
 		return false
@@ -147,14 +147,14 @@ func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 		if err != nil {
 			continue
 		}
-		instance := types.ProcessInstance{}
+		instance := corev1.ProcessInstance{}
 		if err = resp1.Unmarshal(&instance); err != nil {
 			continue
 		}
 
 		switch instance.Status {
-		case types.ProcessOk,
-			types.ProcessFail:
+		case corev1.ProcessOk,
+			corev1.ProcessFail:
 			continue
 		default:
 		}
@@ -164,7 +164,7 @@ func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 	return items
 }
 
-func (s *Scheduler) ListProcess(ctx context.Context, definition string, version int64) ([]*types.ProcessInstance, error) {
+func (s *Scheduler) ListProcess(ctx context.Context, definition string, version int64) ([]*corev1.ProcessInstance, error) {
 
 	prefix := path.Join(processMetaPrefix)
 	if definition != "" {
@@ -179,7 +179,7 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition string, version 
 		return nil, err
 	}
 
-	instances := make([]*types.ProcessInstance, 0)
+	instances := make([]*corev1.ProcessInstance, 0)
 	for _, kv := range resp.Kvs {
 		pm := ProcessMeta{}
 		if err = json.Unmarshal(kv.Value, &pm); err != nil {
@@ -193,7 +193,7 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition string, version 
 		if err != nil {
 			continue
 		}
-		instance := types.ProcessInstance{}
+		instance := corev1.ProcessInstance{}
 		if err = resp1.Unmarshal(&instance); err != nil {
 			continue
 		}
@@ -204,7 +204,7 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition string, version 
 	return instances, nil
 }
 
-func (s *Scheduler) GetProcess(ctx context.Context, definition string, version int64, id string) (*types.ProcessInstance, error) {
+func (s *Scheduler) GetProcess(ctx context.Context, definition string, version int64, id string) (*corev1.ProcessInstance, error) {
 	identify := fmt.Sprintf("%s/%d/%s", definition, version, id)
 
 	instanceKey := path.Join(processPrefix, identify)
@@ -213,7 +213,7 @@ func (s *Scheduler) GetProcess(ctx context.Context, definition string, version i
 		return nil, err
 	}
 
-	instance := types.ProcessInstance{}
+	instance := corev1.ProcessInstance{}
 	if err = resp.Unmarshal(&instance); err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (s *Scheduler) GetProcess(ctx context.Context, definition string, version i
 	return &instance, nil
 }
 
-func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInstance) error {
+func (s *Scheduler) saveProcess(ctx context.Context, instance *corev1.ProcessInstance) error {
 	if instance.CreationTimestamp == 0 {
 		instance.CreationTimestamp = time.Now().UnixNano()
 	}
@@ -249,13 +249,13 @@ func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInst
 	return nil
 }
 
-func (s *Scheduler) finishProcess(ctx context.Context, instance *types.ProcessInstance, err error) error {
+func (s *Scheduler) finishProcess(ctx context.Context, instance *corev1.ProcessInstance, err error) error {
 	instance.EndTimestamp = time.Now().UnixNano()
 	if err != nil {
-		instance.Status = types.ProcessFail
+		instance.Status = corev1.ProcessFail
 		instance.Message = err.Error()
 	} else {
-		instance.Status = types.ProcessOk
+		instance.Status = corev1.ProcessOk
 	}
 	return s.saveProcess(ctx, instance)
 }

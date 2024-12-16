@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The olive Authors
+Copyright 2023 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -19,34 +19,11 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package scheduler
+syntax = "proto3";
 
-import (
-	"context"
+package types;
 
-	"go.uber.org/zap"
+option go_package = "github.com/olive-io/olive/api/types;types";
 
-	"github.com/olive-io/olive/runner/storage/backend"
-)
 
-const (
-	DefaultPoolSize = 100
-)
 
-type Config struct {
-	Context  context.Context
-	Logger   *zap.Logger
-	DB       backend.IBackend
-	PoolSize int
-}
-
-func NewConfig(ctx context.Context, logger *zap.Logger, db backend.IBackend) *Config {
-	cfg := &Config{
-		Context:  ctx,
-		Logger:   logger,
-		DB:       db,
-		PoolSize: DefaultPoolSize,
-	}
-
-	return cfg
-}

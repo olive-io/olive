@@ -1,8 +1,57 @@
-package types
+package v1
 
 import (
-	"github.com/olive-io/olive/api/meta"
+	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 )
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+type Header struct {
+	Runner uint64 `json:"runner" protobuf:"varint,1,opt,name=runner,proto3"`
+	Rev    int64  `json:"rev" protobuf:"varint,2,opt,name=rev,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+type ResponseHeader struct {
+	// ClusterID is the ID of the cluster which sent the response.
+	ClusterID uint64 `json:"cluster_id" protobuf:"varint,1,opt,name=cluster_id,json=cluster_id,proto3"`
+	// MemberID is the ID of the member which sent the response.
+	MemberID uint64 `json:"member_id" protobuf:"varint,2,opt,name=member_id,json=member_id,proto3"`
+	// RaftTerm is the raft term when the request was applied.
+	RaftTerm uint64 `json:"raft_term" protobuf:"varint,3,opt,name=raft_term,json=raft_term,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+type Member struct {
+	// ID is the member ID for this member.
+	ID uint64 `json:"id" protobuf:"varint,1,opt,name=id,proto3"`
+	// Name is the human-readable name of the member. If the member is not started, the name will be an empty string.
+	Name string `json:"name" protobuf:"bytes,2,opt,name=name,proto3"`
+	// PeerURLs is the list of URLs the member exposes to the cluster for communication.
+	PeerURLs []string `json:"peer_urls" protobuf:"bytes,3,rep,name=peer_urls,json=peer_urls,proto3"`
+	// ClientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+	ClientURLs []string `json:"client_urls" protobuf:"bytes,4,rep,name=client_urls,json=client_urls,proto3"`
+	// isLearner indicates if the member is raft learner.
+	IsLeader bool `json:"is_leader" protobuf:"varint,5,opt,name=is_leader,json=is_leader,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+type Plane struct {
+	ClusterID uint64         `json:"cluster_id" protobuf:"varint,1,opt,name=cluster_id,json=cluster_id,proto3"`
+	Leader    uint64         `json:"leader" protobuf:"varint,2,opt,name=leader,proto3"`
+	Members   []*PlaneMember `json:"members" protobuf:"bytes,3,rep,name=members,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+type PlaneMember struct {
+	ID         uint64   `json:"id" protobuf:"varint,1,opt,name=id,proto3"`
+	ClientURLs []string `json:"client_urls" protobuf:"bytes,2,rep,name=client_urls,json=client_urls,proto3"`
+	PeerURLs   []string `json:"peer_urls" protobuf:"bytes,3,rep,name=peer_urls,json=peer_urls,proto3"`
+}
 
 type State string
 
@@ -50,22 +99,20 @@ const (
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
-// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type Runner struct {
-	meta.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
-	meta.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name,proto3"`
 
 	// listenURL is the URL the runner is listening on.
-	ListenURL   string `json:"listenURL" protobuf:"bytes,3,opt,name=listenURL,proto3"`
-	Version     string `json:"version" protobuf:"bytes,4,opt,name=version,proto3"`
-	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,5,opt,name=heartbeatMs,proto3"`
-	Hostname    string `json:"hostname" protobuf:"bytes,6,opt,name=hostname,proto3"`
+	ListenURL   string `json:"listenURL" protobuf:"bytes,2,opt,name=listenURL,proto3"`
+	Version     string `json:"version" protobuf:"bytes,3,opt,name=version,proto3"`
+	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,4,opt,name=heartbeatMs,proto3"`
+	Hostname    string `json:"hostname" protobuf:"bytes,5,opt,name=hostname,proto3"`
 
-	Features map[string]string `json:"features" protobuf:"bytes,7,rep,name=features,proto3"`
+	Features map[string]string `json:"features" protobuf:"bytes,6,rep,name=features,proto3"`
 
-	CPU      int32 `json:"cpu" protobuf:"varint,8,opt,name=cpu,proto3"`
-	Memory   int64 `json:"memory" protobuf:"varint,9,opt,name=memory,proto3"`
-	DiskSize int64 `json:"diskSize" protobuf:"varint,10,opt,name=diskSize,proto3"`
+	CPU      int32 `json:"cpu" protobuf:"varint,7,opt,name=cpu,proto3"`
+	Memory   int64 `json:"memory" protobuf:"varint,8,opt,name=memory,proto3"`
+	DiskSize int64 `json:"diskSize" protobuf:"varint,9,opt,name=diskSize,proto3"`
 }
 
 // +gogo:genproto=true
@@ -88,8 +135,8 @@ type RunnerStatistics struct {
 // +gogo:deepcopy=true
 // +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type Definition struct {
-	meta.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
-	meta.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+	metav1.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
 
 	Content string `json:"content,omitempty" protobuf:"bytes,3,opt,name=content,proto3"`
 	Version int64  `json:"version,omitempty" protobuf:"varint,4,opt,name=version,proto3"`
@@ -114,8 +161,8 @@ type ProcessContext struct {
 // +gogo:deepcopy=true
 // +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type ProcessInstance struct {
-	meta.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
-	meta.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+	metav1.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
 
 	Args BpmnArgs `json:"args,omitempty" protobuf:"bytes,3,opt,name=args,proto3"`
 
@@ -155,4 +202,17 @@ type FlowNodeStat struct {
 
 	StartTime int64 `json:"startTime" protobuf:"varint,6,opt,name=startTime,proto3"`
 	EndTime   int64 `json:"endTime" protobuf:"varint,7,opt,name=endTime,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+type Custom struct {
+	metav1.TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	Host     string `json:"host,omitempty" protobuf:"bytes,3,opt,name=host,proto3"`
+	Username string `json:"username,omitempty" protobuf:"bytes,4,opt,name=username,proto3"`
+	Password string `json:"password,omitempty" protobuf:"bytes,5,opt,name=password,proto3"`
 }

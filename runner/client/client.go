@@ -8,18 +8,23 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/olive-io/olive/api"
 	pb "github.com/olive-io/olive/api/runnerpb"
 	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/api/types/meta"
 )
 
 type Client struct {
 	cfg *Config
+
+	scheme *api.Scheme
 }
 
-func NewClient(cfg *Config) (*Client, error) {
+func NewClient(cfg *Config, scheme *api.Scheme) (*Client, error) {
 
 	client := &Client{
-		cfg: cfg,
+		cfg:    cfg,
+		scheme: scheme,
 	}
 
 	conn, err := client.newConn()
@@ -165,6 +170,106 @@ func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstan
 	}
 
 	return resp.Instance, nil
+}
+
+func (c *Client) List(ctx context.Context, options *meta.ListOptions) (*meta.Result, error) {
+	conn, err := c.newConn()
+	if err != nil {
+		return nil, err
+	}
+
+	cc := pb.NewRunnerRPCClient(conn)
+	opts := c.getCallOptions()
+
+	in := &pb.ListRequest{
+		Options: options,
+	}
+	resp, err := cc.List(ctx, in, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
+func (c *Client) Get(ctx context.Context, options *meta.GetOptions) (*meta.Result, error) {
+	conn, err := c.newConn()
+	if err != nil {
+		return nil, err
+	}
+
+	cc := pb.NewRunnerRPCClient(conn)
+	opts := c.getCallOptions()
+
+	in := &pb.GetRequest{
+		Options: options,
+	}
+	resp, err := cc.Get(ctx, in, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
+func (c *Client) Post(ctx context.Context, options *meta.PostOptions) error {
+	conn, err := c.newConn()
+	if err != nil {
+		return err
+	}
+
+	cc := pb.NewRunnerRPCClient(conn)
+	opts := c.getCallOptions()
+
+	in := &pb.PostRequest{
+		Options: options,
+	}
+	_, err = cc.Post(ctx, in, opts...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) Patch(ctx context.Context, options *meta.PatchOptions) error {
+	conn, err := c.newConn()
+	if err != nil {
+		return err
+	}
+
+	cc := pb.NewRunnerRPCClient(conn)
+	opts := c.getCallOptions()
+
+	in := &pb.PatchRequest{
+		Options: options,
+	}
+	_, err = cc.Patch(ctx, in, opts...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) Delete(ctx context.Context, options *meta.DeleteOptions) error {
+	conn, err := c.newConn()
+	if err != nil {
+		return err
+	}
+
+	cc := pb.NewRunnerRPCClient(conn)
+	opts := c.getCallOptions()
+
+	in := &pb.DeleteRequest{
+		Options: options,
+	}
+	_, err = cc.Delete(ctx, in, opts...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) BuildProcessInstance() *processBuilder {

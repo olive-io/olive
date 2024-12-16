@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/olive-io/olive/runner/backend"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 func newBackend(t *testing.T) (backend.IBackend, func()) {

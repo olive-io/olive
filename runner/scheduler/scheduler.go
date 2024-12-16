@@ -34,17 +34,17 @@ import (
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/api/meta"
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
+	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 	"github.com/olive-io/olive/pkg/queue"
-	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/metrics"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 var ErrStopped = errors.New("scheduler stopped")
 
 type ProcessItem struct {
-	*types.ProcessInstance
+	*corev1.ProcessInstance
 }
 
 func (item *ProcessItem) Score() int64 {
@@ -137,7 +137,7 @@ func (s *Scheduler) RunProcess(
 	headers map[string]string,
 	properties map[string][]byte,
 	dataObjects map[string][]byte,
-) (*types.ProcessInstance, error) {
+) (*corev1.ProcessInstance, error) {
 
 	err := s.saveDefinition(ctx, definitionId, instanceName, definitionVersion, content)
 	if err != nil {
@@ -145,8 +145,8 @@ func (s *Scheduler) RunProcess(
 	}
 
 	id := uuid.New().String()
-	instance := &types.ProcessInstance{
-		ObjectMeta: meta.ObjectMeta{
+	instance := &corev1.ProcessInstance{
+		ObjectMeta: metav1.ObjectMeta{
 			UID:               id,
 			Name:              instanceName,
 			CreationTimestamp: time.Now().UnixNano(),
@@ -155,18 +155,18 @@ func (s *Scheduler) RunProcess(
 		DefinitionsVersion: definitionVersion,
 		DefinitionsProcess: process,
 		DefinitionsContent: content,
-		Args: types.BpmnArgs{
+		Args: corev1.BpmnArgs{
 			Headers:     headers,
 			Properties:  properties,
 			DataObjects: dataObjects,
 		},
-		Context: types.ProcessContext{
+		Context: corev1.ProcessContext{
 			DataObjects: make(map[string][]byte),
 			Variables:   make(map[string][]byte),
 		},
-		FlowNodes:       make([]types.FlowNode, 0),
-		FlowNodeStatMap: make(map[string]types.FlowNodeStat),
-		Status:          types.ProcessWaiting,
+		FlowNodes:       make([]corev1.FlowNode, 0),
+		FlowNodeStatMap: make(map[string]corev1.FlowNodeStat),
+		Status:          corev1.ProcessWaiting,
 	}
 
 	if err = s.saveProcess(ctx, instance); err != nil {
@@ -213,7 +213,7 @@ func (s *Scheduler) process() {
 	}
 }
 
-func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
+func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 	return func() {
 		s.wg.Add(1)
 
@@ -229,7 +229,7 @@ func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
 		}()
 
 		instance.StartTimestamp = time.Now().UnixNano()
-		instance.Status = types.ProcessPrepare
+		instance.Status = corev1.ProcessPrepare
 		_ = s.saveProcess(ctx, instance)
 
 		variables := make(map[string]any)
@@ -280,10 +280,10 @@ func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
 
 		flowNodeMap := instance.FlowNodeStatMap
 		if flowNodeMap == nil {
-			flowNodeMap = make(map[string]types.FlowNodeStat)
+			flowNodeMap = make(map[string]corev1.FlowNodeStat)
 		}
 
-		instance.Status = types.ProcessRunning
+		instance.Status = corev1.ProcessRunning
 		err = process.Run(func(trace tracing.ITrace, locator data.IFlowDataLocator) {
 			switch tr := trace.(type) {
 			case *bpmn.TaskTrace:
@@ -353,12 +353,12 @@ func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
 				stat, ok := flowNodeMap[id]
 				if !ok {
 					nodeType := flowType(tr.Node)
-					flowNode := types.FlowNode{Type: nodeType, Id: id}
+					flowNode := corev1.FlowNode{Type: nodeType, Id: id}
 					instance.FlowNodes = append(instance.FlowNodes, flowNode)
 
-					stat = types.FlowNodeStat{
+					stat = corev1.FlowNodeStat{
 						Id: id,
-						Context: types.ProcessContext{
+						Context: corev1.ProcessContext{
 							Variables:   make(map[string][]byte),
 							DataObjects: make(map[string][]byte),
 						},

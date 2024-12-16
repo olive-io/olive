@@ -103,7 +103,7 @@ func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
 	}
 	endpoints := make([]string, 0)
 	for _, member := range meta.Members {
-		if member.Id == meta.Leader {
+		if member.ID == meta.Leader {
 			endpoints = member.ClientURLs
 			break
 		}

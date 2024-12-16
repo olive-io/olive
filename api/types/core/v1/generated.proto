@@ -15,12 +15,12 @@
 
 syntax = 'proto3';
 
-package github.com.olive_io.olive.api.types;
+package github.com.olive_io.olive.api.types.core.v1;
 
-import "github.com/olive-io/olive/api/meta/generated.proto";
+import "github.com/olive-io/olive/api/types/meta/v1/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "github.com/olive-io/olive/api/types";
+option go_package = "github.com/olive-io/olive/api/types/core/v1";
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
@@ -35,10 +35,25 @@ message BpmnArgs {
 // +gogo:genproto=true
 // +gogo:deepcopy=true
 // +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
-message Definition {
-  github.com.olive_io.olive.api.meta.TypeMeta typeMeta = 1;
+message Custom {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
 
-  github.com.olive_io.olive.api.meta.ObjectMeta metadata = 2;
+  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
+
+  string host = 3;
+
+  string username = 4;
+
+  string password = 5;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+message Definition {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
 
   string content = 3;
 
@@ -73,6 +88,53 @@ message FlowNodeStat {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+message Header {
+  uint64 runner = 1;
+
+  int64 rev = 2;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+message Member {
+  // ID is the member ID for this member.
+  uint64 id = 1;
+
+  // Name is the human-readable name of the member. If the member is not started, the name will be an empty string.
+  string name = 2;
+
+  // PeerURLs is the list of URLs the member exposes to the cluster for communication.
+  repeated string peer_urls = 3;
+
+  // ClientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+  repeated string client_urls = 4;
+
+  // isLearner indicates if the member is raft learner.
+  bool is_leader = 5;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+message Plane {
+  uint64 cluster_id = 1;
+
+  uint64 leader = 2;
+
+  repeated PlaneMember members = 3;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+message PlaneMember {
+  uint64 id = 1;
+
+  repeated string client_urls = 2;
+
+  repeated string peer_urls = 3;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
 message ProcessContext {
   map<string, bytes> variables = 1;
 
@@ -83,9 +145,9 @@ message ProcessContext {
 // +gogo:deepcopy=true
 // +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 message ProcessInstance {
-  github.com.olive_io.olive.api.meta.TypeMeta typeMeta = 1;
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
 
-  github.com.olive_io.olive.api.meta.ObjectMeta metadata = 2;
+  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
 
   BpmnArgs args = 3;
 
@@ -116,28 +178,38 @@ message ProcessInstance {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
-// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
-message Runner {
-  github.com.olive_io.olive.api.meta.TypeMeta typeMeta = 1;
+message ResponseHeader {
+  // ClusterID is the ID of the cluster which sent the response.
+  uint64 cluster_id = 1;
 
-  github.com.olive_io.olive.api.meta.ObjectMeta metadata = 2;
+  // MemberID is the ID of the member which sent the response.
+  uint64 member_id = 2;
+
+  // RaftTerm is the raft term when the request was applied.
+  uint64 raft_term = 3;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+message Runner {
+  string name = 1;
 
   // listenURL is the URL the runner is listening on.
-  string listenURL = 3;
+  string listenURL = 2;
 
-  string version = 4;
+  string version = 3;
 
-  int64 heartbeatMs = 5;
+  int64 heartbeatMs = 4;
 
-  string hostname = 6;
+  string hostname = 5;
 
-  map<string, string> features = 7;
+  map<string, string> features = 6;
 
-  int32 cpu = 8;
+  int32 cpu = 7;
 
-  int64 memory = 9;
+  int64 memory = 8;
 
-  int64 diskSize = 10;
+  int64 diskSize = 9;
 }
 
 // +gogo:genproto=true

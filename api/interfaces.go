@@ -36,10 +36,12 @@ type ObjectKind interface {
 type MetaObject interface {
 	GetName() string
 	SetName(name string)
-	GetUid() string
-	SetUid(uid string)
+	GetUID() string
+	SetUID(uid string)
 	GetDescription() string
 	SetDescription(description string)
+	GetNamespace() string
+	SetNamespace(namespace string)
 	GetCreationTimestamp() int64
 	SetCreationTimestamp(timestamp int64)
 	GetUpdateTimestamp() int64
@@ -51,6 +53,8 @@ type MetaObject interface {
 
 	GetLabels() map[string]string
 	SetLabels(labels map[string]string)
+	GetAnnotations() map[string]string
+	SetAnnotations(annotations map[string]string)
 }
 
 type Object interface {

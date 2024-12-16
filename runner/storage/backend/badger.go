@@ -46,7 +46,8 @@ func NewBackend(cfg *Config) (IBackend, error) {
 	options := badger.DefaultOptions(cfg.Dir)
 	options.BlockCacheSize = cfg.CacheSize
 	if cfg.Logger != nil {
-		options.Logger = &Logger{cfg.Logger}
+		logger := cfg.Logger.WithOptions(zap.AddCallerSkip(2))
+		options.Logger = &Logger{logger}
 	}
 
 	db, err := badger.Open(options)

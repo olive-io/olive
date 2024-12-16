@@ -21,9 +21,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package api
 
-type SchemeBuilder []func(Scheme) error
+type SchemeBuilder []func(*Scheme) error
 
-func (sb *SchemeBuilder) AddToScheme(m Scheme) error {
+func (sb *SchemeBuilder) AddToScheme(m *Scheme) error {
 	for _, f := range *sb {
 		if err := f(m); err != nil {
 			return err
@@ -32,13 +32,13 @@ func (sb *SchemeBuilder) AddToScheme(m Scheme) error {
 	return nil
 }
 
-func (sb *SchemeBuilder) Register(funcs ...func(Scheme) error) {
+func (sb *SchemeBuilder) Register(funcs ...func(*Scheme) error) {
 	for _, f := range funcs {
 		*sb = append(*sb, f)
 	}
 }
 
-func NewSchemeBuilder(funcs ...func(Scheme) error) SchemeBuilder {
+func NewSchemeBuilder(funcs ...func(*Scheme) error) SchemeBuilder {
 	var sb SchemeBuilder
 	sb.Register(funcs...)
 	return sb

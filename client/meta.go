@@ -27,13 +27,13 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
 type MetaRPC interface {
-	GetMeta(ctx context.Context) (*types.Meta, error)
-	ListRunner(ctx context.Context) ([]*types.Runner, error)
-	GetRunner(ctx context.Context, id uint64) (*types.Runner, error)
+	GetMeta(ctx context.Context) (*corev1.Plane, error)
+	ListRunner(ctx context.Context) ([]*corev1.Runner, error)
+	GetRunner(ctx context.Context, id uint64) (*corev1.Runner, error)
 }
 
 type metaRPC struct {
@@ -52,7 +52,7 @@ func NewMetaRPC(c *Client) MetaRPC {
 	return api
 }
 
-func (mc *metaRPC) GetMeta(ctx context.Context) (*types.Meta, error) {
+func (mc *metaRPC) GetMeta(ctx context.Context) (*corev1.Plane, error) {
 	in := &pb.GetMetaRequest{}
 	rsp, err := mc.remote.GetMeta(ctx, in, mc.callOpts...)
 	if err != nil {
@@ -61,7 +61,7 @@ func (mc *metaRPC) GetMeta(ctx context.Context) (*types.Meta, error) {
 	return rsp.Meta, nil
 }
 
-func (mc *metaRPC) ListRunner(ctx context.Context) ([]*types.Runner, error) {
+func (mc *metaRPC) ListRunner(ctx context.Context) ([]*corev1.Runner, error) {
 	in := &pb.ListRunnerRequest{}
 	rsp, err := mc.remote.ListRunner(ctx, in, mc.callOpts...)
 	if err != nil {
@@ -70,7 +70,7 @@ func (mc *metaRPC) ListRunner(ctx context.Context) ([]*types.Runner, error) {
 	return rsp.Runners, nil
 }
 
-func (mc *metaRPC) GetRunner(ctx context.Context, id uint64) (runner *types.Runner, err error) {
+func (mc *metaRPC) GetRunner(ctx context.Context, id uint64) (runner *corev1.Runner, err error) {
 	//in := &pb.GetRunnerRequest{Id: id}
 	//rsp, err := mc.remote.GetRunner(ctx, in, mc.callOpts...)
 	//if err != nil {

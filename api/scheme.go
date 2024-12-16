@@ -111,7 +111,7 @@ func (s *Scheme) AddKnownTypes(gv GroupVersion, types ...Object) error {
 // Default call global DefaultFunc specifies DefaultFunc
 func (s *Scheme) Default(src Object) Object {
 	rt := reflect.TypeOf(src)
-	if rt.Kind() == reflect.Ptr {
+	if rt.Kind() == reflect.Pointer {
 		rt = rt.Elem()
 	}
 

@@ -28,11 +28,11 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/olivepb"
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
 type (
-	Member                types.Member
+	Member                corev1.Member
 	MemberListResponse    pb.MemberListResponse
 	MemberAddResponse     pb.MemberAddResponse
 	MemberRemoveResponse  pb.MemberRemoveResponse

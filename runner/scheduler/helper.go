@@ -25,7 +25,7 @@ import (
 	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/v2"
 
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
 func flowId(node schema.FlowNodeInterface) (id string) {
@@ -36,51 +36,51 @@ func flowId(node schema.FlowNodeInterface) (id string) {
 	return
 }
 
-func flowType(node schema.FlowNodeInterface) types.FlowNodeType {
+func flowType(node schema.FlowNodeInterface) corev1.FlowNodeType {
 	switch tv := node.(type) {
 	case *schema.StartEvent:
-		return types.StartEvent
+		return corev1.StartEvent
 	case *schema.EndEvent:
-		return types.EndEvent
+		return corev1.EndEvent
 	case *schema.BoundaryEvent:
-		return types.BoundaryEvent
+		return corev1.BoundaryEvent
 	case *schema.IntermediateCatchEvent:
-		return types.IntermediateCatchEvent
+		return corev1.IntermediateCatchEvent
 	case *schema.Task:
-		return types.Task
+		return corev1.Task
 	case *schema.SendTask:
-		return types.SendTask
+		return corev1.SendTask
 	case *schema.ReceiveTask:
-		return types.ReceiveTask
+		return corev1.ReceiveTask
 	case *schema.ServiceTask:
-		return types.ServiceTask
+		return corev1.ServiceTask
 	case *schema.UserTask:
-		return types.UserTask
+		return corev1.UserTask
 	case *schema.ScriptTask:
-		return types.ScriptTask
+		return corev1.ScriptTask
 	case *schema.ManualTask:
-		return types.ManualTask
+		return corev1.ManualTask
 	case *schema.CallActivity:
-		return types.CallActivity
+		return corev1.CallActivity
 	case *schema.BusinessRuleTask:
-		return types.BusinessRuleTask
+		return corev1.BusinessRuleTask
 	case *schema.SubProcess:
-		return types.SendTask
+		return corev1.SendTask
 	case *schema.EventBasedGateway:
-		return types.EventBasedGateway
+		return corev1.EventBasedGateway
 	case *schema.ExclusiveGateway:
-		return types.ExclusiveGateway
+		return corev1.ExclusiveGateway
 	case *schema.InclusiveGateway:
-		return types.InclusiveGateway
+		return corev1.InclusiveGateway
 	case *schema.ParallelGateway:
-		return types.ParallelGateway
+		return corev1.ParallelGateway
 	case bpmn.IFlowNode:
 		if vv, ok := tv.(*bpmn.Harness); ok {
 			return flowType(vv.Activity().Element())
 		}
-		return types.FlowNodeUnknown
+		return corev1.FlowNodeUnknown
 	default:
-		return types.FlowNodeUnknown
+		return corev1.FlowNodeUnknown
 	}
 }
 

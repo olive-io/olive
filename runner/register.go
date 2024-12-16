@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package runner
 
 import (
-	"github.com/olive-io/olive/api/types"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
 //func (r *Runner) register() (runner *pb.Runner, err error) {
@@ -85,7 +85,7 @@ func (r *Runner) process() {
 	//}
 }
 
-func (r *Runner) processRunnerStat() (stat *types.RunnerStatistics) {
+func (r *Runner) processRunnerStat() (stat *corev1.RunnerStatistics) {
 	//lg := r.Logger()
 	//stat := &pb.RunnerStat{
 	//	Id:            r.pr.Id,

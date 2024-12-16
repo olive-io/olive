@@ -25,7 +25,7 @@ package olivepb;
 
 option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
 
-import "github.com/olive-io/olive/api/types/internal.proto";
+import "github.com/olive-io/olive/api/types/core/v1/generated.proto";
 import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 // for grpc-gateway
@@ -81,11 +81,11 @@ message MemberAddRequest {
 }
 
 message MemberAddResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   // member is the member information for the added member.
-  types.Member member = 2;
+  github.com.olive_io.olive.api.types.core.v1.Member member = 2;
   // members is a list of all members after adding the new member.
-  repeated types.Member members = 3;
+  repeated github.com.olive_io.olive.api.types.core.v1.Member members = 3;
 }
 
 message MemberRemoveRequest {
@@ -94,9 +94,9 @@ message MemberRemoveRequest {
 }
 
 message MemberRemoveResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   // members is a list of all members after removing the member.
-  repeated types.Member members = 2;
+  repeated github.com.olive_io.olive.api.types.core.v1.Member members = 2;
 }
 
 message MemberUpdateRequest {
@@ -107,9 +107,9 @@ message MemberUpdateRequest {
 }
 
 message MemberUpdateResponse{
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   // members is a list of all members after updating the member.
-  repeated types.Member members = 2;
+  repeated github.com.olive_io.olive.api.types.core.v1.Member members = 2;
 }
 
 message MemberListRequest {
@@ -117,9 +117,9 @@ message MemberListRequest {
 }
 
 message MemberListResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   // members is a list of all members associated with the cluster.
-  repeated types.Member members = 2;
+  repeated github.com.olive_io.olive.api.types.core.v1.Member members = 2;
 }
 
 message MemberPromoteRequest {
@@ -128,9 +128,9 @@ message MemberPromoteRequest {
 }
 
 message MemberPromoteResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   // members is a list of all members after promoting the member.
-  repeated types.Member members = 2;
+  repeated github.com.olive_io.olive.api.types.core.v1.Member members = 2;
 }
 
 service MetaRPC {
@@ -154,13 +154,13 @@ service MetaRPC {
 message GetMetaRequest {}
 
 message GetMetaResponse {
-  types.Meta meta = 1;
+  github.com.olive_io.olive.api.types.core.v1.Plane meta = 1;
 }
 
 message ListRunnerRequest {}
 
 message ListRunnerResponse {
-  repeated types.Runner runners = 1;
+  repeated github.com.olive_io.olive.api.types.core.v1.Runner runners = 1;
 }
 
 //message GetRunnerRequest {
@@ -209,7 +209,7 @@ message DeployDefinitionRequest {
 }
 
 message DeployDefinitionResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   int64 version = 2;
   uint64 region = 3;
 }
@@ -220,8 +220,8 @@ message ListDefinitionRequest {
 }
 
 message ListDefinitionResponse {
-  types.ResponseHeader header = 1;
-  repeated types.Definition definitions = 2;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  repeated github.com.olive_io.olive.api.types.core.v1.Definition definitions = 2;
   string continueToken = 3;
 }
 
@@ -231,8 +231,8 @@ message GetDefinitionRequest {
 }
 
 message GetDefinitionResponse {
-  types.ResponseHeader header = 1;
-  types.Definition definition = 2;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.Definition definition = 2;
 }
 
 message RemoveDefinitionRequest {
@@ -240,7 +240,7 @@ message RemoveDefinitionRequest {
 }
 
 message RemoveDefinitionResponse {
-  types.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
 }
 
 message ExecuteDefinitionRequest {
@@ -252,6 +252,6 @@ message ExecuteDefinitionRequest {
 }
 
 message ExecuteDefinitionResponse {
-  types.ResponseHeader header = 1;
-  types.ProcessInstance instance = 2;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.ProcessInstance instance = 2;
 }

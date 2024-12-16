@@ -27,6 +27,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/olive-io/olive/api"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 	"github.com/olive-io/olive/runner"
@@ -52,12 +54,13 @@ func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
 	}
 
 	app.SetUsageFunc(func(cmd *cobra.Command) error {
-		if err := PrintUsage(stderr); err != nil {
+		if err := PrintUsage(stdout); err != nil {
 			return err
 		}
 
-		return PrintFlags(stderr)
+		return PrintFlags(stdout)
 	})
+	app.SetErr(stderr)
 
 	app.ResetFlags()
 	flags := app.PersistentFlags()
@@ -73,7 +76,12 @@ func setup(cfg config.Config) error {
 		return err
 	}
 
-	server, err := runner.NewRunner(&cfg)
+	scheme := api.NewScheme()
+	if err = corev1.AddToScheme(scheme); err != nil {
+		return err
+	}
+
+	server, err := runner.NewRunner(&cfg, scheme)
 	if err != nil {
 		return err
 	}

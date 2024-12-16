@@ -5,6 +5,7 @@ import (
 	"embed"
 	"testing"
 
+	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/runner/client"
 )
 
@@ -21,7 +22,9 @@ func newClient(t *testing.T) *client.Client {
 		Address: "127.0.0.1:15280",
 	}
 
-	cc, err := client.NewClient(cfg)
+	scheme := api.NewScheme()
+
+	cc, err := client.NewClient(cfg, scheme)
 	if err != nil {
 		t.Fatalf("could not create client: %v", err)
 	}

@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"time"
@@ -29,8 +30,25 @@ func (r *Response) Unmarshal(v any) error {
 	if len(r.Kvs) == 0 {
 		return ErrEmptyValue
 	}
+	return json.Unmarshal(r.Data(), v)
+}
 
-	return json.Unmarshal(r.Kvs[0].Value, v)
+func (r *Response) Data() []byte {
+	if len(r.Kvs) == 0 {
+		return []byte("")
+	}
+	if len(r.Kvs) == 1 {
+		return r.Kvs[0].Value
+	}
+	buf := bytes.NewBufferString("[")
+	for i, kv := range r.Kvs {
+		buf.Write(kv.Value)
+		if i != len(r.Kvs)-1 {
+			buf.WriteString(",")
+		}
+	}
+	buf.WriteString("]")
+	return buf.Bytes()
 }
 
 type EventOp int

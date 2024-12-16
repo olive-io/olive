@@ -33,8 +33,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/olive-io/olive/api/types"
-	"github.com/olive-io/olive/runner/backend"
 	"github.com/olive-io/olive/runner/scheduler"
+	"github.com/olive-io/olive/runner/storage/backend"
 )
 
 //go:embed testdata1/task.bpmn
