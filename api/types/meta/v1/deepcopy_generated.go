@@ -19,6 +19,30 @@
 package v1
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
+func (in *ListMeta) DeepCopyInto(out *ListMeta) {
+	*out = *in
+	return
+}
+
+// DeepCopy is an auto-generated deepcopy function, copying the receiver, creating a new ListMeta.
+func (in *ListMeta) DeepCopy() *ListMeta {
+	if in == nil {
+		return nil
+	}
+	out := new(ListMeta)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepFrom is an auto-generated deepcopy function, copying from ListMeta.
+func (in *ListMeta) DeepFrom(o *ListMeta) {
+	if in == nil {
+		return
+	}
+	o.DeepCopyInto(in)
+}
+
+// DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *ObjectMeta) DeepCopyInto(out *ObjectMeta) {
 	*out = *in
 	if in.Labels != nil {

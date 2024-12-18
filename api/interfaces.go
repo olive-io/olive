@@ -33,7 +33,7 @@ type ObjectKind interface {
 	GroupVersionKind() GroupVersionKind
 }
 
-type MetaObject interface {
+type MetaInterface interface {
 	GetName() string
 	SetName(name string)
 	GetUID() string
@@ -55,6 +55,15 @@ type MetaObject interface {
 	SetLabels(labels map[string]string)
 	GetAnnotations() map[string]string
 	SetAnnotations(annotations map[string]string)
+}
+
+type ListInterface interface {
+	GetLimit() int64
+	SetLimit(limit int64)
+	GetContinue() string
+	SetContinue(token string)
+	GetTotal() int64
+	SetTotal(total int64)
 }
 
 type Object interface {

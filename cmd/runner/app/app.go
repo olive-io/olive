@@ -86,6 +86,10 @@ func setup(cfg config.Config) error {
 		return err
 	}
 
+	if err = registerPlugins(); err != nil {
+		return err
+	}
+
 	return server.Start(stopc)
 }
 

@@ -92,6 +92,7 @@ type IBackend interface {
 
 type GetOptions struct {
 	HasPrefix bool
+	Seek      string
 	Reserve   bool
 }
 
@@ -100,6 +101,12 @@ type GetOption func(opts *GetOptions)
 func GetPrefix() GetOption {
 	return func(opts *GetOptions) {
 		opts.HasPrefix = true
+	}
+}
+
+func GetSeek(firstKey string) GetOption {
+	return func(opts *GetOptions) {
+		opts.Seek = firstKey
 	}
 }
 

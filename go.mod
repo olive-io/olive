@@ -12,6 +12,7 @@ replace (
 )
 
 require (
+	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/gateway v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/olive-io/olive/plane v0.0.0-00010101000000-000000000000
@@ -76,8 +77,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/muyo/sno v1.2.1 // indirect
 	github.com/olive-io/bpmn/schema v1.4.1 // indirect
-	github.com/olive-io/bpmn/v2 v2.2.3 // indirect
-	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000 // indirect
+	github.com/olive-io/bpmn/v2 v2.2.4 // indirect
 	github.com/olive-io/olive/client v0.0.0-00010101000000-000000000000 // indirect
 	github.com/panjf2000/ants/v2 v2.10.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

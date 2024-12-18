@@ -78,13 +78,14 @@ func (s *embedServer) StoppingNotify() <-chan struct{} { return s.stopping }
 
 func (s *embedServer) GoAttach(fn func()) {
 	s.wgMu.RLock() // this blocks with ongoing close(s.stopping)
-	defer s.wgMu.RUnlock()
 	select {
 	case <-s.stopping:
 		s.lg.Warn("server has stopped; skipping GoAttach")
+		s.wgMu.RUnlock()
 		return
 	default:
 	}
+	s.wgMu.RUnlock()
 
 	// now safe to add since waitgroup wait has not started yet
 	s.wg.Add(1)

@@ -121,7 +121,7 @@ message ListDefinitionsRequest {
 }
 
 message ListDefinitionsResponse {
-  repeated github.com.olive_io.olive.api.types.core.v1.Definition definitions = 1;
+  github.com.olive_io.olive.api.types.core.v1.DefinitionList list = 1;
 }
 
 message GetDefinitionRequest {
@@ -139,7 +139,7 @@ message ListProcessInstancesRequest {
 }
 
 message ListProcessInstancesResponse {
-  repeated github.com.olive_io.olive.api.types.core.v1.ProcessInstance instances = 1;
+  github.com.olive_io.olive.api.types.core.v1.ProcessInstanceList list = 1;
 }
 
 message GetProcessInstanceRequest {

@@ -62,9 +62,8 @@ func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, 
 			return nil, err
 		}
 
-		runner = &corev1.Runner{
-			Name: cfg.Name,
-		}
+		runner = &corev1.Runner{}
+		runner.SetName(cfg.Name)
 
 	} else {
 		if err = resp.Unmarshal(runner); err != nil {
@@ -111,18 +110,7 @@ func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, 
 }
 
 func (d *Gather) GetRunner() *corev1.Runner {
-	in := d.runner
-	out := &corev1.Runner{
-		Name:        in.Name,
-		ListenURL:   in.ListenURL,
-		Version:     in.Version,
-		HeartbeatMs: in.HeartbeatMs,
-		Hostname:    in.Hostname,
-		CPU:         in.CPU,
-		Memory:      in.Memory,
-		DiskSize:    in.DiskSize,
-	}
-	return out
+	return d.runner.DeepCopy()
 }
 
 func (d *Gather) GetStat() (*corev1.RunnerStatistics, error) {

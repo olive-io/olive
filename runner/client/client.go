@@ -10,8 +10,8 @@ import (
 
 	"github.com/olive-io/olive/api"
 	pb "github.com/olive-io/olive/api/runnerpb"
-	"github.com/olive-io/olive/api/types"
-	"github.com/olive-io/olive/api/types/meta"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
+	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 )
 
 type Client struct {
@@ -53,7 +53,7 @@ func (c *Client) getCallOptions() []grpc.CallOption {
 	return options
 }
 
-func (c *Client) GetRunner(ctx context.Context) (*types.Runner, error) {
+func (c *Client) GetRunner(ctx context.Context) (*corev1.Runner, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (c *Client) GetRunner(ctx context.Context) (*types.Runner, error) {
 	return resp.Runner, nil
 }
 
-func (c *Client) ListDefinitions(ctx context.Context, id string) ([]*types.Definition, error) {
+func (c *Client) ListDefinitions(ctx context.Context, id string) (*corev1.DefinitionList, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -88,10 +88,10 @@ func (c *Client) ListDefinitions(ctx context.Context, id string) ([]*types.Defin
 		return nil, err
 	}
 
-	return resp.Definitions, nil
+	return resp.List, nil
 }
 
-func (c *Client) GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error) {
+func (c *Client) GetDefinition(ctx context.Context, id string, version int64) (*corev1.Definition, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (c *Client) GetDefinition(ctx context.Context, id string, version int64) (*
 	return resp.Definition, nil
 }
 
-func (c *Client) ListProcessInstances(ctx context.Context, definition string, version int64) ([]*types.ProcessInstance, error) {
+func (c *Client) ListProcessInstances(ctx context.Context, definition string, version int64) (*corev1.ProcessInstanceList, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -130,10 +130,10 @@ func (c *Client) ListProcessInstances(ctx context.Context, definition string, ve
 		return nil, err
 	}
 
-	return resp.Instances, nil
+	return resp.List, nil
 }
 
-func (c *Client) GetProcessInstance(ctx context.Context, definition string, version int64, id string) (*types.ProcessInstance, error) {
+func (c *Client) GetProcessInstance(ctx context.Context, definition string, version int64, id string) (*corev1.ProcessInstance, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (c *Client) GetProcessInstance(ctx context.Context, definition string, vers
 	return resp.Instance, nil
 }
 
-func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstanceRequest) (*types.ProcessInstance, error) {
+func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstanceRequest) (*corev1.ProcessInstance, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstan
 	return resp.Instance, nil
 }
 
-func (c *Client) List(ctx context.Context, options *meta.ListOptions) (*meta.Result, error) {
+func (c *Client) List(ctx context.Context, options *metav1.ListOptions) (*metav1.Result, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (c *Client) List(ctx context.Context, options *meta.ListOptions) (*meta.Res
 	return resp.Result, nil
 }
 
-func (c *Client) Get(ctx context.Context, options *meta.GetOptions) (*meta.Result, error) {
+func (c *Client) Get(ctx context.Context, options *metav1.GetOptions) (*metav1.Result, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (c *Client) Get(ctx context.Context, options *meta.GetOptions) (*meta.Resul
 	return resp.Result, nil
 }
 
-func (c *Client) Post(ctx context.Context, options *meta.PostOptions) error {
+func (c *Client) Post(ctx context.Context, options *metav1.PostOptions) error {
 	conn, err := c.newConn()
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (c *Client) Post(ctx context.Context, options *meta.PostOptions) error {
 	return nil
 }
 
-func (c *Client) Patch(ctx context.Context, options *meta.PatchOptions) error {
+func (c *Client) Patch(ctx context.Context, options *metav1.PatchOptions) error {
 	conn, err := c.newConn()
 	if err != nil {
 		return err
@@ -252,7 +252,7 @@ func (c *Client) Patch(ctx context.Context, options *meta.PatchOptions) error {
 	return nil
 }
 
-func (c *Client) Delete(ctx context.Context, options *meta.DeleteOptions) error {
+func (c *Client) Delete(ctx context.Context, options *metav1.DeleteOptions) error {
 	conn, err := c.newConn()
 	if err != nil {
 		return err
@@ -325,7 +325,7 @@ func (b *processBuilder) SetDataObjects(dataObjects map[string]any) *processBuil
 	return b
 }
 
-func (b *processBuilder) Do(ctx context.Context) (*types.ProcessInstance, error) {
+func (b *processBuilder) Do(ctx context.Context) (*corev1.ProcessInstance, error) {
 	return b.cc.RunProcessInstance(ctx, b.RunProcessInstanceRequest)
 }
 

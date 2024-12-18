@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package metrics
 
 import (
+	"fmt"
 	goruntime "runtime"
 	"strings"
 	"sync"
@@ -82,8 +83,11 @@ func (fs *featureSets) getFeatures() map[string]string {
 	return outs
 }
 
-func AddFeature(name, help string, values ...string) error {
-	return fs.addFeature(name, help, values...)
+func AddFeatures(major string, minors ...string) error {
+	name := fmt.Sprintf("%s_delegate", major)
+	help := fmt.Sprintf("%s delegate is enabled.", major)
+
+	return fs.addFeature(name, help, minors...)
 }
 
 func GetFeatures() map[string]string {

@@ -19,35 +19,25 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package v1
+package app
 
 import (
-	"github.com/olive-io/olive/api"
+	"fmt"
+
+	"github.com/olive-io/olive/runner/delegate"
+	delegateGRPC "github.com/olive-io/olive/runner/delegate/service/grpc"
+	delegateHttp "github.com/olive-io/olive/runner/delegate/service/http"
 )
 
-// GroupName is the group name for this API
-const GroupName = "core.olive.io"
+func registerPlugins() error {
+	serviceTaskForHttp := delegateHttp.New()
+	if err := delegate.RegisterDelegate(serviceTaskForHttp); err != nil {
+		return fmt.Errorf("could not register delegate (%s): %w", serviceTaskForHttp.GetTheme().String(), err)
+	}
+	serviceTaskForGRPC := delegateGRPC.New()
+	if err := delegate.RegisterDelegate(serviceTaskForGRPC); err != nil {
+		return fmt.Errorf("could not register delegate (%s): %w", serviceTaskForGRPC.GetTheme().String(), err)
+	}
 
-// GroupVersion is group version used to register these objects
-var GroupVersion = api.GroupVersion{Group: GroupName, Version: "v1"}
-
-var (
-	SchemaBuilder = api.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemaBuilder.AddToScheme
-	sets          = make([]api.Object, 0)
-)
-
-func addKnownTypes(scheme *api.Scheme) error {
-	return scheme.AddKnownTypes(GroupVersion, sets...)
-}
-
-func init() {
-	sets = append(sets,
-		&Runner{},
-		&RunnerList{},
-		&Definition{},
-		&DefinitionList{},
-		&ProcessInstance{},
-		&ProcessInstanceList{},
-	)
+	return nil
 }

@@ -32,8 +32,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/api"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	"github.com/olive-io/olive/runner/scheduler"
+	"github.com/olive-io/olive/runner/storage"
 	"github.com/olive-io/olive/runner/storage/backend"
 )
 
@@ -55,7 +57,10 @@ func newScheduler(t *testing.T) (*scheduler.Scheduler, func()) {
 		t.Fatal(err)
 	}
 
-	cfg := scheduler.NewConfig(ctx, logger, db)
+	scheme := api.NewScheme()
+	bs := storage.New(scheme, db)
+
+	cfg := scheduler.NewConfig(ctx, logger, bs)
 	sch, err := scheduler.NewScheduler(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +114,7 @@ func TestProcess_Run(t *testing.T) {
 	pi, err := sch.GetProcess(ctx, instance.DefinitionsId, instance.DefinitionsVersion, instance.UID)
 	assert.Nil(t, err)
 
-	assert.Equal(t, pi.Status, types.ProcessOk)
+	assert.Equal(t, pi.Status, corev1.ProcessOk)
 	assert.True(t, len(pi.FlowNodes) > 0)
 
 	data, _ := json.Marshal(pi.FlowNodes)

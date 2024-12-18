@@ -50,6 +50,17 @@ message Custom {
 // +gogo:genproto=true
 // +gogo:deepcopy=true
 // +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+message CustomList {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ListMeta metadata = 2;
+
+  repeated Custom items = 3;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 message Definition {
   github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
 
@@ -58,6 +69,17 @@ message Definition {
   string content = 3;
 
   int64 version = 4;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+message DefinitionList {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ListMeta metadata = 2;
+
+  repeated Definition items = 3;
 }
 
 // +gogo:genproto=true
@@ -115,12 +137,17 @@ message Member {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 message Plane {
-  uint64 cluster_id = 1;
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
 
-  uint64 leader = 2;
+  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
 
-  repeated PlaneMember members = 3;
+  uint64 cluster_id = 3;
+
+  uint64 leader = 4;
+
+  repeated PlaneMember members = 5;
 }
 
 // +gogo:genproto=true
@@ -178,6 +205,17 @@ message ProcessInstance {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+message ProcessInstanceList {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ListMeta metadata = 2;
+
+  repeated ProcessInstance items = 3;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
 message ResponseHeader {
   // ClusterID is the ID of the cluster which sent the response.
   uint64 cluster_id = 1;
@@ -191,25 +229,39 @@ message ResponseHeader {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 message Runner {
-  string name = 1;
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
 
   // listenURL is the URL the runner is listening on.
-  string listenURL = 2;
+  string listenURL = 3;
 
-  string version = 3;
+  string version = 4;
 
-  int64 heartbeatMs = 4;
+  int64 heartbeatMs = 5;
 
-  string hostname = 5;
+  string hostname = 6;
 
-  map<string, string> features = 6;
+  map<string, string> features = 7;
 
-  int32 cpu = 7;
+  int32 cpu = 8;
 
-  int64 memory = 8;
+  int64 memory = 9;
 
-  int64 diskSize = 9;
+  int64 diskSize = 10;
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+message RunnerList {
+  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
+
+  github.com.olive_io.olive.api.types.meta.v1.ListMeta metadata = 2;
+
+  repeated Runner items = 3;
 }
 
 // +gogo:genproto=true

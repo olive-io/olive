@@ -100,6 +100,9 @@ func (b *backend) Get(ctx context.Context, key string, opts ...GetOption) (*Resp
 		iter := tx.NewIterator(iterOptions)
 		defer iter.Close()
 		prefix := keyBytes
+		if options.Seek != "" {
+			prefix = []byte(options.Seek)
+		}
 
 		for iter.Seek(prefix); iter.ValidForPrefix(prefix); iter.Next() {
 			item := iter.Item()

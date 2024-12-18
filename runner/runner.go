@@ -41,6 +41,7 @@ import (
 	"github.com/olive-io/olive/client"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/config"
+	"github.com/olive-io/olive/runner/delegate"
 	"github.com/olive-io/olive/runner/gather"
 	"github.com/olive-io/olive/runner/scheduler"
 	"github.com/olive-io/olive/runner/server"
@@ -88,6 +89,11 @@ func NewRunner(cfg *config.Config, scheme *api.Scheme) (*Runner, error) {
 	}
 
 	bs := storage.New(scheme, be)
+
+	dcfg := delegate.NewConfig()
+	if err = delegate.Init(dcfg, bs); err != nil {
+		return nil, fmt.Errorf("failed to init delegate: %w", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	embedServer := genericserver.NewEmbedServer(lg)
@@ -154,6 +160,7 @@ func (r *Runner) start() error {
 
 func (r *Runner) stop() error {
 	r.IEmbedServer.Shutdown()
+	r.serve.Shutdown(r.ctx)
 	return nil
 }
 
@@ -179,9 +186,9 @@ func (r *Runner) startGRPCServer() error {
 		MaxHeaderBytes: 1024 * 1024 * 20,
 	}
 
-	r.GoAttach(func() {
+	go func() {
 		_ = r.serve.Serve(ts)
-	})
+	}()
 
 	return nil
 }
@@ -245,7 +252,7 @@ func (r *Runner) buildHandler() (http.Handler, error) {
 }
 
 func (r *Runner) startScheduler() (*scheduler.Scheduler, error) {
-	scfg := scheduler.NewConfig(r.ctx, r.Logger(), r.be)
+	scfg := scheduler.NewConfig(r.ctx, r.Logger(), r.bs)
 	sc, err := scheduler.NewScheduler(scfg)
 	if err != nil {
 		return nil, err

@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"path"
 
 	json "github.com/bytedance/sonic"
 
+	"github.com/olive-io/olive/api"
 	pb "github.com/olive-io/olive/api/runnerpb"
 	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 	"github.com/olive-io/olive/runner/gather"
@@ -40,7 +42,7 @@ func (s *GRPCRunnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerReque
 func (s *GRPCRunnerServer) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (resp *pb.ListDefinitionsResponse, err error) {
 	resp = &pb.ListDefinitionsResponse{}
 
-	resp.Definitions, err = s.scheduler.ListDefinition(ctx, req.Id)
+	resp.List, err = s.scheduler.ListDefinition(ctx, req.Id)
 	return
 }
 
@@ -54,7 +56,7 @@ func (s *GRPCRunnerServer) GetDefinition(ctx context.Context, req *pb.GetDefinit
 func (s *GRPCRunnerServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
 	resp = &pb.ListProcessInstancesResponse{}
 
-	resp.Instances, err = s.scheduler.ListProcess(ctx, req.DefinitionId, req.DefinitionVersion)
+	resp.List, err = s.scheduler.ListProcess(ctx, req.DefinitionId, req.DefinitionVersion)
 	return
 }
 
@@ -79,7 +81,15 @@ func (s *GRPCRunnerServer) List(ctx context.Context, req *pb.ListRequest) (resp 
 	resp = &pb.ListResponse{}
 	options := req.Options
 
-	outs, err := s.bs.List(ctx, options)
+	gvk := api.FromGVK(options.GVK)
+	key := gvk.String()
+
+	outs, err := s.bs.NewList(gvk)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.bs.GetList(ctx, key, outs)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +100,9 @@ func (s *GRPCRunnerServer) List(ctx context.Context, req *pb.ListRequest) (resp 
 	}
 
 	result := &metav1.Result{
-		GVK:   options.GVK,
-		List:  true,
-		Total: int64(len(outs)),
-		Data:  data,
+		GVK:  options.GVK,
+		List: true,
+		Data: data,
 	}
 	resp.Result = result
 
@@ -104,12 +113,23 @@ func (s *GRPCRunnerServer) Get(ctx context.Context, req *pb.GetRequest) (resp *p
 	resp = &pb.GetResponse{}
 	options := req.Options
 
-	outs, err := s.bs.Get(ctx, options)
+	gvk := api.FromGVK(options.GVK)
+	key := gvk.String()
+	if options.UID != "" {
+		key = path.Join(key, options.UID)
+	}
+
+	out, err := s.bs.New(gvk)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := json.Marshal(outs)
+	err = s.bs.Get(ctx, key, out)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(out)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +149,21 @@ func (s *GRPCRunnerServer) Post(ctx context.Context, req *pb.PostRequest) (resp 
 	resp = &pb.PostResponse{}
 	options := req.Options
 
-	err = s.bs.Post(ctx, options)
+	gvk := api.FromGVK(options.GVK)
+	key := gvk.String()
+	if options.UID != "" {
+		key = path.Join(key, options.UID)
+	}
+
+	out, err := s.bs.New(gvk)
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(options.Data, out); err != nil {
+		return nil, err
+	}
+
+	err = s.bs.Create(ctx, key, out, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +175,21 @@ func (s *GRPCRunnerServer) Patch(ctx context.Context, req *pb.PatchRequest) (res
 	resp = &pb.PatchResponse{}
 	options := req.Options
 
-	err = s.bs.Patch(ctx, options)
+	gvk := api.FromGVK(options.GVK)
+	key := gvk.String()
+	if options.UID != "" {
+		key = path.Join(key, options.UID)
+	}
+
+	out, err := s.bs.New(gvk)
+	if err != nil {
+		return nil, err
+	}
+	if err = json.Unmarshal(options.Data, out); err != nil {
+		return nil, err
+	}
+
+	err = s.bs.Create(ctx, key, out, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +201,13 @@ func (s *GRPCRunnerServer) Delete(ctx context.Context, req *pb.DeleteRequest) (r
 	resp = &pb.DeleteResponse{}
 	options := req.Options
 
-	err = s.bs.Delete(ctx, options)
+	gvk := api.FromGVK(options.GVK)
+	key := gvk.String()
+	if options.UID != "" {
+		key = path.Join(key, options.UID)
+	}
+
+	err = s.bs.Delete(ctx, key)
 	if err != nil {
 		return nil, err
 	}

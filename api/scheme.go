@@ -65,6 +65,11 @@ func (s *Scheme) New(gvk GroupVersionKind) (Object, error) {
 	return out, nil
 }
 
+func (s *Scheme) NewList(gvk GroupVersionKind) (Object, error) {
+	gvk.Kind += gvk.Kind + "List"
+	return s.New(gvk)
+}
+
 // IsExists checks GroupVersionKind exists
 func (s *Scheme) IsExists(gvk GroupVersionKind) bool {
 	_, ok := s.gvkToTypes[gvk]
@@ -106,6 +111,20 @@ func (s *Scheme) AddKnownTypes(gv GroupVersion, types ...Object) error {
 	}
 
 	return nil
+}
+
+func (s *Scheme) SetTypesGVK(src Object) {
+	if !src.GetObjectKind().GroupVersionKind().Empty() {
+		return
+	}
+
+	rt := reflect.TypeOf(src)
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
+	}
+
+	gvk := s.typesToGvk[rt]
+	src.GetObjectKind().SetGroupVersionKind(gvk)
 }
 
 // Default call global DefaultFunc specifies DefaultFunc

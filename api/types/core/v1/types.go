@@ -39,10 +39,14 @@ type Member struct {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type Plane struct {
-	ClusterID uint64         `json:"cluster_id" protobuf:"varint,1,opt,name=cluster_id,json=cluster_id,proto3"`
-	Leader    uint64         `json:"leader" protobuf:"varint,2,opt,name=leader,proto3"`
-	Members   []*PlaneMember `json:"members" protobuf:"bytes,3,rep,name=members,proto3"`
+	metav1.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	ClusterID uint64        `json:"cluster_id" protobuf:"varint,3,opt,name=cluster_id,json=cluster_id,proto3"`
+	Leader    uint64        `json:"leader" protobuf:"varint,4,opt,name=leader,proto3"`
+	Members   []PlaneMember `json:"members" protobuf:"bytes,5,rep,name=members,proto3"`
 }
 
 // +gogo:genproto=true
@@ -99,20 +103,32 @@ const (
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type Runner struct {
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name,proto3"`
+	metav1.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
 
 	// listenURL is the URL the runner is listening on.
-	ListenURL   string `json:"listenURL" protobuf:"bytes,2,opt,name=listenURL,proto3"`
-	Version     string `json:"version" protobuf:"bytes,3,opt,name=version,proto3"`
-	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,4,opt,name=heartbeatMs,proto3"`
-	Hostname    string `json:"hostname" protobuf:"bytes,5,opt,name=hostname,proto3"`
+	ListenURL   string `json:"listenURL" protobuf:"bytes,3,opt,name=listenURL,proto3"`
+	Version     string `json:"version" protobuf:"bytes,4,opt,name=version,proto3"`
+	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,5,opt,name=heartbeatMs,proto3"`
+	Hostname    string `json:"hostname" protobuf:"bytes,6,opt,name=hostname,proto3"`
 
-	Features map[string]string `json:"features" protobuf:"bytes,6,rep,name=features,proto3"`
+	Features map[string]string `json:"features" protobuf:"bytes,7,rep,name=features,proto3"`
 
-	CPU      int32 `json:"cpu" protobuf:"varint,7,opt,name=cpu,proto3"`
-	Memory   int64 `json:"memory" protobuf:"varint,8,opt,name=memory,proto3"`
-	DiskSize int64 `json:"diskSize" protobuf:"varint,9,opt,name=diskSize,proto3"`
+	CPU      int32 `json:"cpu" protobuf:"varint,8,opt,name=cpu,proto3"`
+	Memory   int64 `json:"memory" protobuf:"varint,9,opt,name=memory,proto3"`
+	DiskSize int64 `json:"diskSize" protobuf:"varint,10,opt,name=diskSize,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+type RunnerList struct {
+	metav1.TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	Items []Runner `json:"items" protobuf:"bytes,3,rep,name=items,proto3"`
 }
 
 // +gogo:genproto=true
@@ -140,6 +156,16 @@ type Definition struct {
 
 	Content string `json:"content,omitempty" protobuf:"bytes,3,opt,name=content,proto3"`
 	Version int64  `json:"version,omitempty" protobuf:"varint,4,opt,name=version,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+type DefinitionList struct {
+	metav1.TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	Items []Definition `json:"items" protobuf:"bytes,3,rep,name=items,proto3"`
 }
 
 // +gogo:genproto=true
@@ -186,6 +212,16 @@ type ProcessInstance struct {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+type ProcessInstanceList struct {
+	metav1.TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	Items []ProcessInstance `json:"items" protobuf:"bytes,3,rep,name=items,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
 type FlowNode struct {
 	Type FlowNodeType `json:"type" protobuf:"bytes,1,opt,name=type,proto3,casttype=FlowNodeType"`
 	Id   string       `json:"id" protobuf:"bytes,2,opt,name=id,proto3"`
@@ -215,4 +251,14 @@ type Custom struct {
 	Host     string `json:"host,omitempty" protobuf:"bytes,3,opt,name=host,proto3"`
 	Username string `json:"username,omitempty" protobuf:"bytes,4,opt,name=username,proto3"`
 	Password string `json:"password,omitempty" protobuf:"bytes,5,opt,name=password,proto3"`
+}
+
+// +gogo:genproto=true
+// +gogo:deepcopy=true
+// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
+type CustomList struct {
+	metav1.TypeMeta `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
+
+	Items []Custom `json:"items" protobuf:"bytes,3,rep,name=items,proto3"`
 }

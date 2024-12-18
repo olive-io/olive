@@ -19,35 +19,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package v1
+package delegate
 
-import (
-	"github.com/olive-io/olive/api"
-)
+type Config struct{}
 
-// GroupName is the group name for this API
-const GroupName = "core.olive.io"
+func NewConfig() *Config {
+	cfg := &Config{}
 
-// GroupVersion is group version used to register these objects
-var GroupVersion = api.GroupVersion{Group: GroupName, Version: "v1"}
-
-var (
-	SchemaBuilder = api.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemaBuilder.AddToScheme
-	sets          = make([]api.Object, 0)
-)
-
-func addKnownTypes(scheme *api.Scheme) error {
-	return scheme.AddKnownTypes(GroupVersion, sets...)
-}
-
-func init() {
-	sets = append(sets,
-		&Runner{},
-		&RunnerList{},
-		&Definition{},
-		&DefinitionList{},
-		&ProcessInstance{},
-		&ProcessInstanceList{},
-	)
+	return cfg
 }

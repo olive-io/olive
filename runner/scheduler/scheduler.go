@@ -24,6 +24,7 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -37,8 +38,9 @@ import (
 	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 	"github.com/olive-io/olive/pkg/queue"
+	"github.com/olive-io/olive/runner/delegate"
 	"github.com/olive-io/olive/runner/metrics"
-	"github.com/olive-io/olive/runner/storage/backend"
+	"github.com/olive-io/olive/runner/storage"
 )
 
 var ErrStopped = errors.New("scheduler stopped")
@@ -51,12 +53,17 @@ func (item *ProcessItem) Score() int64 {
 	return 100
 }
 
+func ProcessItemStore(v *ProcessItem) int64 {
+	return v.Score()
+}
+
 type Scheduler struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	logger *zap.Logger
-	db     backend.IBackend
+
+	bs *storage.Storage
 
 	wg sync.WaitGroup
 
@@ -70,9 +77,7 @@ type Scheduler struct {
 
 func NewScheduler(cfg *Config) (*Scheduler, error) {
 
-	pq := queue.NewSync[*ProcessItem](func(v *ProcessItem) int64 {
-		return v.Score()
-	})
+	pq := queue.NewSync[*ProcessItem](ProcessItemStore)
 
 	pool, err := ants.NewPool(cfg.PoolSize)
 	if err != nil {
@@ -93,7 +98,7 @@ func NewScheduler(cfg *Config) (*Scheduler, error) {
 		ctx:    ctx,
 		cancel: cancel,
 		logger: logger,
-		db:     cfg.DB,
+		bs:     cfg.Storage,
 		wg:     sync.WaitGroup{},
 		spq:    pq,
 		pool:   pool,
@@ -115,7 +120,7 @@ func (s *Scheduler) Start() error {
 
 func (s *Scheduler) Stop() error {
 	select {
-	case s.done <- struct{}{}:
+	case <-s.done:
 		return ErrStopped
 	default:
 	}
@@ -174,6 +179,8 @@ func (s *Scheduler) RunProcess(
 	}
 
 	item := &ProcessItem{instance}
+
+	s.logger.Info("process push to scheduler queue", zap.String("name", instance.Name))
 	s.spq.Push(item)
 
 	return instance, nil
@@ -252,17 +259,19 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 			dataObjects[key] = string(value)
 		}
 
-		var err error
-		defer func() {
-			_ = s.finishProcess(ctx, instance, err)
-		}()
-
 		zapFields := []zap.Field{
 			zap.String("definition", instance.DefinitionsId),
 			zap.Int64("version", instance.DefinitionsVersion),
 			zap.String("id", instance.UID),
 			zap.String("name", instance.Name),
 		}
+
+		s.logger.Info("process instance started", zapFields...)
+		var err error
+		defer func() {
+			s.logger.Info("process instance finished", zapFields...)
+			_ = s.finishProcess(ctx, instance, err)
+		}()
 
 		content := []byte(instance.DefinitionsContent)
 		opts := []bpmn.Option{
@@ -389,7 +398,6 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 			default:
 			}
 
-			s.logger.Sugar().Infof("%#v", trace)
 			_ = s.saveProcess(ctx, instance)
 		})
 
@@ -406,22 +414,42 @@ func (s *Scheduler) taskDelegate(
 	headers map[string]string,
 	properties map[string]any,
 	dataObjects map[string]any,
-) (results map[string]any, outs map[string]any, err error) {
-	//TODO: execute task
+) (map[string]any, map[string]any, error) {
 
-	//taskType := activity.Type()
-	//var subType string
-	//if extension, found := activity.Element().ExtensionElements(); found {
-	//	if field := extension.TaskDefinitionField; field != nil {
-	//		subType = field.Type
-	//	}
-	//}
-
-	results = map[string]any{
-		"a": "foo",
+	taskType := flowType(activity.Element())
+	var subType string
+	if extension, found := activity.Element().ExtensionElements(); found {
+		if field := extension.TaskDefinitionField; field != nil {
+			subType = field.Type
+		}
 	}
-	outs = map[string]any{}
-	return
+	theme := delegate.Theme{
+		Major: taskType,
+		Minor: subType,
+	}
+
+	url := theme.String()
+	dg, err := delegate.GetDelegate(url)
+	if err != nil {
+		return nil, nil, fmt.Errorf("match delegate %s: %w", url, err)
+	}
+
+	timeout := bpmn.FetchTaskTimeout(activity.Element())
+	if timeout <= 0 {
+		timeout = delegate.DefaultTimeout
+	}
+	req := &delegate.Request{
+		Headers:     headers,
+		Properties:  properties,
+		DataObjects: dataObjects,
+		Timeout:     timeout,
+	}
+
+	resp, err := dg.Call(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.Result, resp.DataObjects, nil
 }
 
 func (s *Scheduler) poolAble() bool {

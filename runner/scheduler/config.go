@@ -26,7 +26,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/olive-io/olive/runner/storage/backend"
+	"github.com/olive-io/olive/runner/storage"
 )
 
 const (
@@ -36,15 +36,15 @@ const (
 type Config struct {
 	Context  context.Context
 	Logger   *zap.Logger
-	DB       backend.IBackend
+	Storage  *storage.Storage
 	PoolSize int
 }
 
-func NewConfig(ctx context.Context, logger *zap.Logger, db backend.IBackend) *Config {
+func NewConfig(ctx context.Context, logger *zap.Logger, bs *storage.Storage) *Config {
 	cfg := &Config{
 		Context:  ctx,
 		Logger:   logger,
-		DB:       db,
+		Storage:  bs,
 		PoolSize: DefaultPoolSize,
 	}
 

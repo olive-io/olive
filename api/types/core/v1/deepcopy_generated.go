@@ -125,6 +125,54 @@ func (in *Custom) DeepFromObject(o api.Object) {
 }
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
+func (in *CustomList) DeepCopyInto(out *CustomList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Custom, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopy is an auto-generated deepcopy function, copying the receiver, creating a new CustomList.
+func (in *CustomList) DeepCopy() *CustomList {
+	if in == nil {
+		return nil
+	}
+	out := new(CustomList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepFrom is an auto-generated deepcopy function, copying from CustomList.
+func (in *CustomList) DeepFrom(o *CustomList) {
+	if in == nil {
+		return
+	}
+	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new CustomList.
+func (in *CustomList) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from CustomList.
+func (in *CustomList) DeepFromObject(o api.Object) {
+	if v, ok := o.(*CustomList); ok {
+		in.DeepFrom(v)
+	}
+}
+
+// DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *Definition) DeepCopyInto(out *Definition) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
@@ -161,6 +209,54 @@ func (in *Definition) DeepCopyObject() api.Object {
 // DeepFromObject is an auto-generated deepcopy function, copying from Definition.
 func (in *Definition) DeepFromObject(o api.Object) {
 	if v, ok := o.(*Definition); ok {
+		in.DeepFrom(v)
+	}
+}
+
+// DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
+func (in *DefinitionList) DeepCopyInto(out *DefinitionList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Definition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopy is an auto-generated deepcopy function, copying the receiver, creating a new DefinitionList.
+func (in *DefinitionList) DeepCopy() *DefinitionList {
+	if in == nil {
+		return nil
+	}
+	out := new(DefinitionList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepFrom is an auto-generated deepcopy function, copying from DefinitionList.
+func (in *DefinitionList) DeepFrom(o *DefinitionList) {
+	if in == nil {
+		return
+	}
+	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new DefinitionList.
+func (in *DefinitionList) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from DefinitionList.
+func (in *DefinitionList) DeepFromObject(o api.Object) {
+	if v, ok := o.(*DefinitionList); ok {
 		in.DeepFrom(v)
 	}
 }
@@ -275,15 +371,13 @@ func (in *Member) DeepFrom(o *Member) {
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *Plane) DeepCopyInto(out *Plane) {
 	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Members != nil {
 		in, out := &in.Members, &out.Members
-		*out = make([]*PlaneMember, len(*in))
+		*out = make([]PlaneMember, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(PlaneMember)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	return
@@ -305,6 +399,21 @@ func (in *Plane) DeepFrom(o *Plane) {
 		return
 	}
 	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new Plane.
+func (in *Plane) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from Plane.
+func (in *Plane) DeepFromObject(o api.Object) {
+	if v, ok := o.(*Plane); ok {
+		in.DeepFrom(v)
+	}
 }
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
@@ -451,6 +560,54 @@ func (in *ProcessInstance) DeepFromObject(o api.Object) {
 }
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
+func (in *ProcessInstanceList) DeepCopyInto(out *ProcessInstanceList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]ProcessInstance, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopy is an auto-generated deepcopy function, copying the receiver, creating a new ProcessInstanceList.
+func (in *ProcessInstanceList) DeepCopy() *ProcessInstanceList {
+	if in == nil {
+		return nil
+	}
+	out := new(ProcessInstanceList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepFrom is an auto-generated deepcopy function, copying from ProcessInstanceList.
+func (in *ProcessInstanceList) DeepFrom(o *ProcessInstanceList) {
+	if in == nil {
+		return
+	}
+	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new ProcessInstanceList.
+func (in *ProcessInstanceList) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from ProcessInstanceList.
+func (in *ProcessInstanceList) DeepFromObject(o api.Object) {
+	if v, ok := o.(*ProcessInstanceList); ok {
+		in.DeepFrom(v)
+	}
+}
+
+// DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *ResponseHeader) DeepCopyInto(out *ResponseHeader) {
 	*out = *in
 	return
@@ -477,6 +634,8 @@ func (in *ResponseHeader) DeepFrom(o *ResponseHeader) {
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *Runner) DeepCopyInto(out *Runner) {
 	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Features != nil {
 		in, out := &in.Features, &out.Features
 		*out = make(map[string]string, len(*in))
@@ -503,6 +662,69 @@ func (in *Runner) DeepFrom(o *Runner) {
 		return
 	}
 	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new Runner.
+func (in *Runner) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from Runner.
+func (in *Runner) DeepFromObject(o api.Object) {
+	if v, ok := o.(*Runner); ok {
+		in.DeepFrom(v)
+	}
+}
+
+// DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
+func (in *RunnerList) DeepCopyInto(out *RunnerList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	out.ListMeta = in.ListMeta
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]Runner, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	return
+}
+
+// DeepCopy is an auto-generated deepcopy function, copying the receiver, creating a new RunnerList.
+func (in *RunnerList) DeepCopy() *RunnerList {
+	if in == nil {
+		return nil
+	}
+	out := new(RunnerList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepFrom is an auto-generated deepcopy function, copying from RunnerList.
+func (in *RunnerList) DeepFrom(o *RunnerList) {
+	if in == nil {
+		return
+	}
+	o.DeepCopyInto(in)
+}
+
+// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new RunnerList.
+func (in *RunnerList) DeepCopyObject() api.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepFromObject is an auto-generated deepcopy function, copying from RunnerList.
+func (in *RunnerList) DeepFromObject(o api.Object) {
+	if v, ok := o.(*RunnerList); ok {
+		in.DeepFrom(v)
+	}
 }
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.

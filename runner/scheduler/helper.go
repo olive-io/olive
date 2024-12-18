@@ -98,3 +98,13 @@ func isEvent(node schema.FlowNodeInterface) bool {
 		return false
 	}
 }
+
+func processFinished(status corev1.ProcessStatus) bool {
+	switch status {
+	case corev1.ProcessOk,
+		corev1.ProcessFail:
+		return true
+	default:
+		return false
+	}
+}

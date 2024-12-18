@@ -57,8 +57,7 @@ func TestListProcessInstances(t *testing.T) {
 		t.Fatalf("could not list process instances: %v", err)
 	}
 
-	t.Logf("%#v", r[0])
-
+	t.Logf("%#v", r.Items[0])
 }
 
 func TestRunProcessInstance(t *testing.T) {
@@ -67,7 +66,7 @@ func TestRunProcessInstance(t *testing.T) {
 	ctx := context.Background()
 	content := getFile("testdata1/task.bpmn")
 	instance, err := cc.BuildProcessInstance().
-		SetDefinition("test", 1).
+		SetDefinition("test", 5).
 		SetBpmn(string(content)).
 		SetName("test process").
 		Do(ctx)

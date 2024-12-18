@@ -39,6 +39,16 @@ message GetOptions {
 }
 
 // +gogo:genproto=true
+// +gogo:deepcopy=true
+message ListMeta {
+  int64 limit = 1;
+
+  string continue = 2;
+
+  int64 total = 3;
+}
+
+// +gogo:genproto=true
 message ListOptions {
   string gvk = 1;
 

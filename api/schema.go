@@ -117,7 +117,7 @@ func (gv GroupVersion) Empty() bool {
 // it returns "v1"
 func (gv GroupVersion) String() string {
 	if len(gv.Group) != 0 {
-		return gv.Version + "/" + gv.Version
+		return gv.Group + "/" + gv.Version
 	}
 	return gv.Version
 }

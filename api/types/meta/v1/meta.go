@@ -146,6 +146,38 @@ func (m *ObjectMeta) GetAnnotations() map[string]string {
 }
 
 // +gogo:genproto=true
+// +gogo:deepcopy=true
+type ListMeta struct {
+	Limit    int64  `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit,proto3"`
+	Continue string `json:"continue,omitempty" protobuf:"bytes,2,opt,name=continue,proto3"`
+	Total    int64  `json:"total,omitempty" protobuf:"varint,3,opt,name=total,proto3"`
+}
+
+func (m *ListMeta) SetLimit(limit int64) {
+	m.Limit = limit
+}
+
+func (m *ListMeta) GetLimit() int64 {
+	return m.Limit
+}
+
+func (m *ListMeta) SetContinue(contin string) {
+	m.Continue = contin
+}
+
+func (m *ListMeta) GetContinue() string {
+	return m.Continue
+}
+
+func (m *ListMeta) SetTotal(total int64) {
+	m.Total = total
+}
+
+func (m *ListMeta) GetTotal() int64 {
+	return m.Total
+}
+
+// +gogo:genproto=true
 type ListOptions struct {
 	GVK       string            `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk,proto3"`
 	Limit     int64             `json:"limit,omitempty" protobuf:"varint,2,opt,name=limit,proto3"`
