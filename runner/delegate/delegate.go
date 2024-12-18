@@ -93,6 +93,7 @@ func Init(cfg *Config, bs *storage.Storage) error {
 				features[string(theme.Major)] = list
 			}
 			list = append(list, theme.Minor)
+			features[string(theme.Major)] = list
 
 			return false
 		})
@@ -122,11 +123,7 @@ func RegisterDelegate(delegate Delegate) error {
 
 // GetDelegate returns a delegate by url from internal router.
 func GetDelegate(url string) (Delegate, error) {
-	value, ok := router.Get(url)
-	if !ok {
-		return nil, ErrNotFound
-	}
-	return value.(Delegate), nil
+	return internalController.GetDelegate(url)
 }
 
 // Controller is delegate controller.

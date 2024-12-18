@@ -90,11 +90,6 @@ func NewRunner(cfg *config.Config, scheme *api.Scheme) (*Runner, error) {
 
 	bs := storage.New(scheme, be)
 
-	dcfg := delegate.NewConfig()
-	if err = delegate.Init(dcfg, bs); err != nil {
-		return nil, fmt.Errorf("failed to init delegate: %w", err)
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
@@ -144,6 +139,11 @@ func (r *Runner) start() error {
 		listenURL = r.cfg.ListenURL
 	}
 	gcfg.ListenURL = listenURL
+
+	dcfg := delegate.NewConfig()
+	if err = delegate.Init(dcfg, r.bs); err != nil {
+		return fmt.Errorf("init delegate: %w", err)
+	}
 
 	r.gather, err = gather.NewGather(r.ctx, gcfg, r.be)
 	if err != nil {
