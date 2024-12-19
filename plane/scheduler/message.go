@@ -19,14 +19,25 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package schedule
+package scheduler
 
-import "errors"
+type imessage interface {
+	payload()
+}
 
-var (
-	ErrNoRegion       = errors.New("region not found")
-	ErrRegionNoSpace  = errors.New("region no space")
-	ErrNoRunner       = errors.New("runner not found")
-	ErrRunnerNotReady = errors.New("runner not ready")
-	ErrRunnerBusy     = errors.New("all of runners are busy")
-)
+// regionAllocMessage allocates a new region on the given olive-runners
+type regionAllocMessage struct{}
+
+func (m *regionAllocMessage) payload() {}
+
+// regionExpendMessage expends the capacity of region (maximum is 3)
+type regionExpendMessage struct {
+	region uint64
+}
+
+func (m *regionExpendMessage) payload() {}
+
+// regionMigrateMessage migrates the replicas of region to a new olive-runners
+type regionMigrateMessage struct{}
+
+func (m *regionMigrateMessage) payload() {}

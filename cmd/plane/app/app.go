@@ -32,10 +32,10 @@ import (
 	"github.com/olive-io/olive/plane"
 )
 
-func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
-	cfg := meta.NewConfig()
+func NewPlaneCommand(stdout, stderr io.Writer) *cobra.Command {
+	cfg := plane.NewConfig()
 	app := &cobra.Command{
-		Use:     "olive-meta",
+		Use:     "olive-plane",
 		Short:   "a component of olive",
 		Version: version.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,13 +64,13 @@ func NewMetaCommand(stdout, stderr io.Writer) *cobra.Command {
 	return app
 }
 
-func setup(cfg meta.Config) error {
+func setup(cfg plane.Config) error {
 	stopc := genericserver.SetupSignalHandler()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
-	ms, err := meta.NewServer(cfg)
+	ms, err := plane.NewPlane(cfg)
 	if err != nil {
 		return err
 	}

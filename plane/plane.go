@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package meta
+package plane
 
 import (
 	"context"
@@ -35,16 +35,16 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/plane/leader"
-	"github.com/olive-io/olive/plane/schedule"
+	"github.com/olive-io/olive/plane/scheduler"
+	"github.com/olive-io/olive/plane/server"
 )
 
-type Server struct {
+type Plane struct {
 	genericserver.IEmbedServer
-	pb.UnsafeClusterServer
-	pb.UnsafeMetaRPCServer
+	pb.UnsafePlaneRPCServer
 	pb.UnsafeBpmnRPCServer
 
 	cfg Config
@@ -60,16 +60,16 @@ type Server struct {
 
 	notifier leader.Notifier
 
-	scheduler *schedule.Scheduler
+	scheduler *scheduler.Scheduler
 }
 
-func NewServer(cfg Config) (*Server, error) {
+func NewPlane(cfg Config) (*Plane, error) {
 
 	lg := cfg.Config.GetLogger()
 	embedServer := genericserver.NewEmbedServer(lg)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s := &Server{
+	s := &Plane{
 		IEmbedServer: embedServer,
 		cfg:          cfg,
 
@@ -82,54 +82,58 @@ func NewServer(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Start(stopc <-chan struct{}) error {
-	ec := s.cfg.Config
+func (p *Plane) Start(stopc <-chan struct{}) error {
+	ec := p.cfg.Config
 	ec.EnableGRPCGateway = true
 
 	ec.UserHandlers = map[string]http.Handler{
 		"/metrics": promhttp.Handler(),
 	}
 
+	clusterRPC, err := server.NewCluster(p.v3cli, stopc)
+	if err != nil {
+		return errors.Wrap(err, "create cluster rpc")
+	}
+
 	ec.ServiceRegister = func(gs *grpc.Server) {
-		pb.RegisterClusterServer(gs, s)
-		//pb.RegisterMetaRPCServer(gs, s)
+		pb.RegisterClusterServer(gs, clusterRPC)
+		//pb.RegisterPlaneRPCServer(gs, s)
 		//pb.RegisterBpmnRPCServer(gs, s)
 	}
 
-	var err error
-	s.etcd, err = embed.StartEtcd(ec)
+	p.etcd, err = embed.StartEtcd(ec)
 	if err != nil {
 		return errors.Wrap(err, "start embed etcd")
 	}
 
-	<-s.etcd.Server.ReadyNotify()
-	s.v3cli = v3client.New(s.etcd.Server)
-	s.idReq = idutil.NewGenerator(uint16(s.etcd.Server.ID()), time.Now())
-	s.notifier = leader.NewNotify(s.etcd.Server)
+	<-p.etcd.Server.ReadyNotify()
+	p.v3cli = v3client.New(p.etcd.Server)
+	p.idReq = idutil.NewGenerator(uint16(p.etcd.Server.ID()), time.Now())
+	p.notifier = leader.NewNotify(p.etcd.Server)
 
-	sLimit := schedule.Limit{
-		RegionLimit:     s.cfg.RegionLimit,
-		DefinitionLimit: s.cfg.RegionDefinitionsLimit,
+	sLimit := scheduler.Limit{
+		RegionLimit:     p.cfg.RegionLimit,
+		DefinitionLimit: p.cfg.RegionDefinitionsLimit,
 	}
-	s.scheduler = schedule.New(s.ctx, s.lg, s.v3cli, s.notifier, sLimit, s.StoppingNotify())
-	if err = s.scheduler.Start(); err != nil {
-		return err
+	p.scheduler = scheduler.New(p.ctx, p.lg, p.v3cli, p.notifier, sLimit, p.StoppingNotify())
+	if err = p.scheduler.Start(); err != nil {
+		return errors.Wrap(err, "start scheduler")
 	}
 
-	s.IEmbedServer.Destroy(s.destroy)
+	p.IEmbedServer.Destroy(p.destroy)
 
 	<-stopc
 
-	return s.stop()
+	return p.stop()
 }
 
-func (s *Server) stop() error {
-	s.IEmbedServer.Shutdown()
+func (p *Plane) stop() error {
+	p.IEmbedServer.Shutdown()
 	return nil
 }
 
-func (s *Server) destroy() {
-	s.etcd.Server.HardStop()
-	<-s.etcd.Server.StopNotify()
-	s.cancel()
+func (p *Plane) destroy() {
+	p.etcd.Server.HardStop()
+	<-p.etcd.Server.StopNotify()
+	p.cancel()
 }

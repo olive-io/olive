@@ -19,24 +19,24 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package schedule
+package scheduler
 
 import (
 	"math"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
-type runnerMatch func(runner *pb.Runner) bool
+type runnerMatch func(runner *corev1.Runner) bool
 
 func allRunnerMatch() runnerMatch {
-	return func(runner *pb.Runner) bool {
+	return func(runner *corev1.Runner) bool {
 		return true
 	}
 }
 
 func runnerMatchWithout(id uint64) runnerMatch {
-	return func(runner *pb.Runner) bool {
+	return func(runner *corev1.Runner) bool {
 		return runner.Id != id
 	}
 }

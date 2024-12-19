@@ -27,7 +27,7 @@ import (
 	v3types "go.etcd.io/etcd/client/pkg/v3/types"
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
 	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 

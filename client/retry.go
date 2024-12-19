@@ -26,7 +26,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
 )
 
 type retryPolicy uint8
@@ -78,35 +78,34 @@ func (rcc *retryClusterClient) MemberPromote(ctx context.Context, in *pb.MemberP
 	return rcc.cc.MemberPromote(ctx, in, opts...)
 }
 
-type retryMetaClient struct {
-	mc pb.MetaRPCClient
+type retryPlaneClient struct {
+	rpc pb.PlaneRPCClient
 }
 
-// RetryMetaClient implements a MetaRPCClient.
-func RetryMetaClient(conn *grpc.ClientConn) pb.MetaRPCClient {
-	return &retryMetaClient{
-		mc: pb.NewMetaRPCClient(conn),
+// RetryPlaneClient implements a PlaneRPCClient.
+func RetryPlaneClient(conn *grpc.ClientConn) pb.PlaneRPCClient {
+	return &retryPlaneClient{
+		rpc: pb.NewPlaneRPCClient(conn),
 	}
 }
 
-func (rmc *retryMetaClient) GetMeta(ctx context.Context, in *pb.GetMetaRequest, opts ...grpc.CallOption) (resp *pb.GetMetaResponse, err error) {
-	return rmc.mc.GetMeta(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rmc *retryPlaneClient) GetPlane(ctx context.Context, in *pb.GetPlaneRequest, opts ...grpc.CallOption) (resp *pb.GetPlaneResponse, err error) {
+	return rmc.rpc.GetPlane(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryMetaClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
-	return rmc.mc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rmc *retryPlaneClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
+	return rmc.rpc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-//func (rmc *retryMetaClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
-//	//return rmc.mc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//	return
-//}
+func (rmc *retryPlaneClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
+	return rmc.rpc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
 
-//func (rmc *retryMetaClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
+//func (rmc *retryPlaneClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
 //	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 //}
 //
-//func (rmc *retryMetaClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
+//func (rmc *retryPlaneClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
 //	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 //}
 

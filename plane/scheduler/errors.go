@@ -19,33 +19,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package olivepb
+package scheduler
 
-import (
-	"fmt"
+import "errors"
+
+var (
+	ErrNoRegion       = errors.New("region not found")
+	ErrRegionNoSpace  = errors.New("region no space")
+	ErrNoRunner       = errors.New("runner not found")
+	ErrRunnerNotReady = errors.New("runner not ready")
+	ErrRunnerBusy     = errors.New("all of runners are busy")
 )
-
-// InternalRaftStringer implements custom proto Stringer:
-// redact password, replace value fields with value_size fields.
-type InternalRaftStringer struct {
-	Request *RaftInternalRequest
-}
-
-func (as *InternalRaftStringer) String() string {
-	switch {
-	case as.Request.Put != nil:
-		return fmt.Sprintf("put:<%s>",
-			NewLoggablePutRequest(as.Request.Put).String(),
-		)
-	default:
-		// nothing to redact
-	}
-	return as.Request.String()
-}
-
-func NewLoggablePutRequest(request *RegionPutRequest) *LoggablePutRequest {
-	return &LoggablePutRequest{
-		Key:       request.Key,
-		ValueSize: int64(len(request.Value)),
-	}
-}

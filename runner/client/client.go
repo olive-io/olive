@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/olive-io/olive/api"
-	pb "github.com/olive-io/olive/api/runnerpb"
+	pb "github.com/olive-io/olive/api/rpc/runnerpb"
 	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 )

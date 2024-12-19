@@ -22,27 +22,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package app
 
 import (
-	"fmt"
 	"strconv"
 
 	"go.etcd.io/etcd/server/v3/embed"
-
-	"github.com/olive-io/olive/plane"
 )
 
 var (
 	usageline = `Usage:
 
-  olive-meta [flags]
-    Start an olive-meta server.
+  olive-plane [flags]
+    Start an olive-plane server.
 
-  olive-meta --version
-    Show the version of olive-meta.
+  olive-plane --version
+    Show the version of olive-plane.
 
-  olive-meta -h | --help
-    Show the help information about olive-meta.
+  olive-plane -h | --help
+    Show the help information about olive-plane.
 
-  olive-meta --config-file
+  olive-plane --config-file
     Path to the server configuration file. Note that if a configuration file is provided, other command line flags and environment variables will be ignored.
 `
 
@@ -114,12 +111,6 @@ Clustering:
     Auto compaction retention length. 0 means disable auto compaction.
   --auto-compaction-mode 'periodic'
     Interpret 'auto-compaction-retention' one of: periodic|revision. 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. '5m'). 'revision' for revision number based retention.
-
-Regions:
-  --region-limit '` + fmt.Sprintf("%d", meta.DefaultRegionLimit) + `'
-    Sets the maximum number of regions in one runner
-  --region-definitions-limit '` + fmt.Sprintf("%d", meta.DefaultRegionDefinitionsLimit) + `'
-    Sets the maximum number of bpmn definitions in one runner-region
 
 Logging:
   --log-outputs 'default'

@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package meta
+package plane
 
 import (
 	"testing"
@@ -36,7 +36,7 @@ func TestNewOliveMetaServer(t *testing.T) {
 	}
 	defer cancel()
 
-	s, err := NewServer(cfg)
+	s, err := NewPlane(cfg)
 	if !assert.NoError(t, err) {
 		return
 	}

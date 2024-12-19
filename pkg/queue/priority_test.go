@@ -18,7 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
 )
 
 func TestNewRunnerQueue(t *testing.T) {

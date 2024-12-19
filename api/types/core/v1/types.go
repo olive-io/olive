@@ -39,11 +39,7 @@ type Member struct {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
-// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 type Plane struct {
-	metav1.TypeMeta   `json:",inline" protobuf:"bytes,1,opt,name=typeMeta,proto3"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,2,opt,name=metadata,proto3"`
-
 	ClusterID uint64        `json:"cluster_id" protobuf:"varint,3,opt,name=cluster_id,json=cluster_id,proto3"`
 	Leader    uint64        `json:"leader" protobuf:"varint,4,opt,name=leader,proto3"`
 	Members   []PlaneMember `json:"members" protobuf:"bytes,5,rep,name=members,proto3"`
@@ -68,6 +64,7 @@ const (
 type ProcessStatus string
 
 const (
+	ProcessBinding ProcessStatus = "Binding"
 	ProcessWaiting ProcessStatus = "Waiting"
 	ProcessPrepare ProcessStatus = "Prepare"
 	ProcessRunning ProcessStatus = "Running"

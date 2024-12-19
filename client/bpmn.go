@@ -29,8 +29,7 @@ import (
 	"github.com/olive-io/bpmn/schema"
 	"google.golang.org/grpc"
 
-	dsypb "github.com/olive-io/olive/api/discoverypb"
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
 	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 )
@@ -38,7 +37,7 @@ import (
 type BpmnRPC interface {
 	DeployDefinition(ctx context.Context, id, name string, body []byte) (*corev1.Definition, error)
 	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*corev1.Definition, string, error)
-	GetDefinition(ctx context.Context, id string, version uint64) (*corev1.Definition, error)
+	GetDefinition(ctx context.Context, id string, version int64) (*corev1.Definition, error)
 	RemoveDefinition(ctx context.Context, id string) error
 	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*corev1.ProcessInstance, error)
 	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*corev1.ProcessInstance, error)
@@ -91,7 +90,7 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 			UID:  id,
 		},
 		Content: string(body),
-		Version: int64(resp.Version),
+		Version: resp.Version,
 	}
 
 	return definition, nil
@@ -125,7 +124,7 @@ func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitio
 	return rsp.Definitions, rsp.ContinueToken, nil
 }
 
-func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version uint64) (*corev1.Definition, error) {
+func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version int64) (*corev1.Definition, error) {
 	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
@@ -180,16 +179,16 @@ func WithHeaders(headers map[string]string) ExecDefinitionOption {
 	}
 }
 
-func WithProperties(properties map[string]any) ExecDefinitionOption {
-	return func(req *pb.ExecuteDefinitionRequest) {
-		if req.Properties == nil {
-			req.Properties = map[string]*dsypb.Box{}
-		}
-		for name, value := range properties {
-			req.Properties[name] = dsypb.BoxFromAny(value)
-		}
-	}
-}
+//func WithProperties(properties map[string]any) ExecDefinitionOption {
+//	return func(req *pb.ExecuteDefinitionRequest) {
+//		if req.Properties == nil {
+//			req.Properties = map[string]*dsypb.Box{}
+//		}
+//		for name, value := range properties {
+//			req.Properties[name] = dsypb.BoxFromAny(value)
+//		}
+//	}
+//}
 
 func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*corev1.ProcessInstance, error) {
 	conn := bc.client.conn

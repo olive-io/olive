@@ -7,7 +7,7 @@ import (
 	json "github.com/bytedance/sonic"
 
 	"github.com/olive-io/olive/api"
-	pb "github.com/olive-io/olive/api/runnerpb"
+	pb "github.com/olive-io/olive/api/rpc/runnerpb"
 	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 	"github.com/olive-io/olive/runner/gather"
 	"github.com/olive-io/olive/runner/scheduler"

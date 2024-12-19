@@ -371,8 +371,6 @@ func (in *Member) DeepFrom(o *Member) {
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.
 func (in *Plane) DeepCopyInto(out *Plane) {
 	*out = *in
-	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	if in.Members != nil {
 		in, out := &in.Members, &out.Members
 		*out = make([]PlaneMember, len(*in))
@@ -399,21 +397,6 @@ func (in *Plane) DeepFrom(o *Plane) {
 		return
 	}
 	o.DeepCopyInto(in)
-}
-
-// DeepCopyObject is an auto-generated deepcopy function, copying the receiver, creating a new Plane.
-func (in *Plane) DeepCopyObject() api.Object {
-	if c := in.DeepCopy(); c != nil {
-		return c
-	}
-	return nil
-}
-
-// DeepFromObject is an auto-generated deepcopy function, copying from Plane.
-func (in *Plane) DeepFromObject(o api.Object) {
-	if v, ok := o.(*Plane); ok {
-		in.DeepFrom(v)
-	}
 }
 
 // DeepCopyInto is an auto-generated deepcopy function, coping the receiver, writing into out. in must be no-nil.

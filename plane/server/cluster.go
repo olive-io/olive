@@ -19,7 +19,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package meta
+package server
 
 import (
 	"context"
@@ -27,16 +27,33 @@ import (
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 )
 
-func (s *Server) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.MemberAddResponse, error) {
+type ClusterRPC struct {
+	pb.UnsafeClusterServer
+	v3cli *clientv3.Client
+
+	stopc <-chan struct{}
+}
+
+func NewCluster(v3cli *clientv3.Client, stopc <-chan struct{}) (*ClusterRPC, error) {
+	rpc := &ClusterRPC{
+		v3cli: v3cli,
+		stopc: stopc,
+	}
+
+	return rpc, nil
+}
+
+func (rpc *ClusterRPC) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.MemberAddResponse, error) {
 	var rsp *clientv3.MemberAddResponse
 	var err error
 	if req.IsLearner {
-		rsp, err = s.v3cli.MemberAddAsLearner(ctx, req.PeerURLs)
+		rsp, err = rpc.v3cli.MemberAddAsLearner(ctx, req.PeerURLs)
 	} else {
-		rsp, err = s.v3cli.MemberAdd(ctx, req.PeerURLs)
+		rsp, err = rpc.v3cli.MemberAdd(ctx, req.PeerURLs)
 	}
 	if err != nil {
 		return nil, err
@@ -45,7 +62,7 @@ func (s *Server) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.M
 	resp := &pb.MemberAddResponse{
 		Header:  toHeader(rsp.Header),
 		Member:  toMember(rsp.Member),
-		Members: []*pb.Member{},
+		Members: []*corev1.Member{},
 	}
 	for _, mem := range rsp.Members {
 		resp.Members = append(resp.Members, toMember(mem))
@@ -54,14 +71,14 @@ func (s *Server) MemberAdd(ctx context.Context, req *pb.MemberAddRequest) (*pb.M
 	return resp, nil
 }
 
-func (s *Server) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (*pb.MemberRemoveResponse, error) {
-	rsp, err := s.v3cli.MemberRemove(ctx, req.ID)
+func (rpc *ClusterRPC) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) (*pb.MemberRemoveResponse, error) {
+	rsp, err := rpc.v3cli.MemberRemove(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.MemberRemoveResponse{
 		Header:  toHeader(rsp.Header),
-		Members: []*pb.Member{},
+		Members: []*corev1.Member{},
 	}
 	for _, mem := range rsp.Members {
 		resp.Members = append(resp.Members, toMember(mem))
@@ -69,15 +86,15 @@ func (s *Server) MemberRemove(ctx context.Context, req *pb.MemberRemoveRequest) 
 	return resp, nil
 }
 
-func (s *Server) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (*pb.MemberUpdateResponse, error) {
-	rsp, err := s.v3cli.MemberUpdate(ctx, req.ID, req.PeerURLs)
+func (rpc *ClusterRPC) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) (*pb.MemberUpdateResponse, error) {
+	rsp, err := rpc.v3cli.MemberUpdate(ctx, req.ID, req.PeerURLs)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &pb.MemberUpdateResponse{
 		Header:  toHeader(rsp.Header),
-		Members: []*pb.Member{},
+		Members: []*corev1.Member{},
 	}
 	for _, mem := range rsp.Members {
 		resp.Members = append(resp.Members, toMember(mem))
@@ -85,14 +102,14 @@ func (s *Server) MemberUpdate(ctx context.Context, req *pb.MemberUpdateRequest) 
 	return resp, nil
 }
 
-func (s *Server) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb.MemberListResponse, error) {
-	rsp, err := s.v3cli.MemberList(ctx)
+func (rpc *ClusterRPC) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb.MemberListResponse, error) {
+	rsp, err := rpc.v3cli.MemberList(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.MemberListResponse{
 		Header:  toHeader(rsp.Header),
-		Members: []*pb.Member{},
+		Members: []*corev1.Member{},
 	}
 	for _, mem := range rsp.Members {
 		resp.Members = append(resp.Members, toMember(mem))
@@ -100,14 +117,14 @@ func (s *Server) MemberList(ctx context.Context, req *pb.MemberListRequest) (*pb
 	return resp, nil
 }
 
-func (s *Server) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (*pb.MemberPromoteResponse, error) {
-	rsp, err := s.v3cli.MemberPromote(ctx, req.ID)
+func (rpc *ClusterRPC) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest) (*pb.MemberPromoteResponse, error) {
+	rsp, err := rpc.v3cli.MemberPromote(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.MemberPromoteResponse{
 		Header:  toHeader(rsp.Header),
-		Members: []*pb.Member{},
+		Members: []*corev1.Member{},
 	}
 	for _, mem := range rsp.Members {
 		resp.Members = append(resp.Members, toMember(mem))
@@ -115,20 +132,20 @@ func (s *Server) MemberPromote(ctx context.Context, req *pb.MemberPromoteRequest
 	return resp, nil
 }
 
-func toHeader(header *etcdserverpb.ResponseHeader) *pb.ResponseHeader {
-	return &pb.ResponseHeader{
-		ClusterId: header.ClusterId,
-		MemberId:  header.MemberId,
+func toHeader(header *etcdserverpb.ResponseHeader) *corev1.ResponseHeader {
+	return &corev1.ResponseHeader{
+		ClusterID: header.ClusterId,
+		MemberID:  header.MemberId,
 		RaftTerm:  header.RaftTerm,
 	}
 }
 
-func toMember(member *etcdserverpb.Member) *pb.Member {
-	return &pb.Member{
+func toMember(member *etcdserverpb.Member) *corev1.Member {
+	return &corev1.Member{
 		ID:         member.ID,
 		Name:       member.Name,
 		PeerURLs:   member.PeerURLs,
 		ClientURLs: member.ClientURLs,
-		IsLearner:  member.IsLearner,
+		IsLeader:   member.IsLearner,
 	}
 }

@@ -37,7 +37,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/olive-io/olive/api"
-	"github.com/olive-io/olive/api/runnerpb"
+	"github.com/olive-io/olive/api/rpc/runnerpb"
 	"github.com/olive-io/olive/client"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/runner/config"

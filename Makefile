@@ -31,7 +31,8 @@ proto:
 	deepcopy-gen -i github.com/olive-io/olive/api/types/meta/v1,github.com/olive-io/olive/api/types/core/v1
 
 	cd $(GOPATH)/src && \
-	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/runnerpb/runner.proto
+	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/planepb/rpc.proto && \
+	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/runnerpb/rpc.proto
 
 generate:
 	cd $(GOPATH)/src && \

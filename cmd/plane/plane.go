@@ -29,6 +29,6 @@ import (
 )
 
 func main() {
-	command := app.NewMetaCommand(os.Stdout, os.Stderr)
+	command := app.NewPlaneCommand(os.Stdout, os.Stderr)
 	os.Exit(cli.Run(command))
 }

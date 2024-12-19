@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package schedule
+package scheduler
 
 import (
 	"context"
@@ -34,7 +34,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/olive-io/olive/api/olivepb"
+	pb "github.com/olive-io/olive/api/rpc/planepb"
+	corev1 "github.com/olive-io/olive/api/types/core/v1"
 	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/queue"
 	"github.com/olive-io/olive/plane/leader"
@@ -63,12 +64,12 @@ type Scheduler struct {
 	notifier leader.Notifier
 
 	rmu     sync.RWMutex
-	runners map[uint64]*pb.Runner
+	runners map[string]*corev1.Runner
 
 	rgmu    sync.RWMutex
 	regions map[uint64]*pb.Region
 
-	runnerQ     *queue.SyncPriorityQueue[*pb.RunnerStat]
+	runnerQ     *queue.SyncPriorityQueue[*corev1.RunnerStatistics]
 	regionQ     *queue.SyncPriorityQueue[*pb.RegionStat]
 	definitionQ *queue.SyncPriorityQueue[*pb.DefinitionMeta]
 

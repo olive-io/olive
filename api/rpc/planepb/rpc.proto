@@ -21,12 +21,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 syntax = "proto3";
 
-package olivepb;
+package planepb;
 
-option go_package = "github.com/olive-io/olive/api/olivepb;olivepb";
+option go_package = "github.com/olive-io/olive/api/planepb;planepb";
 
 import "github.com/olive-io/olive/api/types/core/v1/generated.proto";
-import "github.com/olive-io/olive/api/discoverypb/discovery.proto";
 
 // for grpc-gateway
 import "google/api/annotations.proto";
@@ -35,7 +34,7 @@ service Cluster {
   // MemberAdd adds a member into the cluster.
   rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
     option (google.api.http) = {
-      post: "/v3/cluster/member/add"
+      post: "/v1/cluster/member/add"
       body: "*"
     };
   }
@@ -43,7 +42,7 @@ service Cluster {
   // MemberRemove removes an existing member from the cluster.
   rpc MemberRemove(MemberRemoveRequest) returns (MemberRemoveResponse) {
     option (google.api.http) = {
-      post: "/v3/cluster/member/remove"
+      post: "/v1/cluster/member/remove"
       body: "*"
     };
   }
@@ -51,7 +50,7 @@ service Cluster {
   // MemberUpdate updates the member configuration.
   rpc MemberUpdate(MemberUpdateRequest) returns (MemberUpdateResponse) {
     option (google.api.http) = {
-      post: "/v3/cluster/member/update"
+      post: "/v1/cluster/member/update"
       body: "*"
     };
   }
@@ -59,7 +58,7 @@ service Cluster {
   // MemberList lists all the members in the cluster.
   rpc MemberList(MemberListRequest) returns (MemberListResponse) {
     option (google.api.http) = {
-      post: "/v3/cluster/member/list"
+      post: "/v1/cluster/member/list"
       body: "*"
     };
   }
@@ -67,7 +66,7 @@ service Cluster {
   // MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
   rpc MemberPromote(MemberPromoteRequest) returns (MemberPromoteResponse) {
     option (google.api.http) = {
-      post: "/v3/cluster/member/promote"
+      post: "/v1/cluster/member/promote"
       body: "*"
     };
   }
@@ -133,10 +132,10 @@ message MemberPromoteResponse {
   repeated github.com.olive_io.olive.api.types.core.v1.Member members = 2;
 }
 
-service MetaRPC {
-  rpc GetMeta(GetMetaRequest) returns (GetMetaResponse) {
+service PlaneRPC {
+  rpc GetPlane(GetPlaneRequest) returns (GetPlaneResponse) {
     option (google.api.http) = {
-      get: "/v1/meta/get"
+      get: "/v1/plane/get"
     };
   };
   rpc ListRunner(ListRunnerRequest) returns (ListRunnerResponse) {
@@ -144,32 +143,36 @@ service MetaRPC {
       get: "/v1/runners"
     };
   };
-//  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
-//    option (google.api.http) = {
-//      get: "/v1/runner/{id}"
-//    };
-//  };
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner/{name}"
+    };
+  };
 }
 
-message GetMetaRequest {}
+message GetPlaneRequest {}
 
-message GetMetaResponse {
-  github.com.olive_io.olive.api.types.core.v1.Plane meta = 1;
+message GetPlaneResponse {
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.Plane plane = 2;
 }
 
 message ListRunnerRequest {}
 
 message ListRunnerResponse {
-  repeated github.com.olive_io.olive.api.types.core.v1.Runner runners = 1;
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  repeated github.com.olive_io.olive.api.types.core.v1.Runner runners = 2;
 }
 
-//message GetRunnerRequest {
-//  uint64 id = 1;
-//}
-//
-//message GetRunnerResponse {
-//  olivepb.Runner runner = 1;
-//}
+message GetRunnerRequest {
+  string name = 1;
+}
+
+message GetRunnerResponse {
+  github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
+  github.com.olive_io.olive.api.types.core.v1.Runner runner = 2;
+  github.com.olive_io.olive.api.types.core.v1.RunnerStatistics stat = 3;
+}
 
 service BpmnRPC {
   rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
@@ -211,7 +214,6 @@ message DeployDefinitionRequest {
 message DeployDefinitionResponse {
   github.com.olive_io.olive.api.types.core.v1.ResponseHeader header = 1;
   int64 version = 2;
-  uint64 region = 3;
 }
 
 message ListDefinitionRequest {
@@ -227,7 +229,7 @@ message ListDefinitionResponse {
 
 message GetDefinitionRequest {
   string id = 1;
-  uint64 version = 2;
+  int64 version = 2;
 }
 
 message GetDefinitionResponse {
@@ -248,7 +250,8 @@ message ExecuteDefinitionRequest {
   uint64 definitionVersion = 2;
   string name = 3;
   map<string, string> header = 4;
-  map<string, discoverypb.Box> properties = 5;
+  map<string, bytes> properties = 5;
+  map<string, bytes> dataObjects = 6;
 }
 
 message ExecuteDefinitionResponse {

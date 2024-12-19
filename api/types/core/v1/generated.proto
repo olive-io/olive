@@ -137,12 +137,7 @@ message Member {
 
 // +gogo:genproto=true
 // +gogo:deepcopy=true
-// +gogo:deepcopy:interfaces=github.com/olive-io/olive/api.Object
 message Plane {
-  github.com.olive_io.olive.api.types.meta.v1.TypeMeta typeMeta = 1;
-
-  github.com.olive_io.olive.api.types.meta.v1.ObjectMeta metadata = 2;
-
   uint64 cluster_id = 3;
 
   uint64 leader = 4;
