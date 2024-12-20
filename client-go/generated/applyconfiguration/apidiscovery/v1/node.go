@@ -24,20 +24,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// NodeApplyConfiguration represents an declarative configuration of the Node type for use
+// NodeApplyConfiguration represents a declarative configuration of the Node type for use
 // with apply.
 type NodeApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	Id                            *string           `json:"id,omitempty"`
-	Metadata                      map[string]string `json:"metadata,omitempty"`
-	Address                       *string           `json:"address,omitempty"`
-	Port                          *int64            `json:"port,omitempty"`
+	metav1.TypeMetaApplyConfiguration `json:",inline"`
+	Id                                *string           `json:"id,omitempty"`
+	Metadata                          map[string]string `json:"metadata,omitempty"`
+	Address                           *string           `json:"address,omitempty"`
+	Port                              *int64            `json:"port,omitempty"`
 }
 
-// NodeApplyConfiguration constructs an declarative configuration of the Node type for use with
+// NodeApplyConfiguration constructs a declarative configuration of the Node type for use with
 // apply.
 func Node() *NodeApplyConfiguration {
 	b := &NodeApplyConfiguration{}
@@ -50,7 +50,7 @@ func Node() *NodeApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *NodeApplyConfiguration) WithKind(value string) *NodeApplyConfiguration {
-	b.Kind = &value
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
@@ -58,7 +58,7 @@ func (b *NodeApplyConfiguration) WithKind(value string) *NodeApplyConfiguration 
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *NodeApplyConfiguration) WithAPIVersion(value string) *NodeApplyConfiguration {
-	b.APIVersion = &value
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 

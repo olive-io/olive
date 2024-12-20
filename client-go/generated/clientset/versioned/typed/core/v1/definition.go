@@ -24,18 +24,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
+	context "context"
 
-	v1 "github.com/olive-io/olive/apis/core/v1"
-	corev1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	applyconfigurationcorev1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/core/v1"
 	scheme "github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // DefinitionsGetter has a method to return a DefinitionInterface.
@@ -46,216 +43,37 @@ type DefinitionsGetter interface {
 
 // DefinitionInterface has methods to work with Definition resources.
 type DefinitionInterface interface {
-	Create(ctx context.Context, definition *v1.Definition, opts metav1.CreateOptions) (*v1.Definition, error)
-	Update(ctx context.Context, definition *v1.Definition, opts metav1.UpdateOptions) (*v1.Definition, error)
-	UpdateStatus(ctx context.Context, definition *v1.Definition, opts metav1.UpdateOptions) (*v1.Definition, error)
+	Create(ctx context.Context, definition *corev1.Definition, opts metav1.CreateOptions) (*corev1.Definition, error)
+	Update(ctx context.Context, definition *corev1.Definition, opts metav1.UpdateOptions) (*corev1.Definition, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, definition *corev1.Definition, opts metav1.UpdateOptions) (*corev1.Definition, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Definition, error)
-	List(ctx context.Context, opts metav1.ListOptions) (*v1.DefinitionList, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*corev1.Definition, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*corev1.DefinitionList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Definition, err error)
-	Apply(ctx context.Context, definition *corev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Definition, err error)
-	ApplyStatus(ctx context.Context, definition *corev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Definition, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *corev1.Definition, err error)
+	Apply(ctx context.Context, definition *applyconfigurationcorev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *corev1.Definition, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, definition *applyconfigurationcorev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *corev1.Definition, err error)
 	DefinitionExpansion
 }
 
 // definitions implements DefinitionInterface
 type definitions struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*corev1.Definition, *corev1.DefinitionList, *applyconfigurationcorev1.DefinitionApplyConfiguration]
 }
 
 // newDefinitions returns a Definitions
 func newDefinitions(c *CoreV1Client, namespace string) *definitions {
 	return &definitions{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*corev1.Definition, *corev1.DefinitionList, *applyconfigurationcorev1.DefinitionApplyConfiguration](
+			"definitions",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *corev1.Definition { return &corev1.Definition{} },
+			func() *corev1.DefinitionList { return &corev1.DefinitionList{} },
+		),
 	}
-}
-
-// Get takes name of the definition, and returns the corresponding definition object, and an error if there is any.
-func (c *definitions) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Definition, err error) {
-	result = &v1.Definition{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of Definitions that match those selectors.
-func (c *definitions) List(ctx context.Context, opts metav1.ListOptions) (result *v1.DefinitionList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.DefinitionList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("definitions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested definitions.
-func (c *definitions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("definitions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a definition and creates it.  Returns the server's representation of the definition, and an error, if there is any.
-func (c *definitions) Create(ctx context.Context, definition *v1.Definition, opts metav1.CreateOptions) (result *v1.Definition, err error) {
-	result = &v1.Definition{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("definitions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(definition).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a definition and updates it. Returns the server's representation of the definition, and an error, if there is any.
-func (c *definitions) Update(ctx context.Context, definition *v1.Definition, opts metav1.UpdateOptions) (result *v1.Definition, err error) {
-	result = &v1.Definition{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(definition.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(definition).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *definitions) UpdateStatus(ctx context.Context, definition *v1.Definition, opts metav1.UpdateOptions) (result *v1.Definition, err error) {
-	result = &v1.Definition{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(definition.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(definition).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the definition and deletes it. Returns an error if one occurs.
-func (c *definitions) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *definitions) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("definitions").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched definition.
-func (c *definitions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Definition, err error) {
-	result = &v1.Definition{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied definition.
-func (c *definitions) Apply(ctx context.Context, definition *corev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Definition, err error) {
-	if definition == nil {
-		return nil, fmt.Errorf("definition provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(definition)
-	if err != nil {
-		return nil, err
-	}
-	name := definition.Name
-	if name == nil {
-		return nil, fmt.Errorf("definition.Name must be provided to Apply")
-	}
-	result = &v1.Definition{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *definitions) ApplyStatus(ctx context.Context, definition *corev1.DefinitionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Definition, err error) {
-	if definition == nil {
-		return nil, fmt.Errorf("definition provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(definition)
-	if err != nil {
-		return nil, err
-	}
-
-	name := definition.Name
-	if name == nil {
-		return nil, fmt.Errorf("definition.Name must be provided to Apply")
-	}
-
-	result = &v1.Definition{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("definitions").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

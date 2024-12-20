@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	apiscorev1 "github.com/olive-io/olive/apis/core/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
+	corev1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Processes.
 type ProcessInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.ProcessLister
+	Lister() corev1.ProcessLister
 }
 
 type processInformer struct {
@@ -76,7 +76,7 @@ func NewFilteredProcessInformer(client versioned.Interface, namespace string, re
 				return client.CoreV1().Processes(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&corev1.Process{},
+		&apiscorev1.Process{},
 		resyncPeriod,
 		indexers,
 	)
@@ -87,9 +87,9 @@ func (f *processInformer) defaultInformer(client versioned.Interface, resyncPeri
 }
 
 func (f *processInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&corev1.Process{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscorev1.Process{}, f.defaultInformer)
 }
 
-func (f *processInformer) Lister() v1.ProcessLister {
-	return v1.NewProcessLister(f.Informer().GetIndexer())
+func (f *processInformer) Lister() corev1.ProcessLister {
+	return corev1.NewProcessLister(f.Informer().GetIndexer())
 }

@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // RunnerLister helps list Runners.
@@ -35,39 +35,19 @@ import (
 type RunnerLister interface {
 	// List lists all Runners in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Runner, err error)
+	List(selector labels.Selector) (ret []*corev1.Runner, err error)
 	// Get retrieves the Runner from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Runner, error)
+	Get(name string) (*corev1.Runner, error)
 	RunnerListerExpansion
 }
 
 // runnerLister implements the RunnerLister interface.
 type runnerLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*corev1.Runner]
 }
 
 // NewRunnerLister returns a new RunnerLister.
 func NewRunnerLister(indexer cache.Indexer) RunnerLister {
-	return &runnerLister{indexer: indexer}
-}
-
-// List lists all Runners in the indexer.
-func (s *runnerLister) List(selector labels.Selector) (ret []*v1.Runner, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Runner))
-	})
-	return ret, err
-}
-
-// Get retrieves the Runner from the index for a given name.
-func (s *runnerLister) Get(name string) (*v1.Runner, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("runner"), name)
-	}
-	return obj.(*v1.Runner), nil
+	return &runnerLister{listers.New[*corev1.Runner](indexer, corev1.Resource("runner"))}
 }

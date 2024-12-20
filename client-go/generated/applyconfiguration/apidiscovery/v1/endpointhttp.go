@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// EndpointHttpApplyConfiguration represents an declarative configuration of the EndpointHttp type for use
+// EndpointHttpApplyConfiguration represents a declarative configuration of the EndpointHttp type for use
 // with apply.
 type EndpointHttpApplyConfiguration struct {
 	URL      *string                `json:"url,omitempty"`
@@ -32,7 +32,7 @@ type EndpointHttpApplyConfiguration struct {
 	Response *BoxApplyConfiguration `json:"response,omitempty"`
 }
 
-// EndpointHttpApplyConfiguration constructs an declarative configuration of the EndpointHttp type for use with
+// EndpointHttpApplyConfiguration constructs a declarative configuration of the EndpointHttp type for use with
 // apply.
 func EndpointHttp() *EndpointHttpApplyConfiguration {
 	return &EndpointHttpApplyConfiguration{}

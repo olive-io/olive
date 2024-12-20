@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	apiscorev1 "github.com/olive-io/olive/apis/core/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
+	corev1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Regions.
 type RegionInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.RegionLister
+	Lister() corev1.RegionLister
 }
 
 type regionInformer struct {
@@ -75,7 +75,7 @@ func NewFilteredRegionInformer(client versioned.Interface, resyncPeriod time.Dur
 				return client.CoreV1().Regions().Watch(context.TODO(), options)
 			},
 		},
-		&corev1.Region{},
+		&apiscorev1.Region{},
 		resyncPeriod,
 		indexers,
 	)
@@ -86,9 +86,9 @@ func (f *regionInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *regionInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&corev1.Region{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscorev1.Region{}, f.defaultInformer)
 }
 
-func (f *regionInformer) Lister() v1.RegionLister {
-	return v1.NewRegionLister(f.Informer().GetIndexer())
+func (f *regionInformer) Lister() corev1.RegionLister {
+	return corev1.NewRegionLister(f.Informer().GetIndexer())
 }

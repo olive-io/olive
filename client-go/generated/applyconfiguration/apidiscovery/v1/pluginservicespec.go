@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// PluginServiceSpecApplyConfiguration represents an declarative configuration of the PluginServiceSpec type for use
+// PluginServiceSpecApplyConfiguration represents a declarative configuration of the PluginServiceSpec type for use
 // with apply.
 type PluginServiceSpecApplyConfiguration struct {
 	Runner    *string                  `json:"runner,omitempty"`
@@ -32,7 +32,7 @@ type PluginServiceSpecApplyConfiguration struct {
 	Nodes     []NodeApplyConfiguration `json:"nodes,omitempty"`
 }
 
-// PluginServiceSpecApplyConfiguration constructs an declarative configuration of the PluginServiceSpec type for use with
+// PluginServiceSpecApplyConfiguration constructs a declarative configuration of the PluginServiceSpec type for use with
 // apply.
 func PluginServiceSpec() *PluginServiceSpecApplyConfiguration {
 	return &PluginServiceSpecApplyConfiguration{}

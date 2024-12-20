@@ -34,7 +34,7 @@ import (
 	clientset "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 )
 
-// Client provides and manages an olive-mon client session.
+// Client provides and manages an olive-plane client session.
 type Client struct {
 	// embed etcd client
 	clientv3.Cluster

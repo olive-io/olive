@@ -24,16 +24,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// DefinitionStatusApplyConfiguration represents an declarative configuration of the DefinitionStatus type for use
+// DefinitionStatusApplyConfiguration represents a declarative configuration of the DefinitionStatus type for use
 // with apply.
 type DefinitionStatusApplyConfiguration struct {
-	Phase *v1.DefPhase `json:"phase,omitempty"`
+	Phase *corev1.DefPhase `json:"phase,omitempty"`
 }
 
-// DefinitionStatusApplyConfiguration constructs an declarative configuration of the DefinitionStatus type for use with
+// DefinitionStatusApplyConfiguration constructs a declarative configuration of the DefinitionStatus type for use with
 // apply.
 func DefinitionStatus() *DefinitionStatusApplyConfiguration {
 	return &DefinitionStatusApplyConfiguration{}
@@ -42,7 +42,7 @@ func DefinitionStatus() *DefinitionStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *DefinitionStatusApplyConfiguration) WithPhase(value v1.DefPhase) *DefinitionStatusApplyConfiguration {
+func (b *DefinitionStatusApplyConfiguration) WithPhase(value corev1.DefPhase) *DefinitionStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

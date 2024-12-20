@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	apiscorev1 "github.com/olive-io/olive/apis/core/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
+	corev1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Namespaces.
 type NamespaceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.NamespaceLister
+	Lister() corev1.NamespaceLister
 }
 
 type namespaceInformer struct {
@@ -75,7 +75,7 @@ func NewFilteredNamespaceInformer(client versioned.Interface, resyncPeriod time.
 				return client.CoreV1().Namespaces().Watch(context.TODO(), options)
 			},
 		},
-		&corev1.Namespace{},
+		&apiscorev1.Namespace{},
 		resyncPeriod,
 		indexers,
 	)
@@ -86,9 +86,9 @@ func (f *namespaceInformer) defaultInformer(client versioned.Interface, resyncPe
 }
 
 func (f *namespaceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&corev1.Namespace{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscorev1.Namespace{}, f.defaultInformer)
 }
 
-func (f *namespaceInformer) Lister() v1.NamespaceLister {
-	return v1.NewNamespaceLister(f.Informer().GetIndexer())
+func (f *namespaceInformer) Lister() corev1.NamespaceLister {
+	return corev1.NewNamespaceLister(f.Informer().GetIndexer())
 }

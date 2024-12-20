@@ -34,15 +34,15 @@ type FakeApidiscoveryV1 struct {
 }
 
 func (c *FakeApidiscoveryV1) Edges(namespace string) v1.EdgeInterface {
-	return &FakeEdges{c, namespace}
+	return newFakeEdges(c, namespace)
 }
 
 func (c *FakeApidiscoveryV1) Endpoints(namespace string) v1.EndpointInterface {
-	return &FakeEndpoints{c, namespace}
+	return newFakeEndpoints(c, namespace)
 }
 
 func (c *FakeApidiscoveryV1) PluginServices(namespace string) v1.PluginServiceInterface {
-	return &FakePluginServices{c, namespace}
+	return newFakePluginServices(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

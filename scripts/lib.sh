@@ -164,7 +164,7 @@ function run_for_module {
 }
 
 function module_dirs() {
-  echo "apis pkg client-go mon runner gateway console tests ."
+  echo "apis pkg client-go mon runner tests ."
 }
 
 function go_work() {
@@ -192,8 +192,6 @@ function modules() {
     "${ROOT_MODULE}/client-go"
     "${ROOT_MODULE}/mon"
     "${ROOT_MODULE}/runner"
-    "${ROOT_MODULE}/gateway"
-    "${ROOT_MODULE}/console"
     "${ROOT_MODULE}/tests"
     "${ROOT_MODULE}")
   echo "${modules[@]}"

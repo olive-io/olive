@@ -24,20 +24,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// RegionStatusApplyConfiguration represents an declarative configuration of the RegionStatus type for use
+// RegionStatusApplyConfiguration represents a declarative configuration of the RegionStatus type for use
 // with apply.
 type RegionStatusApplyConfiguration struct {
-	Phase       *v1.RegionPhase               `json:"phase,omitempty"`
+	Phase       *corev1.RegionPhase           `json:"phase,omitempty"`
 	Message     *string                       `json:"message,omitempty"`
 	Replicas    *int32                        `json:"replicas,omitempty"`
 	Definitions *int64                        `json:"definitions,omitempty"`
 	Stat        *RegionStatApplyConfiguration `json:"stat,omitempty"`
 }
 
-// RegionStatusApplyConfiguration constructs an declarative configuration of the RegionStatus type for use with
+// RegionStatusApplyConfiguration constructs a declarative configuration of the RegionStatus type for use with
 // apply.
 func RegionStatus() *RegionStatusApplyConfiguration {
 	return &RegionStatusApplyConfiguration{}
@@ -46,7 +46,7 @@ func RegionStatus() *RegionStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *RegionStatusApplyConfiguration) WithPhase(value v1.RegionPhase) *RegionStatusApplyConfiguration {
+func (b *RegionStatusApplyConfiguration) WithPhase(value corev1.RegionPhase) *RegionStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

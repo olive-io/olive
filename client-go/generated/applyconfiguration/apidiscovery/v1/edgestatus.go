@@ -24,16 +24,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 )
 
-// EdgeStatusApplyConfiguration represents an declarative configuration of the EdgeStatus type for use
+// EdgeStatusApplyConfiguration represents a declarative configuration of the EdgeStatus type for use
 // with apply.
 type EdgeStatusApplyConfiguration struct {
-	Phase *v1.EdgePhase `json:"phase,omitempty"`
+	Phase *apidiscoveryv1.EdgePhase `json:"phase,omitempty"`
 }
 
-// EdgeStatusApplyConfiguration constructs an declarative configuration of the EdgeStatus type for use with
+// EdgeStatusApplyConfiguration constructs a declarative configuration of the EdgeStatus type for use with
 // apply.
 func EdgeStatus() *EdgeStatusApplyConfiguration {
 	return &EdgeStatusApplyConfiguration{}
@@ -42,7 +42,7 @@ func EdgeStatus() *EdgeStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *EdgeStatusApplyConfiguration) WithPhase(value v1.EdgePhase) *EdgeStatusApplyConfiguration {
+func (b *EdgeStatusApplyConfiguration) WithPhase(value apidiscoveryv1.EdgePhase) *EdgeStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// DefinitionSpecApplyConfiguration represents an declarative configuration of the DefinitionSpec type for use
+// DefinitionSpecApplyConfiguration represents a declarative configuration of the DefinitionSpec type for use
 // with apply.
 type DefinitionSpecApplyConfiguration struct {
 	Content *string `json:"content,omitempty"`
@@ -31,7 +31,7 @@ type DefinitionSpecApplyConfiguration struct {
 	Region  *int64  `json:"region,omitempty"`
 }
 
-// DefinitionSpecApplyConfiguration constructs an declarative configuration of the DefinitionSpec type for use with
+// DefinitionSpecApplyConfiguration constructs a declarative configuration of the DefinitionSpec type for use with
 // apply.
 func DefinitionSpec() *DefinitionSpecApplyConfiguration {
 	return &DefinitionSpecApplyConfiguration{}

@@ -1,6 +1,6 @@
 module github.com/olive-io/olive/tests
 
-go 1.22.0
+go 1.23.1
 
 require (
 	github.com/olive-io/bpmn/schema v1.3.4

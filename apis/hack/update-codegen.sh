@@ -5,7 +5,7 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-ls ${SCRIPT_ROOT}/vendor &> /dev/null && rm -rf ${SCRIPT_ROOT}/vendor
+ls ${SCRIPT_ROOT}/../vendor &> /dev/null && rm -rf ${SCRIPT_ROOT}/../vendor
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../hack)}
 
 source "${CODEGEN_PKG}/kube_codegen.sh"
@@ -39,7 +39,6 @@ kube::codegen::gen_client \
     --boilerplate "${SCRIPT_ROOT}/../hack/boilerplate.go.txt" \
     "${SCRIPT_ROOT}/"
 
-go mod tidy && go mod vendor
 kube::codegen::gen_protobuf \
     --output-dir "$(echo $GOPATH)/src" \
     --boilerplate "${SCRIPT_ROOT}/../hack/boilerplate.go.txt" \

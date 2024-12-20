@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	corev1 "github.com/olive-io/olive/apis/core/v1"

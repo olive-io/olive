@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apisapidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/listers/apidiscovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Edges.
 type EdgeInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.EdgeLister
+	Lister() apidiscoveryv1.EdgeLister
 }
 
 type edgeInformer struct {
@@ -76,7 +76,7 @@ func NewFilteredEdgeInformer(client versioned.Interface, namespace string, resyn
 				return client.ApidiscoveryV1().Edges(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&apidiscoveryv1.Edge{},
+		&apisapidiscoveryv1.Edge{},
 		resyncPeriod,
 		indexers,
 	)
@@ -87,9 +87,9 @@ func (f *edgeInformer) defaultInformer(client versioned.Interface, resyncPeriod 
 }
 
 func (f *edgeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apidiscoveryv1.Edge{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisapidiscoveryv1.Edge{}, f.defaultInformer)
 }
 
-func (f *edgeInformer) Lister() v1.EdgeLister {
-	return v1.NewEdgeLister(f.Informer().GetIndexer())
+func (f *edgeInformer) Lister() apidiscoveryv1.EdgeLister {
+	return apidiscoveryv1.NewEdgeLister(f.Informer().GetIndexer())
 }

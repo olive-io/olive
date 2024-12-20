@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// RunnerSpecApplyConfiguration represents an declarative configuration of the RunnerSpec type for use
+// RunnerSpecApplyConfiguration represents a declarative configuration of the RunnerSpec type for use
 // with apply.
 type RunnerSpecApplyConfiguration struct {
 	ID         *int64  `json:"id,omitempty"`
@@ -34,7 +34,7 @@ type RunnerSpecApplyConfiguration struct {
 	IsLearner  *bool   `json:"isLearner,omitempty"`
 }
 
-// RunnerSpecApplyConfiguration constructs an declarative configuration of the RunnerSpec type for use with
+// RunnerSpecApplyConfiguration constructs a declarative configuration of the RunnerSpec type for use with
 // apply.
 func RunnerSpec() *RunnerSpecApplyConfiguration {
 	return &RunnerSpecApplyConfiguration{}

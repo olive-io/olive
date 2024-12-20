@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // PluginServiceLister helps list PluginServices.
@@ -35,7 +35,7 @@ import (
 type PluginServiceLister interface {
 	// List lists all PluginServices in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.PluginService, err error)
+	List(selector labels.Selector) (ret []*apidiscoveryv1.PluginService, err error)
 	// PluginServices returns an object that can list and get PluginServices.
 	PluginServices(namespace string) PluginServiceNamespaceLister
 	PluginServiceListerExpansion
@@ -43,25 +43,17 @@ type PluginServiceLister interface {
 
 // pluginServiceLister implements the PluginServiceLister interface.
 type pluginServiceLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*apidiscoveryv1.PluginService]
 }
 
 // NewPluginServiceLister returns a new PluginServiceLister.
 func NewPluginServiceLister(indexer cache.Indexer) PluginServiceLister {
-	return &pluginServiceLister{indexer: indexer}
-}
-
-// List lists all PluginServices in the indexer.
-func (s *pluginServiceLister) List(selector labels.Selector) (ret []*v1.PluginService, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PluginService))
-	})
-	return ret, err
+	return &pluginServiceLister{listers.New[*apidiscoveryv1.PluginService](indexer, apidiscoveryv1.Resource("pluginservice"))}
 }
 
 // PluginServices returns an object that can list and get PluginServices.
 func (s *pluginServiceLister) PluginServices(namespace string) PluginServiceNamespaceLister {
-	return pluginServiceNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return pluginServiceNamespaceLister{listers.NewNamespaced[*apidiscoveryv1.PluginService](s.ResourceIndexer, namespace)}
 }
 
 // PluginServiceNamespaceLister helps list and get PluginServices.
@@ -69,36 +61,15 @@ func (s *pluginServiceLister) PluginServices(namespace string) PluginServiceName
 type PluginServiceNamespaceLister interface {
 	// List lists all PluginServices in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.PluginService, err error)
+	List(selector labels.Selector) (ret []*apidiscoveryv1.PluginService, err error)
 	// Get retrieves the PluginService from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.PluginService, error)
+	Get(name string) (*apidiscoveryv1.PluginService, error)
 	PluginServiceNamespaceListerExpansion
 }
 
 // pluginServiceNamespaceLister implements the PluginServiceNamespaceLister
 // interface.
 type pluginServiceNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all PluginServices in the indexer for a given namespace.
-func (s pluginServiceNamespaceLister) List(selector labels.Selector) (ret []*v1.PluginService, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.PluginService))
-	})
-	return ret, err
-}
-
-// Get retrieves the PluginService from the indexer for a given namespace and name.
-func (s pluginServiceNamespaceLister) Get(name string) (*v1.PluginService, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("pluginservice"), name)
-	}
-	return obj.(*v1.PluginService), nil
+	listers.ResourceIndexer[*apidiscoveryv1.PluginService]
 }

@@ -24,18 +24,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
+	context "context"
 
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	applyconfigurationapidiscoveryv1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
 	scheme "github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // EndpointsGetter has a method to return a EndpointInterface.
@@ -46,216 +43,37 @@ type EndpointsGetter interface {
 
 // EndpointInterface has methods to work with Endpoint resources.
 type EndpointInterface interface {
-	Create(ctx context.Context, endpoint *v1.Endpoint, opts metav1.CreateOptions) (*v1.Endpoint, error)
-	Update(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (*v1.Endpoint, error)
-	UpdateStatus(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (*v1.Endpoint, error)
+	Create(ctx context.Context, endpoint *apidiscoveryv1.Endpoint, opts metav1.CreateOptions) (*apidiscoveryv1.Endpoint, error)
+	Update(ctx context.Context, endpoint *apidiscoveryv1.Endpoint, opts metav1.UpdateOptions) (*apidiscoveryv1.Endpoint, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, endpoint *apidiscoveryv1.Endpoint, opts metav1.UpdateOptions) (*apidiscoveryv1.Endpoint, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Endpoint, error)
-	List(ctx context.Context, opts metav1.ListOptions) (*v1.EndpointList, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*apidiscoveryv1.Endpoint, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*apidiscoveryv1.EndpointList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Endpoint, err error)
-	Apply(ctx context.Context, endpoint *apidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Endpoint, err error)
-	ApplyStatus(ctx context.Context, endpoint *apidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Endpoint, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *apidiscoveryv1.Endpoint, err error)
+	Apply(ctx context.Context, endpoint *applyconfigurationapidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.Endpoint, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, endpoint *applyconfigurationapidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *apidiscoveryv1.Endpoint, err error)
 	EndpointExpansion
 }
 
 // endpoints implements EndpointInterface
 type endpoints struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithListAndApply[*apidiscoveryv1.Endpoint, *apidiscoveryv1.EndpointList, *applyconfigurationapidiscoveryv1.EndpointApplyConfiguration]
 }
 
 // newEndpoints returns a Endpoints
 func newEndpoints(c *ApidiscoveryV1Client, namespace string) *endpoints {
 	return &endpoints{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithListAndApply[*apidiscoveryv1.Endpoint, *apidiscoveryv1.EndpointList, *applyconfigurationapidiscoveryv1.EndpointApplyConfiguration](
+			"endpoints",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *apidiscoveryv1.Endpoint { return &apidiscoveryv1.Endpoint{} },
+			func() *apidiscoveryv1.EndpointList { return &apidiscoveryv1.EndpointList{} },
+		),
 	}
-}
-
-// Get takes name of the endpoint, and returns the corresponding endpoint object, and an error if there is any.
-func (c *endpoints) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Endpoint, err error) {
-	result = &v1.Endpoint{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of Endpoints that match those selectors.
-func (c *endpoints) List(ctx context.Context, opts metav1.ListOptions) (result *v1.EndpointList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.EndpointList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("endpoints").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested endpoints.
-func (c *endpoints) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("endpoints").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a endpoint and creates it.  Returns the server's representation of the endpoint, and an error, if there is any.
-func (c *endpoints) Create(ctx context.Context, endpoint *v1.Endpoint, opts metav1.CreateOptions) (result *v1.Endpoint, err error) {
-	result = &v1.Endpoint{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("endpoints").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(endpoint).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a endpoint and updates it. Returns the server's representation of the endpoint, and an error, if there is any.
-func (c *endpoints) Update(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (result *v1.Endpoint, err error) {
-	result = &v1.Endpoint{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(endpoint.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(endpoint).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *endpoints) UpdateStatus(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (result *v1.Endpoint, err error) {
-	result = &v1.Endpoint{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(endpoint.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(endpoint).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the endpoint and deletes it. Returns an error if one occurs.
-func (c *endpoints) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *endpoints) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("endpoints").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched endpoint.
-func (c *endpoints) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Endpoint, err error) {
-	result = &v1.Endpoint{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied endpoint.
-func (c *endpoints) Apply(ctx context.Context, endpoint *apidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Endpoint, err error) {
-	if endpoint == nil {
-		return nil, fmt.Errorf("endpoint provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	name := endpoint.Name
-	if name == nil {
-		return nil, fmt.Errorf("endpoint.Name must be provided to Apply")
-	}
-	result = &v1.Endpoint{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *endpoints) ApplyStatus(ctx context.Context, endpoint *apidiscoveryv1.EndpointApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Endpoint, err error) {
-	if endpoint == nil {
-		return nil, fmt.Errorf("endpoint provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	name := endpoint.Name
-	if name == nil {
-		return nil, fmt.Errorf("endpoint.Name must be provided to Apply")
-	}
-
-	result = &v1.Endpoint{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("endpoints").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	apiscorev1 "github.com/olive-io/olive/apis/core/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
+	corev1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Runners.
 type RunnerInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.RunnerLister
+	Lister() corev1.RunnerLister
 }
 
 type runnerInformer struct {
@@ -75,7 +75,7 @@ func NewFilteredRunnerInformer(client versioned.Interface, resyncPeriod time.Dur
 				return client.CoreV1().Runners().Watch(context.TODO(), options)
 			},
 		},
-		&corev1.Runner{},
+		&apiscorev1.Runner{},
 		resyncPeriod,
 		indexers,
 	)
@@ -86,9 +86,9 @@ func (f *runnerInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *runnerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&corev1.Runner{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscorev1.Runner{}, f.defaultInformer)
 }
 
-func (f *runnerInformer) Lister() v1.RunnerLister {
-	return v1.NewRunnerLister(f.Informer().GetIndexer())
+func (f *runnerInformer) Lister() corev1.RunnerLister {
+	return corev1.NewRunnerLister(f.Informer().GetIndexer())
 }

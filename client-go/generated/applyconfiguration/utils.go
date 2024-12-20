@@ -28,7 +28,10 @@ import (
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
 	applyconfigurationcorev1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/core/v1"
+	internal "github.com/olive-io/olive/client-go/generated/applyconfiguration/internal"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	testing "k8s.io/client-go/testing"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no
@@ -105,4 +108,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 
 	}
 	return nil
+}
+
+func NewTypeConverter(scheme *runtime.Scheme) *testing.TypeConverter {
+	return &testing.TypeConverter{Scheme: scheme, TypeResolver: internal.Parser()}
 }

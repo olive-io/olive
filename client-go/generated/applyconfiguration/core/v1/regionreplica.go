@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// RegionReplicaApplyConfiguration represents an declarative configuration of the RegionReplica type for use
+// RegionReplicaApplyConfiguration represents a declarative configuration of the RegionReplica type for use
 // with apply.
 type RegionReplicaApplyConfiguration struct {
 	Id          *int64  `json:"id,omitempty"`
@@ -34,7 +34,7 @@ type RegionReplicaApplyConfiguration struct {
 	IsJoin      *bool   `json:"isJoin,omitempty"`
 }
 
-// RegionReplicaApplyConfiguration constructs an declarative configuration of the RegionReplica type for use with
+// RegionReplicaApplyConfiguration constructs a declarative configuration of the RegionReplica type for use with
 // apply.
 func RegionReplica() *RegionReplicaApplyConfiguration {
 	return &RegionReplicaApplyConfiguration{}

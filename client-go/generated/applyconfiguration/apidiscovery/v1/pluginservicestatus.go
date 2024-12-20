@@ -24,16 +24,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 )
 
-// PluginServiceStatusApplyConfiguration represents an declarative configuration of the PluginServiceStatus type for use
+// PluginServiceStatusApplyConfiguration represents a declarative configuration of the PluginServiceStatus type for use
 // with apply.
 type PluginServiceStatusApplyConfiguration struct {
-	Phase *v1.PluginServicePhase `json:"phase,omitempty"`
+	Phase *apidiscoveryv1.PluginServicePhase `json:"phase,omitempty"`
 }
 
-// PluginServiceStatusApplyConfiguration constructs an declarative configuration of the PluginServiceStatus type for use with
+// PluginServiceStatusApplyConfiguration constructs a declarative configuration of the PluginServiceStatus type for use with
 // apply.
 func PluginServiceStatus() *PluginServiceStatusApplyConfiguration {
 	return &PluginServiceStatusApplyConfiguration{}
@@ -42,7 +42,7 @@ func PluginServiceStatus() *PluginServiceStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *PluginServiceStatusApplyConfiguration) WithPhase(value v1.PluginServicePhase) *PluginServiceStatusApplyConfiguration {
+func (b *PluginServiceStatusApplyConfiguration) WithPhase(value apidiscoveryv1.PluginServicePhase) *PluginServiceStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

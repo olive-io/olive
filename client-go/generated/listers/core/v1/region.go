@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // RegionLister helps list Regions.
@@ -35,39 +35,19 @@ import (
 type RegionLister interface {
 	// List lists all Regions in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Region, err error)
+	List(selector labels.Selector) (ret []*corev1.Region, err error)
 	// Get retrieves the Region from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Region, error)
+	Get(name string) (*corev1.Region, error)
 	RegionListerExpansion
 }
 
 // regionLister implements the RegionLister interface.
 type regionLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*corev1.Region]
 }
 
 // NewRegionLister returns a new RegionLister.
 func NewRegionLister(indexer cache.Indexer) RegionLister {
-	return &regionLister{indexer: indexer}
-}
-
-// List lists all Regions in the indexer.
-func (s *regionLister) List(selector labels.Selector) (ret []*v1.Region, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Region))
-	})
-	return ret, err
-}
-
-// Get retrieves the Region from the index for a given name.
-func (s *regionLister) Get(name string) (*v1.Region, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("region"), name)
-	}
-	return obj.(*v1.Region), nil
+	return &regionLister{listers.New[*corev1.Region](indexer, corev1.Resource("region"))}
 }

@@ -739,6 +739,7 @@ function kube::codegen::gen_protobuf() {
             -name zz_generated.protobuf.go \
             | xargs -0 rm -f
 
+        go mod tidy && go work vendor
         "${gobin}/go-to-protobuf" \
             -v "${v}" \
             --output-dir "${out_dir}" \

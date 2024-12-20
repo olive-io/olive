@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// RegionSpecApplyConfiguration represents an declarative configuration of the RegionSpec type for use
+// RegionSpecApplyConfiguration represents a declarative configuration of the RegionSpec type for use
 // with apply.
 type RegionSpecApplyConfiguration struct {
 	Id               *int64                            `json:"id,omitempty"`
@@ -35,7 +35,7 @@ type RegionSpecApplyConfiguration struct {
 	DefinitionsLimit *int64                            `json:"definitionsLimit,omitempty"`
 }
 
-// RegionSpecApplyConfiguration constructs an declarative configuration of the RegionSpec type for use with
+// RegionSpecApplyConfiguration constructs a declarative configuration of the RegionSpec type for use with
 // apply.
 func RegionSpec() *RegionSpecApplyConfiguration {
 	return &RegionSpecApplyConfiguration{}

@@ -24,21 +24,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
 )
 
-// ProcessSpecApplyConfiguration represents an declarative configuration of the ProcessSpec type for use
+// ProcessSpecApplyConfiguration represents a declarative configuration of the ProcessSpec type for use
 // with apply.
 type ProcessSpecApplyConfiguration struct {
-	Definition  *string                             `json:"definition,omitempty"`
-	Version     *int64                              `json:"version,omitempty"`
-	BpmnProcess *string                             `json:"bpmnProcess,omitempty"`
-	Headers     map[string]string                   `json:"headers,omitempty"`
-	Properties  map[string]v1.BoxApplyConfiguration `json:"properties,omitempty"`
-	DataObjects map[string]string                   `json:"dataObjects,omitempty"`
+	Definition  *string                                         `json:"definition,omitempty"`
+	Version     *int64                                          `json:"version,omitempty"`
+	BpmnProcess *string                                         `json:"bpmnProcess,omitempty"`
+	Headers     map[string]string                               `json:"headers,omitempty"`
+	Properties  map[string]apidiscoveryv1.BoxApplyConfiguration `json:"properties,omitempty"`
+	DataObjects map[string]string                               `json:"dataObjects,omitempty"`
 }
 
-// ProcessSpecApplyConfiguration constructs an declarative configuration of the ProcessSpec type for use with
+// ProcessSpecApplyConfiguration constructs a declarative configuration of the ProcessSpec type for use with
 // apply.
 func ProcessSpec() *ProcessSpecApplyConfiguration {
 	return &ProcessSpecApplyConfiguration{}
@@ -86,9 +86,9 @@ func (b *ProcessSpecApplyConfiguration) WithHeaders(entries map[string]string) *
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Properties field,
 // overwriting an existing map entries in Properties field with the same key.
-func (b *ProcessSpecApplyConfiguration) WithProperties(entries map[string]v1.BoxApplyConfiguration) *ProcessSpecApplyConfiguration {
+func (b *ProcessSpecApplyConfiguration) WithProperties(entries map[string]apidiscoveryv1.BoxApplyConfiguration) *ProcessSpecApplyConfiguration {
 	if b.Properties == nil && len(entries) > 0 {
-		b.Properties = make(map[string]v1.BoxApplyConfiguration, len(entries))
+		b.Properties = make(map[string]apidiscoveryv1.BoxApplyConfiguration, len(entries))
 	}
 	for k, v := range entries {
 		b.Properties[k] = v

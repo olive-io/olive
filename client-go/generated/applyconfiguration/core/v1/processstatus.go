@@ -24,18 +24,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// ProcessStatusApplyConfiguration represents an declarative configuration of the ProcessStatus type for use
+// ProcessStatusApplyConfiguration represents a declarative configuration of the ProcessStatus type for use
 // with apply.
 type ProcessStatusApplyConfiguration struct {
-	Phase   *v1.ProcessPhase `json:"phase,omitempty"`
-	Message *string          `json:"message,omitempty"`
-	Region  *int64           `json:"region,omitempty"`
+	Phase   *corev1.ProcessPhase `json:"phase,omitempty"`
+	Message *string              `json:"message,omitempty"`
+	Region  *int64               `json:"region,omitempty"`
 }
 
-// ProcessStatusApplyConfiguration constructs an declarative configuration of the ProcessStatus type for use with
+// ProcessStatusApplyConfiguration constructs a declarative configuration of the ProcessStatus type for use with
 // apply.
 func ProcessStatus() *ProcessStatusApplyConfiguration {
 	return &ProcessStatusApplyConfiguration{}
@@ -44,7 +44,7 @@ func ProcessStatus() *ProcessStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *ProcessStatusApplyConfiguration) WithPhase(value v1.ProcessPhase) *ProcessStatusApplyConfiguration {
+func (b *ProcessStatusApplyConfiguration) WithPhase(value corev1.ProcessPhase) *ProcessStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

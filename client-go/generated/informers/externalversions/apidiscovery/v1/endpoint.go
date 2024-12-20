@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apisapidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/listers/apidiscovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Endpoints.
 type EndpointInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.EndpointLister
+	Lister() apidiscoveryv1.EndpointLister
 }
 
 type endpointInformer struct {
@@ -76,7 +76,7 @@ func NewFilteredEndpointInformer(client versioned.Interface, namespace string, r
 				return client.ApidiscoveryV1().Endpoints(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&apidiscoveryv1.Endpoint{},
+		&apisapidiscoveryv1.Endpoint{},
 		resyncPeriod,
 		indexers,
 	)
@@ -87,9 +87,9 @@ func (f *endpointInformer) defaultInformer(client versioned.Interface, resyncPer
 }
 
 func (f *endpointInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apidiscoveryv1.Endpoint{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisapidiscoveryv1.Endpoint{}, f.defaultInformer)
 }
 
-func (f *endpointInformer) Lister() v1.EndpointLister {
-	return v1.NewEndpointLister(f.Informer().GetIndexer())
+func (f *endpointInformer) Lister() apidiscoveryv1.EndpointLister {
+	return apidiscoveryv1.NewEndpointLister(f.Informer().GetIndexer())
 }

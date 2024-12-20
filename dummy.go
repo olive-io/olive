@@ -22,13 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package olive
 
 import (
-	_ "github.com/olive-io/olive/client-go"
-	_ "github.com/olive-io/olive/gateway"
-	_ "github.com/olive-io/olive/mon"
-	_ "github.com/olive-io/olive/pkg/runtime"
+	_ "github.com/olive-io/olive/plane"
 	_ "github.com/olive-io/olive/runner"
-
-	_ "github.com/ugorji/go/codec"
-
-	_ "github.com/olive-io/olive/tests/pkg/idutil"
 )

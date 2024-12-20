@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// BpmnStatApplyConfiguration represents an declarative configuration of the BpmnStat type for use
+// BpmnStatApplyConfiguration represents a declarative configuration of the BpmnStat type for use
 // with apply.
 type BpmnStatApplyConfiguration struct {
 	Definitions *int64 `json:"definitions,omitempty"`
@@ -32,7 +32,7 @@ type BpmnStatApplyConfiguration struct {
 	Tasks       *int64 `json:"tasks,omitempty"`
 }
 
-// BpmnStatApplyConfiguration constructs an declarative configuration of the BpmnStat type for use with
+// BpmnStatApplyConfiguration constructs a declarative configuration of the BpmnStat type for use with
 // apply.
 func BpmnStat() *BpmnStatApplyConfiguration {
 	return &BpmnStatApplyConfiguration{}

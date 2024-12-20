@@ -23,14 +23,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// EdgeSpecApplyConfiguration represents an declarative configuration of the EdgeSpec type for use
+// EdgeSpecApplyConfiguration represents a declarative configuration of the EdgeSpec type for use
 // with apply.
 type EdgeSpecApplyConfiguration struct {
 	Address   *string  `json:"address,omitempty"`
 	Endpoints []string `json:"endpoints,omitempty"`
 }
 
-// EdgeSpecApplyConfiguration constructs an declarative configuration of the EdgeSpec type for use with
+// EdgeSpecApplyConfiguration constructs a declarative configuration of the EdgeSpec type for use with
 // apply.
 func EdgeSpec() *EdgeSpecApplyConfiguration {
 	return &EdgeSpecApplyConfiguration{}

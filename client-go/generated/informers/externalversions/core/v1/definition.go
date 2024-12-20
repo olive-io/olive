@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	corev1 "github.com/olive-io/olive/apis/core/v1"
+	apiscorev1 "github.com/olive-io/olive/apis/core/v1"
 	versioned "github.com/olive-io/olive/client-go/generated/clientset/versioned"
 	internalinterfaces "github.com/olive-io/olive/client-go/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
+	corev1 "github.com/olive-io/olive/client-go/generated/listers/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -41,7 +41,7 @@ import (
 // Definitions.
 type DefinitionInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.DefinitionLister
+	Lister() corev1.DefinitionLister
 }
 
 type definitionInformer struct {
@@ -76,7 +76,7 @@ func NewFilteredDefinitionInformer(client versioned.Interface, namespace string,
 				return client.CoreV1().Definitions(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&corev1.Definition{},
+		&apiscorev1.Definition{},
 		resyncPeriod,
 		indexers,
 	)
@@ -87,9 +87,9 @@ func (f *definitionInformer) defaultInformer(client versioned.Interface, resyncP
 }
 
 func (f *definitionInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&corev1.Definition{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscorev1.Definition{}, f.defaultInformer)
 }
 
-func (f *definitionInformer) Lister() v1.DefinitionLister {
-	return v1.NewDefinitionLister(f.Informer().GetIndexer())
+func (f *definitionInformer) Lister() corev1.DefinitionLister {
+	return corev1.NewDefinitionLister(f.Informer().GetIndexer())
 }

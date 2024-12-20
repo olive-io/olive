@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // ProcessLister helps list Processes.
@@ -35,7 +35,7 @@ import (
 type ProcessLister interface {
 	// List lists all Processes in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Process, err error)
+	List(selector labels.Selector) (ret []*corev1.Process, err error)
 	// Processes returns an object that can list and get Processes.
 	Processes(namespace string) ProcessNamespaceLister
 	ProcessListerExpansion
@@ -43,25 +43,17 @@ type ProcessLister interface {
 
 // processLister implements the ProcessLister interface.
 type processLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*corev1.Process]
 }
 
 // NewProcessLister returns a new ProcessLister.
 func NewProcessLister(indexer cache.Indexer) ProcessLister {
-	return &processLister{indexer: indexer}
-}
-
-// List lists all Processes in the indexer.
-func (s *processLister) List(selector labels.Selector) (ret []*v1.Process, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Process))
-	})
-	return ret, err
+	return &processLister{listers.New[*corev1.Process](indexer, corev1.Resource("process"))}
 }
 
 // Processes returns an object that can list and get Processes.
 func (s *processLister) Processes(namespace string) ProcessNamespaceLister {
-	return processNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return processNamespaceLister{listers.NewNamespaced[*corev1.Process](s.ResourceIndexer, namespace)}
 }
 
 // ProcessNamespaceLister helps list and get Processes.
@@ -69,36 +61,15 @@ func (s *processLister) Processes(namespace string) ProcessNamespaceLister {
 type ProcessNamespaceLister interface {
 	// List lists all Processes in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Process, err error)
+	List(selector labels.Selector) (ret []*corev1.Process, err error)
 	// Get retrieves the Process from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Process, error)
+	Get(name string) (*corev1.Process, error)
 	ProcessNamespaceListerExpansion
 }
 
 // processNamespaceLister implements the ProcessNamespaceLister
 // interface.
 type processNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Processes in the indexer for a given namespace.
-func (s processNamespaceLister) List(selector labels.Selector) (ret []*v1.Process, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Process))
-	})
-	return ret, err
-}
-
-// Get retrieves the Process from the indexer for a given namespace and name.
-func (s processNamespaceLister) Get(name string) (*v1.Process, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("process"), name)
-	}
-	return obj.(*v1.Process), nil
+	listers.ResourceIndexer[*corev1.Process]
 }

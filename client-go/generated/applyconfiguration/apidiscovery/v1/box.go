@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 )
 
-// BoxApplyConfiguration represents an declarative configuration of the Box type for use
+// BoxApplyConfiguration represents a declarative configuration of the Box type for use
 // with apply.
 type BoxApplyConfiguration struct {
-	Type       *v1.BoxType                      `json:"type,omitempty"`
+	Type       *apidiscoveryv1.BoxType          `json:"type,omitempty"`
 	Data       *string                          `json:"data,omitempty"`
 	Example    *string                          `json:"example,omitempty"`
 	Default    *string                          `json:"default,omitempty"`
@@ -38,7 +38,7 @@ type BoxApplyConfiguration struct {
 	Parameters map[string]BoxApplyConfiguration `json:"parameters,omitempty"`
 }
 
-// BoxApplyConfiguration constructs an declarative configuration of the Box type for use with
+// BoxApplyConfiguration constructs a declarative configuration of the Box type for use with
 // apply.
 func Box() *BoxApplyConfiguration {
 	return &BoxApplyConfiguration{}
@@ -47,7 +47,7 @@ func Box() *BoxApplyConfiguration {
 // WithType sets the Type field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Type field is set to the value of the last call.
-func (b *BoxApplyConfiguration) WithType(value v1.BoxType) *BoxApplyConfiguration {
+func (b *BoxApplyConfiguration) WithType(value apidiscoveryv1.BoxType) *BoxApplyConfiguration {
 	b.Type = &value
 	return b
 }

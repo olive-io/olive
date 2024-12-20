@@ -34,23 +34,23 @@ type FakeCoreV1 struct {
 }
 
 func (c *FakeCoreV1) Definitions(namespace string) v1.DefinitionInterface {
-	return &FakeDefinitions{c, namespace}
+	return newFakeDefinitions(c, namespace)
 }
 
 func (c *FakeCoreV1) Namespaces() v1.NamespaceInterface {
-	return &FakeNamespaces{c}
+	return newFakeNamespaces(c)
 }
 
 func (c *FakeCoreV1) Processes(namespace string) v1.ProcessInterface {
-	return &FakeProcesses{c, namespace}
+	return newFakeProcesses(c, namespace)
 }
 
 func (c *FakeCoreV1) Regions() v1.RegionInterface {
-	return &FakeRegions{c}
+	return newFakeRegions(c)
 }
 
 func (c *FakeCoreV1) Runners() v1.RunnerInterface {
-	return &FakeRunners{c}
+	return newFakeRunners(c)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

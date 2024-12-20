@@ -24,171 +24,33 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package fake
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-
 	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/applyconfiguration/apidiscovery/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	typedapidiscoveryv1 "github.com/olive-io/olive/client-go/generated/clientset/versioned/typed/apidiscovery/v1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakePluginServices implements PluginServiceInterface
-type FakePluginServices struct {
+// fakePluginServices implements PluginServiceInterface
+type fakePluginServices struct {
+	*gentype.FakeClientWithListAndApply[*v1.PluginService, *v1.PluginServiceList, *apidiscoveryv1.PluginServiceApplyConfiguration]
 	Fake *FakeApidiscoveryV1
-	ns   string
 }
 
-var pluginservicesResource = v1.SchemeGroupVersion.WithResource("pluginservices")
-
-var pluginservicesKind = v1.SchemeGroupVersion.WithKind("PluginService")
-
-// Get takes name of the pluginService, and returns the corresponding pluginService object, and an error if there is any.
-func (c *FakePluginServices) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.PluginService, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(pluginservicesResource, c.ns, name), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
+func newFakePluginServices(fake *FakeApidiscoveryV1, namespace string) typedapidiscoveryv1.PluginServiceInterface {
+	return &fakePluginServices{
+		gentype.NewFakeClientWithListAndApply[*v1.PluginService, *v1.PluginServiceList, *apidiscoveryv1.PluginServiceApplyConfiguration](
+			fake.Fake,
+			namespace,
+			v1.SchemeGroupVersion.WithResource("pluginservices"),
+			v1.SchemeGroupVersion.WithKind("PluginService"),
+			func() *v1.PluginService { return &v1.PluginService{} },
+			func() *v1.PluginServiceList { return &v1.PluginServiceList{} },
+			func(dst, src *v1.PluginServiceList) { dst.ListMeta = src.ListMeta },
+			func(list *v1.PluginServiceList) []*v1.PluginService { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1.PluginServiceList, items []*v1.PluginService) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1.PluginService), err
-}
-
-// List takes label and field selectors, and returns the list of PluginServices that match those selectors.
-func (c *FakePluginServices) List(ctx context.Context, opts metav1.ListOptions) (result *v1.PluginServiceList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(pluginservicesResource, pluginservicesKind, c.ns, opts), &v1.PluginServiceList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1.PluginServiceList{ListMeta: obj.(*v1.PluginServiceList).ListMeta}
-	for _, item := range obj.(*v1.PluginServiceList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested pluginServices.
-func (c *FakePluginServices) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(pluginservicesResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a pluginService and creates it.  Returns the server's representation of the pluginService, and an error, if there is any.
-func (c *FakePluginServices) Create(ctx context.Context, pluginService *v1.PluginService, opts metav1.CreateOptions) (result *v1.PluginService, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(pluginservicesResource, c.ns, pluginService), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
-}
-
-// Update takes the representation of a pluginService and updates it. Returns the server's representation of the pluginService, and an error, if there is any.
-func (c *FakePluginServices) Update(ctx context.Context, pluginService *v1.PluginService, opts metav1.UpdateOptions) (result *v1.PluginService, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(pluginservicesResource, c.ns, pluginService), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePluginServices) UpdateStatus(ctx context.Context, pluginService *v1.PluginService, opts metav1.UpdateOptions) (*v1.PluginService, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(pluginservicesResource, "status", c.ns, pluginService), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
-}
-
-// Delete takes name of the pluginService and deletes it. Returns an error if one occurs.
-func (c *FakePluginServices) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(pluginservicesResource, c.ns, name, opts), &v1.PluginService{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakePluginServices) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(pluginservicesResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1.PluginServiceList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched pluginService.
-func (c *FakePluginServices) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PluginService, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(pluginservicesResource, c.ns, name, pt, data, subresources...), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied pluginService.
-func (c *FakePluginServices) Apply(ctx context.Context, pluginService *apidiscoveryv1.PluginServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PluginService, err error) {
-	if pluginService == nil {
-		return nil, fmt.Errorf("pluginService provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(pluginService)
-	if err != nil {
-		return nil, err
-	}
-	name := pluginService.Name
-	if name == nil {
-		return nil, fmt.Errorf("pluginService.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(pluginservicesResource, c.ns, *name, types.ApplyPatchType, data), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *FakePluginServices) ApplyStatus(ctx context.Context, pluginService *apidiscoveryv1.PluginServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.PluginService, err error) {
-	if pluginService == nil {
-		return nil, fmt.Errorf("pluginService provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(pluginService)
-	if err != nil {
-		return nil, err
-	}
-	name := pluginService.Name
-	if name == nil {
-		return nil, fmt.Errorf("pluginService.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(pluginservicesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.PluginService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.PluginService), err
 }

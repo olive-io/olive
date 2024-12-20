@@ -24,8 +24,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	apidiscoveryv1 "github.com/olive-io/olive/client-go/generated/clientset/versioned/typed/apidiscovery/v1"
 	corev1 "github.com/olive-io/olive/client-go/generated/clientset/versioned/typed/core/v1"

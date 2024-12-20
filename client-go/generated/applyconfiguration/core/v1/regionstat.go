@@ -24,21 +24,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// RegionStatApplyConfiguration represents an declarative configuration of the RegionStat type for use
+// RegionStatApplyConfiguration represents a declarative configuration of the RegionStat type for use
 // with apply.
 type RegionStatApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	Bpmn                          *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
-	RunningDefinitions            *int64                      `json:"runningDefinitions,omitempty"`
-	Leader                        *int64                      `json:"leader,omitempty"`
-	Term                          *int64                      `json:"term,omitempty"`
-	Timeout                       *int64                      `json:"timeout,omitempty"`
+	metav1.TypeMetaApplyConfiguration `json:",inline"`
+	Bpmn                              *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
+	RunningDefinitions                *int64                      `json:"runningDefinitions,omitempty"`
+	Leader                            *int64                      `json:"leader,omitempty"`
+	Term                              *int64                      `json:"term,omitempty"`
+	Timeout                           *int64                      `json:"timeout,omitempty"`
 }
 
-// RegionStatApplyConfiguration constructs an declarative configuration of the RegionStat type for use with
+// RegionStatApplyConfiguration constructs a declarative configuration of the RegionStat type for use with
 // apply.
 func RegionStat() *RegionStatApplyConfiguration {
 	b := &RegionStatApplyConfiguration{}
@@ -51,7 +51,7 @@ func RegionStat() *RegionStatApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *RegionStatApplyConfiguration) WithKind(value string) *RegionStatApplyConfiguration {
-	b.Kind = &value
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
@@ -59,7 +59,7 @@ func (b *RegionStatApplyConfiguration) WithKind(value string) *RegionStatApplyCo
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *RegionStatApplyConfiguration) WithAPIVersion(value string) *RegionStatApplyConfiguration {
-	b.APIVersion = &value
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 

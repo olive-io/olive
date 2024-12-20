@@ -24,20 +24,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// RunnerStatApplyConfiguration represents an declarative configuration of the RunnerStat type for use
+// RunnerStatApplyConfiguration represents a declarative configuration of the RunnerStat type for use
 // with apply.
 type RunnerStatApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	CpuUsed                       *float64                    `json:"cpuUsed,omitempty"`
-	MemoryUsed                    *float64                    `json:"memoryUsed,omitempty"`
-	Bpmn                          *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
-	Timeout                       *int64                      `json:"timeout,omitempty"`
+	metav1.TypeMetaApplyConfiguration `json:",inline"`
+	CpuUsed                           *float64                    `json:"cpuUsed,omitempty"`
+	MemoryUsed                        *float64                    `json:"memoryUsed,omitempty"`
+	Bpmn                              *BpmnStatApplyConfiguration `json:"bpmn,omitempty"`
+	Timeout                           *int64                      `json:"timeout,omitempty"`
 }
 
-// RunnerStatApplyConfiguration constructs an declarative configuration of the RunnerStat type for use with
+// RunnerStatApplyConfiguration constructs a declarative configuration of the RunnerStat type for use with
 // apply.
 func RunnerStat() *RunnerStatApplyConfiguration {
 	b := &RunnerStatApplyConfiguration{}
@@ -50,7 +50,7 @@ func RunnerStat() *RunnerStatApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *RunnerStatApplyConfiguration) WithKind(value string) *RunnerStatApplyConfiguration {
-	b.Kind = &value
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
@@ -58,7 +58,7 @@ func (b *RunnerStatApplyConfiguration) WithKind(value string) *RunnerStatApplyCo
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *RunnerStatApplyConfiguration) WithAPIVersion(value string) *RunnerStatApplyConfiguration {
-	b.APIVersion = &value
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 

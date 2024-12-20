@@ -23,13 +23,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-// EndpointSpecApplyConfiguration represents an declarative configuration of the EndpointSpec type for use
+// EndpointSpecApplyConfiguration represents a declarative configuration of the EndpointSpec type for use
 // with apply.
 type EndpointSpecApplyConfiguration struct {
 	Http *EndpointHttpApplyConfiguration `json:"http,omitempty"`
 }
 
-// EndpointSpecApplyConfiguration constructs an declarative configuration of the EndpointSpec type for use with
+// EndpointSpecApplyConfiguration constructs a declarative configuration of the EndpointSpec type for use with
 // apply.
 func EndpointSpec() *EndpointSpecApplyConfiguration {
 	return &EndpointSpecApplyConfiguration{}

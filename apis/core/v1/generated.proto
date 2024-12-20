@@ -44,7 +44,7 @@ message BpmnStat {
 
 // Definition is bpmn definitions
 message Definition {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional DefinitionSpec spec = 2;
 
@@ -53,7 +53,7 @@ message Definition {
 
 // DefinitionList is a list of Definition objects.
 message DefinitionList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of Definition
   repeated Definition items = 2;
@@ -88,7 +88,7 @@ message FlowNodeStat {
 // Use of multiple namespaces is optional
 message Namespace {
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // Spec defines the behavior of the Namespace.
   // +optional
@@ -108,7 +108,7 @@ message NamespaceCondition {
   optional string status = 2;
 
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
 
   // +optional
   optional string reason = 4;
@@ -120,7 +120,7 @@ message NamespaceCondition {
 // NamespaceList is a list of Namespaces.
 message NamespaceList {
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Namespace items = 2;
 }
@@ -143,7 +143,7 @@ message NamespaceStatus {
 
 // Process is bpmn process instance
 message Process {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional ProcessSpec spec = 2;
 
@@ -160,7 +160,7 @@ message ProcessContext {
 
 // ProcessList is a list of Process objects.
 message ProcessList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of Process
   repeated Process items = 2;
@@ -178,14 +178,14 @@ message ProcessSpec {
 
   map<string, string> headers = 4;
 
-  map<string, github.com.olive_io.olive.apis.apidiscovery.v1.Box> properties = 5;
+  map<string, .github.com.olive_io.olive.apis.apidiscovery.v1.Box> properties = 5;
 
   map<string, string> dataObjects = 6;
 }
 
 // ProcessStat is stat information of Process
 message ProcessStat {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional ProcessStatSpec spec = 2;
 
@@ -235,7 +235,7 @@ message ProcessStatus {
 
 // Region the olive node
 message Region {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional RegionSpec spec = 2;
 
@@ -244,7 +244,7 @@ message Region {
 
 // RegionList is a list of Region objects.
 message RegionList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of Region
   repeated Region items = 2;
@@ -308,7 +308,7 @@ message RegionStatus {
 
 // Runner the olive node
 message Runner {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional RunnerSpec spec = 2;
 
@@ -317,7 +317,7 @@ message Runner {
 
 // RunnerList is a list of Runner objects.
 message RunnerList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of Runner
   repeated Runner items = 2;

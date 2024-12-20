@@ -24,13 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/core/v1"
+	corev1 "github.com/olive-io/olive/apis/core/v1"
 )
 
-// RunnerStatusApplyConfiguration represents an declarative configuration of the RunnerStatus type for use
+// RunnerStatusApplyConfiguration represents a declarative configuration of the RunnerStatus type for use
 // with apply.
 type RunnerStatusApplyConfiguration struct {
-	Phase       *v1.RunnerPhase               `json:"phase,omitempty"`
+	Phase       *corev1.RunnerPhase           `json:"phase,omitempty"`
 	Message     *string                       `json:"message,omitempty"`
 	CpuTotal    *float64                      `json:"cpuTotal,omitempty"`
 	MemoryTotal *float64                      `json:"memoryTotal,omitempty"`
@@ -40,7 +40,7 @@ type RunnerStatusApplyConfiguration struct {
 	Stat        *RunnerStatApplyConfiguration `json:"stat,omitempty"`
 }
 
-// RunnerStatusApplyConfiguration constructs an declarative configuration of the RunnerStatus type for use with
+// RunnerStatusApplyConfiguration constructs a declarative configuration of the RunnerStatus type for use with
 // apply.
 func RunnerStatus() *RunnerStatusApplyConfiguration {
 	return &RunnerStatusApplyConfiguration{}
@@ -49,7 +49,7 @@ func RunnerStatus() *RunnerStatusApplyConfiguration {
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithPhase(value v1.RunnerPhase) *RunnerStatusApplyConfiguration {
+func (b *RunnerStatusApplyConfiguration) WithPhase(value corev1.RunnerPhase) *RunnerStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	v1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // EdgeLister helps list Edges.
@@ -35,7 +35,7 @@ import (
 type EdgeLister interface {
 	// List lists all Edges in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Edge, err error)
+	List(selector labels.Selector) (ret []*apidiscoveryv1.Edge, err error)
 	// Edges returns an object that can list and get Edges.
 	Edges(namespace string) EdgeNamespaceLister
 	EdgeListerExpansion
@@ -43,25 +43,17 @@ type EdgeLister interface {
 
 // edgeLister implements the EdgeLister interface.
 type edgeLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*apidiscoveryv1.Edge]
 }
 
 // NewEdgeLister returns a new EdgeLister.
 func NewEdgeLister(indexer cache.Indexer) EdgeLister {
-	return &edgeLister{indexer: indexer}
-}
-
-// List lists all Edges in the indexer.
-func (s *edgeLister) List(selector labels.Selector) (ret []*v1.Edge, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Edge))
-	})
-	return ret, err
+	return &edgeLister{listers.New[*apidiscoveryv1.Edge](indexer, apidiscoveryv1.Resource("edge"))}
 }
 
 // Edges returns an object that can list and get Edges.
 func (s *edgeLister) Edges(namespace string) EdgeNamespaceLister {
-	return edgeNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return edgeNamespaceLister{listers.NewNamespaced[*apidiscoveryv1.Edge](s.ResourceIndexer, namespace)}
 }
 
 // EdgeNamespaceLister helps list and get Edges.
@@ -69,36 +61,15 @@ func (s *edgeLister) Edges(namespace string) EdgeNamespaceLister {
 type EdgeNamespaceLister interface {
 	// List lists all Edges in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.Edge, err error)
+	List(selector labels.Selector) (ret []*apidiscoveryv1.Edge, err error)
 	// Get retrieves the Edge from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.Edge, error)
+	Get(name string) (*apidiscoveryv1.Edge, error)
 	EdgeNamespaceListerExpansion
 }
 
 // edgeNamespaceLister implements the EdgeNamespaceLister
 // interface.
 type edgeNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Edges in the indexer for a given namespace.
-func (s edgeNamespaceLister) List(selector labels.Selector) (ret []*v1.Edge, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Edge))
-	})
-	return ret, err
-}
-
-// Get retrieves the Edge from the indexer for a given namespace and name.
-func (s edgeNamespaceLister) Get(name string) (*v1.Edge, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("edge"), name)
-	}
-	return obj.(*v1.Edge), nil
+	listers.ResourceIndexer[*apidiscoveryv1.Edge]
 }
