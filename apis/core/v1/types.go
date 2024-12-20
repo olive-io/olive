@@ -23,8 +23,6 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
 )
 
 // RunnerPhase defines the phase in which a runner is in
@@ -60,43 +58,43 @@ type RunnerSpec struct {
 	// ID is the member ID for this member.
 	ID int64 `json:"id" protobuf:"varint,1,opt,name=id"`
 	// hostname is the host name get by os.Hostname().
-	Hostname string `json:"hostname" protobuf:"bytes,2,opt,name=hostname"`
+	Hostname    string `json:"hostname" protobuf:"bytes,2,opt,name=hostname"`
+	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,3,opt,name=heartbeatMs"`
 	// peerURL is the URL the member exposes to the cluster for communication.
-	PeerURL string `json:"peerURL" protobuf:"bytes,3,opt,name=peerURL"`
-	// clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
-	ClientURL  string `json:"clientURL" protobuf:"bytes,4,opt,name=clientURL"`
-	VersionRef string `json:"versionRef" protobuf:"bytes,5,opt,name=versionRef"`
-	// isLearner indicates if the member is raft learner.
-	IsLearner *bool `json:"isLearner" protobuf:"varint,6,opt,name=isLearner"`
+	ListenURL string `json:"listenURL" protobuf:"bytes,4,opt,name=listenURL"`
+	Version   string `json:"version" protobuf:"bytes,5,opt,name=version"`
+
+	Features map[string]string `json:"features" protobuf:"bytes,6,rep,name=features"`
 }
 
 type RunnerStatus struct {
 	Phase   RunnerPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RunnerPhase"`
 	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
 
-	CpuTotal    float64  `json:"cpuTotal" protobuf:"fixed64,3,opt,name=cpuTotal"`
-	MemoryTotal float64  `json:"memoryTotal" protobuf:"fixed64,4,opt,name=memoryTotal"`
-	Regions     []int64  `json:"regions" protobuf:"varint,5,rep,name=regions"`
-	Leaders     []string `json:"leaders" protobuf:"bytes,6,rep,name=leaders"`
-	Definitions int64    `json:"definitions" protobuf:"varint,7,opt,name=definitions"`
+	CpuTotal    float64 `json:"cpuTotal" protobuf:"fixed64,3,opt,name=cpuTotal"`
+	MemoryTotal float64 `json:"memoryTotal" protobuf:"fixed64,4,opt,name=memoryTotal"`
+	DiskSize    int64   `json:"diskSize" protobuf:"varint,5,opt,name=diskSize"`
 
-	Stat RunnerStat `json:"stat" protobuf:"bytes,8,opt,name=stat"`
+	Stat RunnerStatistics `json:"stat" protobuf:"bytes,6,opt,name=stat"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RunnerStat is the stat information of Runner
-type RunnerStat struct {
+// RunnerStatistics is the stat information of Runner
+type RunnerStatistics struct {
 	metav1.TypeMeta `json:",inline"`
 
-	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,1,opt,name=cpuUsed"`
-	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,2,opt,name=memoryUsed"`
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
-	Bpmn    *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,3,opt,name=bpmn"`
-	Timeout int64     `json:"timeout,omitempty" protobuf:"varint,4,opt,name=timeout"`
+	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,2,opt,name=cpuUsed"`
+	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,3,opt,name=memoryUsed"`
+
+	BpmnStat *BpmnStatistics `json:"bpmnStat,omitempty" protobuf:"bytes,4,opt,name=bpmnStat"`
+
+	Timestamp int64 `json:"timestamp,omitempty" protobuf:"varint,5,opt,name=timestamp"`
 }
 
-type BpmnStat struct {
+type BpmnStatistics struct {
 	Definitions int64 `json:"definitions" protobuf:"varint,1,opt,name=definitions"`
 	Processes   int64 `json:"processes" protobuf:"varint,2,opt,name=processes"`
 	Events      int64 `json:"events" protobuf:"varint,3,opt,name=events"`
@@ -112,95 +110,6 @@ type RunnerList struct {
 
 	// Items is a list of Runner
 	Items []Runner `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
-// RegionPhase defines the phase in which a region is in
-type RegionPhase string
-
-// These are the valid phases of node.
-const (
-	// RegionPending means the node has been created/added by the system, but not configured.
-	RegionPending RegionPhase = "Pending"
-	// RegionTerminated means the region has been removed from the cluster.
-	RegionTerminated RegionPhase = "Terminated"
-	// RegionPeer means the region being peering with other replicas
-	RegionPeer RegionPhase = "Peer"
-	// RegionDown meas the region doesn't interval update status
-	RegionDown RegionPhase = "Down"
-	// RegionActive means the region is a normal raft machine, it runs definition.
-	RegionActive RegionPhase = "Active"
-	// RegionFailed means the region in exception mode, we need to fix it.
-	RegionFailed RegionPhase = "Failed"
-)
-
-// +genclient
-// +genclient:nonNamespaced
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Region the olive node
-type Region struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec   RegionSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status RegionStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
-}
-
-// RegionSpec is the specification of a Region.
-type RegionSpec struct {
-	Id               int64           `json:"id" protobuf:"varint,1,opt,name=id"`
-	DeploymentId     int64           `json:"deploymentId" protobuf:"varint,2,opt,name=deploymentId"`
-	InitialReplicas  []RegionReplica `json:"initialReplicas" protobuf:"bytes,3,rep,name=initialReplicas"`
-	ElectionRTT      int64           `json:"electionRTT" protobuf:"varint,4,opt,name=electionRTT"`
-	HeartbeatRTT     int64           `json:"heartbeatRTT" protobuf:"varint,5,opt,name=heartbeatRTT"`
-	Leader           int64           `json:"leader" protobuf:"varint,6,opt,name=leader"`
-	DefinitionsLimit int64           `json:"definitionsLimit" protobuf:"varint,7,opt,name=definitionsLimit"`
-}
-
-type RegionReplica struct {
-	Id          int64  `json:"id" protobuf:"varint,1,opt,name=id"`
-	Runner      string `json:"runner" protobuf:"bytes,2,opt,name=runner"`
-	RaftAddress string `json:"raftAddress" protobuf:"bytes,3,opt,name=raftAddress"`
-	IsNonVoting *bool  `json:"isNonVoting" protobuf:"varint,4,opt,name=isNonVoting"`
-	IsWitness   *bool  `json:"isWitness" protobuf:"varint,5,opt,name=isWitness"`
-	IsJoin      bool   `json:"isJoin" protobuf:"varint,6,opt,name=isJoin"`
-}
-
-type RegionStatus struct {
-	Phase   RegionPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RegionPhase"`
-	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
-
-	Replicas    int32 `json:"replicas" protobuf:"varint,3,opt,name=replicas"`
-	Definitions int64 `json:"definitions" protobuf:"varint,4,opt,name=definitions"`
-
-	Stat RegionStat `json:"stat" protobuf:"bytes,5,opt,name=stat"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// RegionStat is the stat information of Region
-type RegionStat struct {
-	metav1.TypeMeta `json:",inline"`
-
-	Bpmn *BpmnStat `json:"bpmn,omitempty" protobuf:"bytes,1,opt,name=bpmn"`
-
-	RunningDefinitions int64 `json:"runningDefinitions" protobuf:"varint,2,opt,name=runningDefinitions"`
-
-	Leader int64 `json:"leader" protobuf:"varint,3,opt,name=leader"`
-	Term   int64 `json:"term" protobuf:"varint,4,opt,name=term"`
-
-	Timeout int64 `json:"timeout,omitempty" protobuf:"varint,5,opt,name=timeout"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// RegionList is a list of Region objects.
-type RegionList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Region
-	Items []Region `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // The below types are used by olive_client and api_server.
@@ -355,6 +264,40 @@ type DefinitionList struct {
 	Items []Definition `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+type State string
+
+const (
+	StateReady    State = "Ready"
+	StateNotReady State = "NotReady"
+	StateAlarm    State = "Alarm"
+)
+
+type FlowNodeType string
+
+const (
+	FlowNodeUnknown        FlowNodeType = "Unknown"
+	StartEvent             FlowNodeType = "StartEvent"
+	EndEvent               FlowNodeType = "EndEvent"
+	BoundaryEvent          FlowNodeType = "BoundaryEvent"
+	IntermediateCatchEvent FlowNodeType = "IntermediateCatchEvent"
+
+	Task             FlowNodeType = "Task"
+	UserTask         FlowNodeType = "UserTask"
+	ServiceTask      FlowNodeType = "ServiceTask"
+	ScriptTask       FlowNodeType = "ScriptTask"
+	SendTask         FlowNodeType = "SendTask"
+	ReceiveTask      FlowNodeType = "ReceiveTask"
+	ManualTask       FlowNodeType = "ManualTask"
+	CallActivity     FlowNodeType = "CallActivity"
+	BusinessRuleTask FlowNodeType = "BusinessRuleTask"
+	SubProcess       FlowNodeType = "SubProcess"
+
+	EventBasedGateway FlowNodeType = "EventBasedGateway"
+	ParallelGateway   FlowNodeType = "ParallelGateway"
+	InclusiveGateway  FlowNodeType = "InclusiveGateway"
+	ExclusiveGateway  FlowNodeType = "ExclusiveGateway"
+)
+
 // ProcessPhase defines the phase in which a bpmn process instance is in
 type ProcessPhase string
 
@@ -364,16 +307,16 @@ const (
 	ProcessPending ProcessPhase = "Pending"
 	// ProcessTerminated means the node has been removed from the cluster.
 	ProcessTerminated ProcessPhase = "Terminated"
+	ProcessBinding    ProcessPhase = "Binding"
 	ProcessPrepare    ProcessPhase = "Prepare"
 	ProcessRunning    ProcessPhase = "Running"
 	ProcessSuccess    ProcessPhase = "Success"
 	ProcessFailed     ProcessPhase = "Failed"
 )
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Process is bpmn process instance
+// Process is bpmn process
 type Process struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
@@ -383,22 +326,23 @@ type Process struct {
 }
 
 type ProcessSpec struct {
-	// the id of Definition
-	Definition string `json:"definition" protobuf:"bytes,1,opt,name=definition"`
-	// the version if Definition
-	Version int64 `json:"version" protobuf:"varint,2,opt,name=version"`
-	// the process id of bpmn Process Element in Definition
-	BpmnProcess string                        `json:"bpmnProcess" protobuf:"bytes,3,opt,name=bpmnProcess"`
-	Headers     map[string]string             `json:"headers" protobuf:"bytes,4,rep,name=headers"`
-	Properties  map[string]apidiscoveryv1.Box `json:"properties" protobuf:"bytes,5,rep,name=properties"`
-	DataObjects map[string]string             `json:"dataObjects" protobuf:"bytes,6,rep,name=dataObjects"`
+	DefinitionName    string `json:"definitionName" protobuf:"bytes,1,opt,name=definitionName"`
+	DefinitionVersion int64  `json:"definitionVersion" protobuf:"varint,2,opt,name=definitionVersion"`
+
+	ProcessName string `json:"processName" protobuf:"bytes,3,opt,name=processName"`
+	// The id of Bpmn Process
+	BpmnProcessId string `json:"bpmnProcessId" protobuf:"bytes,4,opt,name=bpmnProcessId"`
+
+	Context ProcessContext `json:"context" protobuf:"bytes,5,opt,name=context"`
 }
 
 type ProcessStatus struct {
 	Phase   ProcessPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=ProcessPhase"`
-	Message string       `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
-	// the id of olive region
-	Region int64 `json:"region" protobuf:"varint,3,opt,name=region"`
+	Message string       `json:"message" protobuf:"bytes,2,opt,name=message"`
+
+	Runner string `json:"runner" protobuf:"bytes,3,opt,name=runner"`
+
+	Instance string `json:"instance" protobuf:"bytes,4,opt,name=instance"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -412,56 +356,65 @@ type ProcessList struct {
 	Items []Process `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// ProcessStat is stat information of Process
-type ProcessStat struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec ProcessStatSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-
-	Status ProcessStatStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
-}
-
-type ProcessStatSpec struct {
-	DefinitionName    string `json:"definitionName" protobuf:"bytes,1,opt,name=definitionName"`
-	DefinitionVersion int64  `json:"definitionVersion" protobuf:"varint,2,opt,name=definitionVersion"`
-
-	ProcessName string `json:"processName" protobuf:"bytes,3,opt,name=processName"`
-	// The id of Bpmn Process
-	BpmnProcessId string `json:"bpmnProcessId" protobuf:"bytes,4,opt,name=bpmnProcessId"`
-
-	InitContext ProcessContext `json:"processState" protobuf:"bytes,5,opt,name=processState"`
-}
-
-type ProcessStatStatus struct {
-	// Bpmn Schema
-	DefinitionContent string `json:"definitionContent" protobuf:"bytes,1,opt,name=definitionContent"`
-
-	FlowNodes []*FlowNodeStat `json:"flowNodes" protobuf:"bytes,2,rep,name=flowNodes"`
-
-	Context ProcessContext `json:"context" protobuf:"bytes,3,opt,name=context"`
-
-	Phase   ProcessPhase `json:"phase" protobuf:"bytes,4,opt,name=phase,casttype=ProcessPhase"`
-	Message string       `json:"message" protobuf:"bytes,5,opt,name=message"`
-
-	Attempts int64 `json:"attempts" protobuf:"varint,6,opt,name=attempts"`
-
-	StartTime int64 `json:"startTime" protobuf:"varint,7,opt,name=startTime"`
-	EndTime   int64 `json:"endTime" protobuf:"varint,8,opt,name=endTime"`
+type BpmnArgs struct {
+	Headers     map[string]string `json:"headers,omitempty" protobuf:"bytes,1,rep,name=headers"`
+	Properties  map[string][]byte `json:"properties,omitempty" protobuf:"bytes,2,rep,name=properties"`
+	DataObjects map[string][]byte `json:"dataObjects,omitempty" protobuf:"bytes,3,rep,name=dataObjects"`
 }
 
 type ProcessContext struct {
-	Headers     map[string]string `json:"headers" protobuf:"bytes,1,rep,name=headers"`
-	Properties  map[string]string `json:"properties" protobuf:"bytes,2,rep,name=properties"`
-	DataObjects map[string]string `json:"dataObjects" protobuf:"bytes,3,rep,name=dataObjects"`
+	Variables   map[string][]byte `json:"variables,omitempty" protobuf:"bytes,1,rep,name=variables"`
+	DataObjects map[string][]byte `json:"dataObjects,omitempty" protobuf:"bytes,2,rep,name=dataObjects"`
+}
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type ProcessInstance struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Args BpmnArgs `json:"args,omitempty" protobuf:"bytes,2,opt,name=args"`
+
+	DefinitionsName    string `json:"definitionsName,omitempty" protobuf:"bytes,3,opt,name=definitionsName"`
+	DefinitionsVersion int64  `json:"definitionsVersion,omitempty" protobuf:"varint,4,opt,name=definitionsVersion"`
+	DefinitionsProcess string `json:"definitionsProcess,omitempty" protobuf:"bytes,5,opt,name=definitionsProcess"`
+	DefinitionsContent string `json:"definitionsContent,omitempty" protobuf:"bytes,6,opt,name=definitionsContent"`
+
+	Context ProcessContext `json:"context,omitempty" protobuf:"bytes,7,opt,name=context"`
+
+	FlowNodes       []FlowNode              `json:"flowNodes,omitempty" protobuf:"bytes,8,rep,name=flowNodes"`
+	FlowNodeStatMap map[string]FlowNodeStat `json:"flowNodeStatMap,omitempty" protobuf:"bytes,9,rep,name=flowNodeStatMap"`
+	Attempts        int32                   `json:"attempts,omitempty" protobuf:"varint,10,opt,name=attempts"`
+
+	StartTimestamp int64 `json:"creationTimestamp,omitempty" protobuf:"varint,11,opt,name=creationTimestamp"`
+	EndTimestamp   int64 `json:"endTimestamp,omitempty" protobuf:"varint,12,opt,name=endTimestamp"`
+
+	Phase   ProcessPhase `json:"phase,omitempty" protobuf:"bytes,13,opt,name=phase,casttype=ProcessPhase"`
+	Message string       `json:"message,omitempty" protobuf:"bytes,14,opt,name=message"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type ProcessInstanceList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	Items []ProcessInstance `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+type FlowNode struct {
+	Type FlowNodeType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=FlowNodeType"`
+	Id   string       `json:"id" protobuf:"bytes,2,opt,name=id"`
 }
 
 type FlowNodeStat struct {
-	Id        string          `json:"id" protobuf:"bytes,1,opt,name=id"`
-	Name      string          `json:"name" protobuf:"bytes,2,opt,name=name"`
-	Context   *ProcessContext `json:"context" protobuf:"bytes,3,opt,name=context"`
-	StartTime int64           `json:"startTime" protobuf:"varint,4,opt,name=startTime"`
-	EndTime   int64           `json:"endTime" protobuf:"varint,5,opt,name=endTime"`
+	Id      string         `json:"id" protobuf:"bytes,1,opt,name=id"`
+	Name    string         `json:"name" protobuf:"bytes,2,opt,name=name"`
+	Context ProcessContext `json:"context" protobuf:"bytes,3,opt,name=context"`
+	Retries int32          `json:"retries" protobuf:"varint,4,opt,name=retries"`
+	Message string         `json:"message" protobuf:"bytes,5,opt,name=message"`
+
+	StartTime int64 `json:"startTime" protobuf:"varint,6,opt,name=startTime"`
+	EndTime   int64 `json:"endTime" protobuf:"varint,7,opt,name=endTime"`
 }

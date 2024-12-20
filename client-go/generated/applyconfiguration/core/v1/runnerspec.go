@@ -26,12 +26,12 @@ package v1
 // RunnerSpecApplyConfiguration represents a declarative configuration of the RunnerSpec type for use
 // with apply.
 type RunnerSpecApplyConfiguration struct {
-	ID         *int64  `json:"id,omitempty"`
-	Hostname   *string `json:"hostname,omitempty"`
-	PeerURL    *string `json:"peerURL,omitempty"`
-	ClientURL  *string `json:"clientURL,omitempty"`
-	VersionRef *string `json:"versionRef,omitempty"`
-	IsLearner  *bool   `json:"isLearner,omitempty"`
+	ID          *int64            `json:"id,omitempty"`
+	Hostname    *string           `json:"hostname,omitempty"`
+	HeartbeatMs *int64            `json:"heartbeatMs,omitempty"`
+	ListenURL   *string           `json:"listenURL,omitempty"`
+	Version     *string           `json:"version,omitempty"`
+	Features    map[string]string `json:"features,omitempty"`
 }
 
 // RunnerSpecApplyConfiguration constructs a declarative configuration of the RunnerSpec type for use with
@@ -56,34 +56,40 @@ func (b *RunnerSpecApplyConfiguration) WithHostname(value string) *RunnerSpecApp
 	return b
 }
 
-// WithPeerURL sets the PeerURL field in the declarative configuration to the given value
+// WithHeartbeatMs sets the HeartbeatMs field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the PeerURL field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithPeerURL(value string) *RunnerSpecApplyConfiguration {
-	b.PeerURL = &value
+// If called multiple times, the HeartbeatMs field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithHeartbeatMs(value int64) *RunnerSpecApplyConfiguration {
+	b.HeartbeatMs = &value
 	return b
 }
 
-// WithClientURL sets the ClientURL field in the declarative configuration to the given value
+// WithListenURL sets the ListenURL field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ClientURL field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithClientURL(value string) *RunnerSpecApplyConfiguration {
-	b.ClientURL = &value
+// If called multiple times, the ListenURL field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithListenURL(value string) *RunnerSpecApplyConfiguration {
+	b.ListenURL = &value
 	return b
 }
 
-// WithVersionRef sets the VersionRef field in the declarative configuration to the given value
+// WithVersion sets the Version field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the VersionRef field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithVersionRef(value string) *RunnerSpecApplyConfiguration {
-	b.VersionRef = &value
+// If called multiple times, the Version field is set to the value of the last call.
+func (b *RunnerSpecApplyConfiguration) WithVersion(value string) *RunnerSpecApplyConfiguration {
+	b.Version = &value
 	return b
 }
 
-// WithIsLearner sets the IsLearner field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the IsLearner field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithIsLearner(value bool) *RunnerSpecApplyConfiguration {
-	b.IsLearner = &value
+// WithFeatures puts the entries into the Features field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the Features field,
+// overwriting an existing map entries in Features field with the same key.
+func (b *RunnerSpecApplyConfiguration) WithFeatures(entries map[string]string) *RunnerSpecApplyConfiguration {
+	if b.Features == nil && len(entries) > 0 {
+		b.Features = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.Features[k] = v
+	}
 	return b
 }

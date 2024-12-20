@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/rpc/discovery"
 )
 
 func init() {

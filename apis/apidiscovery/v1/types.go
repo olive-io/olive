@@ -66,6 +66,46 @@ const (
 	CallActivity ActivityType = "CallActivity"
 )
 
+type APIListOptions struct {
+	GVK       string            `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	Limit     int64             `json:"limit,omitempty" protobuf:"varint,2,opt,name=limit"`
+	Namespace string            `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	Labels    map[string]string `json:"labels,omitempty" protobuf:"bytes,4,rep,name=labels"`
+}
+
+type APIGetOptions struct {
+	GVK       string `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	UID       string `json:"name,omitempty" protobuf:"bytes,2,opt,name=name"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+}
+
+type APIPostOptions struct {
+	GVK       string `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	UID       string `json:"uid,omitempty" protobuf:"bytes,2,opt,name=uid"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	Data      []byte `json:"data,omitempty" protobuf:"bytes,4,opt,name=data"`
+}
+
+type APIPatchOptions struct {
+	GVK       string `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	UID       string `json:"uid,omitempty" protobuf:"bytes,2,opt,name=uid"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	Data      []byte `json:"data,omitempty" protobuf:"bytes,4,opt,name=data"`
+}
+
+type APIDeleteOptions struct {
+	GVK       string `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	UID       string `json:"uid,omitempty" protobuf:"bytes,3,opt,name=uid"`
+}
+
+type APIResult struct {
+	GVK   string `json:"gvk,omitempty" protobuf:"bytes,1,opt,name=gvk"`
+	List  bool   `json:"list,omitempty" protobuf:"varint,2,opt,name=list"`
+	Total int64  `json:"total,omitempty" protobuf:"varint,3,opt,name=total"`
+	Data  []byte `json:"data,omitempty" protobuf:"bytes,4,opt,name=data"`
+}
+
 // +k8s:deepcopy-gen:true
 
 // Activity defines bpmn Activity of specification
@@ -170,7 +210,7 @@ type PluginServiceSpec struct {
 }
 
 type PluginServiceStatus struct {
-	Phase PluginServicePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=ServicePhase"`
+	Phase PluginServicePhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=PluginServicePhase"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

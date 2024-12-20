@@ -25,6 +25,11 @@ install:
 genclients:
 	cd apis && ./hack/update-codegen.sh
 
+proto:
+	cd $(GOPATH)/src && \
+	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/apis/rpc/runnerpb/rpc.proto
+
+
 generate:
 	cd $(GOPATH)/src && \
 	protoc -I. -I github.com/googleapis/googleapis --gofast_out=. --go-grpc_out=. --go-grpc_opt=paths=source_relative github.com/olive-io/olive/apis/pb/olive/raft.proto

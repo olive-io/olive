@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/pflag"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
+	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
 	"github.com/olive-io/olive/runner"
@@ -48,18 +49,14 @@ func NewRunnerOptions(stdout, stderr io.Writer) *DefaultOptions {
 }
 
 func (o *DefaultOptions) AddFlags(fs *pflag.FlagSet) {
+	fs.StringVar(&o.Name, "name", o.Name, "Set the name of olive-runner.")
 	fs.StringVar(&o.DataDir, "data-dir", o.DataDir, "Path to the data directory.")
-	fs.StringVar(&o.ConfigPath, "oliveconfig", o.ConfigPath, "Set the file path from configuration the cluster of olive-plane")
-	fs.StringVar(&o.ListenClientURL, "listen-client-url", o.ListenClientURL, "Set the URL to listen on for client traffic.")
-	fs.StringVar(&o.AdvertiseClientURL, "advertise-client-url", o.AdvertiseClientURL, "Set advertise URL to listen on for client traffic.")
+	fs.StringVar(&o.ConfigPath, "oliveconfig", o.ConfigPath, "Set the file path from configuration the cluster of olive-mon")
+	fs.StringVar(&o.ListenURL, "listen-url", o.ListenURL, "Set the URL to listen on for client traffic.")
+	fs.StringVar(&o.AdvertiseURL, "advertise-url", o.AdvertiseURL, "Set advertise URL to listen on for client traffic.")
 
 	// Backend
-	fs.DurationVar(&o.BackendBatchInterval, "backend-batch-interval", o.BackendBatchInterval, "the maximum time before commit the backend transaction.")
-	fs.IntVar(&o.BackendBatchLimit, "backend-batch-limit", o.BackendBatchLimit, "the maximum operations before commit the backend transaction.")
-
-	// Region
-	fs.StringVar(&o.ListenPeerURL, "listen-peer-url", o.ListenPeerURL, "Set the URL to listen on for peer traffic.")
-	fs.StringVar(&o.AdvertisePeerURL, "advertise-peer-url", o.AdvertisePeerURL, "Set advertise URL to listen on for peer traffic.")
+	fs.DurationVar(&o.BackendGCInterval, "backend-gc-interval", o.BackendGCInterval, "the maximum interval for the backend garbage collection.")
 
 	// logging
 	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
@@ -90,7 +87,7 @@ func (o *DefaultOptions) Validate(args []string) error {
 
 func (o *DefaultOptions) StartRunner(stopc <-chan struct{}) error {
 	config := o.Config
-	r, err := runner.NewRunner(config)
+	r, err := runner.NewRunner(config, apis.Scheme)
 	if err != nil {
 		return err
 	}

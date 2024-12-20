@@ -24,15 +24,16 @@ package main
 import (
 	"os"
 
+	genericserver "k8s.io/apiserver/pkg/server"
+
 	"github.com/olive-io/olive/cmd/runner/app"
 	"github.com/olive-io/olive/pkg/cliutil"
-	"github.com/olive-io/olive/pkg/daemon"
 	"github.com/olive-io/olive/runner/options"
 )
 
 func main() {
-	stopCh := daemon.SetupSignalHandler()
+	ctx := genericserver.SetupSignalContext()
 	defaultOptions := options.NewRunnerOptions(os.Stdout, os.Stderr)
-	command := app.NewRunnerCommand(defaultOptions, stopCh)
+	command := app.NewRunnerCommand(ctx, defaultOptions)
 	os.Exit(cliutil.Run(command))
 }

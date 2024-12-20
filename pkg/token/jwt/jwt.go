@@ -27,7 +27,7 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/golang-jwt/jwt/v5"
 
-	authv1 "github.com/olive-io/olive/apis/pb/auth"
+	authv1 "github.com/olive-io/olive/apis/rpc/auth"
 	"github.com/olive-io/olive/apis/rpctypes"
 )
 

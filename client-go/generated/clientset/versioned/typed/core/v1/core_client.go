@@ -35,8 +35,7 @@ type CoreV1Interface interface {
 	RESTClient() rest.Interface
 	DefinitionsGetter
 	NamespacesGetter
-	ProcessesGetter
-	RegionsGetter
+	ProcessInstancesGetter
 	RunnersGetter
 }
 
@@ -53,12 +52,8 @@ func (c *CoreV1Client) Namespaces() NamespaceInterface {
 	return newNamespaces(c)
 }
 
-func (c *CoreV1Client) Processes(namespace string) ProcessInterface {
-	return newProcesses(c, namespace)
-}
-
-func (c *CoreV1Client) Regions() RegionInterface {
-	return newRegions(c)
+func (c *CoreV1Client) ProcessInstances(namespace string) ProcessInstanceInterface {
+	return newProcessInstances(c, namespace)
 }
 
 func (c *CoreV1Client) Runners() RunnerInterface {

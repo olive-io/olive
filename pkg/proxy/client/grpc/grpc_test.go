@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	dsypb "github.com/olive-io/olive/apis/pb/gateway"
+	dsypb "github.com/olive-io/olive/apis/rpc/gateway"
 
 	"github.com/olive-io/olive/pkg/proxy/api"
 

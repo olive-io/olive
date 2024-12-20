@@ -63,17 +63,15 @@ func addKnownTypes(scheme *krt.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Runner{},
 		&RunnerList{},
-		&RunnerStat{},
-		&Region{},
-		&RegionList{},
-		&RegionStat{},
+		&RunnerStatistics{},
 		&Namespace{},
 		&NamespaceList{},
 		&Definition{},
 		&DefinitionList{},
 		&Process{},
 		&ProcessList{},
-		&ProcessStat{},
+		&ProcessInstanceList{},
+		&ProcessInstanceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

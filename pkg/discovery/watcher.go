@@ -30,7 +30,7 @@ import (
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 
-	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/rpc/discovery"
 )
 
 // Watcher is an interface that returns updates

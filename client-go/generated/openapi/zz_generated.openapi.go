@@ -34,6 +34,12 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIDeleteOptions":    schema_olive_apis_apidiscovery_v1_APIDeleteOptions(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIGetOptions":       schema_olive_apis_apidiscovery_v1_APIGetOptions(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIListOptions":      schema_olive_apis_apidiscovery_v1_APIListOptions(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIPatchOptions":     schema_olive_apis_apidiscovery_v1_APIPatchOptions(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIPostOptions":      schema_olive_apis_apidiscovery_v1_APIPostOptions(ref),
+		"github.com/olive-io/olive/apis/apidiscovery/v1.APIResult":           schema_olive_apis_apidiscovery_v1_APIResult(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Activity":            schema_olive_apis_apidiscovery_v1_Activity(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Box":                 schema_olive_apis_apidiscovery_v1_Box(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.Edge":                schema_olive_apis_apidiscovery_v1_Edge(ref),
@@ -51,11 +57,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceSpec":   schema_olive_apis_apidiscovery_v1_PluginServiceSpec(ref),
 		"github.com/olive-io/olive/apis/apidiscovery/v1.PluginServiceStatus": schema_olive_apis_apidiscovery_v1_PluginServiceStatus(ref),
 		"github.com/olive-io/olive/apis/config/v1.EtcdCluster":               schema_olive_apis_config_v1_EtcdCluster(ref),
-		"github.com/olive-io/olive/apis/core/v1.BpmnStat":                    schema_olive_apis_core_v1_BpmnStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.BpmnArgs":                    schema_olive_apis_core_v1_BpmnArgs(ref),
+		"github.com/olive-io/olive/apis/core/v1.BpmnStatistics":              schema_olive_apis_core_v1_BpmnStatistics(ref),
 		"github.com/olive-io/olive/apis/core/v1.Definition":                  schema_olive_apis_core_v1_Definition(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionList":              schema_olive_apis_core_v1_DefinitionList(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionSpec":              schema_olive_apis_core_v1_DefinitionSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.DefinitionStatus":            schema_olive_apis_core_v1_DefinitionStatus(ref),
+		"github.com/olive-io/olive/apis/core/v1.FlowNode":                    schema_olive_apis_core_v1_FlowNode(ref),
 		"github.com/olive-io/olive/apis/core/v1.FlowNodeStat":                schema_olive_apis_core_v1_FlowNodeStat(ref),
 		"github.com/olive-io/olive/apis/core/v1.Namespace":                   schema_olive_apis_core_v1_Namespace(ref),
 		"github.com/olive-io/olive/apis/core/v1.NamespaceCondition":          schema_olive_apis_core_v1_NamespaceCondition(ref),
@@ -64,22 +72,15 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":             schema_olive_apis_core_v1_NamespaceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.Process":                     schema_olive_apis_core_v1_Process(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessContext":              schema_olive_apis_core_v1_ProcessContext(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessInstance":             schema_olive_apis_core_v1_ProcessInstance(ref),
+		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceList":         schema_olive_apis_core_v1_ProcessInstanceList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessList":                 schema_olive_apis_core_v1_ProcessList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":                 schema_olive_apis_core_v1_ProcessSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStat":                 schema_olive_apis_core_v1_ProcessStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatSpec":             schema_olive_apis_core_v1_ProcessStatSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessStatStatus":           schema_olive_apis_core_v1_ProcessStatStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":               schema_olive_apis_core_v1_ProcessStatus(ref),
-		"github.com/olive-io/olive/apis/core/v1.Region":                      schema_olive_apis_core_v1_Region(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionList":                  schema_olive_apis_core_v1_RegionList(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionReplica":               schema_olive_apis_core_v1_RegionReplica(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionSpec":                  schema_olive_apis_core_v1_RegionSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStat":                  schema_olive_apis_core_v1_RegionStat(ref),
-		"github.com/olive-io/olive/apis/core/v1.RegionStatus":                schema_olive_apis_core_v1_RegionStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.Runner":                      schema_olive_apis_core_v1_Runner(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerList":                  schema_olive_apis_core_v1_RunnerList(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerSpec":                  schema_olive_apis_core_v1_RunnerSpec(ref),
-		"github.com/olive-io/olive/apis/core/v1.RunnerStat":                  schema_olive_apis_core_v1_RunnerStat(ref),
+		"github.com/olive-io/olive/apis/core/v1.RunnerStatistics":            schema_olive_apis_core_v1_RunnerStatistics(ref),
 		"github.com/olive-io/olive/apis/core/v1.RunnerStatus":                schema_olive_apis_core_v1_RunnerStatus(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                      schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":                  schema_pkg_apis_meta_v1_APIGroupList(ref),
@@ -134,6 +135,219 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"k8s.io/apimachinery/pkg/runtime.TypeMeta":                           schema_k8sio_apimachinery_pkg_runtime_TypeMeta(ref),
 		"k8s.io/apimachinery/pkg/runtime.Unknown":                            schema_k8sio_apimachinery_pkg_runtime_Unknown(ref),
 		"k8s.io/apimachinery/pkg/version.Info":                               schema_k8sio_apimachinery_pkg_version_Info(ref),
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIDeleteOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIGetOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIListOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"limit": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"labels": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIPatchOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"data": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIPostOptions(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"data": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_apidiscovery_v1_APIResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"gvk": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"list": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"total": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"data": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "byte",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -914,7 +1128,62 @@ func schema_olive_apis_config_v1_EtcdCluster(ref common.ReferenceCallback) commo
 	}
 }
 
-func schema_olive_apis_core_v1_BpmnStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_BpmnArgs(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"headers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"properties": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "byte",
+									},
+								},
+							},
+						},
+					},
+					"dataObjects": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "byte",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_olive_apis_core_v1_BpmnStatistics(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1102,6 +1371,33 @@ func schema_olive_apis_core_v1_DefinitionStatus(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_olive_apis_core_v1_FlowNode(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"type", "id"},
+			},
+		},
+	}
+}
+
 func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1124,7 +1420,22 @@ func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common
 					},
 					"context": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
+						},
+					},
+					"retries": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int32",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"startTime": {
@@ -1142,7 +1453,7 @@ func schema_olive_apis_core_v1_FlowNodeStat(ref common.ReferenceCallback) common
 						},
 					},
 				},
-				Required: []string{"id", "name", "context", "startTime", "endTime"},
+				Required: []string{"id", "name", "context", "retries", "message", "startTime", "endTime"},
 			},
 		},
 		Dependencies: []string{
@@ -1368,7 +1679,7 @@ func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.Open
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Process is bpmn process instance",
+				Description: "Process is bpmn process",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -1418,31 +1729,15 @@ func schema_olive_apis_core_v1_ProcessContext(ref common.ReferenceCallback) comm
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"headers": {
+					"variables": {
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"properties": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "byte",
 									},
 								},
 							},
@@ -1455,18 +1750,191 @@ func schema_olive_apis_core_v1_ProcessContext(ref common.ReferenceCallback) comm
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "byte",
 									},
 								},
 							},
 						},
 					},
 				},
-				Required: []string{"headers", "properties", "dataObjects"},
 			},
 		},
+	}
+}
+
+func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"args": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.BpmnArgs"),
+						},
+					},
+					"definitionsName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"definitionsVersion": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"definitionsProcess": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"definitionsContent": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"context": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
+						},
+					},
+					"flowNodes": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.FlowNode"),
+									},
+								},
+							},
+						},
+					},
+					"flowNodeStatMap": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.FlowNodeStat"),
+									},
+								},
+							},
+						},
+					},
+					"attempts": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"creationTimestamp": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"endTimestamp": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.BpmnArgs", "github.com/olive-io/olive/apis/core/v1.FlowNode", "github.com/olive-io/olive/apis/core/v1.FlowNodeStat", "github.com/olive-io/olive/apis/core/v1.ProcessContext", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_ProcessInstanceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessInstance"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.ProcessInstance", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1526,137 +1994,6 @@ func schema_olive_apis_core_v1_ProcessSpec(ref common.ReferenceCallback) common.
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"definition": {
-						SchemaProps: spec.SchemaProps{
-							Description: "the id of Definition",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"version": {
-						SchemaProps: spec.SchemaProps{
-							Description: "the version if Definition",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"bpmnProcess": {
-						SchemaProps: spec.SchemaProps{
-							Description: "the process id of bpmn Process Element in Definition",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"headers": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"properties": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/apidiscovery/v1.Box"),
-									},
-								},
-							},
-						},
-					},
-					"dataObjects": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"definition", "version", "bpmnProcess", "headers", "properties", "dataObjects"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/apidiscovery/v1.Box"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ProcessStat is stat information of Process",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessStatSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessStatStatus"),
-						},
-					},
-				},
-				Required: []string{"metadata", "spec", "status"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessStatSpec", "github.com/olive-io/olive/apis/core/v1.ProcessStatStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessStatSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
 					"definitionName": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
@@ -1686,94 +2023,18 @@ func schema_olive_apis_core_v1_ProcessStatSpec(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
-					"processState": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
-						},
-					},
-				},
-				Required: []string{"definitionName", "definitionVersion", "processName", "bpmnProcessId", "processState"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessContext"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessStatStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"definitionContent": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Bpmn Schema",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"flowNodes": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/olive-io/olive/apis/core/v1.FlowNodeStat"),
-									},
-								},
-							},
-						},
-					},
 					"context": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
 							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
 						},
 					},
-					"phase": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"attempts": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"startTime": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"endTime": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
 				},
-				Required: []string{"definitionContent", "flowNodes", "context", "phase", "message", "attempts", "startTime", "endTime"},
+				Required: []string{"definitionName", "definitionVersion", "processName", "bpmnProcessId", "context"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.FlowNodeStat", "github.com/olive-io/olive/apis/core/v1.ProcessContext"},
+			"github.com/olive-io/olive/apis/core/v1.ProcessContext"},
 	}
 }
 
@@ -1792,134 +2053,9 @@ func schema_olive_apis_core_v1_ProcessStatus(ref common.ReferenceCallback) commo
 					},
 					"message": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"region": {
-						SchemaProps: spec.SchemaProps{
-							Description: "the id of olive region",
-							Default:     0,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-				},
-				Required: []string{"phase", "region"},
-			},
-		},
-	}
-}
-
-func schema_olive_apis_core_v1_Region(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Region the olive node",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionStatus"),
-						},
-					},
-				},
-				Required: []string{"metadata", "spec", "status"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionSpec", "github.com/olive-io/olive/apis/core/v1.RegionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionList is a list of Region objects.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Region",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Region"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"metadata", "items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.Region", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"runner": {
@@ -1929,218 +2065,17 @@ func schema_olive_apis_core_v1_RegionReplica(ref common.ReferenceCallback) commo
 							Format:  "",
 						},
 					},
-					"raftAddress": {
+					"instance": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
 						},
 					},
-					"isNonVoting": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-					"isWitness": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
-						},
-					},
-					"isJoin": {
-						SchemaProps: spec.SchemaProps{
-							Default: false,
-							Type:    []string{"boolean"},
-							Format:  "",
-						},
-					},
 				},
-				Required: []string{"id", "runner", "raftAddress", "isNonVoting", "isWitness", "isJoin"},
+				Required: []string{"phase", "message", "runner", "instance"},
 			},
 		},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionSpec is the specification of a Region.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"id": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"deploymentId": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"initialReplicas": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionReplica"),
-									},
-								},
-							},
-						},
-					},
-					"electionRTT": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"heartbeatRTT": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"leader": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"definitionsLimit": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-				},
-				Required: []string{"id", "deploymentId", "initialReplicas", "electionRTT", "heartbeatRTT", "leader", "definitionsLimit"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionReplica"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RegionStat is the stat information of Region",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"bpmn": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
-						},
-					},
-					"runningDefinitions": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"leader": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"term": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"timeout": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int64",
-						},
-					},
-				},
-				Required: []string{"runningDefinitions", "leader", "term"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.BpmnStat"},
-	}
-}
-
-func schema_olive_apis_core_v1_RegionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"phase": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"replicas": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
-						},
-					},
-					"definitions": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"stat": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RegionStat"),
-						},
-					},
-				},
-				Required: []string{"phase", "message", "replicas", "definitions", "stat"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RegionStat"},
 	}
 }
 
@@ -2265,7 +2200,14 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
-					"peerURL": {
+					"heartbeatMs": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int64",
+						},
+					},
+					"listenURL": {
 						SchemaProps: spec.SchemaProps{
 							Description: "peerURL is the URL the member exposes to the cluster for communication.",
 							Default:     "",
@@ -2273,40 +2215,40 @@ func schema_olive_apis_core_v1_RunnerSpec(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
-					"clientURL": {
-						SchemaProps: spec.SchemaProps{
-							Description: "clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"versionRef": {
+					"version": {
 						SchemaProps: spec.SchemaProps{
 							Default: "",
 							Type:    []string{"string"},
 							Format:  "",
 						},
 					},
-					"isLearner": {
+					"features": {
 						SchemaProps: spec.SchemaProps{
-							Description: "isLearner indicates if the member is raft learner.",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"id", "hostname", "peerURL", "clientURL", "versionRef", "isLearner"},
+				Required: []string{"id", "hostname", "heartbeatMs", "listenURL", "version", "features"},
 			},
 		},
 	}
 }
 
-func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_RunnerStatistics(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RunnerStat is the stat information of Runner",
+				Description: "RunnerStatistics is the stat information of Runner",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -2323,6 +2265,13 @@ func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.O
 							Format:      "",
 						},
 					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
 					"cpuUsed": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"number"},
@@ -2335,22 +2284,23 @@ func schema_olive_apis_core_v1_RunnerStat(ref common.ReferenceCallback) common.O
 							Format: "double",
 						},
 					},
-					"bpmn": {
+					"bpmnStat": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStat"),
+							Ref: ref("github.com/olive-io/olive/apis/core/v1.BpmnStatistics"),
 						},
 					},
-					"timeout": {
+					"timestamp": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int64",
 						},
 					},
 				},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.BpmnStat"},
+			"github.com/olive-io/olive/apis/core/v1.BpmnStatistics"},
 	}
 }
 
@@ -2388,35 +2338,7 @@ func schema_olive_apis_core_v1_RunnerStatus(ref common.ReferenceCallback) common
 							Format:  "double",
 						},
 					},
-					"regions": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: 0,
-										Type:    []string{"integer"},
-										Format:  "int64",
-									},
-								},
-							},
-						},
-					},
-					"leaders": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"definitions": {
+					"diskSize": {
 						SchemaProps: spec.SchemaProps{
 							Default: 0,
 							Type:    []string{"integer"},
@@ -2426,15 +2348,15 @@ func schema_olive_apis_core_v1_RunnerStatus(ref common.ReferenceCallback) common
 					"stat": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerStat"),
+							Ref:     ref("github.com/olive-io/olive/apis/core/v1.RunnerStatistics"),
 						},
 					},
 				},
-				Required: []string{"phase", "message", "cpuTotal", "memoryTotal", "regions", "leaders", "definitions", "stat"},
+				Required: []string{"phase", "message", "cpuTotal", "memoryTotal", "diskSize", "stat"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.RunnerStat"},
+			"github.com/olive-io/olive/apis/core/v1.RunnerStatistics"},
 	}
 }
 

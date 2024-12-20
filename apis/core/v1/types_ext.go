@@ -21,19 +21,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-func (m *Region) InitialURL() map[int64]string {
-	initial := map[int64]string{}
-	for _, replica := range m.Spec.InitialReplicas {
-		if replica.IsJoin {
-			continue
-		}
-		initial[replica.Id] = replica.RaftAddress
-	}
-	return initial
+func (m *ProcessInstance) ID() string {
+	return string(m.UID)
 }
 
-func (m *Process) NeedScheduler() bool {
-	switch m.Status.Phase {
+func (m *Runner) ID() string {
+	return m.Name
+}
+
+func (m *RunnerStatistics) ID() string {
+	return m.Name
+}
+
+func (m *ProcessInstance) NeedScheduler() bool {
+	switch m.Phase {
 	case ProcessPending, ProcessPrepare:
 		return true
 	}

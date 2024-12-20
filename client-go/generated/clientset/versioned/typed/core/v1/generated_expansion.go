@@ -27,8 +27,6 @@ type DefinitionExpansion interface{}
 
 type NamespaceExpansion interface{}
 
-type ProcessExpansion interface{}
-
-type RegionExpansion interface{}
+type ProcessInstanceExpansion interface{}
 
 type RunnerExpansion interface{}

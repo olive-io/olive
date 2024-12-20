@@ -25,14 +25,21 @@ syntax = "proto2";
 
 package github.com.olive_io.olive.apis.core.v1;
 
-import "github.com/olive-io/olive/apis/apidiscovery/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 
 // Package-wide variables from generator "generated".
 option go_package = "github.com/olive-io/olive/apis/core/v1";
 
-message BpmnStat {
+message BpmnArgs {
+  map<string, string> headers = 1;
+
+  map<string, bytes> properties = 2;
+
+  map<string, bytes> dataObjects = 3;
+}
+
+message BpmnStatistics {
   optional int64 definitions = 1;
 
   optional int64 processes = 2;
@@ -72,6 +79,12 @@ message DefinitionStatus {
   optional string phase = 1;
 }
 
+message FlowNode {
+  optional string type = 1;
+
+  optional string id = 2;
+}
+
 message FlowNodeStat {
   optional string id = 1;
 
@@ -79,9 +92,13 @@ message FlowNodeStat {
 
   optional ProcessContext context = 3;
 
-  optional int64 startTime = 4;
+  optional int32 retries = 4;
 
-  optional int64 endTime = 5;
+  optional string message = 5;
+
+  optional int64 startTime = 6;
+
+  optional int64 endTime = 7;
 }
 
 // Namespace provides a scope for Names.
@@ -141,7 +158,7 @@ message NamespaceStatus {
   repeated NamespaceCondition conditions = 2;
 }
 
-// Process is bpmn process instance
+// Process is bpmn process
 message Process {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -151,11 +168,45 @@ message Process {
 }
 
 message ProcessContext {
-  map<string, string> headers = 1;
+  map<string, bytes> variables = 1;
 
-  map<string, string> properties = 2;
+  map<string, bytes> dataObjects = 2;
+}
 
-  map<string, string> dataObjects = 3;
+message ProcessInstance {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional BpmnArgs args = 2;
+
+  optional string definitionsName = 3;
+
+  optional int64 definitionsVersion = 4;
+
+  optional string definitionsProcess = 5;
+
+  optional string definitionsContent = 6;
+
+  optional ProcessContext context = 7;
+
+  repeated FlowNode flowNodes = 8;
+
+  map<string, FlowNodeStat> flowNodeStatMap = 9;
+
+  optional int32 attempts = 10;
+
+  optional int64 creationTimestamp = 11;
+
+  optional int64 endTimestamp = 12;
+
+  optional string phase = 13;
+
+  optional string message = 14;
+}
+
+message ProcessInstanceList {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated ProcessInstance items = 2;
 }
 
 // ProcessList is a list of Process objects.
@@ -167,32 +218,6 @@ message ProcessList {
 }
 
 message ProcessSpec {
-  // the id of Definition
-  optional string definition = 1;
-
-  // the version if Definition
-  optional int64 version = 2;
-
-  // the process id of bpmn Process Element in Definition
-  optional string bpmnProcess = 3;
-
-  map<string, string> headers = 4;
-
-  map<string, .github.com.olive_io.olive.apis.apidiscovery.v1.Box> properties = 5;
-
-  map<string, string> dataObjects = 6;
-}
-
-// ProcessStat is stat information of Process
-message ProcessStat {
-  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional ProcessStatSpec spec = 2;
-
-  optional ProcessStatStatus status = 3;
-}
-
-message ProcessStatSpec {
   optional string definitionName = 1;
 
   optional int64 definitionVersion = 2;
@@ -202,26 +227,7 @@ message ProcessStatSpec {
   // The id of Bpmn Process
   optional string bpmnProcessId = 4;
 
-  optional ProcessContext processState = 5;
-}
-
-message ProcessStatStatus {
-  // Bpmn Schema
-  optional string definitionContent = 1;
-
-  repeated FlowNodeStat flowNodes = 2;
-
-  optional ProcessContext context = 3;
-
-  optional string phase = 4;
-
-  optional string message = 5;
-
-  optional int64 attempts = 6;
-
-  optional int64 startTime = 7;
-
-  optional int64 endTime = 8;
+  optional ProcessContext context = 5;
 }
 
 message ProcessStatus {
@@ -229,81 +235,9 @@ message ProcessStatus {
 
   optional string message = 2;
 
-  // the id of olive region
-  optional int64 region = 3;
-}
+  optional string runner = 3;
 
-// Region the olive node
-message Region {
-  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional RegionSpec spec = 2;
-
-  optional RegionStatus status = 3;
-}
-
-// RegionList is a list of Region objects.
-message RegionList {
-  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  // Items is a list of Region
-  repeated Region items = 2;
-}
-
-message RegionReplica {
-  optional int64 id = 1;
-
-  optional string runner = 2;
-
-  optional string raftAddress = 3;
-
-  optional bool isNonVoting = 4;
-
-  optional bool isWitness = 5;
-
-  optional bool isJoin = 6;
-}
-
-// RegionSpec is the specification of a Region.
-message RegionSpec {
-  optional int64 id = 1;
-
-  optional int64 deploymentId = 2;
-
-  repeated RegionReplica initialReplicas = 3;
-
-  optional int64 electionRTT = 4;
-
-  optional int64 heartbeatRTT = 5;
-
-  optional int64 leader = 6;
-
-  optional int64 definitionsLimit = 7;
-}
-
-// RegionStat is the stat information of Region
-message RegionStat {
-  optional BpmnStat bpmn = 1;
-
-  optional int64 runningDefinitions = 2;
-
-  optional int64 leader = 3;
-
-  optional int64 term = 4;
-
-  optional int64 timeout = 5;
-}
-
-message RegionStatus {
-  optional string phase = 1;
-
-  optional string message = 2;
-
-  optional int32 replicas = 3;
-
-  optional int64 definitions = 4;
-
-  optional RegionStat stat = 5;
+  optional string instance = 4;
 }
 
 // Runner the olive node
@@ -331,27 +265,27 @@ message RunnerSpec {
   // hostname is the host name get by os.Hostname().
   optional string hostname = 2;
 
+  optional int64 heartbeatMs = 3;
+
   // peerURL is the URL the member exposes to the cluster for communication.
-  optional string peerURL = 3;
+  optional string listenURL = 4;
 
-  // clientURL is the URL the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
-  optional string clientURL = 4;
+  optional string version = 5;
 
-  optional string versionRef = 5;
-
-  // isLearner indicates if the member is raft learner.
-  optional bool isLearner = 6;
+  map<string, string> features = 6;
 }
 
-// RunnerStat is the stat information of Runner
-message RunnerStat {
-  optional double cpuUsed = 1;
+// RunnerStatistics is the stat information of Runner
+message RunnerStatistics {
+  optional string name = 1;
 
-  optional double memoryUsed = 2;
+  optional double cpuUsed = 2;
 
-  optional BpmnStat bpmn = 3;
+  optional double memoryUsed = 3;
 
-  optional int64 timeout = 4;
+  optional BpmnStatistics bpmnStat = 4;
+
+  optional int64 timestamp = 5;
 }
 
 message RunnerStatus {
@@ -363,12 +297,8 @@ message RunnerStatus {
 
   optional double memoryTotal = 4;
 
-  repeated int64 regions = 5;
+  optional int64 diskSize = 5;
 
-  repeated string leaders = 6;
-
-  optional int64 definitions = 7;
-
-  optional RunnerStat stat = 8;
+  optional RunnerStatistics stat = 6;
 }
 

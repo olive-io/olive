@@ -35,17 +35,13 @@ type DefinitionNamespaceListerExpansion interface{}
 // NamespaceLister.
 type NamespaceListerExpansion interface{}
 
-// ProcessListerExpansion allows custom methods to be added to
-// ProcessLister.
-type ProcessListerExpansion interface{}
+// ProcessInstanceListerExpansion allows custom methods to be added to
+// ProcessInstanceLister.
+type ProcessInstanceListerExpansion interface{}
 
-// ProcessNamespaceListerExpansion allows custom methods to be added to
-// ProcessNamespaceLister.
-type ProcessNamespaceListerExpansion interface{}
-
-// RegionListerExpansion allows custom methods to be added to
-// RegionLister.
-type RegionListerExpansion interface{}
+// ProcessInstanceNamespaceListerExpansion allows custom methods to be added to
+// ProcessInstanceNamespaceLister.
+type ProcessInstanceNamespaceListerExpansion interface{}
 
 // RunnerListerExpansion allows custom methods to be added to
 // RunnerLister.

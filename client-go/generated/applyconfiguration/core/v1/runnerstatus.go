@@ -30,14 +30,12 @@ import (
 // RunnerStatusApplyConfiguration represents a declarative configuration of the RunnerStatus type for use
 // with apply.
 type RunnerStatusApplyConfiguration struct {
-	Phase       *corev1.RunnerPhase           `json:"phase,omitempty"`
-	Message     *string                       `json:"message,omitempty"`
-	CpuTotal    *float64                      `json:"cpuTotal,omitempty"`
-	MemoryTotal *float64                      `json:"memoryTotal,omitempty"`
-	Regions     []int64                       `json:"regions,omitempty"`
-	Leaders     []string                      `json:"leaders,omitempty"`
-	Definitions *int64                        `json:"definitions,omitempty"`
-	Stat        *RunnerStatApplyConfiguration `json:"stat,omitempty"`
+	Phase       *corev1.RunnerPhase                 `json:"phase,omitempty"`
+	Message     *string                             `json:"message,omitempty"`
+	CpuTotal    *float64                            `json:"cpuTotal,omitempty"`
+	MemoryTotal *float64                            `json:"memoryTotal,omitempty"`
+	DiskSize    *int64                              `json:"diskSize,omitempty"`
+	Stat        *RunnerStatisticsApplyConfiguration `json:"stat,omitempty"`
 }
 
 // RunnerStatusApplyConfiguration constructs a declarative configuration of the RunnerStatus type for use with
@@ -78,38 +76,18 @@ func (b *RunnerStatusApplyConfiguration) WithMemoryTotal(value float64) *RunnerS
 	return b
 }
 
-// WithRegions adds the given value to the Regions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Regions field.
-func (b *RunnerStatusApplyConfiguration) WithRegions(values ...int64) *RunnerStatusApplyConfiguration {
-	for i := range values {
-		b.Regions = append(b.Regions, values[i])
-	}
-	return b
-}
-
-// WithLeaders adds the given value to the Leaders field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Leaders field.
-func (b *RunnerStatusApplyConfiguration) WithLeaders(values ...string) *RunnerStatusApplyConfiguration {
-	for i := range values {
-		b.Leaders = append(b.Leaders, values[i])
-	}
-	return b
-}
-
-// WithDefinitions sets the Definitions field in the declarative configuration to the given value
+// WithDiskSize sets the DiskSize field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Definitions field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithDefinitions(value int64) *RunnerStatusApplyConfiguration {
-	b.Definitions = &value
+// If called multiple times, the DiskSize field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithDiskSize(value int64) *RunnerStatusApplyConfiguration {
+	b.DiskSize = &value
 	return b
 }
 
 // WithStat sets the Stat field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Stat field is set to the value of the last call.
-func (b *RunnerStatusApplyConfiguration) WithStat(value *RunnerStatApplyConfiguration) *RunnerStatusApplyConfiguration {
+func (b *RunnerStatusApplyConfiguration) WithStat(value *RunnerStatisticsApplyConfiguration) *RunnerStatusApplyConfiguration {
 	b.Stat = value
 	return b
 }

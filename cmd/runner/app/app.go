@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package app
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -31,7 +32,7 @@ import (
 	"github.com/olive-io/olive/runner/options"
 )
 
-func NewRunnerCommand(defaults *options.DefaultOptions, stopCh <-chan struct{}) *cobra.Command {
+func NewRunnerCommand(ctx context.Context, defaults *options.DefaultOptions) *cobra.Command {
 	o := *defaults
 	app := &cobra.Command{
 		Use:     "olive-runner",
@@ -45,11 +46,12 @@ func NewRunnerCommand(defaults *options.DefaultOptions, stopCh <-chan struct{}) 
 				return err
 			}
 
-			return o.StartRunner(stopCh)
+			return o.StartRunner(ctx.Done())
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
+	app.SetContext(ctx)
 
 	app.SetUsageFunc(func(cmd *cobra.Command) error {
 		if err := PrintUsage(o.Stdout); err != nil {

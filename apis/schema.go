@@ -22,6 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package apis
 
 import (
+	"reflect"
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	krt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -52,4 +55,73 @@ func init() {
 
 	Codecs = serializer.NewCodecFactory(Scheme)
 	ParameterCodec = krt.NewParameterCodec(Scheme)
+}
+
+func FromGVK(s string) schema.GroupVersionKind {
+	gvk := schema.GroupVersionKind{}
+	if idx := strings.Index(s, "/"); idx != -1 {
+		gvk.Group = s[:idx]
+		s = s[idx+1:]
+	}
+	if idx := strings.Index(s, "."); idx != -1 {
+		gvk.Version = s[:idx]
+		s = s[idx+1:]
+	} else {
+		gvk.Version = "v1"
+	}
+	gvk.Kind = s
+	return gvk
+}
+
+type ReflectScheme struct {
+	*krt.Scheme
+	typesToGvk map[reflect.Type]schema.GroupVersionKind
+}
+
+func FromKrtScheme(krt *krt.Scheme) *ReflectScheme {
+	rs := &ReflectScheme{
+		Scheme:     krt,
+		typesToGvk: map[reflect.Type]schema.GroupVersionKind{},
+	}
+	return rs
+}
+
+func NewScheme() *ReflectScheme {
+	s := &ReflectScheme{
+		Scheme:     krt.NewScheme(),
+		typesToGvk: make(map[reflect.Type]schema.GroupVersionKind),
+	}
+	return s
+}
+
+func (s *ReflectScheme) NewList(gvk schema.GroupVersionKind) (krt.Object, error) {
+	gvk.Kind += gvk.Kind + "List"
+	return s.New(gvk)
+}
+
+func (s *ReflectScheme) AddKnownTypes(gv schema.GroupVersion, types ...krt.Object) {
+	for _, obj := range types {
+		t := reflect.TypeOf(obj)
+		if t.Kind() != reflect.Pointer {
+			panic("All types must be pointers to structs.")
+		}
+		t = t.Elem()
+		gvk := gv.WithKind(t.Name())
+		s.typesToGvk[t] = gvk
+		s.Scheme.AddKnownTypes(gv, obj)
+	}
+}
+
+func (s *ReflectScheme) SetTypesGVK(src krt.Object) {
+	if !src.GetObjectKind().GroupVersionKind().Empty() {
+		return
+	}
+
+	rt := reflect.TypeOf(src)
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
+	}
+
+	gvk := s.typesToGvk[rt]
+	src.GetObjectKind().SetGroupVersionKind(gvk)
 }

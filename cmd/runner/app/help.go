@@ -43,20 +43,16 @@ var (
 
 	flagsline = `
 Runner:
+  --name '` + runner.DefaultName + `
+    Set name of olive-runner.
   --data-dir 'default'
     Path to the data directory.
   --oliveconfig '` + runner.DefaultConfigPath + `'
     Set the file path from configuration the cluster of olive-plane
-  --listen-client-urls '` + runner.DefaultListenClientURL + `'
+  --listen-client-urls '` + runner.DefaultListenURL + `'
     List of URLs to listen on for client traffic.
-  --advertise-client-url
+  --advertise-client-url '
     Set advertise URL to listen on for client traffic.
-
-Region:
-  --listen-peer-urls '` + runner.DefaultListenPeerURL + `'
-    List of URLs to listen on for peer traffic.
-  --advertise-peer-url
-    Set advertise URL to listen on for peer traffic.
 
 Logging:
   --log-outputs 'default'

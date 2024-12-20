@@ -125,9 +125,9 @@ func (s *embedDaemon) Shutdown() {
 	<-s.done
 }
 
-// GRPCHandlerFunc returns a http.Handler that delegates to grpcServer on incoming gRPC
+// HybridHandler returns a http.Handler that delegates to grpcServer on incoming gRPC
 // connections or otherHandler otherwise. Given in gRPC docs.
-func GRPCHandlerFunc(gh *grpc.Server, hh http.Handler) http.Handler {
+func HybridHandler(gh *grpc.Server, hh http.Handler) http.Handler {
 	h2s := &http2.Server{}
 	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {

@@ -24,7 +24,7 @@ package server
 import (
 	"context"
 
-	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/rpc/discovery"
 
 	"github.com/olive-io/olive/pkg/proxy/codec"
 )

@@ -25,7 +25,7 @@ package memory
 import (
 	"time"
 
-	dsypb "github.com/olive-io/olive/apis/pb/discovery"
+	dsypb "github.com/olive-io/olive/apis/rpc/discovery"
 )
 
 func serviceToRecord(s *dsypb.Service, ttl time.Duration) *record {
