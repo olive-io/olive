@@ -111,10 +111,6 @@ func (definitionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime
 	if oldDefinition.Spec.Content != newDefinition.Spec.Content {
 		newDefinition.Spec.Version += 1
 	}
-
-	if newDefinition.Spec.Region != 0 && newDefinition.Status.Phase == corev1.DefPending {
-		newDefinition.Status.Phase = corev1.DefBinding
-	}
 }
 
 // Validate validates a new definition.

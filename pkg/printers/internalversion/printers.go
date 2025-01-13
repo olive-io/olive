@@ -23,7 +23,6 @@ package internalversion
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -50,8 +49,7 @@ func AddHandlers(h printers.PrintHandler) {
 	runnerColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Hostname", Type: "string", Description: "The hostname of the olive-runner."},
-		{Name: "PeerURL", Type: "string", Description: "The peer url of the olive-runner"},
-		{Name: "ClientURL", Type: "string", Description: "The client url of the olive-runner"},
+		{Name: "ListenURL", Type: "string", Description: "The listen url of the olive-runner"},
 		{Name: "CPU", Type: "string", Description: "The CPU usage of the olive-runner."},
 		{Name: "Memory", Type: "string", Description: "The memory usage of the olive-runner."},
 		{Name: "Status", Type: "string", Description: "The status of the olive-runner"},
@@ -59,16 +57,6 @@ func AddHandlers(h printers.PrintHandler) {
 	}
 	_ = h.TableHandler(runnerColumnDefinitions, printRunner)
 	_ = h.TableHandler(runnerColumnDefinitions, printRunnerList)
-
-	regionColumnDefinitions := []metav1.TableColumnDefinition{
-		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
-		{Name: "Replica", Type: "string", Description: "The replicas of raft shard"},
-		{Name: "Term", Type: "integer", Description: "The election term of raft shard"},
-		{Name: "Status", Type: "string", Description: "The status of the region"},
-		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
-	}
-	_ = h.TableHandler(regionColumnDefinitions, printRegion)
-	_ = h.TableHandler(regionColumnDefinitions, printRegionList)
 
 	edgeColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
@@ -105,7 +93,6 @@ func AddHandlers(h printers.PrintHandler) {
 	definitionColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
 		{Name: "Version", Type: "integer", Description: "The latest version of definition"},
-		{Name: "Region", Type: "string", Description: "The region of definition binding"},
 		{Name: "Status", Type: "string", Description: "The status of the bpmn definition"},
 		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
@@ -117,7 +104,6 @@ func AddHandlers(h printers.PrintHandler) {
 		{Name: "Definition", Type: "string", Description: "The name of Definition"},
 		{Name: "Version", Type: "integer", Description: "The version of the Definition"},
 		{Name: "Process", Type: "string", Description: "The Bpmn Process process set"},
-		{Name: "Region", Type: "string", Description: "The region of process binding"},
 		{Name: "Status", Type: "string", Description: "The status of the bpmn process"},
 		{Name: "Created", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
 	}
@@ -135,8 +121,7 @@ func printRunner(obj *corev1.Runner, options printers.GenerateOptions) ([]metav1
 
 	row.Cells = append(row.Cells, obj.Name,
 		obj.Spec.Hostname,
-		obj.Spec.PeerURL,
-		obj.Spec.ClientURL,
+		obj.Spec.ListenURL,
 		cpuUsage,
 		memoryUsage,
 		obj.Status.Phase,
@@ -149,43 +134,6 @@ func printRunnerList(list *corev1.RunnerList, options printers.GenerateOptions) 
 	rows := make([]metav1.TableRow, 0, len(list.Items))
 	for i := range list.Items {
 		r, err := printRunner(&list.Items[i], options)
-		if err != nil {
-			return nil, err
-		}
-		rows = append(rows, r...)
-	}
-	return rows, nil
-}
-
-func printRegion(obj *corev1.Region, options printers.GenerateOptions) ([]metav1.TableRow, error) {
-	row := metav1.TableRow{
-		Object: krt.RawExtension{Object: obj},
-	}
-
-	replicas := []string{}
-	for _, replica := range obj.Spec.InitialReplicas {
-		id := fmt.Sprintf("%d", replica.Id)
-		if obj.Spec.Leader == replica.Id {
-			replicas = append([]string{id}, replicas...)
-		} else {
-			replicas = append(replicas, id)
-		}
-	}
-
-	row.Cells = append(row.Cells,
-		obj.Name,
-		strings.Join(replicas, ","),
-		obj.Status.Stat.Term,
-		obj.Status.Phase,
-		translateTimestampSince(obj.CreationTimestamp))
-
-	return []metav1.TableRow{row}, nil
-}
-
-func printRegionList(list *corev1.RegionList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
-	rows := make([]metav1.TableRow, 0, len(list.Items))
-	for i := range list.Items {
-		r, err := printRegion(&list.Items[i], options)
 		if err != nil {
 			return nil, err
 		}
@@ -285,11 +233,8 @@ func printDefinition(obj *corev1.Definition, options printers.GenerateOptions) (
 		Object: krt.RawExtension{Object: obj},
 	}
 
-	region := fmt.Sprintf("rn%d", obj.Spec.Region)
-
 	row.Cells = append(row.Cells, obj.Name,
 		obj.Spec.Version,
-		region,
 		string(obj.Status.Phase),
 		translateTimestampSince(obj.CreationTimestamp))
 	return []metav1.TableRow{row}, nil
@@ -312,17 +257,15 @@ func printProcess(obj *corev1.Process, options printers.GenerateOptions) ([]meta
 		Object: krt.RawExtension{Object: obj},
 	}
 
-	definition := obj.Spec.Definition
-	version := obj.Spec.Version
-	bpmnProcess := obj.Spec.BpmnProcess
-	region := fmt.Sprintf("rn%d", obj.Status.Region)
+	definition := obj.Spec.DefinitionsName
+	version := obj.Spec.DefinitionsVersion
+	bpmnProcess := obj.Spec.DefinitionsProcess
 
 	row.Cells = append(row.Cells,
 		obj.Name,
 		definition,
 		version,
 		bpmnProcess,
-		region,
 		string(obj.Status.Phase),
 		translateTimestampSince(obj.CreationTimestamp))
 	return []metav1.TableRow{row}, nil

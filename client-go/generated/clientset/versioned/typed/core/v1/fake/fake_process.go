@@ -30,26 +30,24 @@ import (
 	gentype "k8s.io/client-go/gentype"
 )
 
-// fakeProcessInstances implements ProcessInstanceInterface
-type fakeProcessInstances struct {
-	*gentype.FakeClientWithListAndApply[*v1.ProcessInstance, *v1.ProcessInstanceList, *corev1.ProcessInstanceApplyConfiguration]
+// fakeProcesses implements ProcessInterface
+type fakeProcesses struct {
+	*gentype.FakeClientWithListAndApply[*v1.Process, *v1.ProcessList, *corev1.ProcessApplyConfiguration]
 	Fake *FakeCoreV1
 }
 
-func newFakeProcessInstances(fake *FakeCoreV1, namespace string) typedcorev1.ProcessInstanceInterface {
-	return &fakeProcessInstances{
-		gentype.NewFakeClientWithListAndApply[*v1.ProcessInstance, *v1.ProcessInstanceList, *corev1.ProcessInstanceApplyConfiguration](
+func newFakeProcesses(fake *FakeCoreV1, namespace string) typedcorev1.ProcessInterface {
+	return &fakeProcesses{
+		gentype.NewFakeClientWithListAndApply[*v1.Process, *v1.ProcessList, *corev1.ProcessApplyConfiguration](
 			fake.Fake,
 			namespace,
-			v1.SchemeGroupVersion.WithResource("processinstances"),
-			v1.SchemeGroupVersion.WithKind("ProcessInstance"),
-			func() *v1.ProcessInstance { return &v1.ProcessInstance{} },
-			func() *v1.ProcessInstanceList { return &v1.ProcessInstanceList{} },
-			func(dst, src *v1.ProcessInstanceList) { dst.ListMeta = src.ListMeta },
-			func(list *v1.ProcessInstanceList) []*v1.ProcessInstance { return gentype.ToPointerSlice(list.Items) },
-			func(list *v1.ProcessInstanceList, items []*v1.ProcessInstance) {
-				list.Items = gentype.FromPointerSlice(items)
-			},
+			v1.SchemeGroupVersion.WithResource("processes"),
+			v1.SchemeGroupVersion.WithKind("Process"),
+			func() *v1.Process { return &v1.Process{} },
+			func() *v1.ProcessList { return &v1.ProcessList{} },
+			func(dst, src *v1.ProcessList) { dst.ListMeta = src.ListMeta },
+			func(list *v1.ProcessList) []*v1.Process { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1.ProcessList, items []*v1.Process) { list.Items = gentype.FromPointerSlice(items) },
 		),
 		fake,
 	}

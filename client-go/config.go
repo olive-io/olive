@@ -77,14 +77,19 @@ func NewConfigWithContext(ctx context.Context, filename string, lg *zap.Logger) 
 		return nil, err
 	}
 
-	cluster, ok := apiConfig.Clusters["mon"]
+	cluster, ok := apiConfig.Clusters["plane"]
 	if !ok {
-		return nil, fmt.Errorf("mon cluster not found")
+		cluster, ok = apiConfig.Clusters["apiserver"]
+		if !ok {
+			return nil, fmt.Errorf("plane cluster not found")
+		}
 	}
+
 	etcdExtension, ok := cluster.Extensions["etcd"]
 	if !ok {
 		return nil, fmt.Errorf("etcd cluster extension not found")
 	}
+	apiConfig.Clusters["apiserver"] = cluster
 
 	var ec configv1.EtcdCluster
 	if value, ok := etcdExtension.(*krt.Unknown); ok {

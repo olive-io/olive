@@ -28,7 +28,6 @@ package v1
 type DefinitionSpecApplyConfiguration struct {
 	Content *string `json:"content,omitempty"`
 	Version *int64  `json:"version,omitempty"`
-	Region  *int64  `json:"region,omitempty"`
 }
 
 // DefinitionSpecApplyConfiguration constructs a declarative configuration of the DefinitionSpec type for use with
@@ -50,13 +49,5 @@ func (b *DefinitionSpecApplyConfiguration) WithContent(value string) *Definition
 // If called multiple times, the Version field is set to the value of the last call.
 func (b *DefinitionSpecApplyConfiguration) WithVersion(value int64) *DefinitionSpecApplyConfiguration {
 	b.Version = &value
-	return b
-}
-
-// WithRegion sets the Region field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Region field is set to the value of the last call.
-func (b *DefinitionSpecApplyConfiguration) WithRegion(value int64) *DefinitionSpecApplyConfiguration {
-	b.Region = &value
 	return b
 }

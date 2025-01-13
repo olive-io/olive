@@ -78,18 +78,11 @@ type ExtraConfig struct {
 	ClientSet             clientset.Interface
 	SharedInformerFactory informers.SharedInformerFactory
 	DynamicClient         dynamic.Interface
-
-	// The maximum number of regions in a runner
-	RegionLimit int
-	// The maximum number of bpmn definitions in a region
-	RegionDefinitionsLimit int
 }
 
 func NewExtraConfig() *ExtraConfig {
 	return &ExtraConfig{
 		APIResourceConfigSource: DefaultAPIResourceConfigSource(),
-		RegionLimit:             DefaultRegionLimit,
-		RegionDefinitionsLimit:  DefaultRegionDefinitionsLimit,
 	}
 }
 
@@ -111,11 +104,6 @@ func (cfg *Config) Complete() CompletedConfig {
 		ExtraConfig:   cfg.ExtraConfig,
 	}
 
-	//c.GenericConfig = &version.Info{
-	//	Major: "1",
-	//	Minor: "0",
-	//}
-
 	return CompletedConfig{&c}
 }
 
@@ -125,7 +113,7 @@ func (c completedConfig) New() (*PlaneServer, error) {
 	etcd := c.ExtraConfig.Etcd
 	embedDaemon := genericdaemon.NewEmbedDaemon(lg)
 
-	genericServer, err := c.GenericConfig.New("olive-plane", genericapiserver.NewEmptyDelegate())
+	genericServer, err := c.GenericConfig.New(OliveComponentName, genericapiserver.NewEmptyDelegate())
 	if err != nil {
 		return nil, err
 	}

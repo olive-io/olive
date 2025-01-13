@@ -245,8 +245,6 @@ type Definition struct {
 type DefinitionSpec struct {
 	Content string `json:"content,omitempty" protobuf:"bytes,1,opt,name=content"`
 	Version int64  `json:"version,omitempty" protobuf:"varint,2,opt,name=version"`
-	// the id of olive region
-	Region int64 `json:"region,omitempty" protobuf:"varint,3,opt,name=region"`
 }
 
 type DefinitionStatus struct {
@@ -314,48 +312,6 @@ const (
 	ProcessFailed     ProcessPhase = "Failed"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Process is bpmn process
-type Process struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	Spec   ProcessSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status ProcessStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
-}
-
-type ProcessSpec struct {
-	DefinitionName    string `json:"definitionName" protobuf:"bytes,1,opt,name=definitionName"`
-	DefinitionVersion int64  `json:"definitionVersion" protobuf:"varint,2,opt,name=definitionVersion"`
-
-	ProcessName string `json:"processName" protobuf:"bytes,3,opt,name=processName"`
-	// The id of Bpmn Process
-	BpmnProcessId string `json:"bpmnProcessId" protobuf:"bytes,4,opt,name=bpmnProcessId"`
-
-	Context ProcessContext `json:"context" protobuf:"bytes,5,opt,name=context"`
-}
-
-type ProcessStatus struct {
-	Phase   ProcessPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=ProcessPhase"`
-	Message string       `json:"message" protobuf:"bytes,2,opt,name=message"`
-
-	Runner string `json:"runner" protobuf:"bytes,3,opt,name=runner"`
-
-	Instance string `json:"instance" protobuf:"bytes,4,opt,name=instance"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// ProcessList is a list of Process objects.
-type ProcessList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Items is a list of Process
-	Items []Process `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
 type BpmnArgs struct {
 	Headers     map[string]string `json:"headers,omitempty" protobuf:"bytes,1,rep,name=headers"`
 	Properties  map[string][]byte `json:"properties,omitempty" protobuf:"bytes,2,rep,name=properties"`
@@ -370,37 +326,44 @@ type ProcessContext struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type ProcessInstance struct {
+type Process struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	Args BpmnArgs `json:"args,omitempty" protobuf:"bytes,2,opt,name=args"`
+	Spec   ProcessSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status ProcessStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
 
-	DefinitionsName    string `json:"definitionsName,omitempty" protobuf:"bytes,3,opt,name=definitionsName"`
-	DefinitionsVersion int64  `json:"definitionsVersion,omitempty" protobuf:"varint,4,opt,name=definitionsVersion"`
-	DefinitionsProcess string `json:"definitionsProcess,omitempty" protobuf:"bytes,5,opt,name=definitionsProcess"`
-	DefinitionsContent string `json:"definitionsContent,omitempty" protobuf:"bytes,6,opt,name=definitionsContent"`
+type ProcessSpec struct {
+	Args BpmnArgs `json:"args,omitempty" protobuf:"bytes,1,opt,name=args"`
 
-	Context ProcessContext `json:"context,omitempty" protobuf:"bytes,7,opt,name=context"`
+	DefinitionsName    string `json:"definitionsName,omitempty" protobuf:"bytes,2,opt,name=definitionsName"`
+	DefinitionsVersion int64  `json:"definitionsVersion,omitempty" protobuf:"varint,3,opt,name=definitionsVersion"`
+	DefinitionsProcess string `json:"definitionsProcess,omitempty" protobuf:"bytes,4,opt,name=definitionsProcess"`
+	DefinitionsContent string `json:"definitionsContent,omitempty" protobuf:"bytes,5,opt,name=definitionsContent"`
+}
 
-	FlowNodes       []FlowNode              `json:"flowNodes,omitempty" protobuf:"bytes,8,rep,name=flowNodes"`
-	FlowNodeStatMap map[string]FlowNodeStat `json:"flowNodeStatMap,omitempty" protobuf:"bytes,9,rep,name=flowNodeStatMap"`
-	Attempts        int32                   `json:"attempts,omitempty" protobuf:"varint,10,opt,name=attempts"`
+type ProcessStatus struct {
+	Phase   ProcessPhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ProcessPhase"`
+	Message string       `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
 
-	StartTimestamp int64 `json:"creationTimestamp,omitempty" protobuf:"varint,11,opt,name=creationTimestamp"`
-	EndTimestamp   int64 `json:"endTimestamp,omitempty" protobuf:"varint,12,opt,name=endTimestamp"`
+	Context ProcessContext `json:"context,omitempty" protobuf:"bytes,3,opt,name=context"`
 
-	Phase   ProcessPhase `json:"phase,omitempty" protobuf:"bytes,13,opt,name=phase,casttype=ProcessPhase"`
-	Message string       `json:"message,omitempty" protobuf:"bytes,14,opt,name=message"`
+	FlowNodes       []FlowNode              `json:"flowNodes,omitempty" protobuf:"bytes,4,rep,name=flowNodes"`
+	FlowNodeStatMap map[string]FlowNodeStat `json:"flowNodeStatMap,omitempty" protobuf:"bytes,5,rep,name=flowNodeStatMap"`
+	Attempts        int32                   `json:"attempts,omitempty" protobuf:"varint,6,opt,name=attempts"`
+
+	StartTimestamp int64 `json:"creationTimestamp,omitempty" protobuf:"varint,7,opt,name=creationTimestamp"`
+	EndTimestamp   int64 `json:"endTimestamp,omitempty" protobuf:"varint,8,opt,name=endTimestamp"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type ProcessInstanceList struct {
+type ProcessList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
-	Items []ProcessInstance `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items []Process `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 type FlowNode struct {

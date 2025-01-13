@@ -22,7 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package runner
 
 import (
-	"math"
 	"sync/atomic"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -32,10 +31,12 @@ import (
 
 type Snapshot struct {
 	runner *corev1.Runner
-	// Sets the limit of region number in which Runner
-	regionLimit int
 	// the score of Runner, calculation by calScore()
 	score atomic.Int64
+}
+
+func (s *Snapshot) ID() string {
+	return s.UID()
 }
 
 func (s *Snapshot) UID() string {
@@ -56,16 +57,14 @@ func (s *Snapshot) Set(r *corev1.Runner) {
 
 func (s *Snapshot) DeepCopy() *Snapshot {
 	return &Snapshot{
-		runner:      s.runner.DeepCopy(),
-		regionLimit: s.regionLimit,
+		runner: s.runner.DeepCopy(),
 	}
 }
 
-func NewSnapshot(runner *corev1.Runner, limit int) *Snapshot {
+func NewSnapshot(runner *corev1.Runner) *Snapshot {
 	snapshot := &Snapshot{
-		runner:      runner,
-		regionLimit: limit,
-		score:       atomic.Int64{},
+		runner: runner,
+		score:  atomic.Int64{},
 	}
 	snapshot.score.Store(snapshot.calScore())
 	return snapshot
@@ -73,19 +72,12 @@ func NewSnapshot(runner *corev1.Runner, limit int) *Snapshot {
 
 func (s *Snapshot) calScore() int64 {
 	runner := s.runner
-	limit := s.regionLimit
 	status := runner.Status
 	stat := status.Stat
 	cpus := status.CpuTotal
 	memoryTotal := status.MemoryTotal
 
-	if len(status.Regions) >= limit {
-		return -math.MaxInt64
-	}
-
-	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30) +
-		int64((limit-len(status.Regions))%30) +
-		int64((limit-len(status.Leaders))%10)
+	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30)
 	return score
 }
 

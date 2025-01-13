@@ -47,7 +47,7 @@ import (
 var ErrStopped = errors.New("scheduler stopped")
 
 type ProcessItem struct {
-	*corev1.ProcessInstance
+	*corev1.Process
 }
 
 func (item *ProcessItem) Score() int64 {
@@ -143,7 +143,7 @@ func (s *Scheduler) RunProcess(
 	headers map[string]string,
 	properties map[string][]byte,
 	dataObjects map[string][]byte,
-) (*corev1.ProcessInstance, error) {
+) (*corev1.Process, error) {
 
 	err := s.saveDefinition(ctx, definitionName, instanceName, definitionVersion, content)
 	if err != nil {
@@ -151,28 +151,32 @@ func (s *Scheduler) RunProcess(
 	}
 
 	id := uuid.New().String()
-	instance := &corev1.ProcessInstance{
+	instance := &corev1.Process{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:               types.UID(id),
 			Name:              instanceName,
 			CreationTimestamp: metav1.Now(),
 		},
-		DefinitionsName:    definitionName,
-		DefinitionsVersion: definitionVersion,
-		DefinitionsProcess: process,
-		DefinitionsContent: content,
-		Args: corev1.BpmnArgs{
-			Headers:     headers,
-			Properties:  properties,
-			DataObjects: dataObjects,
+		Spec: corev1.ProcessSpec{
+			DefinitionsName:    definitionName,
+			DefinitionsVersion: definitionVersion,
+			DefinitionsProcess: process,
+			DefinitionsContent: content,
+			Args: corev1.BpmnArgs{
+				Headers:     headers,
+				Properties:  properties,
+				DataObjects: dataObjects,
+			},
 		},
-		Context: corev1.ProcessContext{
-			DataObjects: make(map[string][]byte),
-			Variables:   make(map[string][]byte),
+		Status: corev1.ProcessStatus{
+			Phase: corev1.ProcessPending,
+			Context: corev1.ProcessContext{
+				DataObjects: make(map[string][]byte),
+				Variables:   make(map[string][]byte),
+			},
+			FlowNodes:       make([]corev1.FlowNode, 0),
+			FlowNodeStatMap: make(map[string]corev1.FlowNodeStat),
 		},
-		FlowNodes:       make([]corev1.FlowNode, 0),
-		FlowNodeStatMap: make(map[string]corev1.FlowNodeStat),
-		Phase:           corev1.ProcessPending,
 	}
 
 	if err = s.saveProcess(ctx, instance); err != nil {
@@ -214,14 +218,14 @@ func (s *Scheduler) process() {
 			continue
 		}
 
-		err := s.pool.Submit(s.buildProcessTask(item.ProcessInstance))
+		err := s.pool.Submit(s.buildProcessTask(item.Process))
 		if err != nil {
 			s.logger.Sugar().Errorf("submit process: %v", err)
 		}
 	}
 }
 
-func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
+func (s *Scheduler) buildProcessTask(process *corev1.Process) func() {
 	return func() {
 		s.wg.Add(1)
 
@@ -236,65 +240,65 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 			metrics.ProcessCounter.Dec()
 		}()
 
-		instance.StartTimestamp = time.Now().UnixNano()
-		instance.Phase = corev1.ProcessPrepare
-		_ = s.saveProcess(ctx, instance)
+		process.Status.Phase = corev1.ProcessPrepare
+		process.Status.StartTimestamp = time.Now().UnixNano()
+		_ = s.saveProcess(ctx, process)
 
 		variables := make(map[string]any)
 		dataObjects := make(map[string]any)
 
-		for key, value := range instance.Args.Headers {
+		for key, value := range process.Spec.Args.Headers {
 			variables[key] = value
 		}
-		for key, value := range instance.Args.Properties {
+		for key, value := range process.Spec.Args.Properties {
 			variables[key] = string(value)
 		}
-		for key, value := range instance.Args.DataObjects {
+		for key, value := range process.Spec.Args.DataObjects {
 			dataObjects[key] = string(value)
 		}
 
-		for key, value := range instance.Context.Variables {
+		for key, value := range process.Status.Context.Variables {
 			variables[key] = string(value)
 		}
-		for key, value := range instance.Context.DataObjects {
+		for key, value := range process.Status.Context.DataObjects {
 			dataObjects[key] = string(value)
 		}
 
 		zapFields := []zap.Field{
-			zap.String("definition", instance.DefinitionsName),
-			zap.Int64("version", instance.DefinitionsVersion),
-			zap.String("id", string(instance.UID)),
-			zap.String("name", instance.Name),
+			zap.String("definition", process.Spec.DefinitionsName),
+			zap.Int64("version", process.Spec.DefinitionsVersion),
+			zap.String("id", string(process.UID)),
+			zap.String("name", process.Name),
 		}
 
 		s.logger.Info("process instance started", zapFields...)
 		var err error
 		defer func() {
 			s.logger.Info("process instance finished", zapFields...)
-			_ = s.finishProcess(ctx, instance, err)
+			_ = s.finishProcess(ctx, process, err)
 		}()
 
-		content := []byte(instance.DefinitionsContent)
+		content := []byte(process.Spec.DefinitionsContent)
 		opts := []bpmn.Option{
 			bpmn.WithContext(ctx),
 			bpmn.WithVariables(variables),
 			bpmn.WithDataObjects(dataObjects),
 		}
 
-		var process *Process
-		process, err = NewProcess(ctx, content, opts...)
+		var pr *Process
+		pr, err = NewProcess(ctx, content, opts...)
 		if err != nil {
 			s.logger.Error("failed to create process", append(zapFields, zap.Error(err))...)
 			return
 		}
 
-		flowNodeMap := instance.FlowNodeStatMap
+		flowNodeMap := process.Status.FlowNodeStatMap
 		if flowNodeMap == nil {
 			flowNodeMap = make(map[string]corev1.FlowNodeStat)
 		}
 
-		instance.Phase = corev1.ProcessRunning
-		err = process.Run(func(trace tracing.ITrace, locator data.IFlowDataLocator) {
+		process.Status.Phase = corev1.ProcessRunning
+		err = pr.Run(func(trace tracing.ITrace, locator data.IFlowDataLocator) {
 			switch tr := trace.(type) {
 			case *bpmn.TaskTrace:
 				id := flowId(tr.GetActivity().Element())
@@ -344,7 +348,7 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 
 			case bpmn.ErrorTrace:
 				err = tr.Error
-				instance.Message = tr.Error.Error()
+				process.Status.Message = tr.Error.Error()
 
 			case bpmn.ActiveBoundaryTrace:
 				id := flowId(tr.Node)
@@ -364,7 +368,7 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 				if !ok {
 					nodeType := flowType(tr.Node)
 					flowNode := corev1.FlowNode{Type: nodeType, Id: id}
-					instance.FlowNodes = append(instance.FlowNodes, flowNode)
+					process.Status.FlowNodes = append(process.Status.FlowNodes, flowNode)
 
 					stat = corev1.FlowNodeStat{
 						Id: id,
@@ -399,7 +403,7 @@ func (s *Scheduler) buildProcessTask(instance *corev1.ProcessInstance) func() {
 			default:
 			}
 
-			_ = s.saveProcess(ctx, instance)
+			_ = s.saveProcess(ctx, process)
 		})
 
 		if err != nil {

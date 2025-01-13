@@ -34,7 +34,6 @@ import (
 	definitionstore "github.com/olive-io/olive/plane/registry/core/definition"
 	namespacestore "github.com/olive-io/olive/plane/registry/core/namespace"
 	processstore "github.com/olive-io/olive/plane/registry/core/process"
-	regionstore "github.com/olive-io/olive/plane/registry/core/region"
 	runnerstore "github.com/olive-io/olive/plane/registry/core/runner"
 )
 
@@ -75,16 +74,6 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 		}
 		storage[resource] = runnerStorage.Runner
 		storage[resource+"/status"] = runnerStorage.Status
-	}
-
-	// region
-	if resource := "regions"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		regionsStorage, err := regionstore.NewStorage(p.v3cli, restOptionsGetter, p.stopCh)
-		if err != nil {
-			return storage, err
-		}
-		storage[resource] = regionsStorage.Region
-		storage[resource+"/status"] = regionsStorage.Status
 	}
 
 	// namespace

@@ -41,8 +41,8 @@ func (c *FakeCoreV1) Namespaces() v1.NamespaceInterface {
 	return newFakeNamespaces(c)
 }
 
-func (c *FakeCoreV1) ProcessInstances(namespace string) v1.ProcessInstanceInterface {
-	return newFakeProcessInstances(c, namespace)
+func (c *FakeCoreV1) Processes(namespace string) v1.ProcessInterface {
+	return newFakeProcesses(c, namespace)
 }
 
 func (c *FakeCoreV1) Runners() v1.RunnerInterface {

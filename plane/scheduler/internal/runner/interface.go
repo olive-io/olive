@@ -30,7 +30,7 @@ import (
 
 type SchedulingQueue interface {
 	Add(runner *corev1.Runner)
-	Update(runner *corev1.Runner, limit int)
+	Update(runner *corev1.Runner)
 	Remove(runner *corev1.Runner)
 	Len() int
 
@@ -43,37 +43,39 @@ type SchedulingQueue interface {
 }
 
 type schedulingQueue struct {
-	mu          sync.RWMutex
-	maps        map[string]*Snapshot
-	activeQ     *queue.PriorityQueue
-	recycled    []*Snapshot
-	regionLimit int
+	mu       sync.RWMutex
+	maps     map[string]*Snapshot
+	activeQ  *queue.PriorityQueue[*Snapshot]
+	recycled []*Snapshot
 }
 
-func NewSchedulingQueue(regionLimit int) SchedulingQueue {
+func NewSchedulingQueue() SchedulingQueue {
+
+	fn := func(v *Snapshot) int64 {
+		return v.Score()
+	}
+
 	return &schedulingQueue{
-		maps:        make(map[string]*Snapshot),
-		activeQ:     queue.New(),
-		recycled:    make([]*Snapshot, 0),
-		regionLimit: regionLimit,
+		maps:     make(map[string]*Snapshot),
+		activeQ:  queue.New[*Snapshot](fn),
+		recycled: make([]*Snapshot, 0),
 	}
 }
 
 func (sq *schedulingQueue) Add(runner *corev1.Runner) {
 	name := runner.Name
-	snapshot := NewSnapshot(runner, sq.regionLimit)
+	snapshot := NewSnapshot(runner)
 	sq.mu.Lock()
 	defer sq.mu.Unlock()
 	sq.maps[name] = snapshot
 	sq.activeQ.Push(snapshot)
 }
 
-func (sq *schedulingQueue) Update(runner *corev1.Runner, limit int) {
+func (sq *schedulingQueue) Update(runner *corev1.Runner) {
 	name := runner.Name
-	snapshot := NewSnapshot(runner, sq.regionLimit)
+	snapshot := NewSnapshot(runner)
 	sq.mu.Lock()
 	defer sq.mu.Unlock()
-	sq.regionLimit = limit
 	sq.maps[name] = snapshot
 	sq.activeQ.Set(snapshot)
 }

@@ -87,10 +87,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationcorev1.NamespaceSpecApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("NamespaceStatus"):
 		return &applyconfigurationcorev1.NamespaceStatusApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("Process"):
+		return &applyconfigurationcorev1.ProcessApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("ProcessContext"):
 		return &applyconfigurationcorev1.ProcessContextApplyConfiguration{}
-	case corev1.SchemeGroupVersion.WithKind("ProcessInstance"):
-		return &applyconfigurationcorev1.ProcessInstanceApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessSpec"):
+		return &applyconfigurationcorev1.ProcessSpecApplyConfiguration{}
+	case corev1.SchemeGroupVersion.WithKind("ProcessStatus"):
+		return &applyconfigurationcorev1.ProcessStatusApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("Runner"):
 		return &applyconfigurationcorev1.RunnerApplyConfiguration{}
 	case corev1.SchemeGroupVersion.WithKind("RunnerSpec"):

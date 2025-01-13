@@ -71,8 +71,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1().Definitions().Informer()}, nil
 	case corev1.SchemeGroupVersion.WithResource("namespaces"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1().Namespaces().Informer()}, nil
-	case corev1.SchemeGroupVersion.WithResource("processinstances"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1().ProcessInstances().Informer()}, nil
+	case corev1.SchemeGroupVersion.WithResource("processes"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1().Processes().Informer()}, nil
 	case corev1.SchemeGroupVersion.WithResource("runners"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Core().V1().Runners().Informer()}, nil
 

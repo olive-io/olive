@@ -114,20 +114,22 @@ func (s *Scheduler) syncDefinitionHandler(ctx context.Context, key string) error
 		return nil
 	}
 
-	if def.Spec.Region == 0 {
-		snapshot, ok := s.regionQ.Pop()
-		if !ok {
-			return nil
-		}
-		region := snapshot.Get()
-		def.Spec.Region = region.Spec.Id
-		_, err = s.clientSet.CoreV1().Definitions(namespace).Update(ctx, def, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
+	_ = logger
 
-		logger.Info(fmt.Sprintf("binding Definition %s to Region %s", def.Name, region.Name))
-	}
+	//if def.Spec.Region == 0 {
+	//	snapshot, ok := s.regionQ.Pop()
+	//	if !ok {
+	//		return nil
+	//	}
+	//	region := snapshot.Get()
+	//	def.Spec.Region = region.Spec.Id
+	//	_, err = s.clientSet.CoreV1().Definitions(namespace).Update(ctx, def, metav1.UpdateOptions{})
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	logger.Info(fmt.Sprintf("binding Definition %s to Region %s", def.Name, region.Name))
+	//}
 
 	return nil
 }
@@ -207,37 +209,39 @@ func (s *Scheduler) syncProcessHandler(ctx context.Context, key string) error {
 
 		return err
 	}
+	_ = process
+	logger.V(4).Info("Successfully synced", "Process", key)
 
-	if process.Status.Phase != corev1.ProcessPending {
-		return nil
-	}
-
-	definition, err := s.clientSet.CoreV1().Definitions(namespace).Get(ctx, process.Spec.Definition, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	if definition.Spec.Region == 0 {
-		return fmt.Errorf("no region binded in definition '%s'", process.Spec.Definition)
-	}
-
-	if process.Spec.Version == 0 {
-		process.Spec.Version = definition.Spec.Version
-		process, err = s.clientSet.CoreV1().Processes(namespace).Update(ctx, process, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-		logger.Info("set process version", "version", process.Spec.Version)
-	}
-
-	if process.Status.Region == 0 {
-		process.Status.Region = definition.Spec.Region
-		process.Status.Phase = corev1.ProcessPrepare
-		logger.Info("binding process", "Region", process.Status.Region)
-		process, err = s.clientSet.CoreV1().Processes(namespace).UpdateStatus(ctx, process, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-	}
+	//if process.Status.Phase != corev1.ProcessPending {
+	//	return nil
+	//}
+	//
+	//definition, err := s.clientSet.CoreV1().Definitions(namespace).Get(ctx, process.Spec.Definition, metav1.GetOptions{})
+	//if err != nil {
+	//	return err
+	//}
+	//if definition.Spec.Region == 0 {
+	//	return fmt.Errorf("no region binded in definition '%s'", process.Spec.Definition)
+	//}
+	//
+	//if process.Spec.Version == 0 {
+	//	process.Spec.Version = definition.Spec.Version
+	//	process, err = s.clientSet.CoreV1().Processes(namespace).Update(ctx, process, metav1.UpdateOptions{})
+	//	if err != nil {
+	//		return err
+	//	}
+	//	logger.Info("set process version", "version", process.Spec.Version)
+	//}
+	//
+	//if process.Status.Region == 0 {
+	//	process.Status.Region = definition.Spec.Region
+	//	process.Status.Phase = corev1.ProcessPrepare
+	//	logger.Info("binding process", "Region", process.Status.Region)
+	//	process, err = s.clientSet.CoreV1().Processes(namespace).UpdateStatus(ctx, process, metav1.UpdateOptions{})
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 
 	return nil
 }

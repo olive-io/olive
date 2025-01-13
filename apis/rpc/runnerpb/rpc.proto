@@ -139,7 +139,7 @@ message ListProcessInstancesRequest {
 }
 
 message ListProcessInstancesResponse {
-  github.com.olive_io.olive.apis.core.v1.ProcessInstanceList list = 1;
+  github.com.olive_io.olive.apis.core.v1.ProcessList list = 1;
 }
 
 message GetProcessInstanceRequest {
@@ -149,7 +149,7 @@ message GetProcessInstanceRequest {
 }
 
 message GetProcessInstanceResponse {
-  github.com.olive_io.olive.apis.core.v1.ProcessInstance instance = 1;
+  github.com.olive_io.olive.apis.core.v1.Process process = 1;
 }
 
 message RunProcessInstanceRequest {
@@ -164,7 +164,7 @@ message RunProcessInstanceRequest {
 }
 
 message RunProcessInstanceResponse {
-  github.com.olive_io.olive.apis.core.v1.ProcessInstance instance = 1;
+  github.com.olive_io.olive.apis.core.v1.Process process = 1;
 }
 
 message ListRequest {

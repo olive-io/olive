@@ -22,7 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package scheduler
 
 import (
-	"math"
 	"sync"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
@@ -43,30 +42,7 @@ func (ri *RunnerInfo) Score() int64 {
 	cpus := status.CpuTotal
 	memoryTotal := status.MemoryTotal
 
-	if ri.RegionLimit <= len(status.Regions) {
-		return -math.MaxInt64
-	}
-
-	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30) +
-		int64((ri.RegionLimit-len(status.Regions))%30) +
-		int64((ri.RegionLimit-len(status.Leaders))%10)
-
-	return score
-}
-
-type RegionInfo struct {
-	Region          *corev1.Region
-	DefinitionLimit int
-}
-
-func (ri *RegionInfo) UID() string {
-	return string(ri.Region.UID)
-}
-
-func (ri *RegionInfo) Score() int64 {
-	status := ri.Region.Status
-	score := int64(float64(status.Definitions)/float64(ri.DefinitionLimit)*100)%70 +
-		int64(status.Replicas*10)%30
+	score := int64(int(cpus-stat.CpuUsed)%50) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%50)
 
 	return score
 }
@@ -133,74 +109,6 @@ func (m *RunnerMap) Del(uid string) (*corev1.Runner, bool) {
 }
 
 func (m *RunnerMap) Len() int {
-	m.mu.RLock()
-	length := len(m.store)
-	m.mu.RUnlock()
-	return length
-}
-
-type RegionMap struct {
-	mu    sync.RWMutex
-	store map[string]*corev1.Region
-}
-
-type RegionFilter func(*corev1.Region) bool
-
-func NewRegionMap() *RegionMap {
-	return &RegionMap{
-		store: make(map[string]*corev1.Region),
-	}
-}
-
-func (m *RegionMap) Get(uid string) (*corev1.Region, bool) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	rt, ok := m.store[uid]
-	return rt, ok
-}
-
-func (m *RegionMap) Hit(filters ...RegionFilter) []*corev1.Region {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	regions := make([]*corev1.Region, 0)
-	for _, region := range m.store {
-		match := true
-		for _, fn := range filters {
-			if !fn(region) {
-				match = false
-				break
-			}
-		}
-		if match {
-			regions = append(regions, region)
-		}
-	}
-
-	return regions
-}
-
-func (m *RegionMap) Put(rt *corev1.Region) {
-	uid := string(rt.UID)
-	m.mu.Lock()
-	m.store[uid] = rt
-	m.mu.Unlock()
-}
-
-func (m *RegionMap) Del(uid string) (*corev1.Region, bool) {
-	m.mu.Lock()
-	rt, ok := m.store[uid]
-	if !ok {
-		m.mu.Unlock()
-		return nil, false
-	}
-	m.store[uid] = nil
-	delete(m.store, uid)
-	m.mu.Unlock()
-	return rt, true
-}
-
-func (m *RegionMap) Len() int {
 	m.mu.RLock()
 	length := len(m.store)
 	m.mu.RUnlock()

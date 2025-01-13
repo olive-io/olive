@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-func (m *ProcessInstance) ID() string {
+func (m *Process) ID() string {
 	return string(m.UID)
 }
 
@@ -33,8 +33,8 @@ func (m *RunnerStatistics) ID() string {
 	return m.Name
 }
 
-func (m *ProcessInstance) NeedScheduler() bool {
-	switch m.Phase {
+func (m *Process) NeedScheduler() bool {
+	switch m.Status.Phase {
 	case ProcessPending, ProcessPrepare:
 		return true
 	}

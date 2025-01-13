@@ -37,59 +37,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// ProcessInstanceInformer provides access to a shared informer and lister for
-// ProcessInstances.
-type ProcessInstanceInformer interface {
+// ProcessInformer provides access to a shared informer and lister for
+// Processes.
+type ProcessInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() corev1.ProcessInstanceLister
+	Lister() corev1.ProcessLister
 }
 
-type processInstanceInformer struct {
+type processInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewProcessInstanceInformer constructs a new informer for ProcessInstance type.
+// NewProcessInformer constructs a new informer for Process type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewProcessInstanceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredProcessInstanceInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewProcessInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredProcessInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredProcessInstanceInformer constructs a new informer for ProcessInstance type.
+// NewFilteredProcessInformer constructs a new informer for Process type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredProcessInstanceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredProcessInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CoreV1().ProcessInstances(namespace).List(context.TODO(), options)
+				return client.CoreV1().Processes(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CoreV1().ProcessInstances(namespace).Watch(context.TODO(), options)
+				return client.CoreV1().Processes(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&apiscorev1.ProcessInstance{},
+		&apiscorev1.Process{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *processInstanceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredProcessInstanceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *processInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredProcessInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *processInstanceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiscorev1.ProcessInstance{}, f.defaultInformer)
+func (f *processInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apiscorev1.Process{}, f.defaultInformer)
 }
 
-func (f *processInstanceInformer) Lister() corev1.ProcessInstanceLister {
-	return corev1.NewProcessInstanceLister(f.Informer().GetIndexer())
+func (f *processInformer) Lister() corev1.ProcessLister {
+	return corev1.NewProcessLister(f.Informer().GetIndexer())
 }

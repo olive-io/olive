@@ -118,52 +118,6 @@ func validateRunnerStatus(runner *corev1.Runner, fldPath *field.Path) field.Erro
 	return allErrs
 }
 
-// ValidateRegionName can be used to check whether the given region name is valid.
-// Prefix indicates this name will be used as part of generation, in which case
-// trailing dashes are allowed.
-var ValidateRegionName = apimachineryvalidation.NameIsDNSSubdomain
-
-// ValidateRegion tests if required fields are set.
-func ValidateRegion(region *corev1.Region) field.ErrorList {
-	allErrs := ValidateObjectMeta(&region.ObjectMeta, false, ValidateRegionName, field.NewPath("metadata"))
-	return allErrs
-}
-
-// ValidateRegionUpdate validates an update to a Region and returns an ErrorList with any errors.
-func ValidateRegionUpdate(region, oldRegion *corev1.Region) field.ErrorList {
-	allErrs := ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateRegionSpecUpdate(region.Spec, oldRegion.Spec, field.NewPath("spec"))...)
-	return allErrs
-}
-
-// ValidateRegionSpecUpdate validates an update to a RegionSpec and returns an ErrorList with any errors.
-func ValidateRegionSpecUpdate(spec, oldSpec corev1.RegionSpec, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	return allErrs
-}
-
-// ValidateRegionUpdateStatus validates an update to the status of a Region and returns an ErrorList with any errors.
-func ValidateRegionUpdateStatus(region, oldRegion *corev1.Region) field.ErrorList {
-	allErrs := ValidateObjectMetaUpdate(&region.ObjectMeta, &oldRegion.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateRegionStatusUpdate(region, oldRegion)...)
-	return allErrs
-}
-
-// ValidateRegionStatusUpdate validates an update to a RegionStatus and returns an ErrorList with any errors.
-func ValidateRegionStatusUpdate(region, oldRegion *corev1.Region) field.ErrorList {
-	allErrs := field.ErrorList{}
-	statusFld := field.NewPath("status")
-	allErrs = append(allErrs, validateRegionStatus(region, statusFld)...)
-
-	return allErrs
-}
-
-// validateRegionStatus validates a RegionStatus and returns an ErrorList with any errors.
-func validateRegionStatus(region *corev1.Region, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	return allErrs
-}
-
 // ValidateDefinition tests if required fields are set.
 func ValidateDefinition(definition *corev1.Definition) field.ErrorList {
 	allErrs := ValidateObjectMeta(&definition.ObjectMeta, true, ValidateDefinitionName, field.NewPath("metadata"))
@@ -220,14 +174,14 @@ func ValidateProcess(process *corev1.Process) field.ErrorList {
 func ValidateProcessSpec(spec *corev1.ProcessSpec) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(spec.Definition) == 0 {
+	if len(spec.DefinitionsName) == 0 {
 		allErrs = append(allErrs, field.Required(field.NewPath("spec", "Definition"), ""))
 	}
-	if spec.Version < 0 {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "Version"), spec.Version, "version must >= 0"))
+	if spec.DefinitionsVersion < 0 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "Version"), spec.DefinitionsVersion, "version must >= 0"))
 	}
-	if len(spec.BpmnProcess) == 0 {
-		allErrs = append(allErrs, field.Required(field.NewPath("spec", "BpmnProcess"), ""))
+	if len(spec.DefinitionsProcess) == 0 {
+		allErrs = append(allErrs, field.Required(field.NewPath("spec", "Process"), ""))
 	}
 
 	return allErrs

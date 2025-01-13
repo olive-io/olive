@@ -72,8 +72,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/olive-io/olive/apis/core/v1.NamespaceStatus":             schema_olive_apis_core_v1_NamespaceStatus(ref),
 		"github.com/olive-io/olive/apis/core/v1.Process":                     schema_olive_apis_core_v1_Process(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessContext":              schema_olive_apis_core_v1_ProcessContext(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstance":             schema_olive_apis_core_v1_ProcessInstance(ref),
-		"github.com/olive-io/olive/apis/core/v1.ProcessInstanceList":         schema_olive_apis_core_v1_ProcessInstanceList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessList":                 schema_olive_apis_core_v1_ProcessList(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessSpec":                 schema_olive_apis_core_v1_ProcessSpec(ref),
 		"github.com/olive-io/olive/apis/core/v1.ProcessStatus":               schema_olive_apis_core_v1_ProcessStatus(ref),
@@ -1340,13 +1338,6 @@ func schema_olive_apis_core_v1_DefinitionSpec(ref common.ReferenceCallback) comm
 							Format: "int64",
 						},
 					},
-					"region": {
-						SchemaProps: spec.SchemaProps{
-							Description: "the id of olive region",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
 				},
 			},
 		},
@@ -1679,8 +1670,7 @@ func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.Open
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Process is bpmn process",
-				Type:        []string{"object"},
+				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -1715,7 +1705,7 @@ func schema_olive_apis_core_v1_Process(ref common.ReferenceCallback) common.Open
 						},
 					},
 				},
-				Required: []string{"metadata", "spec", "status"},
+				Required: []string{"spec"},
 			},
 		},
 		Dependencies: []string{
@@ -1763,7 +1753,7 @@ func schema_olive_apis_core_v1_ProcessContext(ref common.ReferenceCallback) comm
 	}
 }
 
-func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_olive_apis_core_v1_ProcessList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1786,9 +1776,37 @@ func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) com
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
 						},
 					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Process"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.Process", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_olive_apis_core_v1_ProcessSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
 					"args": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -1814,6 +1832,32 @@ func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) com
 						},
 					},
 					"definitionsContent": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/olive-io/olive/apis/core/v1.BpmnArgs"},
+	}
+}
+
+func schema_olive_apis_core_v1_ProcessStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"message": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -1870,212 +1914,11 @@ func schema_olive_apis_core_v1_ProcessInstance(ref common.ReferenceCallback) com
 							Format: "int64",
 						},
 					},
-					"phase": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.BpmnArgs", "github.com/olive-io/olive/apis/core/v1.FlowNode", "github.com/olive-io/olive/apis/core/v1.FlowNodeStat", "github.com/olive-io/olive/apis/core/v1.ProcessContext", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessInstanceList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessInstance"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessInstance", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "ProcessList is a list of Process objects.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Items is a list of Process",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/olive-io/olive/apis/core/v1.Process"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"metadata", "items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.Process", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"definitionName": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"definitionVersion": {
-						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int64",
-						},
-					},
-					"processName": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"bpmnProcessId": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The id of Bpmn Process",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"context": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/olive-io/olive/apis/core/v1.ProcessContext"),
-						},
-					},
-				},
-				Required: []string{"definitionName", "definitionVersion", "processName", "bpmnProcessId", "context"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/olive-io/olive/apis/core/v1.ProcessContext"},
-	}
-}
-
-func schema_olive_apis_core_v1_ProcessStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"phase": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"runner": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"instance": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"phase", "message", "runner", "instance"},
-			},
-		},
+			"github.com/olive-io/olive/apis/core/v1.FlowNode", "github.com/olive-io/olive/apis/core/v1.FlowNodeStat", "github.com/olive-io/olive/apis/core/v1.ProcessContext"},
 	}
 }
 

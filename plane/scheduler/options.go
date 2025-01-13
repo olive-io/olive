@@ -22,40 +22,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package scheduler
 
 import (
-	"fmt"
-
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
-const (
-	DefaultRegionLimit        = 100
-	DefaultDefinitionLimit    = 10000
-	DefaultInitRegionNum      = 3
-	DefaultRegionReplicas     = 3
-	DefaultRegionElectionTTL  = 10 // 10s
-	DefaultRegionHeartbeatTTL = 1  // 1s
-)
+const ()
 
 type Option func(*Options)
 
 type Options struct {
-	RegionLimit        int
-	DefinitionLimit    int
-	InitRegionNum      int
-	RegionReplicas     int
-	RegionElectionTTL  int64
-	RegionHeartbeatTTL int64
 }
 
 func NewOptions(opts ...Option) *Options {
-	options := &Options{
-		RegionLimit:        DefaultRegionLimit,
-		DefinitionLimit:    DefaultDefinitionLimit,
-		InitRegionNum:      DefaultInitRegionNum,
-		RegionReplicas:     DefaultRegionReplicas,
-		RegionElectionTTL:  DefaultRegionElectionTTL,
-		RegionHeartbeatTTL: DefaultRegionHeartbeatTTL,
-	}
+	options := &Options{}
 
 	for _, o := range opts {
 		o(options)
@@ -65,50 +43,5 @@ func NewOptions(opts ...Option) *Options {
 
 func (o *Options) Validate() error {
 	var errors []error
-	if o.RegionReplicas != 3 && o.RegionReplicas != 5 {
-		errors = append(errors, fmt.Errorf("RegionReplicas must be either 3 or 5"))
-	}
-	if o.InitRegionNum <= 0 {
-		errors = append(errors, fmt.Errorf("InitRegionNum must be greater than 0"))
-	}
-	if o.RegionElectionTTL <= o.RegionHeartbeatTTL {
-		errors = append(errors, fmt.Errorf("RegionElectionTTL must be greater than RegionHeartbeatTTL"))
-	}
 	return utilerrors.NewAggregate(errors)
-}
-
-func WithRegionLimit(limit int) Option {
-	return func(options *Options) {
-		options.RegionLimit = limit
-	}
-}
-
-func WithDefinitionLimit(limit int) Option {
-	return func(options *Options) {
-		options.DefinitionLimit = limit
-	}
-}
-
-func WithInitRegionNum(limit int) Option {
-	return func(options *Options) {
-		options.InitRegionNum = limit
-	}
-}
-
-func WithRegionReplicas(replicas int) Option {
-	return func(options *Options) {
-		options.RegionReplicas = replicas
-	}
-}
-
-func WithRegionElectionTTL(ttl int64) Option {
-	return func(options *Options) {
-		options.RegionElectionTTL = ttl
-	}
-}
-
-func WithRegionHeartbeatTTL(ttl int64) Option {
-	return func(options *Options) {
-		options.RegionHeartbeatTTL = ttl
-	}
 }

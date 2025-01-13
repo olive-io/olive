@@ -48,10 +48,8 @@ import (
 )
 
 const (
-	DefaultEtcdPathPrefix         = "/registry/olive"
-	DefaultRegionLimit            = 100
-	DefaultRegionDefinitionsLimit = 500
-	PlaneComponentName            = "plane"
+	DefaultEtcdPathPrefix = "/registry/olive"
+	PlaneComponentName    = "plane"
 )
 
 // ServerOptions contains state for master/api server
@@ -126,14 +124,12 @@ func (o *ServerOptions) Config() (*planeserver.Config, error) {
 	extraConfig := planeserver.NewExtraConfig()
 	extraConfig.Logger = lg
 	extraConfig.Etcd = etcd
-	extraConfig.RegionLimit = DefaultRegionLimit
-	extraConfig.RegionDefinitionsLimit = DefaultRegionDefinitionsLimit
 
-	if err := o.EmbedEtcdOptions.ApplyToEtcdStorage(o.RecommendedOptions.EtcdStorage); err != nil {
+	if err = o.EmbedEtcdOptions.ApplyToEtcdStorage(o.RecommendedOptions.EtcdStorage); err != nil {
 		return nil, err
 	}
 
-	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", o.AlternateDNS, []net.IP{netutils.ParseIPSloppy("127.0.0.1")}); err != nil {
+	if err = o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", o.AlternateDNS, []net.IP{netutils.ParseIPSloppy("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
 	}
 
@@ -168,7 +164,7 @@ func (o *ServerOptions) Config() (*planeserver.Config, error) {
 	genericConfig.FeatureGate = featuregate.DefaultComponentGlobalsRegistry.FeatureGateFor(featuregate.DefaultKubeComponent)
 	genericConfig.EffectiveVersion = featuregate.DefaultComponentGlobalsRegistry.EffectiveVersionFor(PlaneComponentName)
 
-	if err := o.RecommendedOptions.ApplyTo(genericConfig, extraConfig); err != nil {
+	if err = o.RecommendedOptions.ApplyTo(genericConfig, extraConfig); err != nil {
 		return nil, err
 	}
 

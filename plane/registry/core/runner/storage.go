@@ -127,7 +127,7 @@ func (r *REST) Categories() []string {
 
 func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	runner := obj.(*corev1.Runner)
-	peerURL, err := urlpkg.Parse(runner.Spec.PeerURL)
+	listenURL, err := urlpkg.Parse(runner.Spec.ListenURL)
 	if err != nil {
 		errorList := field.ErrorList{field.InternalError(field.ToPath(), err)}
 		return nil, storage.NewInvalidError(errorList)
@@ -136,11 +136,11 @@ func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 	out, _ := r.List(ctx, nil)
 	if out != nil {
 		for _, item := range out.(*corev1.RunnerList).Items {
-			url, err := urlpkg.Parse(item.Spec.PeerURL)
+			url, err := urlpkg.Parse(item.Spec.ListenURL)
 			if err != nil {
 				continue
 			}
-			if url.Host == peerURL.Host {
+			if url.Host == listenURL.Host {
 				return &item, nil
 			}
 		}

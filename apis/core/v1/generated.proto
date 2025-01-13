@@ -70,9 +70,6 @@ message DefinitionSpec {
   optional string content = 1;
 
   optional int64 version = 2;
-
-  // the id of olive region
-  optional int64 region = 3;
 }
 
 message DefinitionStatus {
@@ -158,7 +155,6 @@ message NamespaceStatus {
   repeated NamespaceCondition conditions = 2;
 }
 
-// Process is bpmn process
 message Process {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -173,61 +169,22 @@ message ProcessContext {
   map<string, bytes> dataObjects = 2;
 }
 
-message ProcessInstance {
-  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
-
-  optional BpmnArgs args = 2;
-
-  optional string definitionsName = 3;
-
-  optional int64 definitionsVersion = 4;
-
-  optional string definitionsProcess = 5;
-
-  optional string definitionsContent = 6;
-
-  optional ProcessContext context = 7;
-
-  repeated FlowNode flowNodes = 8;
-
-  map<string, FlowNodeStat> flowNodeStatMap = 9;
-
-  optional int32 attempts = 10;
-
-  optional int64 creationTimestamp = 11;
-
-  optional int64 endTimestamp = 12;
-
-  optional string phase = 13;
-
-  optional string message = 14;
-}
-
-message ProcessInstanceList {
-  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-
-  repeated ProcessInstance items = 2;
-}
-
-// ProcessList is a list of Process objects.
 message ProcessList {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  // Items is a list of Process
   repeated Process items = 2;
 }
 
 message ProcessSpec {
-  optional string definitionName = 1;
+  optional BpmnArgs args = 1;
 
-  optional int64 definitionVersion = 2;
+  optional string definitionsName = 2;
 
-  optional string processName = 3;
+  optional int64 definitionsVersion = 3;
 
-  // The id of Bpmn Process
-  optional string bpmnProcessId = 4;
+  optional string definitionsProcess = 4;
 
-  optional ProcessContext context = 5;
+  optional string definitionsContent = 5;
 }
 
 message ProcessStatus {
@@ -235,9 +192,17 @@ message ProcessStatus {
 
   optional string message = 2;
 
-  optional string runner = 3;
+  optional ProcessContext context = 3;
 
-  optional string instance = 4;
+  repeated FlowNode flowNodes = 4;
+
+  map<string, FlowNodeStat> flowNodeStatMap = 5;
+
+  optional int32 attempts = 6;
+
+  optional int64 creationTimestamp = 7;
+
+  optional int64 endTimestamp = 8;
 }
 
 // Runner the olive node

@@ -33,8 +33,8 @@ type Interface interface {
 	Definitions() DefinitionInformer
 	// Namespaces returns a NamespaceInformer.
 	Namespaces() NamespaceInformer
-	// ProcessInstances returns a ProcessInstanceInformer.
-	ProcessInstances() ProcessInstanceInformer
+	// Processes returns a ProcessInformer.
+	Processes() ProcessInformer
 	// Runners returns a RunnerInformer.
 	Runners() RunnerInformer
 }
@@ -60,9 +60,9 @@ func (v *version) Namespaces() NamespaceInformer {
 	return &namespaceInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
-// ProcessInstances returns a ProcessInstanceInformer.
-func (v *version) ProcessInstances() ProcessInstanceInformer {
-	return &processInstanceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Processes returns a ProcessInformer.
+func (v *version) Processes() ProcessInformer {
+	return &processInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Runners returns a RunnerInformer.

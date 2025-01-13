@@ -88,14 +88,14 @@ func (s *Scheduler) saveDefinition(ctx context.Context, id, name string, version
 func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 	items := make([]*ProcessItem, 0)
 
-	list := new(corev1.ProcessInstanceList)
+	list := new(corev1.ProcessList)
 	key := s.bs.GenerateKey(list)
 	if err := s.bs.GetList(ctx, key, list); err != nil {
 		return items
 	}
 
 	for _, item := range list.Items {
-		if processFinished(item.Phase) {
+		if processFinished(item.Status.Phase) {
 			continue
 		}
 		items = append(items, &ProcessItem{&item})
@@ -104,9 +104,9 @@ func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 	return items
 }
 
-func (s *Scheduler) ListProcess(ctx context.Context, definition string, version int64) (*corev1.ProcessInstanceList, error) {
+func (s *Scheduler) ListProcess(ctx context.Context, definition string, version int64) (*corev1.ProcessList, error) {
 
-	list := new(corev1.ProcessInstanceList)
+	list := new(corev1.ProcessList)
 	key := s.bs.GenerateKey(list)
 	if definition != "" {
 		key = path.Join(key, definition)
@@ -121,46 +121,46 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition string, version 
 	return list, nil
 }
 
-func (s *Scheduler) GetProcess(ctx context.Context, definition string, version int64, id string) (*corev1.ProcessInstance, error) {
+func (s *Scheduler) GetProcess(ctx context.Context, definition string, version int64, id string) (*corev1.Process, error) {
 	identify := fmt.Sprintf("%s/%d/%s", definition, version, id)
 
-	instance := new(corev1.ProcessInstance)
-	key := s.bs.GenerateKey(instance)
+	process := new(corev1.Process)
+	key := s.bs.GenerateKey(process)
 	key = path.Join(key, identify)
-	if err := s.bs.Get(ctx, key, instance); err != nil {
+	if err := s.bs.Get(ctx, key, process); err != nil {
 		return nil, err
 	}
 
-	return instance, nil
+	return process, nil
 }
 
-func (s *Scheduler) saveProcess(ctx context.Context, instance *corev1.ProcessInstance) error {
-	if instance.CreationTimestamp.IsZero() {
-		instance.CreationTimestamp = metav1.Now()
+func (s *Scheduler) saveProcess(ctx context.Context, process *corev1.Process) error {
+	if process.CreationTimestamp.IsZero() {
+		process.CreationTimestamp = metav1.Now()
 	}
 
-	if instance.UID == "" {
-		instance.SetUID(types.UID(uuid.New().String()))
+	if process.UID == "" {
+		process.SetUID(types.UID(uuid.New().String()))
 	}
 
-	key := s.bs.GenerateKey(instance)
-	identify := fmt.Sprintf("%s/%d/%s", instance.DefinitionsName, instance.DefinitionsVersion, instance.UID)
+	key := s.bs.GenerateKey(process)
+	identify := fmt.Sprintf("%s/%d/%s", process.Spec.DefinitionsName, process.Spec.DefinitionsVersion, process.UID)
 	key = path.Join(key, identify)
 
-	if err := s.bs.Create(ctx, key, instance, 0); err != nil {
+	if err := s.bs.Create(ctx, key, process, 0); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Scheduler) finishProcess(ctx context.Context, instance *corev1.ProcessInstance, err error) error {
-	instance.EndTimestamp = time.Now().UnixNano()
+func (s *Scheduler) finishProcess(ctx context.Context, process *corev1.Process, err error) error {
+	process.Status.EndTimestamp = time.Now().UnixNano()
 	if err != nil {
-		instance.Phase = corev1.ProcessFailed
-		instance.Message = err.Error()
+		process.Status.Phase = corev1.ProcessFailed
+		process.Status.Message = err.Error()
 	} else {
-		instance.Phase = corev1.ProcessSuccess
+		process.Status.Phase = corev1.ProcessSuccess
 	}
-	return s.saveProcess(ctx, instance)
+	return s.saveProcess(ctx, process)
 }
