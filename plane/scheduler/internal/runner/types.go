@@ -75,9 +75,10 @@ func (s *Snapshot) calScore() int64 {
 	status := runner.Status
 	stat := status.Stat
 	cpus := status.CpuTotal
+	sockets := status.CpuSocket
 	memoryTotal := status.MemoryTotal
 
-	score := int64(int(cpus-stat.CpuUsed)%30) + int64(int(memoryTotal-stat.MemoryUsed)/1024/1024%30)
+	score := int64(int(cpus-stat.CpuUsed)%50) + int64(int(float64(sockets)*memoryTotal-stat.MemoryUsed)/1024/1024%50)
 	return score
 }
 
@@ -106,8 +107,8 @@ func NewSelector(options NextOptions) Selector {
 }
 
 func (s Selector) Select(runner *corev1.Runner) bool {
-	for _, item := range s {
-		if !item(runner) {
+	for _, matched := range s {
+		if !matched(runner) {
 			return false
 		}
 	}

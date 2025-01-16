@@ -25,7 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:defaulter-gen-input=github.com/olive-io/olive/apis/core/v1
 // +k8s:conversion-gen=github.com/olive-io/olive/apis/core
+// +k8s:conversion-gen-external-types=github.com/olive-io/olive/apis/core/v1
 // +groupName=core.olive.io
 
-// Package v1 is the internal version of the API.
+// Package v1alpha1 is the v1alpha1 version of the API.
 package v1

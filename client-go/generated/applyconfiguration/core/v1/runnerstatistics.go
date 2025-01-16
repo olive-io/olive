@@ -23,52 +23,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package v1
 
-import (
-	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-)
-
 // RunnerStatisticsApplyConfiguration represents a declarative configuration of the RunnerStatistics type for use
 // with apply.
 type RunnerStatisticsApplyConfiguration struct {
-	metav1.TypeMetaApplyConfiguration `json:",inline"`
-	Name                              *string                           `json:"name,omitempty"`
-	CpuUsed                           *float64                          `json:"cpuUsed,omitempty"`
-	MemoryUsed                        *float64                          `json:"memoryUsed,omitempty"`
-	BpmnStat                          *BpmnStatisticsApplyConfiguration `json:"bpmnStat,omitempty"`
-	Timestamp                         *int64                            `json:"timestamp,omitempty"`
+	CpuUsed    *float64                          `json:"cpuUsed,omitempty"`
+	MemoryUsed *float64                          `json:"memoryUsed,omitempty"`
+	BpmnStat   *BpmnStatisticsApplyConfiguration `json:"bpmnStat,omitempty"`
+	Timestamp  *int64                            `json:"timestamp,omitempty"`
 }
 
 // RunnerStatisticsApplyConfiguration constructs a declarative configuration of the RunnerStatistics type for use with
 // apply.
 func RunnerStatistics() *RunnerStatisticsApplyConfiguration {
-	b := &RunnerStatisticsApplyConfiguration{}
-	b.WithKind("RunnerStatistics")
-	b.WithAPIVersion("core.olive.io/v1")
-	return b
-}
-
-// WithKind sets the Kind field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Kind field is set to the value of the last call.
-func (b *RunnerStatisticsApplyConfiguration) WithKind(value string) *RunnerStatisticsApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
-	return b
-}
-
-// WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *RunnerStatisticsApplyConfiguration) WithAPIVersion(value string) *RunnerStatisticsApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
-	return b
-}
-
-// WithName sets the Name field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Name field is set to the value of the last call.
-func (b *RunnerStatisticsApplyConfiguration) WithName(value string) *RunnerStatisticsApplyConfiguration {
-	b.Name = &value
-	return b
+	return &RunnerStatisticsApplyConfiguration{}
 }
 
 // WithCpuUsed sets the CpuUsed field in the declarative configuration to the given value

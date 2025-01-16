@@ -34,11 +34,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
 
-	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
-	configInstall "github.com/olive-io/olive/apis/config/install"
 	configv1 "github.com/olive-io/olive/apis/config/v1"
-	coreInstall "github.com/olive-io/olive/apis/core/install"
-	"github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
+	_ "github.com/olive-io/olive/client-go/generated/clientset/versioned/scheme"
 	"github.com/olive-io/olive/client-go/interceptor"
 )
 
@@ -51,9 +48,9 @@ var (
 )
 
 func init() {
-	coreInstall.Install(scheme.Scheme)
-	configInstall.Install(scheme.Scheme)
-	apidiscoveryInstall.Install(scheme.Scheme)
+	//coreInstall.Install(scheme.Scheme)
+	//configInstall.Install(scheme.Scheme)
+	//apidiscoveryInstall.Install(scheme.Scheme)
 }
 
 type Config struct {

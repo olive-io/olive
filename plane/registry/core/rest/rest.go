@@ -68,7 +68,7 @@ func (p *CoreRESTStorageProvider) v1Storage(apiResourceConfigSource serverstorag
 
 	// runner
 	if resource := "runners"; apiResourceConfigSource.ResourceEnabled(corev1.SchemeGroupVersion.WithResource(resource)) {
-		runnerStorage, err := runnerstore.NewStorage(p.v3cli, restOptionsGetter, p.stopCh)
+		runnerStorage, err := runnerstore.NewStorage(restOptionsGetter, p.stopCh)
 		if err != nil {
 			return storage, err
 		}

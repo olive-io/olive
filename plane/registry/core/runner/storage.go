@@ -25,7 +25,6 @@ import (
 	"context"
 	urlpkg "net/url"
 
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +37,6 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 
 	corev1 "github.com/olive-io/olive/apis/core/v1"
-	"github.com/olive-io/olive/pkg/idutil"
 	"github.com/olive-io/olive/pkg/printers"
 	printersinternal "github.com/olive-io/olive/pkg/printers/internalversion"
 	printerstorage "github.com/olive-io/olive/pkg/printers/storage"
@@ -51,8 +49,8 @@ type RunnerStorage struct {
 }
 
 // NewStorage creates a new RunnerStorage against etcd.
-func NewStorage(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (RunnerStorage, error) {
-	runnerRest, runnerStatusRest, err := NewREST(v3cli, optsGetter, stopCh)
+func NewStorage(optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (RunnerStorage, error) {
+	runnerRest, runnerStatusRest, err := NewREST(optsGetter, stopCh)
 	if err != nil {
 		return RunnerStorage{}, err
 	}
@@ -62,10 +60,6 @@ func NewStorage(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, st
 		Status: runnerStatusRest,
 	}, nil
 }
-
-const (
-	defaultRunnerPrefix = "/olive/ring/ids/runner"
-)
 
 var deleteOptionWarnings = ""
 
@@ -77,14 +71,8 @@ type REST struct {
 }
 
 // NewREST returns a RESTStorage object that will work against Runners.
-func NewREST(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (*REST, *StatusREST, error) {
-	ring, err := idutil.NewRing(defaultRunnerPrefix, v3cli)
-	if err != nil {
-		return nil, nil, err
-	}
-	ring.Start(stopCh)
-
-	strategy := createStrategy(ring)
+func NewREST(optsGetter generic.RESTOptionsGetter, stopCh <-chan struct{}) (*REST, *StatusREST, error) {
+	strategy := createStrategy()
 
 	store := &genericregistry.Store{
 		NewFunc:                   func() runtime.Object { return &corev1.Runner{} },
@@ -104,7 +92,7 @@ func NewREST(v3cli *clientv3.Client, optsGetter generic.RESTOptionsGetter, stopC
 		RESTOptions: optsGetter,
 		AttrFunc:    GetAttrs,
 	}
-	if err = store.CompleteWithOptions(options); err != nil {
+	if err := store.CompleteWithOptions(options); err != nil {
 		return nil, nil, err
 	}
 

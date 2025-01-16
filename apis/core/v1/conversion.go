@@ -22,29 +22,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package v1
 
 import (
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func addConversionFuncs(scheme *runtime.Scheme) error {
-	err := scheme.AddFieldLabelConversionFunc(SchemeGroupVersion.WithKind("Definitions"),
-		func(label, value string) (string, string, error) {
-			switch label {
-			case "metadata.name",
-				"metadata.namespace",
-				"spec.content",
-				"spec.version",
-				"spec.region",
-				"status.phase":
-				return label, value, nil
-			default:
-				return "", "", fmt.Errorf("field label not supported: %s", label)
-			}
-		},
-	)
-	if err != nil {
-		return err
-	}
-	return err
+	//err := scheme.AddFieldLabelConversionFunc(SchemeGroupVersion.WithKind("Definitions"),
+	//	func(label, value string) (string, string, error) {
+	//		switch label {
+	//		case "metadata.name",
+	//			"metadata.namespace",
+	//			"spec.content",
+	//			"spec.version",
+	//			"spec.region",
+	//			"status.phase":
+	//			return label, value, nil
+	//		default:
+	//			return "", "", fmt.Errorf("field label not supported: %s", label)
+	//		}
+	//	},
+	//)
+	//if err != nil {
+	//	return err
+	//}
+	return nil
 }

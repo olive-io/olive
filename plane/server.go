@@ -145,11 +145,11 @@ func (s *PlaneServer) InstallAPIs(apiResourceConfigSource serverstorage.APIResou
 	return nil
 }
 
-func (s *PlaneServer) Start(stopc <-chan struct{}) error {
+func (s *PlaneServer) Start(ctx context.Context) error {
 
 	shutdownTimeout := time.Second * 10
 	preparedServer := s.genericAPIServer.PrepareRun()
-	stoppedCh, listenerStoppedCh, err := preparedServer.NonBlockingRun(stopc, shutdownTimeout)
+	stoppedCh, listenerStoppedCh, err := preparedServer.NonBlockingRunWithContext(ctx, shutdownTimeout)
 	if err != nil {
 		return err
 	}

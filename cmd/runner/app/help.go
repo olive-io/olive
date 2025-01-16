@@ -47,7 +47,7 @@ Runner:
     Set name of olive-runner.
   --data-dir 'default'
     Path to the data directory.
-  --oliveconfig '` + runner.DefaultConfigPath + `'
+  --oliveconfig '` + runner.DefaultOliveConfigPath + `'
     Set the file path from configuration the cluster of olive-plane
   --listen-client-urls '` + runner.DefaultListenURL + `'
     List of URLs to listen on for client traffic.

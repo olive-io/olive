@@ -116,8 +116,8 @@ func printRunner(obj *corev1.Runner, options printers.GenerateOptions) ([]metav1
 		Object: krt.RawExtension{Object: obj},
 	}
 
-	cpuUsage := fmt.Sprintf("%d", int64(obj.Status.CpuTotal))
-	memoryUsage := humanize.Bytes(uint64(obj.Status.MemoryTotal))
+	cpuUsage := fmt.Sprintf("%dx%dMhz/%.1f%%", obj.Status.CpuSocket, uint64(obj.Status.CpuTotal), obj.Status.Stat.CpuUsed/obj.Status.CpuTotal)
+	memoryUsage := fmt.Sprintf("%s/%.1f%%", humanize.Bytes(uint64(obj.Status.MemoryTotal)), obj.Status.Stat.MemoryUsed/obj.Status.MemoryTotal)
 
 	row.Cells = append(row.Cells, obj.Name,
 		obj.Spec.Hostname,

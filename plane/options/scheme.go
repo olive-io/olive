@@ -24,22 +24,30 @@ package options
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/olive-io/olive/apis"
-	_ "github.com/olive-io/olive/apis/apidiscovery/install"
 	apidiscoveryv1 "github.com/olive-io/olive/apis/apidiscovery/v1"
-	_ "github.com/olive-io/olive/apis/core/install"
+	configv1 "github.com/olive-io/olive/apis/config/v1"
+	"github.com/olive-io/olive/apis/core"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
+
+	apidiscoveryInstall "github.com/olive-io/olive/apis/apidiscovery/install"
+	configInstall "github.com/olive-io/olive/apis/config/install"
+	coreInstall "github.com/olive-io/olive/apis/core/install"
 )
 
 var Codec runtime.Codec
 
 func init() {
+	apidiscoveryInstall.Install(apis.Scheme)
+	configInstall.Install(apis.Scheme)
+	coreInstall.Install(apis.Scheme)
+
 	Codec = apis.Codecs.LegacyCodec(
-		schema.GroupVersion{Group: "", Version: "v1"},
 		metav1.Unversioned,
 		apidiscoveryv1.SchemeGroupVersion,
 		corev1.SchemeGroupVersion,
+		core.SchemeGroupVersion,
+		configv1.SchemeGroupVersion,
 	)
 }

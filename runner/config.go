@@ -30,16 +30,15 @@ import (
 
 	"github.com/spf13/pflag"
 
-	clientgo "github.com/olive-io/olive/client-go"
 	"github.com/olive-io/olive/pkg/cliutil/flags"
 	"github.com/olive-io/olive/pkg/logutil"
 )
 
 const (
-	DefaultName       = "runner"
-	DefaultConfigPath = "oliveconfig"
-	DefaultDataDir    = "default"
-	DefaultCacheSize  = 4 * 1024 * 1024
+	DefaultName            = "runner"
+	DefaultOliveConfigPath = "oliveconfig"
+	DefaultDataDir         = "default"
+	DefaultCacheSize       = 4 * 1024 * 1024
 
 	DefaultBackendGCInterval = time.Minute * 10
 
@@ -60,9 +59,7 @@ type Config struct {
 
 	Name string
 
-	ConfigPath string
-
-	clientConfig *clientgo.Config
+	OliveConfig string
 
 	DataDir   string
 	CacheSize uint64
@@ -88,11 +85,10 @@ func NewConfig() *Config {
 	cfg := Config{
 		LogConfig: logging,
 
-		ConfigPath: DefaultConfigPath,
-
-		Name:      DefaultName,
-		DataDir:   DefaultDataDir,
-		CacheSize: DefaultCacheSize,
+		Name:        DefaultName,
+		OliveConfig: DefaultOliveConfigPath,
+		DataDir:     DefaultDataDir,
+		CacheSize:   DefaultCacheSize,
 
 		BackendGCInterval: DefaultBackendGCInterval,
 
@@ -117,7 +113,6 @@ func (cfg *Config) newFlagSet() *pflag.FlagSet {
 	// Runner
 	fs.StringVar(&cfg.Name, "name", cfg.Name, "The unique name of the runner.")
 	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
-	//fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints, "Set gRPC endpoints to connect the cluster of olive-meta")
 	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for grpc traffic.")
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for grpc traffic.")
 
@@ -154,10 +149,6 @@ func (cfg *Config) Complete() error {
 		return err
 	}
 
-	cfg.clientConfig, err = clientgo.NewConfig(cfg.ConfigPath, cfg.GetLogger())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

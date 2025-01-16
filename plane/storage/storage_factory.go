@@ -229,7 +229,7 @@ func (s *DefaultStorageFactory) getStorageGroupResource(groupResource schema.Gro
 	return groupResource
 }
 
-// New finds the storage destination for the given group and resource. It will
+// NewConfig finds the storage destination for the given group and resource. It will
 // return an error if the group has no storage destination configured.
 func (s *DefaultStorageFactory) NewConfig(groupResource schema.GroupResource, example runtime.Object) (*storagebackend.ConfigForResource, error) {
 	chosenStorageResource := s.getStorageGroupResource(groupResource)
@@ -348,9 +348,7 @@ func backends(storageConfig storagebackend.Config, grOverrides map[schema.GroupR
 	backends := []Backend{}
 	for server := range servers {
 		backends = append(backends, Backend{
-			Server: server,
-			// We can't share TLSConfig across different backends to avoid races.
-			// For more details see: https://pr.k8s.io/59338
+			Server:    server,
 			TLSConfig: tlsConfig.Clone(),
 		})
 	}

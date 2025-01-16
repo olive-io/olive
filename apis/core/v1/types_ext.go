@@ -29,10 +29,6 @@ func (m *Runner) ID() string {
 	return m.Name
 }
 
-func (m *RunnerStatistics) ID() string {
-	return m.Name
-}
-
 func (m *Process) NeedScheduler() bool {
 	switch m.Status.Phase {
 	case ProcessPending, ProcessPrepare:

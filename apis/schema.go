@@ -36,13 +36,16 @@ var (
 	Scheme = krt.NewScheme()
 	// Codecs provides methods for retrieving codecs and serializers for specific
 	// versions and content types.
-	Codecs = serializer.CodecFactory{}
+	Codecs = serializer.NewCodecFactory(Scheme)
 
+	ParameterScheme = krt.NewScheme()
 	// ParameterCodec handles versioning of objects that are converted to query parameters.
-	ParameterCodec krt.ParameterCodec
+	ParameterCodec = krt.NewParameterCodec(ParameterScheme)
 )
 
 func init() {
+	metav1.AddMetaToScheme(ParameterScheme)
+
 	unversioned := schema.GroupVersion{Group: "", Version: "v1"}
 	metav1.AddToGroupVersion(Scheme, unversioned)
 	Scheme.AddUnversionedTypes(unversioned,
@@ -52,9 +55,6 @@ func init() {
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
 	)
-
-	Codecs = serializer.NewCodecFactory(Scheme)
-	ParameterCodec = krt.NewParameterCodec(Scheme)
 }
 
 func FromGVK(s string) schema.GroupVersionKind {

@@ -51,7 +51,7 @@ func NewRunnerOptions(stdout, stderr io.Writer) *DefaultOptions {
 func (o *DefaultOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.Name, "name", o.Name, "Set the name of olive-runner.")
 	fs.StringVar(&o.DataDir, "data-dir", o.DataDir, "Path to the data directory.")
-	fs.StringVar(&o.ConfigPath, "oliveconfig", o.ConfigPath, "Set the file path from configuration the cluster of olive-mon")
+	fs.StringVar(&o.OliveConfig, "oliveconfig", o.OliveConfig, "Set the file path from configuration the cluster of olive-plane")
 	fs.StringVar(&o.ListenURL, "listen-url", o.ListenURL, "Set the URL to listen on for client traffic.")
 	fs.StringVar(&o.AdvertiseURL, "advertise-url", o.AdvertiseURL, "Set advertise URL to listen on for client traffic.")
 

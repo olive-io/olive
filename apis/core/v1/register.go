@@ -57,13 +57,9 @@ func init() {
 }
 
 func addKnownTypes(scheme *krt.Scheme) error {
-	if err := scheme.AddIgnoredConversionType(&metav1.TypeMeta{}, &metav1.TypeMeta{}); err != nil {
-		return err
-	}
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Runner{},
 		&RunnerList{},
-		&RunnerStatistics{},
 		&Namespace{},
 		&NamespaceList{},
 		&Definition{},
@@ -71,6 +67,10 @@ func addKnownTypes(scheme *krt.Scheme) error {
 		&Process{},
 		&ProcessList{},
 	)
+
+	// Add common types
+	scheme.AddKnownTypes(SchemeGroupVersion, &metav1.Status{})
+
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

@@ -26,7 +26,6 @@ package v1
 // RunnerSpecApplyConfiguration represents a declarative configuration of the RunnerSpec type for use
 // with apply.
 type RunnerSpecApplyConfiguration struct {
-	ID          *int64            `json:"id,omitempty"`
 	Hostname    *string           `json:"hostname,omitempty"`
 	HeartbeatMs *int64            `json:"heartbeatMs,omitempty"`
 	ListenURL   *string           `json:"listenURL,omitempty"`
@@ -38,14 +37,6 @@ type RunnerSpecApplyConfiguration struct {
 // apply.
 func RunnerSpec() *RunnerSpecApplyConfiguration {
 	return &RunnerSpecApplyConfiguration{}
-}
-
-// WithID sets the ID field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ID field is set to the value of the last call.
-func (b *RunnerSpecApplyConfiguration) WithID(value int64) *RunnerSpecApplyConfiguration {
-	b.ID = &value
-	return b
 }
 
 // WithHostname sets the Hostname field in the declarative configuration to the given value

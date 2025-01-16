@@ -55,43 +55,35 @@ type Runner struct {
 
 // RunnerSpec is the specification of a Runner.
 type RunnerSpec struct {
-	// ID is the member ID for this member.
-	ID int64 `json:"id" protobuf:"varint,1,opt,name=id"`
 	// hostname is the host name get by os.Hostname().
-	Hostname    string `json:"hostname" protobuf:"bytes,2,opt,name=hostname"`
-	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,3,opt,name=heartbeatMs"`
+	Hostname    string `json:"hostname" protobuf:"bytes,1,opt,name=hostname"`
+	HeartbeatMs int64  `json:"heartbeatMs" protobuf:"varint,2,opt,name=heartbeatMs"`
 	// peerURL is the URL the member exposes to the cluster for communication.
-	ListenURL string `json:"listenURL" protobuf:"bytes,4,opt,name=listenURL"`
-	Version   string `json:"version" protobuf:"bytes,5,opt,name=version"`
+	ListenURL string `json:"listenURL" protobuf:"bytes,3,opt,name=listenURL"`
+	Version   string `json:"version" protobuf:"bytes,4,opt,name=version"`
 
-	Features map[string]string `json:"features" protobuf:"bytes,6,rep,name=features"`
+	Features map[string]string `json:"features" protobuf:"bytes,5,rep,name=features"`
 }
 
 type RunnerStatus struct {
 	Phase   RunnerPhase `json:"phase" protobuf:"bytes,1,opt,name=phase,casttype=RunnerPhase"`
 	Message string      `json:"message" protobuf:"bytes,2,opt,name=message"`
 
-	CpuTotal    float64 `json:"cpuTotal" protobuf:"fixed64,3,opt,name=cpuTotal"`
-	MemoryTotal float64 `json:"memoryTotal" protobuf:"fixed64,4,opt,name=memoryTotal"`
-	DiskSize    int64   `json:"diskSize" protobuf:"varint,5,opt,name=diskSize"`
+	CpuSocket   int32   `json:"cpuSocket" protobuf:"varint,3,opt,name=cpuSocket"`
+	CpuTotal    float64 `json:"cpuTotal" protobuf:"fixed64,4,opt,name=cpuTotal"`
+	MemoryTotal float64 `json:"memoryTotal" protobuf:"fixed64,5,opt,name=memoryTotal"`
+	DiskSize    int64   `json:"diskSize" protobuf:"varint,6,opt,name=diskSize"`
 
-	Stat RunnerStatistics `json:"stat" protobuf:"bytes,6,opt,name=stat"`
+	Stat RunnerStatistics `json:"stat" protobuf:"bytes,7,opt,name=stat"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// RunnerStatistics is the stat information of Runner
 type RunnerStatistics struct {
-	metav1.TypeMeta `json:",inline"`
+	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,1,opt,name=cpuUsed"`
+	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,2,opt,name=memoryUsed"`
 
-	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	BpmnStat *BpmnStatistics `json:"bpmnStat,omitempty" protobuf:"bytes,3,opt,name=bpmnStat"`
 
-	CpuUsed    float64 `json:"cpuUsed,omitempty" protobuf:"fixed64,2,opt,name=cpuUsed"`
-	MemoryUsed float64 `json:"memoryUsed,omitempty" protobuf:"fixed64,3,opt,name=memoryUsed"`
-
-	BpmnStat *BpmnStatistics `json:"bpmnStat,omitempty" protobuf:"bytes,4,opt,name=bpmnStat"`
-
-	Timestamp int64 `json:"timestamp,omitempty" protobuf:"varint,5,opt,name=timestamp"`
+	Timestamp int64 `json:"timestamp,omitempty" protobuf:"varint,4,opt,name=timestamp"`
 }
 
 type BpmnStatistics struct {

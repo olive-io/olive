@@ -40,22 +40,18 @@ import (
 	"github.com/olive-io/olive/apis"
 	corev1 "github.com/olive-io/olive/apis/core/v1"
 	corevalidation "github.com/olive-io/olive/apis/core/validation"
-	"github.com/olive-io/olive/pkg/idutil"
 )
 
 // runnerStrategy implements verification logic for Runner.
 type runnerStrategy struct {
 	runtime.ObjectTyper
 	names.NameGenerator
-
-	ring *idutil.Ring
 }
 
-func createStrategy(ring *idutil.Ring) *runnerStrategy {
+func createStrategy() *runnerStrategy {
 	strategy := &runnerStrategy{
 		ObjectTyper:   apis.Scheme,
 		NameGenerator: names.SimpleNameGenerator,
-		ring:          ring,
 	}
 
 	return strategy
@@ -100,12 +96,12 @@ func (rs *runnerStrategy) PrepareForCreate(ctx context.Context, obj runtime.Obje
 		return
 	}
 
-	nextId := rs.ring.Next(ctx)
-	runner.Name = fmt.Sprintf("runner%d", nextId)
-	runner.Spec.ID = int64(nextId)
-	runner.Status = corev1.RunnerStatus{
-		Phase: corev1.RunnerPending,
-	}
+	//nextId := rs.ring.Next(ctx)
+	//runner.Name = fmt.Sprintf("runner%d", nextId)
+	//runner.Spec.ID = int64(nextId)
+	//runner.Status = corev1.RunnerStatus{
+	//	Phase: corev1.RunnerPending,
+	//}
 
 	runner.Generation = 1
 }
@@ -124,8 +120,6 @@ func (rs *runnerStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime
 }
 
 func (rs *runnerStrategy) PrepareForDelete(ctx context.Context, obj runtime.Object) error {
-	runner := obj.(*corev1.Runner)
-	rs.ring.Recycle(ctx, uint64(runner.Spec.ID))
 	return nil
 }
 

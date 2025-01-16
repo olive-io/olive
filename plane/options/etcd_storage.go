@@ -515,7 +515,6 @@ func NewStorageFactoryConfig() *StorageFactoryConfig {
 		// version still needs to be supported for one release.
 		//
 		corev1.Resource("runners").WithVersion("v1"),
-		corev1.Resource("regions").WithVersion("v1"),
 		corev1.Resource("definitions").WithVersion("v1"),
 		corev1.Resource("processes").WithVersion("v1"),
 	}

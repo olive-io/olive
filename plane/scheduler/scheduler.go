@@ -54,10 +54,10 @@ type Scheduler struct {
 
 	runnerQ internalrunner.SchedulingQueue
 
-	// definitionQ is a rate limited work queue. This is used to queue work to be
+	// processQ is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens.
-	definitionQ workqueue.RateLimitingInterface
-	processQ    workqueue.RateLimitingInterface
+	definitionQ workqueue.TypedRateLimitingInterface[any]
+	processQ    workqueue.TypedRateLimitingInterface[any]
 
 	messageC chan imessage
 }
@@ -76,13 +76,13 @@ func NewScheduler(
 
 	runnerQ := internalrunner.NewSchedulingQueue()
 
-	ratelimiter := workqueue.NewMaxOfRateLimiter(
-		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
-		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(50), 300)},
+	ratelimiter := workqueue.NewTypedMaxOfRateLimiter(
+		workqueue.NewTypedItemFastSlowRateLimiter[any](5*time.Millisecond, 1000*time.Second, 10),
+		&workqueue.TypedBucketRateLimiter[any]{Limiter: rate.NewLimiter(rate.Limit(50), 300)},
 	)
 
-	definitionQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
-	processQ := workqueue.NewRateLimitingQueueWithConfig(ratelimiter, workqueue.RateLimitingQueueConfig{})
+	definitionQ := workqueue.NewTypedRateLimitingQueueWithConfig(ratelimiter, workqueue.TypedRateLimitingQueueConfig[any]{})
+	processQ := workqueue.NewTypedRateLimitingQueueWithConfig(ratelimiter, workqueue.TypedRateLimitingQueueConfig[any]{})
 
 	ctx, cancel := context.WithCancel(ctx)
 	scheduler := &Scheduler{
@@ -172,7 +172,7 @@ func (s *Scheduler) Start() error {
 
 	ctx := s.ctx
 
-	if ok := cache.WaitForNamedCacheSync("monitor-scheduler", ctx.Done(), informerSynced...); !ok {
+	if ok := cache.WaitForNamedCacheSync("plane-scheduler", ctx.Done(), informerSynced...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 

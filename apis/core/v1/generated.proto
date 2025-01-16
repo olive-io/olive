@@ -224,33 +224,27 @@ message RunnerList {
 
 // RunnerSpec is the specification of a Runner.
 message RunnerSpec {
-  // ID is the member ID for this member.
-  optional int64 id = 1;
-
   // hostname is the host name get by os.Hostname().
-  optional string hostname = 2;
+  optional string hostname = 1;
 
-  optional int64 heartbeatMs = 3;
+  optional int64 heartbeatMs = 2;
 
   // peerURL is the URL the member exposes to the cluster for communication.
-  optional string listenURL = 4;
+  optional string listenURL = 3;
 
-  optional string version = 5;
+  optional string version = 4;
 
-  map<string, string> features = 6;
+  map<string, string> features = 5;
 }
 
-// RunnerStatistics is the stat information of Runner
 message RunnerStatistics {
-  optional string name = 1;
+  optional double cpuUsed = 1;
 
-  optional double cpuUsed = 2;
+  optional double memoryUsed = 2;
 
-  optional double memoryUsed = 3;
+  optional BpmnStatistics bpmnStat = 3;
 
-  optional BpmnStatistics bpmnStat = 4;
-
-  optional int64 timestamp = 5;
+  optional int64 timestamp = 4;
 }
 
 message RunnerStatus {
@@ -258,12 +252,14 @@ message RunnerStatus {
 
   optional string message = 2;
 
-  optional double cpuTotal = 3;
+  optional int32 cpuSocket = 3;
 
-  optional double memoryTotal = 4;
+  optional double cpuTotal = 4;
 
-  optional int64 diskSize = 5;
+  optional double memoryTotal = 5;
 
-  optional RunnerStatistics stat = 6;
+  optional int64 diskSize = 6;
+
+  optional RunnerStatistics stat = 7;
 }
 

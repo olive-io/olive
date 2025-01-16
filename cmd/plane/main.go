@@ -32,8 +32,8 @@ import (
 )
 
 func main() {
-	defaultOptions := options.NewServerOptions(os.Stdout, os.Stderr)
 	ctx := genericapiserver.SetupSignalContext()
+	defaultOptions := options.NewServerOptions(os.Stdout, os.Stderr)
 	command := app.NewPlaneServer(ctx, defaultOptions, false)
 	os.Exit(cliutil.Run(command))
 }

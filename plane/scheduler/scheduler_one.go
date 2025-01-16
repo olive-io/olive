@@ -114,22 +114,14 @@ func (s *Scheduler) syncDefinitionHandler(ctx context.Context, key string) error
 		return nil
 	}
 
-	_ = logger
+	logger.V(4).Info("Sync definition '%s'", def.Name)
 
-	//if def.Spec.Region == 0 {
-	//	snapshot, ok := s.regionQ.Pop()
-	//	if !ok {
-	//		return nil
-	//	}
-	//	region := snapshot.Get()
-	//	def.Spec.Region = region.Spec.Id
-	//	_, err = s.clientSet.CoreV1().Definitions(namespace).Update(ctx, def, metav1.UpdateOptions{})
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	logger.Info(fmt.Sprintf("binding Definition %s to Region %s", def.Name, region.Name))
-	//}
+	def.Status.Phase = corev1.DefPending
+
+	_, err = s.clientSet.CoreV1().Definitions(def.Namespace).UpdateStatus(ctx, def, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

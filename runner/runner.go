@@ -39,7 +39,6 @@ import (
 
 	"github.com/olive-io/olive/apis"
 	"github.com/olive-io/olive/apis/rpc/runnerpb"
-	"github.com/olive-io/olive/client-go"
 	genericdaemon "github.com/olive-io/olive/pkg/daemon"
 	"github.com/olive-io/olive/runner/delegate"
 	"github.com/olive-io/olive/runner/gather"
@@ -61,10 +60,10 @@ type Runner struct {
 
 	cfg *Config
 
-	oct *clientgo.Client
-
 	be backend.IBackend
 	bs *storage.Storage
+
+	clientSet *clientSet
 
 	// bpmn process scheduler
 	sch *scheduler.Scheduler
@@ -78,10 +77,6 @@ func NewRunner(cfg *Config, scheme *krt.Scheme) (*Runner, error) {
 	lg := cfg.GetLogger()
 
 	lg.Debug("protected directory: " + cfg.DataDir)
-	oct, err := clientgo.New(cfg.clientConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	be, err := newBackend(cfg)
 	if err != nil {
@@ -99,9 +94,9 @@ func NewRunner(cfg *Config, scheme *krt.Scheme) (*Runner, error) {
 		cancel:  cancel,
 		cfg:     cfg,
 
-		oct: oct,
-		be:  be,
-		bs:  bs,
+		be:        be,
+		bs:        bs,
+		clientSet: newClientSet(cfg),
 	}
 
 	return runner, nil

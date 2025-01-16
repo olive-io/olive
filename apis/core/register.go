@@ -49,8 +49,16 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
-// Adds the list of known types to the given scheme.
 func addKnownTypes(scheme *krt.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion)
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Runner{},
+		&RunnerList{},
+		&Namespace{},
+		&NamespaceList{},
+		&Definition{},
+		&DefinitionList{},
+		&Process{},
+		&ProcessList{},
+	)
 	return nil
 }

@@ -32,6 +32,7 @@ import (
 type RunnerStatusApplyConfiguration struct {
 	Phase       *corev1.RunnerPhase                 `json:"phase,omitempty"`
 	Message     *string                             `json:"message,omitempty"`
+	CpuSocket   *int32                              `json:"cpuSocket,omitempty"`
 	CpuTotal    *float64                            `json:"cpuTotal,omitempty"`
 	MemoryTotal *float64                            `json:"memoryTotal,omitempty"`
 	DiskSize    *int64                              `json:"diskSize,omitempty"`
@@ -57,6 +58,14 @@ func (b *RunnerStatusApplyConfiguration) WithPhase(value corev1.RunnerPhase) *Ru
 // If called multiple times, the Message field is set to the value of the last call.
 func (b *RunnerStatusApplyConfiguration) WithMessage(value string) *RunnerStatusApplyConfiguration {
 	b.Message = &value
+	return b
+}
+
+// WithCpuSocket sets the CpuSocket field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the CpuSocket field is set to the value of the last call.
+func (b *RunnerStatusApplyConfiguration) WithCpuSocket(value int32) *RunnerStatusApplyConfiguration {
+	b.CpuSocket = &value
 	return b
 }
 

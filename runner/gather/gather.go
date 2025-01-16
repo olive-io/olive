@@ -78,8 +78,9 @@ func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, 
 	}
 	cpuInfos, _ := cpu.Info()
 	if len(cpuInfos) > 0 {
-		cpuTotal = uint64(cpus) * uint64(cpuInfos[0].Mhz)
+		cpuTotal = uint64(cpuInfos[0].Mhz)
 	}
+	sockets := cpus
 
 	vm, err := mem.VirtualMemory()
 	if err != nil {
@@ -91,6 +92,7 @@ func NewGather(ctx context.Context, cfg *Config, be backend.IBackend) (*Gather, 
 	runner.Spec.Hostname, _ = os.Hostname()
 	runner.Spec.Features = metrics.GetFeatures()
 	runner.Spec.Version = version.Version
+	runner.Status.CpuSocket = int32(sockets)
 	runner.Status.CpuTotal = float64(cpuTotal)
 	runner.Status.MemoryTotal = float64(vm.Total)
 
@@ -115,7 +117,6 @@ func (d *Gather) GetRunner() *corev1.Runner {
 
 func (d *Gather) GetStat() (*corev1.RunnerStatistics, error) {
 	rs := &corev1.RunnerStatistics{
-		Name: d.runner.Name,
 		BpmnStat: &corev1.BpmnStatistics{
 			Processes: int64(metrics.ProcessCounter.Get()),
 			Events:    int64(metrics.EventCounter.Get()),
@@ -128,7 +129,7 @@ func (d *Gather) GetStat() (*corev1.RunnerStatistics, error) {
 		return nil, fmt.Errorf("current cpu percent: %w", err)
 	}
 	if len(percents) > 0 {
-		rs.CpuUsed = percents[0] * d.runner.Status.CpuTotal
+		rs.CpuUsed = percents[0] * d.runner.Status.CpuTotal * float64(d.runner.Status.CpuSocket) / 100
 	}
 
 	vm, err := mem.VirtualMemory()
@@ -136,7 +137,7 @@ func (d *Gather) GetStat() (*corev1.RunnerStatistics, error) {
 		return nil, fmt.Errorf("current memory percent: %w", err)
 	}
 	if vm != nil {
-		rs.MemoryUsed = vm.UsedPercent * d.runner.Status.MemoryTotal
+		rs.MemoryUsed = vm.UsedPercent * d.runner.Status.MemoryTotal / 100
 	}
 
 	return rs, nil
