@@ -6,23 +6,23 @@ import (
 	json "github.com/bytedance/sonic"
 )
 
-func NewUnmarshaler[T any](rsp *Response) *Unmarshaler[T] {
+func NewUnmarshaler[T any](resp *Response) *Unmarshaler[T] {
 	m := &Unmarshaler[T]{
-		rsp: rsp,
+		resp: resp,
 	}
 	return m
 }
 
 type Unmarshaler[T any] struct {
-	rsp *Response
+	resp *Response
 }
 
 func (m *Unmarshaler[T]) To(target *T) error {
-	rsp := m.rsp
-	if len(rsp.Kvs) == 0 {
+	resp := m.resp
+	if len(resp.Kvs) == 0 {
 		return fmt.Errorf("%w: no data", ErrNotFound)
 	}
-	kv := rsp.Kvs[0]
+	kv := resp.Kvs[0]
 	err := json.Unmarshal(kv.Value, target)
 	if err != nil {
 		return err
@@ -31,8 +31,8 @@ func (m *Unmarshaler[T]) To(target *T) error {
 }
 
 func (m *Unmarshaler[T]) SliceTo(out *[]T) error {
-	rsp := m.rsp
-	for _, kv := range rsp.Kvs {
+	resp := m.resp
+	for _, kv := range resp.Kvs {
 		target := new(T)
 		err := json.Unmarshal(kv.Value, target)
 		if err != nil {

@@ -5,8 +5,7 @@ use (
 	api
 	client
 	gateway
-	plane
+	mon
 	pkg
 	runner
-	tools
 )

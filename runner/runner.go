@@ -295,12 +295,12 @@ func (r *Runner) watching() {
 func (r *Runner) getRev() int64 {
 	key := curRevKey
 
-	rsp, _ := r.be.Get(r.ctx, key)
-	if rsp == nil || len(rsp.Kvs) == 0 {
+	resp, _ := r.be.Get(r.ctx, key)
+	if resp == nil || len(resp.Kvs) == 0 {
 		return 0
 	}
 
-	value := rsp.Kvs[0].Value
+	value := resp.Kvs[0].Value
 	value = value[:8]
 	return int64(binary.LittleEndian.Uint64(value))
 }
@@ -327,12 +327,12 @@ func (r *Runner) processEvent(ctx context.Context, event *clientv3.Event) {
 	//if event.Type == clientv3.EventTypeDelete {
 	//	rev := event.Kv.CreateRevision
 	//	options := []clientv3.OpOption{clientv3.WithRev(rev)}
-	//	rsp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
+	//	resp, err := r.oct.Get(ctx, string(event.Kv.Key), options...)
 	//	if err != nil {
 	//		r.Logger().Error("get key-value")
 	//	}
-	//	if len(rsp.Kvs) > 0 {
-	//		event.Kv = rsp.Kvs[0]
+	//	if len(resp.Kvs) > 0 {
+	//		event.Kv = resp.Kvs[0]
 	//	}
 	//}
 	//switch {

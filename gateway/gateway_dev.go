@@ -75,10 +75,10 @@ func TestHandlerWrapper(lg *zap.Logger) consumer.HandlerWrapper {
 	return func(h consumer.HandlerFunc) consumer.HandlerFunc {
 		return func(ctx *consumer.Context) (any, error) {
 			start := time.Now()
-			rsp, err := h(ctx)
+			resp, err := h(ctx)
 			speed := time.Now().Sub(start)
 			lg.Info("handle task", zap.Stringer("speed", speed))
-			return rsp, err
+			return resp, err
 		}
 	}
 }

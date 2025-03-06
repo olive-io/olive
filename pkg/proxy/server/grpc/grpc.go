@@ -475,7 +475,7 @@ func (ps *ProxyServer) processRequest(stream grpc.ServerStream, service *service
 		}
 
 		// define the handler func
-		fn := func(ctx context.Context, req server.Request) (rsp any, err error) {
+		fn := func(ctx context.Context, req server.Request) (resp any, err error) {
 			defer func() {
 				if r := recover(); r != nil {
 					log.Error("panic recovered: ", r)
@@ -499,7 +499,7 @@ func (ps *ProxyServer) processRequest(stream grpc.ServerStream, service *service
 		statusCode := codes.OK
 		statusDesc := ""
 		// execute the handler
-		rsp, appErr := fn(ctx, r)
+		resp, appErr := fn(ctx, r)
 		if appErr != nil {
 			var errStatus *status.Status
 			switch verr := appErr.(type) {
@@ -521,7 +521,7 @@ func (ps *ProxyServer) processRequest(stream grpc.ServerStream, service *service
 			return errStatus.Err()
 		}
 
-		if err := stream.SendMsg(rsp); err != nil {
+		if err := stream.SendMsg(resp); err != nil {
 			return err
 		}
 

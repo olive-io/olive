@@ -1,0 +1,112 @@
+/*
+Copyright 2025 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package types;
+
+option go_package = "github.com/olive-io/olive/api/types;types";
+
+// Definition bpmn Definition
+message Definition {
+  int64 id = 1;
+
+  string name = 2;
+
+  string description = 3;
+
+  map<string, string> metadata = 4;
+
+  string content = 5;
+
+  int64 version = 6;
+
+  int64 createAt = 21;
+  int64 updateAt = 22;
+}
+
+message BpmnArgs {
+  map<string, string> headers = 1;
+
+  map<string, bytes> properties = 2;
+
+  map<string, bytes> dataObjects = 3;
+}
+
+message FlowNode {
+  string type = 1;
+
+  string id = 2;
+}
+
+message ProcessContext {
+  map<string, bytes> variables = 1;
+
+  map<string, bytes> dataObjects = 2;
+}
+
+message FlowNodeStat {
+  string id = 1;
+
+  string name = 2;
+
+  ProcessContext context = 3;
+
+  int32 retries = 4;
+
+  string message = 5;
+
+  int64 startTime = 6;
+
+  int64 endTime = 7;
+}
+
+message ProcessInstance {
+  int64 id = 1;
+
+  string name = 2;
+
+  BpmnArgs args = 3;
+
+  string definitionsId = 4;
+
+  int64 definitionsVersion = 5;
+
+  string definitionsProcess = 6;
+
+  string definitionsContent = 7;
+
+  ProcessContext context = 8;
+
+  repeated FlowNode flowNodes = 9;
+
+  map<string, FlowNodeStat> flowNodeStatMap = 10;
+
+  int32 attempts = 11;
+
+  int64 creationTimestamp = 12;
+
+  int64 endTimestamp = 13;
+
+  string status = 14;
+
+  string message = 15;
+}

@@ -128,12 +128,12 @@ func (h *HttpConsumer) Handle(ctx *Context) (any, error) {
 		},
 		Timeout: DefaultTimeout,
 	}
-	rsp, err := hc.Do(req)
+	resp, err := hc.Do(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "send request")
 	}
-	data, err := io.ReadAll(rsp.Body)
-	_ = rsp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
 	if err != nil {
 		return nil, errors.Newf("read response body: %v", err)
 	}

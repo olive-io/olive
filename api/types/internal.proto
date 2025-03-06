@@ -1,0 +1,103 @@
+/*
+Copyright 2025 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package types;
+
+option go_package = "github.com/olive-io/olive/api/types;types";
+
+message ResponseHeader {
+  uint64 clusterID = 1;
+  uint64 memberID = 2;
+  uint64 raftTerm = 3;
+}
+
+message Member {
+  // ID is the member ID for this member.
+  uint64 id = 1;
+
+  // Name is the human-readable name of the member. If the member is not started, the name will be an empty string.
+  string name = 2;
+
+  // PeerURLs is the list of URLs the member exposes to the cluster for communication.
+  repeated string peer_urls = 3;
+
+  // ClientURLs is the list of URLs the member exposes to clients for communication. If the member is not started, clientURLs will be empty.
+  repeated string client_urls = 4;
+
+  // isLearner indicates if the member is raft learner.
+  bool is_leader = 5;
+}
+
+// Monitor means olive-mon, the monitor component of olive system
+message Monitor {
+  uint64 cluster_id = 1;
+
+  uint64 leader = 2;
+
+  uint64 raftTerm = 3;
+
+  repeated Member members = 4;
+}
+
+// Runner means olive-runner, the runner component of olive system
+message Runner {
+  // Name is the human-readable name of the runner.
+  string name = 1;
+
+  // listenURL is the URL the runner is listening on.
+  string listenURL = 2;
+
+  string version = 3;
+
+  int64 heartbeatMs = 4;
+
+  string hostname = 5;
+
+  map<string, string> metadata = 6;
+
+  map<string, string> features = 7;
+
+  int32 cpu = 11;
+
+  int64 memory = 12;
+}
+
+message RunnerStat {
+  string name = 1;
+
+  double cpuUsed = 2;
+
+  double memoryUsed = 3;
+
+  uint64 bpmnProcesses = 4;
+
+  uint64 bpmnEvents = 5;
+
+  uint64 bpmnTasks = 6;
+
+  string state = 7;
+
+  string error = 8;
+
+  int64 timestamp = 9;
+}

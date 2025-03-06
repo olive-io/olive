@@ -51,7 +51,7 @@ var (
 type IClient interface {
 	Options() Options
 	NewRequest(service, endpoint string, req interface{}, reqOpts ...RequestOption) IRequest
-	Call(ctx context.Context, req IRequest, rsp interface{}, opts ...CallOption) error
+	Call(ctx context.Context, req IRequest, resp interface{}, opts ...CallOption) error
 	Stream(ctx context.Context, req IRequest, opts ...CallOption) (IStream, error)
 	String() string
 }

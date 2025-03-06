@@ -34,35 +34,35 @@ func extractGRPCEndpoint(method reflect.Method) *dsypb.Endpoint {
 		return nil
 	}
 
-	var rspType, reqType reflect.Type
+	var respType, reqType reflect.Type
 	var stream bool
 	mt := method.Type
 
 	in, out := mt.NumIn(), mt.NumOut()
 	if in == 3 && out == 2 {
 		reqType = mt.In(2)
-		rspType = mt.Out(0)
+		respType = mt.Out(0)
 	} else if in == 3 && out == 1 {
 		reqType = mt.In(1)
-		rspType = mt.In(2)
+		respType = mt.In(2)
 		stream = true
 	} else if in == 2 && out == 1 {
 		reqType = mt.In(1)
-		rspType = mt.In(1)
+		respType = mt.In(1)
 		stream = true
 	} else {
 		panic("invalid grpc endpoint")
 	}
 
 	// are we dealing with a stream?
-	switch rspType.Kind() {
+	switch respType.Kind() {
 	case reflect.Func, reflect.Interface:
 		stream = true
 	default:
 	}
 
 	request := extractGRPCBox(reqType, 0)
-	response := extractGRPCBox(rspType, 0)
+	response := extractGRPCBox(respType, 0)
 
 	ep := &dsypb.Endpoint{
 		Name:     method.Name,

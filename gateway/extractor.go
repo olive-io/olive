@@ -100,17 +100,17 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 				md[api.ContentTypeKey] = "application/yaml"
 			}
 		}
-		rsp := &dsypb.Box{Type: dsypb.BoxType_object}
+		resp := &dsypb.Box{Type: dsypb.BoxType_object}
 		if resp, ok := ep.Responses["200"]; ok {
 			content := resp.Content
 			if content.ApplicationJson != nil {
-				extractSchema(content.ApplicationJson.Schema, svc.Components, rsp)
+				extractSchema(content.ApplicationJson.Schema, svc.Components, resp)
 			}
 			if content.ApplicationXml != nil {
-				extractSchema(content.ApplicationXml.Schema, svc.Components, rsp)
+				extractSchema(content.ApplicationXml.Schema, svc.Components, resp)
 			}
 			if content.ApplicationYaml != nil {
-				extractSchema(content.ApplicationYaml.Schema, svc.Components, rsp)
+				extractSchema(content.ApplicationYaml.Schema, svc.Components, resp)
 			}
 		}
 
@@ -137,7 +137,7 @@ func extractOpenAPIDocs(svc *dsypb.OpenAPI) []*dsypb.Endpoint {
 		eps = append(eps, &dsypb.Endpoint{
 			Name:     name,
 			Request:  req,
-			Response: rsp,
+			Response: resp,
 			Metadata: md,
 		})
 	}

@@ -104,13 +104,13 @@ func (e *etcdRegistrar) registerNode(ctx context.Context, s *dsypb.Service, node
 		// missing lease, check if the key exists
 
 		// look for the existing key
-		rsp, err := e.client.Get(ctx, nodePath(prefix, namespace, s.Name, node.Id), clientv3.WithSerializable())
+		resp, err := e.client.Get(ctx, nodePath(prefix, namespace, s.Name, node.Id), clientv3.WithSerializable())
 		if err != nil {
 			return err
 		}
 
 		// get the existing lease
-		for _, kv := range rsp.Kvs {
+		for _, kv := range resp.Kvs {
 			if kv.Lease > 0 {
 				leaseID = clientv3.LeaseID(kv.Lease)
 
@@ -312,13 +312,13 @@ func (e *etcdRegistrar) Inject(ctx context.Context, endpoint *dsypb.Endpoint, op
 		// missing lease, check if the key exists
 
 		// look for the existing key
-		rsp, err := e.client.Get(ctx, endpointPath(prefix, namespace, id, sname), clientv3.WithSerializable())
+		resp, err := e.client.Get(ctx, endpointPath(prefix, namespace, id, sname), clientv3.WithSerializable())
 		if err != nil {
 			return err
 		}
 
 		// get the existing lease
-		for _, kv := range rsp.Kvs {
+		for _, kv := range resp.Kvs {
 			if kv.Lease > 0 {
 				leaseID = clientv3.LeaseID(kv.Lease)
 
@@ -447,16 +447,16 @@ func (e *etcdRegistrar) ListEndpoints(ctx context.Context, opts ...ListEndpoints
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
-	rsp, err := e.client.Get(ctx, key, listOpts...)
+	resp, err := e.client.Get(ctx, key, listOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rsp.Kvs) == 0 {
+	if len(resp.Kvs) == 0 {
 		return endpoints, nil
 	}
 
-	for _, n := range rsp.Kvs {
+	for _, n := range resp.Kvs {
 		ep := decodeEp(n.Value)
 		if ep == nil {
 			continue
@@ -489,18 +489,18 @@ func (e *etcdRegistrar) GetService(ctx context.Context, name string, opts ...Get
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
-	rsp, err := e.client.Get(ctx, servicePath(prefix, namespace, name), getOpts...)
+	resp, err := e.client.Get(ctx, servicePath(prefix, namespace, name), getOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rsp.Kvs) == 0 {
+	if len(resp.Kvs) == 0 {
 		return nil, ErrNotFound
 	}
 
 	serviceMap := map[string]*dsypb.Service{}
 
-	for _, n := range rsp.Kvs {
+	for _, n := range resp.Kvs {
 		if sn := decode(n.Value); sn != nil {
 			s, ok := serviceMap[sn.Version]
 			if !ok {
@@ -548,16 +548,16 @@ func (e *etcdRegistrar) ListServices(ctx context.Context, opts ...ListOption) ([
 		clientv3.WithPrefix(),
 		clientv3.WithSerializable(),
 	}
-	rsp, err := e.client.Get(ctx, key, listOpts...)
+	resp, err := e.client.Get(ctx, key, listOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rsp.Kvs) == 0 {
+	if len(resp.Kvs) == 0 {
 		return []*dsypb.Service{}, nil
 	}
 
-	for _, n := range rsp.Kvs {
+	for _, n := range resp.Kvs {
 		sn := decode(n.Value)
 		if sn == nil {
 			continue

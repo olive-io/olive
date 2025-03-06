@@ -35,9 +35,9 @@ import (
 
 // Client provides and manages an olive-meta client session.
 type Client struct {
-	Cluster
-	PlaneRPC
 	BpmnRPC
+	ClusterRPC
+	SystemRPC
 
 	*clientv3.Client
 
@@ -85,9 +85,9 @@ func newClient(cfg *Config) (*Client, error) {
 		client.callOpts = callOpts
 	}
 
-	client.Cluster = NewCluster(client)
-	client.PlaneRPC = NewPlaneRPC(client)
 	client.BpmnRPC = NewBpmnRPC(client)
+	client.ClusterRPC = NewCluster(client)
+	client.SystemRPC = NewSystemRPC(client)
 
 	return client, nil
 }
@@ -97,14 +97,14 @@ func (c *Client) ActiveEtcdClient() *clientv3.Client {
 }
 
 func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
-	meta, err := c.GetPlane(ctx)
+	meta, err := c.GetCluster(ctx)
 	if err != nil {
 		return nil, err
 	}
 	endpoints := make([]string, 0)
 	for _, member := range meta.Members {
-		if member.ID == meta.Leader {
-			endpoints = member.ClientURLs
+		if member.Id == meta.Leader {
+			endpoints = member.ClientUrls
 			break
 		}
 	}

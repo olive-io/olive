@@ -19,22 +19,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package client
+package main
 
 import (
-	"context"
+	"os"
 
-	pb "github.com/olive-io/olive/api/discoverypb"
+	"github.com/olive-io/olive/cmd/mon/app"
+	"github.com/olive-io/olive/pkg/cli"
 )
 
-// CallFunc represents the individual call func
-type CallFunc func(ctx context.Context, node *pb.Node, req IRequest, resp interface{}, opts CallOptions) error
-
-// CallWrapper is a low level wrapper for the CallFunc
-type CallWrapper func(CallFunc) CallFunc
-
-// Wrapper wraps a client and returns a client
-type Wrapper func(IClient) IClient
-
-// StreamWrapper wraps a Stream and returns the equivalent
-type StreamWrapper func(IStream) IStream
+func main() {
+	command := app.NewPlaneCommand(os.Stdout, os.Stderr)
+	os.Exit(cli.Run(command))
+}

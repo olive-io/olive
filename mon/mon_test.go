@@ -19,42 +19,30 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package grpc_test
+package mon
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	dsypb "github.com/olive-io/olive/api/gatewaypb"
-	"github.com/olive-io/olive/pkg/proxy/api"
-
-	"github.com/olive-io/olive/pkg/discovery/memory"
-	"github.com/olive-io/olive/pkg/proxy/client"
-	"github.com/olive-io/olive/pkg/proxy/client/grpc"
-	"github.com/olive-io/olive/pkg/proxy/client/selector"
+	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
-func TestCall(t *testing.T) {
-	discovery := memory.NewRegistrar()
-	so, err := selector.NewSelector(selector.Discovery(discovery))
+func TestNewOliveMetaServer(t *testing.T) {
+	cfg, cancel := TestConfig()
+	if !assert.NoError(t, cfg.Validate()) {
+		return
+	}
+	defer cancel()
+
+	s, err := NewPlane(cfg)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	cc, err := grpc.NewClient(client.Selector(so), client.Discovery(discovery))
+	err = s.Start(genericserver.SetupSignalHandler())
 	if !assert.NoError(t, err) {
 		return
 	}
-
-	body := &dsypb.TransmitRequest{Headers: map[string]string{"a": "b"}}
-	req := cc.NewRequest(api.DefaultService, "/discoverypb.Executor/Execute", body)
-	resp := &dsypb.TransmitResponse{}
-	err = cc.Call(context.TODO(), req, resp, client.WithAddress("127.0.0.1:15290"))
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	t.Logf("%v", resp)
 }

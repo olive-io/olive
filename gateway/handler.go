@@ -77,7 +77,7 @@ func (g *gatewayImpl) Transmit(ctx context.Context, req *pb.TransmitRequest) (*p
 	}
 
 	// define the handler func
-	fn := func(ctx *consumer.Context) (rsp any, err error) {
+	fn := func(ctx *consumer.Context) (resp any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
 				err = fmt.Errorf("panic recovered: %v", r)
@@ -86,8 +86,8 @@ func (g *gatewayImpl) Transmit(ctx context.Context, req *pb.TransmitRequest) (*p
 			}
 		}()
 
-		rsp, err = handler.Handle(ctx)
-		return rsp, err
+		resp, err = handler.Handle(ctx)
+		return resp, err
 	}
 
 	// wrap the handler func

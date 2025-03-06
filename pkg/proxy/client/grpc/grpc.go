@@ -161,7 +161,7 @@ func (g *grpcClient) next(request client.IRequest, opts client.CallOptions) (sel
 	return next, nil
 }
 
-func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
+func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IRequest, resp interface{}, opts client.CallOptions) error {
 	address := node.Address
 
 	header := make(map[string]string)
@@ -213,7 +213,7 @@ func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IReq
 		}
 
 		method := methodToGRPC(req.Service(), req.Endpoint())
-		invokeErr := cc.Invoke(ctx, method, req.Body(), rsp, grpcCallOptions...)
+		invokeErr := cc.Invoke(ctx, method, req.Body(), resp, grpcCallOptions...)
 		ch <- parseErr(invokeErr)
 	}()
 
@@ -227,7 +227,7 @@ func (g *grpcClient) call(ctx context.Context, node *dsypb.Node, req client.IReq
 	return grr
 }
 
-func (g *grpcClient) stream(ctx context.Context, node *dsypb.Node, req client.IRequest, rsp interface{}, opts client.CallOptions) error {
+func (g *grpcClient) stream(ctx context.Context, node *dsypb.Node, req client.IRequest, resp interface{}, opts client.CallOptions) error {
 	var header map[string]string
 
 	address := node.Address
@@ -341,7 +341,7 @@ func (g *grpcClient) stream(ctx context.Context, node *dsypb.Node, req client.IR
 	}
 
 	// set the stream as the response
-	val := reflect.ValueOf(rsp).Elem()
+	val := reflect.ValueOf(resp).Elem()
 	val.Set(reflect.ValueOf(stream).Elem())
 	return nil
 }
@@ -405,11 +405,11 @@ func (g *grpcClient) NewRequest(service, method string, req interface{}, reqOpts
 	return newGRPCRequest(service, method, req, g.opts.ContentType, reqOpts...)
 }
 
-func (g *grpcClient) Call(ctx context.Context, req client.IRequest, rsp interface{}, opts ...client.CallOption) error {
+func (g *grpcClient) Call(ctx context.Context, req client.IRequest, resp interface{}, opts ...client.CallOption) error {
 	if req == nil {
 		return errors.New("req is nil")
-	} else if rsp == nil {
-		return errors.New("rsp is nil")
+	} else if resp == nil {
+		return errors.New("resp is nil")
 	}
 
 	// make a copy of call opts
@@ -476,7 +476,7 @@ func (g *grpcClient) Call(ctx context.Context, req client.IRequest, rsp interfac
 		}
 
 		// make the call
-		err = gcall(ctx, node, req, rsp, callOpts)
+		err = gcall(ctx, node, req, resp, callOpts)
 		g.opts.Selector.Mark(service, node, err)
 		return err
 	}
@@ -589,10 +589,10 @@ func (g *grpcClient) Stream(ctx context.Context, req client.IRequest, opts ...cl
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case rsp := <-ch:
+		case resp := <-ch:
 			// if the call succeeded lets bail early
-			if rsp.err == nil {
-				return rsp.stream, nil
+			if resp.err == nil {
+				return resp.stream, nil
 			}
 
 			retry, rerr := callOpts.Retry(ctx, req, i, err)
@@ -601,10 +601,10 @@ func (g *grpcClient) Stream(ctx context.Context, req client.IRequest, opts ...cl
 			}
 
 			if !retry {
-				return nil, rsp.err
+				return nil, resp.err
 			}
 
-			grr = rsp.err
+			grr = resp.err
 		}
 	}
 

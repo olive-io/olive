@@ -27,12 +27,12 @@ import (
 	v3types "go.etcd.io/etcd/client/pkg/v3/types"
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/rpc/planepb"
-	corev1 "github.com/olive-io/olive/api/types/core/v1"
+	pb "github.com/olive-io/olive/api/rpc/monpb"
+	"github.com/olive-io/olive/api/types"
 )
 
 type (
-	Member                corev1.Member
+	Member                types.Member
 	MemberListResponse    pb.MemberListResponse
 	MemberAddResponse     pb.MemberAddResponse
 	MemberRemoveResponse  pb.MemberRemoveResponse
@@ -40,7 +40,7 @@ type (
 	MemberPromoteResponse pb.MemberPromoteResponse
 )
 
-type Cluster interface {
+type ClusterRPC interface {
 	// MemberList lists the current cluster membership.
 	MemberList(ctx context.Context) (*MemberListResponse, error)
 
@@ -65,7 +65,7 @@ type cluster struct {
 	callOpts []grpc.CallOption
 }
 
-func NewCluster(c *Client) Cluster {
+func NewCluster(c *Client) ClusterRPC {
 	api := &cluster{remote: RetryClusterClient(c)}
 	if c != nil {
 		api.callOpts = c.callOpts
@@ -73,7 +73,7 @@ func NewCluster(c *Client) Cluster {
 	return api
 }
 
-func NewClusterFromClusterClient(remote pb.ClusterClient, c *Client) Cluster {
+func NewClusterFromClusterClient(remote pb.ClusterClient, c *Client) ClusterRPC {
 	api := &cluster{remote: remote}
 	if c != nil {
 		api.callOpts = c.callOpts

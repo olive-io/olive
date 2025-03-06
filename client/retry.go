@@ -26,7 +26,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/olive-io/olive/api/rpc/planepb"
+	pb "github.com/olive-io/olive/api/rpc/monpb"
 )
 
 type retryPolicy uint8
@@ -78,26 +78,26 @@ func (rcc *retryClusterClient) MemberPromote(ctx context.Context, in *pb.MemberP
 	return rcc.cc.MemberPromote(ctx, in, opts...)
 }
 
-type retryPlaneClient struct {
-	rpc pb.PlaneRPCClient
+type retrySystemClient struct {
+	rpc pb.SystemRPCClient
 }
 
 // RetryPlaneClient implements a PlaneRPCClient.
-func RetryPlaneClient(conn *grpc.ClientConn) pb.PlaneRPCClient {
-	return &retryPlaneClient{
-		rpc: pb.NewPlaneRPCClient(conn),
+func RetryPlaneClient(conn *grpc.ClientConn) pb.SystemRPCClient {
+	return &retrySystemClient{
+		rpc: pb.NewSystemRPCClient(conn),
 	}
 }
 
-func (rmc *retryPlaneClient) GetPlane(ctx context.Context, in *pb.GetPlaneRequest, opts ...grpc.CallOption) (resp *pb.GetPlaneResponse, err error) {
-	return rmc.rpc.GetPlane(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rmc *retrySystemClient) GetCluster(ctx context.Context, in *pb.GetClusterRequest, opts ...grpc.CallOption) (resp *pb.GetClusterResponse, err error) {
+	return rmc.rpc.GetCluster(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryPlaneClient) ListRunner(ctx context.Context, in *pb.ListRunnerRequest, opts ...grpc.CallOption) (*pb.ListRunnerResponse, error) {
-	return rmc.rpc.ListRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rmc *retrySystemClient) ListRunners(ctx context.Context, in *pb.ListRunnersRequest, opts ...grpc.CallOption) (*pb.ListRunnersResponse, error) {
+	return rmc.rpc.ListRunners(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retryPlaneClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
+func (rmc *retrySystemClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
 	return rmc.rpc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 

@@ -7,7 +7,7 @@ replace (
 	github.com/olive-io/olive/client => ./client
 	github.com/olive-io/olive/gateway => ./gateway
 	github.com/olive-io/olive/pkg => ./pkg
-	github.com/olive-io/olive/plane => ./plane
+	github.com/olive-io/olive/mon => ./mon
 	github.com/olive-io/olive/runner => ./runner
 )
 
@@ -15,7 +15,7 @@ require (
 	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/gateway v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/pkg v0.1.1
-	github.com/olive-io/olive/plane v0.0.0-00010101000000-000000000000
+	github.com/olive-io/olive/mon v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/runner v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.8.1
 	go.etcd.io/etcd/server/v3 v3.5.17

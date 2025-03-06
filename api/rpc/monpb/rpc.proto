@@ -1,0 +1,268 @@
+/*
+Copyright 2023 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package monpb;
+
+option go_package = "github.com/olive-io/olive/api/rpc/monpb;monpb";
+
+import "github.com/olive-io/olive/api/types/internal.proto";
+import "github.com/olive-io/olive/api/types/bpmn.proto";
+
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+service Cluster {
+  // MemberAdd adds a member into the cluster.
+  rpc MemberAdd(MemberAddRequest) returns (MemberAddResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/add"
+      body: "*"
+    };
+  }
+
+  // MemberRemove removes an existing member from the cluster.
+  rpc MemberRemove(MemberRemoveRequest) returns (MemberRemoveResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/remove"
+      body: "*"
+    };
+  }
+
+  // MemberUpdate updates the member configuration.
+  rpc MemberUpdate(MemberUpdateRequest) returns (MemberUpdateResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/update"
+      body: "*"
+    };
+  }
+
+  // MemberList lists all the members in the cluster.
+  rpc MemberList(MemberListRequest) returns (MemberListResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/list"
+      body: "*"
+    };
+  }
+
+  // MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
+  rpc MemberPromote(MemberPromoteRequest) returns (MemberPromoteResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster/member/promote"
+      body: "*"
+    };
+  }
+}
+
+message MemberAddRequest {
+  // peerURLs is the list of URLs the added member will use to communicate with the cluster.
+  repeated string peerURLs = 1;
+  // isLearner indicates if the added member is raft learner.
+  bool isLearner = 2;
+}
+
+message MemberAddResponse {
+  types.ResponseHeader header = 1;
+  // member is the member information for the added member.
+  types.Member member = 2;
+  // members is a list of all members after adding the new member.
+  repeated types.Member members = 3;
+}
+
+message MemberRemoveRequest {
+  // ID is the member ID of the member to remove.
+  uint64 ID = 1;
+}
+
+message MemberRemoveResponse {
+  types.ResponseHeader header = 1;
+  // members is a list of all members after removing the member.
+  repeated types.Member members = 2;
+}
+
+message MemberUpdateRequest {
+  // ID is the member ID of the member to update.
+  uint64 ID = 1;
+  // peerURLs is the new list of URLs the member will use to communicate with the cluster.
+  repeated string peerURLs = 2;
+}
+
+message MemberUpdateResponse{
+  types.ResponseHeader header = 1;
+  // members is a list of all members after updating the member.
+  repeated types.Member members = 2;
+}
+
+message MemberListRequest {
+  bool linearizable = 1;
+}
+
+message MemberListResponse {
+  types.ResponseHeader header = 1;
+  // members is a list of all members associated with the cluster.
+  repeated types.Member members = 2;
+}
+
+message MemberPromoteRequest {
+  // ID is the member ID of the member to promote.
+  uint64 ID = 1;
+}
+
+message MemberPromoteResponse {
+  types.ResponseHeader header = 1;
+  // members is a list of all members after promoting the member.
+  repeated types.Member members = 2;
+}
+
+service SystemRPC {
+  rpc GetCluster(GetClusterRequest) returns (GetClusterResponse) {
+    option (google.api.http) = {
+      get: "/v1/cluster"
+    };
+  };
+  // Registry registers runner or update runner statistic
+  rpc Registry(RegistryRequest) returns (RegistryResponse) {
+    option (google.api.http) = {
+      post: "/v1/runners"
+      body: "*"
+    };
+  }
+  rpc ListRunners(ListRunnersRequest) returns (ListRunnersResponse) {
+    option (google.api.http) = {
+      get: "/v1/runners"
+    };
+  };
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner/{name}"
+    };
+  };
+}
+
+message GetClusterRequest {}
+
+message GetClusterResponse {
+  types.ResponseHeader header = 1;
+  types.Monitor monitor = 2;
+}
+
+message RegistryRequest {
+  types.Runner runner = 1;
+  types.RunnerStat stat = 2;
+}
+
+message RegistryResponse {
+  types.Runner runner = 1;
+}
+
+message ListRunnersRequest {}
+
+message ListRunnersResponse {
+  repeated types.Runner runners = 1;
+}
+
+message GetRunnerRequest {
+  string name = 1;
+}
+
+message GetRunnerResponse {
+  types.Runner runner = 1;
+  types.RunnerStat stat = 2;
+}
+
+service BpmnRPC {
+  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions"
+      body: "*"
+    };
+  };
+  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions"
+    };
+  };
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions/{id}"
+    };
+  };
+  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/remove"
+      body: "*"
+    };
+  };
+  rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/execute"
+      body: "*"
+    };
+  };
+}
+
+message DeployDefinitionRequest {
+  string name = 1;
+  string description = 2;
+  map<string, string> metadata = 3;
+  string content = 4;
+}
+
+message DeployDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+message ListDefinitionRequest {}
+
+message ListDefinitionResponse {
+  repeated types.Definition definitions = 1;
+}
+
+message GetDefinitionRequest {
+  string id = 1;
+  int64 version = 2;
+}
+
+message GetDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+message RemoveDefinitionRequest {
+  string id = 1;
+}
+
+message RemoveDefinitionResponse {
+  types.ResponseHeader header = 1;
+}
+
+message ExecuteDefinitionRequest {
+  string name = 1;
+  string definitionId = 2;
+  uint64 definitionVersion = 3;
+  map<string, string> header = 4;
+  map<string, bytes> properties = 5;
+  map<string, bytes> dataObjects = 6;
+}
+
+message ExecuteDefinitionResponse {
+  types.ProcessInstance instance = 1;
+}

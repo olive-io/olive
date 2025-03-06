@@ -111,25 +111,25 @@ func (g *Generator) set(id uint64) error {
 		return err
 	}
 	defer mu.Unlock(ctx)
-	rsp, err := g.client.Put(ctx, g.key, string(val))
+	resp, err := g.client.Put(ctx, g.key, string(val))
 	if err != nil {
 		return err
 	}
-	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+	atomic.StoreInt64(&g.rev, resp.Header.Revision)
 
 	return nil
 }
 
 func (g *Generator) load() error {
-	rsp, err := g.client.Get(g.ctx, g.key)
+	resp, err := g.client.Get(g.ctx, g.key)
 	if err != nil && !errors.Is(err, rpctypes.ErrKeyNotFound) {
 		return err
 	}
-	if len(rsp.Kvs) == 0 {
+	if len(resp.Kvs) == 0 {
 		return nil
 	}
-	val := rsp.Kvs[0].Value[0:8]
+	val := resp.Kvs[0].Value[0:8]
 	g.id = binary.LittleEndian.Uint64(val)
-	atomic.StoreInt64(&g.rev, rsp.Header.Revision)
+	atomic.StoreInt64(&g.rev, resp.Header.Revision)
 	return nil
 }

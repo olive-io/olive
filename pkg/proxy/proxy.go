@@ -114,7 +114,7 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 	}
 
 	if ep.Name == api.DefaultTaskURL {
-		rsp := &gatewaypb.TransmitResponse{}
+		resp := &gatewaypb.TransmitResponse{}
 		cr := p.cc.NewRequest(
 			service.Name,
 			service.Endpoint.Name,
@@ -122,10 +122,10 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		)
 
 		// make the call
-		if err = p.cc.Call(ctx, cr, rsp, callOpts...); err != nil {
+		if err = p.cc.Call(ctx, cr, resp, callOpts...); err != nil {
 			return nil, err
 		}
-		return rsp, nil
+		return resp, nil
 	}
 
 	hr = hr.WithContext(ctx)
@@ -183,7 +183,7 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 			request = NewMessage(br)
 		}
 
-		rsp := &Message{}
+		resp := &Message{}
 		rr := cc.NewRequest(
 			service.Name,
 			ep.Name,
@@ -192,12 +192,12 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		)
 
 		// make the call
-		if err = cc.Call(ctx, rr, rsp, callOpts...); err != nil {
+		if err = cc.Call(ctx, rr, resp, callOpts...); err != nil {
 			return nil, err
 		}
 
 		// marshall response
-		out, err = rsp.Marshal()
+		out, err = resp.Marshal()
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +216,7 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 		}
 
 		// create request/response
-		var rsp RawMessage
+		var resp RawMessage
 		rr := cc.NewRequest(
 			service.Name,
 			ep.Name,
@@ -224,12 +224,12 @@ func (p *proxy) Handle(ctx context.Context, req *gatewaypb.TransmitRequest) (*ga
 			client.WithContentType(ct),
 		)
 		// make the call
-		if err = cc.Call(ctx, rr, &rsp, callOpts...); err != nil {
+		if err = cc.Call(ctx, rr, &resp, callOpts...); err != nil {
 			return nil, err
 		}
 
 		// marshall response
-		out, err = rsp.MarshalJSON()
+		out, err = resp.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}

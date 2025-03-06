@@ -34,10 +34,10 @@ func TestDelegateForHttp(t *testing.T) {
 	}
 
 	ctx := context.TODO()
-	rsp, err := http.Call(ctx, req)
+	resp, err := http.Call(ctx, req)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Fatalf("result: %v", rsp.Result)
+	log.Fatalf("result: %v", resp.Result)
 }
