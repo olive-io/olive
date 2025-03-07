@@ -26,11 +26,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/olive-io/olive/mon/config"
 	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 func TestNewOliveMetaServer(t *testing.T) {
-	cfg, cancel := TestConfig()
+	cfg, cancel := config.TestConfig()
 	if !assert.NoError(t, cfg.Validate()) {
 		return
 	}

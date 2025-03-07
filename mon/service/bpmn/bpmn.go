@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The olive Authors
+Copyright 2025 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -19,14 +19,36 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package scheduler
+package bpmn
 
-import "errors"
+import (
+	"context"
 
-var (
-	ErrNoRegion       = errors.New("region not found")
-	ErrRegionNoSpace  = errors.New("region no space")
-	ErrNoRunner       = errors.New("runner not found")
-	ErrRunnerNotReady = errors.New("runner not ready")
-	ErrRunnerBusy     = errors.New("all of runners are busy")
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/pkg/v3/idutil"
+	"go.uber.org/zap"
+
+	"github.com/olive-io/olive/mon/scheduler"
 )
+
+type Service struct {
+	ctx context.Context
+
+	lg *zap.Logger
+
+	v3cli *clientv3.Client
+
+	sch scheduler.Scheduler
+}
+
+func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator, sch scheduler.Scheduler) (*Service, error) {
+
+	s := &Service{
+		ctx:   ctx,
+		lg:    lg,
+		v3cli: v3cli,
+		sch:   sch,
+	}
+
+	return s, nil
+}

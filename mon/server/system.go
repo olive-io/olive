@@ -74,7 +74,7 @@ func (rpc *systemRPC) ListRunners(ctx context.Context, req *pb.ListRunnersReques
 }
 
 func (rpc *systemRPC) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.GetRunnerResponse, error) {
-	runner, stat, err := rpc.s.GetRunner(ctx, req.Name)
+	runner, stat, err := rpc.s.GetRunner(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}

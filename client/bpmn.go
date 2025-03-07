@@ -31,14 +31,11 @@ import (
 
 	pb "github.com/olive-io/olive/api/rpc/monpb"
 	"github.com/olive-io/olive/api/types"
-
-	corev1 "github.com/olive-io/olive/api/types/core/v1"
-	metav1 "github.com/olive-io/olive/api/types/meta/v1"
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, id, name string, body []byte) (*types.Definition, error)
-	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, string, error)
+	DeployDefinition(ctx context.Context, name string, body []byte) (*types.Definition, error)
+	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, error)
 	GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error)
 	RemoveDefinition(ctx context.Context, id string) error
 	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
@@ -58,7 +55,7 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body []byte) (*types.Definition, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, body []byte) (*types.Definition, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -77,7 +74,6 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 	}
 
 	r := &pb.DeployDefinitionRequest{
-		Id:   id,
 		Name: name,
 		//Content: body,
 	}
@@ -86,33 +82,12 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id, name string, body [
 		return nil, toErr(ctx, err)
 	}
 
-	definition := &types.Definition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			UID:  id,
-		},
-		Content: string(body),
-		Version: resp.Version,
-	}
-
-	return definition, nil
+	return resp.Definition, nil
 }
 
 type ListDefinitionOption func(request *pb.ListDefinitionRequest)
 
-func WithLimit(limit int64) ListDefinitionOption {
-	return func(req *pb.ListDefinitionRequest) {
-		req.Limit = limit
-	}
-}
-
-func WithContinue(token string) ListDefinitionOption {
-	return func(req *pb.ListDefinitionRequest) {
-		req.Continue = token
-	}
-}
-
-func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, string, error) {
+func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, error) {
 	conn := bc.client.conn
 	in := pb.ListDefinitionRequest{}
 	for _, option := range options {
@@ -120,10 +95,10 @@ func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitio
 	}
 	resp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
 	if err != nil {
-		return nil, "", toErr(ctx, err)
+		return nil, toErr(ctx, err)
 	}
 
-	return resp.Definitions, resp.ContinueToken, nil
+	return resp.Definitions, nil
 }
 
 func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error) {

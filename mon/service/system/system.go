@@ -24,30 +24,39 @@ package system
 import (
 	"context"
 	"path/filepath"
+	"strconv"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/mon/scheduler"
 )
 
-const prefix = "/olive/v1/runners"
+const prefix = api.RunnerPrefix
 
 type Service struct {
 	ctx context.Context
 	lg  *zap.Logger
 
 	v3cli *clientv3.Client
+	idGen *idutil.Generator
+
+	sch scheduler.Scheduler
 }
 
-func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client) (*Service, error) {
+func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator, sch scheduler.Scheduler) (*Service, error) {
 	s := &Service{
 		ctx:   ctx,
 		lg:    lg,
 		v3cli: v3cli,
+		idGen: idGen,
+		sch:   sch,
 	}
 
 	return s, nil
@@ -85,7 +94,17 @@ func (s *Service) GetCluster(ctx context.Context) (*types.ResponseHeader, *types
 
 func (s *Service) Registry(ctx context.Context, runner *types.Runner, stat *types.RunnerStat) (*types.Runner, error) {
 
-	runnerKey := filepath.Join(prefix, runner.Name)
+	if runner.Id == 0 {
+		runner.Id = s.idGen.Next()
+
+		s.lg.Info("register new runner",
+			zap.Uint64("id", runner.Id),
+			zap.String("version", runner.Version),
+			zap.String("listen", runner.ListenURL),
+		)
+	}
+
+	runnerKey := filepath.Join(prefix, strconv.FormatUint(runner.Id, 10))
 	runnerBytes, err := proto.Marshal(runner)
 	if err != nil {
 		return nil, err
@@ -108,6 +127,9 @@ func (s *Service) Registry(ctx context.Context, runner *types.Runner, stat *type
 	if err != nil {
 		return nil, err
 	}
+
+	snapshot := scheduler.NewSnapshot(runner, stat)
+	s.sch.UpdateSnapshot(snapshot)
 
 	return runner, nil
 }
@@ -137,11 +159,9 @@ func (s *Service) ListRunners(ctx context.Context) ([]*types.Runner, error) {
 	return runners, nil
 }
 
-func (s *Service) GetRunner(ctx context.Context, name string) (*types.Runner, *types.RunnerStat, error) {
-	var runner *types.Runner
-	var stat *types.RunnerStat
+func (s *Service) GetRunner(ctx context.Context, id uint64) (*types.Runner, *types.RunnerStat, error) {
 
-	runnerKey := filepath.Join(prefix, name)
+	runnerKey := filepath.Join(prefix, strconv.FormatUint(id, 10))
 
 	opts := []clientv3.OpOption{
 		clientv3.WithSerializable(),
@@ -155,18 +175,21 @@ func (s *Service) GetRunner(ctx context.Context, name string) (*types.Runner, *t
 		return nil, nil, status.New(codes.NotFound, "runner not found").Err()
 	}
 
+	var runner *types.Runner
 	if err = proto.Unmarshal(resp.Kvs[0].Value, runner); err != nil {
 		return nil, nil, err
 	}
 
 	statKey := filepath.Join(runnerKey, "stat")
-	resp, err = s.v3cli.Get(ctx, statKey)
+	resp, err = s.v3cli.Get(ctx, statKey, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 	if resp.Kvs == nil || len(resp.Kvs) == 0 {
 		return nil, nil, status.New(codes.NotFound, "stat not found").Err()
 	}
+
+	var stat *types.RunnerStat
 	if err = proto.Unmarshal(resp.Kvs[0].Value, stat); err != nil {
 		return nil, nil, err
 	}

@@ -61,23 +61,25 @@ message Monitor {
 
 // Runner means olive-runner, the runner component of olive system
 message Runner {
+  uint64 id = 1;
+
   // Name is the human-readable name of the runner.
-  string name = 1;
+  string name = 2;
 
   // listenURL is the URL the runner is listening on.
-  string listenURL = 2;
+  string listenURL = 3;
 
-  string version = 3;
+  string version = 4;
 
-  int64 heartbeatMs = 4;
+  int64 heartbeatMs = 5;
 
-  string hostname = 5;
+  string hostname = 6;
 
-  map<string, string> metadata = 6;
+  map<string, string> metadata = 7;
 
-  map<string, string> features = 7;
+  map<string, string> features = 8;
 
-  int32 cpu = 11;
+  int64 cpu = 11;
 
   int64 memory = 12;
 }
@@ -89,15 +91,26 @@ message RunnerStat {
 
   double memoryUsed = 3;
 
-  uint64 bpmnProcesses = 4;
+  string state = 4;
 
-  uint64 bpmnEvents = 5;
+  string error = 5;
 
-  uint64 bpmnTasks = 6;
+  int64 timestamp = 6;
 
-  string state = 7;
+  uint64 bpmnProcesses = 7;
 
-  string error = 8;
+  uint64 bpmnTasks = 8;
+}
 
-  int64 timestamp = 9;
+enum EventType {
+  ExecuteProcess = 0;
+}
+
+message ExecuteProcessEvent {
+  int64 process = 1;
+}
+
+message RunnerEvent {
+  EventType type = 1;
+  ExecuteProcessEvent executeProcess = 2;
 }

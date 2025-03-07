@@ -23,16 +23,16 @@ package mon
 
 import (
 	"context"
-	"time"
 
 	"github.com/cockroachdb/errors"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
 	"go.uber.org/zap"
 
+	"github.com/olive-io/olive/mon/config"
 	"github.com/olive-io/olive/mon/leader"
+	"github.com/olive-io/olive/mon/scheduler"
 	"github.com/olive-io/olive/mon/server"
 	genericserver "github.com/olive-io/olive/pkg/server"
 )
@@ -40,23 +40,20 @@ import (
 type Monitor struct {
 	genericserver.IEmbedServer
 
-	cfg Config
+	cfg config.Config
 
 	lg *zap.Logger
 
 	etcd  *embed.Etcd
 	v3cli *clientv3.Client
 
-	idGen *idutil.Generator
-
 	notifier leader.Notifier
-
-	//scheduler *scheduler.Scheduler
+	sch      scheduler.Scheduler
 }
 
-func New(cfg Config) (*Monitor, error) {
+func New(cfg config.Config) (*Monitor, error) {
 
-	lg := cfg.Config.GetLogger()
+	lg := cfg.GetLogger()
 	embedServer := genericserver.NewEmbedServer(lg)
 
 	s := &Monitor{
@@ -78,7 +75,8 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	ec := mon.cfg.Config
 	ec.EnableGRPCGateway = true
 
-	handlers, register, err := server.ServersRegister(ctx, lg, mon.v3cli)
+	cfg := mon.cfg
+	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli, mon.notifier, mon.sch)
 	if err != nil {
 		return err
 	}
@@ -93,22 +91,22 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	<-etcd.Server.ReadyNotify()
 
 	v3cli := v3client.New(etcd.Server)
-	idGen := idutil.NewGenerator(uint16(etcd.Server.ID()), time.Now())
 	notifier := leader.NewNotify(etcd.Server)
 
-	//sLimit := scheduler.Limit{
-	//	RegionLimit:     p.cfg.RegionLimit,
-	//	DefinitionLimit: p.cfg.RegionDefinitionsLimit,
-	//}
-	//p.scheduler = scheduler.New(p.ctx, p.lg, p.v3cli, p.notifier, sLimit, p.StoppingNotify())
-	//if err = p.scheduler.Start(); err != nil {
-	//	return errors.Wrap(err, "start scheduler")
-	//}
+	var sch scheduler.Scheduler
+	sch, err = scheduler.New(lg, v3cli, notifier)
+	if err != nil {
+		return errors.Wrap(err, "create scheduler")
+	}
+
+	if err = sch.Start(ctx); err != nil {
+		return errors.Wrap(err, "start scheduler")
+	}
 
 	mon.etcd = etcd
 	mon.v3cli = v3cli
-	mon.idGen = idGen
 	mon.notifier = notifier
+	mon.sch = sch
 
 	mon.IEmbedServer.Destroy(mon.destroy)
 

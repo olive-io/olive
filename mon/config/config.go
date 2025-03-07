@@ -19,13 +19,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package mon
+package config
 
 import (
+	"hash/crc32"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"go.etcd.io/etcd/client/pkg/v3/types"
+	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.etcd.io/etcd/server/v3/embed"
 
 	"github.com/olive-io/olive/pkg/cli/flags"
@@ -193,4 +196,8 @@ func (cfg *Config) configFromCmdLine() error {
 	cfg.Config.ClusterState = cfg.clusterState.String()
 
 	return nil
+}
+
+func (cfg *Config) NewIdGenerator() *idutil.Generator {
+	return idutil.NewGenerator(uint16(crc32.NewIEEE().Sum32()), time.Now())
 }

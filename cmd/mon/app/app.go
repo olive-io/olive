@@ -28,12 +28,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/olive-io/olive/mon"
+	"github.com/olive-io/olive/mon/config"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
 )
 
-func NewPlaneCommand(stdout, stderr io.Writer) *cobra.Command {
-	cfg := mon.NewConfig()
+func NewMonCommand(stdout, stderr io.Writer) *cobra.Command {
+	cfg := config.NewConfig()
 	app := &cobra.Command{
 		Use:     "olive-mon",
 		Short:   "a component of olive",
@@ -64,7 +65,7 @@ func NewPlaneCommand(stdout, stderr io.Writer) *cobra.Command {
 	return app
 }
 
-func setup(cfg mon.Config) error {
+func setup(cfg config.Config) error {
 	if err := cfg.Validate(); err != nil {
 		return err
 	}

@@ -153,7 +153,7 @@ service SystemRPC {
   };
   rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
     option (google.api.http) = {
-      get: "/v1/runner/{name}"
+      get: "/v1/runners/{id}"
     };
   };
 }
@@ -181,7 +181,7 @@ message ListRunnersResponse {
 }
 
 message GetRunnerRequest {
-  string name = 1;
+  uint64 id = 1;
 }
 
 message GetRunnerResponse {

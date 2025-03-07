@@ -27,19 +27,19 @@ import (
 )
 
 type INode interface {
-	ID() string
+	ID() int64
 }
 
 type PriorityQueue[T INode] struct {
 	pq      priorityQueue[T]
-	m       map[string]*item[T]
+	store   map[int64]*item[T]
 	scoreFn ScoreFn[T]
 }
 
 func New[T INode](fn ScoreFn[T]) *PriorityQueue[T] {
 	queue := &PriorityQueue[T]{
 		pq:      priorityQueue[T]{},
-		m:       map[string]*item[T]{},
+		store:   map[int64]*item[T]{},
 		scoreFn: fn,
 	}
 
@@ -52,7 +52,7 @@ func (q *PriorityQueue[T]) Push(val T) {
 		fn:    q.scoreFn,
 	}
 	heap.Push(&q.pq, it)
-	q.m[val.ID()] = it
+	q.store[val.ID()] = it
 }
 
 func (q *PriorityQueue[T]) Pop() (any, bool) {
@@ -61,39 +61,39 @@ func (q *PriorityQueue[T]) Pop() (any, bool) {
 	}
 	x := heap.Pop(&q.pq)
 	it := x.(*item[T])
-	delete(q.m, it.value.ID())
+	delete(q.store, it.value.ID())
 	return it.value, true
 }
 
-func (q *PriorityQueue[T]) Get(id string) (any, bool) {
-	v, ok := q.m[id]
+func (q *PriorityQueue[T]) Get(id int64) (any, bool) {
+	v, ok := q.store[id]
 	if !ok {
 		return nil, false
 	}
 	return v.value, true
 }
 
-func (q *PriorityQueue[T]) Remove(id string) (any, bool) {
-	v, ok := q.m[id]
+func (q *PriorityQueue[T]) Remove(id int64) (any, bool) {
+	v, ok := q.store[id]
 	if !ok {
 		return nil, false
 	}
 	idx := v.index
 	x := heap.Remove(&q.pq, idx)
 	v = x.(*item[T])
-	delete(q.m, id)
+	delete(q.store, id)
 	return v.value, true
 }
 
 func (q *PriorityQueue[T]) Set(val T) {
-	v, ok := q.m[val.ID()]
+	v, ok := q.store[val.ID()]
 	if !ok {
 		q.Push(val)
 		return
 	}
 	v.value = val
 	q.pq.update(v, val, q.scoreFn)
-	q.m[val.ID()] = v
+	q.store[val.ID()] = v
 }
 
 func (q *PriorityQueue[T]) Len() int {
@@ -125,14 +125,14 @@ func (q *SyncPriorityQueue[T]) Pop() (any, bool) {
 	return result, ok
 }
 
-func (q *SyncPriorityQueue[T]) Get(id string) (any, bool) {
+func (q *SyncPriorityQueue[T]) Get(id int64) (any, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Get(id)
 	return result, ok
 }
 
-func (q *SyncPriorityQueue[T]) Remove(id string) (any, bool) {
+func (q *SyncPriorityQueue[T]) Remove(id int64) (any, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	result, ok := q.pq.Remove(id)

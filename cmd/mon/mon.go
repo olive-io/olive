@@ -29,6 +29,6 @@ import (
 )
 
 func main() {
-	command := app.NewPlaneCommand(os.Stdout, os.Stderr)
+	command := app.NewMonCommand(os.Stdout, os.Stderr)
 	os.Exit(cli.Run(command))
 }

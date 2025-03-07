@@ -42,3 +42,12 @@ func PbToMember(member *etcdserverpb.Member) *Member {
 		IsLeader:   member.IsLearner,
 	}
 }
+
+func (x *ProcessInstance) ToSnapshot() *ProcessSnapshot {
+	snapshot := &ProcessSnapshot{
+		Id:       x.Id,
+		Priority: x.Priority,
+		Status:   x.Status,
+	}
+	return snapshot
+}

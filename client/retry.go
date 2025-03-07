@@ -93,6 +93,10 @@ func (rmc *retrySystemClient) GetCluster(ctx context.Context, in *pb.GetClusterR
 	return rmc.rpc.GetCluster(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
+func (rmc *retrySystemClient) Registry(ctx context.Context, in *pb.RegistryRequest, opts ...grpc.CallOption) (*pb.RegistryResponse, error) {
+	return rmc.rpc.Registry(ctx, in, opts...)
+}
+
 func (rmc *retrySystemClient) ListRunners(ctx context.Context, in *pb.ListRunnersRequest, opts ...grpc.CallOption) (*pb.ListRunnersResponse, error) {
 	return rmc.rpc.ListRunners(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

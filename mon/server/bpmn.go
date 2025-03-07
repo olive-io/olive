@@ -21,4 +21,45 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package server
 
-type bpmnRPC struct{}
+import (
+	"context"
+
+	pb "github.com/olive-io/olive/api/rpc/monpb"
+	"github.com/olive-io/olive/mon/service/bpmn"
+)
+
+type bpmnRPC struct {
+	pb.UnimplementedBpmnRPCServer
+
+	s *bpmn.Service
+}
+
+func newBpmn(s *bpmn.Service) *bpmnRPC {
+	rpc := &bpmnRPC{s: s}
+	return rpc
+}
+
+func (b bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b bpmnRPC) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (*pb.ListDefinitionResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b bpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (*pb.GetDefinitionResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b bpmnRPC) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (*pb.RemoveDefinitionResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (b bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (*pb.ExecuteDefinitionResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}

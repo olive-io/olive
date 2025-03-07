@@ -79,34 +79,52 @@ message FlowNodeStat {
   int64 endTime = 7;
 }
 
+enum ProcessStatus {
+  Prepare = 0;
+  Ready = 1;
+  Running = 2;
+  Failed = 3;
+  Finished = 4;
+}
+
 message ProcessInstance {
   int64 id = 1;
 
   string name = 2;
 
-  BpmnArgs args = 3;
+  map<string, string> metadata = 3;
 
-  string definitionsId = 4;
+  int64 priority = 4;
 
-  int64 definitionsVersion = 5;
+  BpmnArgs args = 5;
 
-  string definitionsProcess = 6;
+  string definitionsId = 6;
 
-  string definitionsContent = 7;
+  int64 definitionsVersion = 7;
 
-  ProcessContext context = 8;
+  string definitionsProcess = 8;
 
-  repeated FlowNode flowNodes = 9;
+  string definitionsContent = 9;
 
-  map<string, FlowNodeStat> flowNodeStatMap = 10;
+  ProcessContext context = 10;
 
-  int32 attempts = 11;
+  repeated FlowNode flowNodes = 11;
 
-  int64 creationTimestamp = 12;
+  map<string, FlowNodeStat> flowNodeStatMap = 12;
 
-  int64 endTimestamp = 13;
+  int32 attempts = 13;
 
-  string status = 14;
+  int64 startAt = 21;
 
-  string message = 15;
+  int64 endAt = 22;
+
+  ProcessStatus status = 23;
+
+  string message = 24;
+}
+
+message ProcessSnapshot {
+  int64 id = 1;
+  int64 priority = 2;
+  ProcessStatus status = 3;
 }
