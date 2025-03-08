@@ -21,15 +21,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 syntax = "proto3";
 
-package monpb;
+package rpc.monpb;
 
-option go_package = "github.com/olive-io/olive/api/rpc/monpb;monpb";
-
-import "github.com/olive-io/olive/api/types/internal.proto";
-import "github.com/olive-io/olive/api/types/bpmn.proto";
-
+import "types/internal.proto";
+import "types/bpmn.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
+
+option go_package = "github.com/olive-io/olive/api/rpc/monpb;monpb";
+option java_multiple_files = true;
+option java_package = "io.olive.api.rpc.monpb";
+option java_outer_classname = "OliveRPCMonPb";
 
 service Cluster {
   // MemberAdd adds a member into the cluster.
@@ -139,10 +141,24 @@ service SystemRPC {
       get: "/v1/cluster"
     };
   };
-  // Registry registers runner or update runner statistic
-  rpc Registry(RegistryRequest) returns (RegistryResponse) {
+  // Register registers runner
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
     option (google.api.http) = {
-      post: "/v1/runners"
+      post: "/v1/runners/register"
+      body: "*"
+    };
+  }
+  // Disregister disregisters runner
+  rpc Disregister(DisregisterRequest) returns (DisregisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/runners/disregister"
+      body: "*"
+    };
+  }
+  // Heartbeat updates runner statistic
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {
+    option (google.api.http) = {
+      post: "/v1/runners/heartbeat"
       body: "*"
     };
   }
@@ -165,14 +181,27 @@ message GetClusterResponse {
   types.Monitor monitor = 2;
 }
 
-message RegistryRequest {
+message RegisterRequest {
   types.Runner runner = 1;
-  types.RunnerStat stat = 2;
 }
 
-message RegistryResponse {
+message RegisterResponse {
   types.Runner runner = 1;
 }
+
+message DisregisterRequest {
+  types.Runner runner = 1;
+}
+
+message DisregisterResponse {
+  types.Runner runner = 1;
+}
+
+message HeartbeatRequest {
+  types.RunnerStat stat = 1;
+}
+
+message HeartbeatResponse {}
 
 message ListRunnersRequest {}
 
@@ -196,7 +225,7 @@ service BpmnRPC {
       body: "*"
     };
   };
-  rpc ListDefinition(ListDefinitionRequest) returns (ListDefinitionResponse) {
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse) {
     option (google.api.http) = {
       get: "/v1/definitions"
     };
@@ -231,15 +260,19 @@ message DeployDefinitionResponse {
   types.Definition definition = 1;
 }
 
-message ListDefinitionRequest {}
+message ListDefinitionsRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
 
-message ListDefinitionResponse {
+message ListDefinitionsResponse {
   repeated types.Definition definitions = 1;
+  int64 total = 2;
 }
 
 message GetDefinitionRequest {
-  string id = 1;
-  int64 version = 2;
+  int64 id = 1;
+  uint64 version = 2;
 }
 
 message GetDefinitionResponse {
@@ -247,16 +280,17 @@ message GetDefinitionResponse {
 }
 
 message RemoveDefinitionRequest {
-  string id = 1;
+  int64 id = 1;
+  uint64 version = 2;
 }
 
 message RemoveDefinitionResponse {
-  types.ResponseHeader header = 1;
+  types.Definition definition = 1;
 }
 
 message ExecuteDefinitionRequest {
   string name = 1;
-  string definitionId = 2;
+  int64 definitionId = 2;
   uint64 definitionVersion = 3;
   map<string, string> header = 4;
   map<string, bytes> properties = 5;
@@ -264,5 +298,5 @@ message ExecuteDefinitionRequest {
 }
 
 message ExecuteDefinitionResponse {
-  types.ProcessInstance instance = 1;
+  types.ProcessInstance process = 1;
 }

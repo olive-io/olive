@@ -82,8 +82,8 @@ type retrySystemClient struct {
 	rpc pb.SystemRPCClient
 }
 
-// RetryPlaneClient implements a PlaneRPCClient.
-func RetryPlaneClient(conn *grpc.ClientConn) pb.SystemRPCClient {
+// RetrySystemClient implements a SystemRPCClient.
+func RetrySystemClient(conn *grpc.ClientConn) pb.SystemRPCClient {
 	return &retrySystemClient{
 		rpc: pb.NewSystemRPCClient(conn),
 	}
@@ -93,8 +93,16 @@ func (rmc *retrySystemClient) GetCluster(ctx context.Context, in *pb.GetClusterR
 	return rmc.rpc.GetCluster(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rmc *retrySystemClient) Registry(ctx context.Context, in *pb.RegistryRequest, opts ...grpc.CallOption) (*pb.RegistryResponse, error) {
-	return rmc.rpc.Registry(ctx, in, opts...)
+func (rmc *retrySystemClient) Register(ctx context.Context, in *pb.RegisterRequest, opts ...grpc.CallOption) (*pb.RegisterResponse, error) {
+	return rmc.rpc.Register(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retrySystemClient) Disregister(ctx context.Context, in *pb.DisregisterRequest, opts ...grpc.CallOption) (*pb.DisregisterResponse, error) {
+	return rmc.rpc.Disregister(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rmc *retrySystemClient) Heartbeat(ctx context.Context, in *pb.HeartbeatRequest, opts ...grpc.CallOption) (*pb.HeartbeatResponse, error) {
+	return rmc.rpc.Heartbeat(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rmc *retrySystemClient) ListRunners(ctx context.Context, in *pb.ListRunnersRequest, opts ...grpc.CallOption) (*pb.ListRunnersResponse, error) {
@@ -104,14 +112,6 @@ func (rmc *retrySystemClient) ListRunners(ctx context.Context, in *pb.ListRunner
 func (rmc *retrySystemClient) GetRunner(ctx context.Context, in *pb.GetRunnerRequest, opts ...grpc.CallOption) (resp *pb.GetRunnerResponse, err error) {
 	return rmc.rpc.GetRunner(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
-
-//func (rmc *retryPlaneClient) ListRegion(ctx context.Context, in *pb.ListRegionRequest, opts ...grpc.CallOption) (*pb.ListRegionResponse, error) {
-//	return rmc.mc.ListRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
-//
-//func (rmc *retryPlaneClient) GetRegion(ctx context.Context, in *pb.GetRegionRequest, opts ...grpc.CallOption) (*pb.GetRegionResponse, error) {
-//	return rmc.mc.GetRegion(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//}
 
 type retryBpmnClient struct {
 	bc pb.BpmnRPCClient
@@ -128,8 +128,8 @@ func (rbc *retryBpmnClient) DeployDefinition(ctx context.Context, in *pb.DeployD
 	return rbc.bc.DeployDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
-func (rbc *retryBpmnClient) ListDefinition(ctx context.Context, in *pb.ListDefinitionRequest, opts ...grpc.CallOption) (*pb.ListDefinitionResponse, error) {
-	return rbc.bc.ListDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+func (rbc *retryBpmnClient) ListDefinitions(ctx context.Context, in *pb.ListDefinitionsRequest, opts ...grpc.CallOption) (*pb.ListDefinitionsResponse, error) {
+	return rbc.bc.ListDefinitions(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
 func (rbc *retryBpmnClient) GetDefinition(ctx context.Context, in *pb.GetDefinitionRequest, opts ...grpc.CallOption) (*pb.GetDefinitionResponse, error) {
@@ -143,8 +143,3 @@ func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveD
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
 	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
-
-//func (rbc *retryBpmnClient) GetProcessInstance(ctx context.Context, in *pb.GetProcessInstanceRequest, opts ...grpc.CallOption) (resp *pb.GetProcessInstanceResponse, err error) {
-//	//return rbc.bc.GetProcessInstance(ctx, in, append(opts, withRetryPolicy(repeatable))...)
-//	return
-//}

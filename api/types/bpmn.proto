@@ -24,6 +24,9 @@ syntax = "proto3";
 package types;
 
 option go_package = "github.com/olive-io/olive/api/types;types";
+option java_multiple_files = true;
+option java_package = "io.olive.api.types";
+option java_outer_classname = "OliveTypes";
 
 // Definition bpmn Definition
 message Definition {
@@ -37,10 +40,9 @@ message Definition {
 
   string content = 5;
 
-  int64 version = 6;
+  uint64 version = 6;
 
-  int64 createAt = 21;
-  int64 updateAt = 22;
+  int64 timestamp = 21;
 }
 
 message BpmnArgs {
@@ -98,9 +100,9 @@ message ProcessInstance {
 
   BpmnArgs args = 5;
 
-  string definitionsId = 6;
+  int64 definitionsId = 6;
 
-  int64 definitionsVersion = 7;
+  uint64 definitionsVersion = 7;
 
   string definitionsProcess = 8;
 

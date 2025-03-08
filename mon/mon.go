@@ -44,11 +44,11 @@ type Monitor struct {
 
 	lg *zap.Logger
 
-	etcd  *embed.Etcd
-	v3cli *clientv3.Client
-
+	etcd     *embed.Etcd
+	v3cli    *clientv3.Client
 	notifier leader.Notifier
-	sch      scheduler.Scheduler
+
+	sch scheduler.Scheduler
 }
 
 func New(cfg config.Config) (*Monitor, error) {
@@ -76,7 +76,9 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	ec.EnableGRPCGateway = true
 
 	cfg := mon.cfg
-	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli, mon.notifier, mon.sch)
+
+	mon.v3cli = new(clientv3.Client)
+	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli, mon.sch)
 	if err != nil {
 		return err
 	}
@@ -88,13 +90,14 @@ func (mon *Monitor) Start(ctx context.Context) error {
 		return errors.Wrap(err, "start embed etcd")
 	}
 
+	*mon.v3cli = *v3client.New(etcd.Server)
+	mon.notifier = leader.NewNotify(etcd.Server)
+
 	<-etcd.Server.ReadyNotify()
+	leader.InitNotifier(etcd.Server)
+	mon.etcd = etcd
 
-	v3cli := v3client.New(etcd.Server)
-	notifier := leader.NewNotify(etcd.Server)
-
-	var sch scheduler.Scheduler
-	sch, err = scheduler.New(lg, v3cli, notifier)
+	sch, err := scheduler.New(lg, mon.v3cli, mon.notifier)
 	if err != nil {
 		return errors.Wrap(err, "create scheduler")
 	}
@@ -102,10 +105,6 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	if err = sch.Start(ctx); err != nil {
 		return errors.Wrap(err, "start scheduler")
 	}
-
-	mon.etcd = etcd
-	mon.v3cli = v3cli
-	mon.notifier = notifier
 	mon.sch = sch
 
 	mon.IEmbedServer.Destroy(mon.destroy)

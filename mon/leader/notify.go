@@ -23,6 +23,13 @@ package leader
 
 import (
 	"go.etcd.io/etcd/server/v3/etcdserver"
+
+	apiErr "github.com/olive-io/olive/api/errors"
+)
+
+var (
+	globalNotifier Notifier
+	readyc         = make(chan struct{}, 1)
 )
 
 type Notifier interface {
@@ -50,4 +57,38 @@ func (n *notifier) ReadyNotify() <-chan struct{} {
 func (n *notifier) IsLeader() bool {
 	lead := n.s.Leader()
 	return n.s.ID() == lead && lead != 0
+}
+
+func InitNotifier(e *etcdserver.EtcdServer) {
+	globalNotifier = NewNotify(e)
+
+	go func() {
+		select {
+		case <-readyc:
+			return
+		case <-globalNotifier.ReadyNotify():
+			close(readyc)
+		}
+	}()
+}
+
+// WaitReadyc returns global channel readyc
+func WaitReadyc() <-chan struct{} {
+	return readyc
+}
+
+func WaitUtilReady() {
+	select {
+	case <-readyc:
+	}
+}
+
+// RequestForReadyc returns error if embed etcd not ready
+func RequestForReadyc() error {
+	select {
+	case <-readyc:
+		return nil
+	default:
+		return apiErr.ErrNotReady("server is not ready for requesting")
+	}
 }

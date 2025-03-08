@@ -23,10 +23,7 @@ package client
 
 import (
 	"context"
-	"encoding/xml"
 
-	"github.com/cockroachdb/errors"
-	"github.com/olive-io/bpmn/schema"
 	"google.golang.org/grpc"
 
 	pb "github.com/olive-io/olive/api/rpc/monpb"
@@ -34,12 +31,11 @@ import (
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, name string, body []byte) (*types.Definition, error)
-	ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, error)
-	GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error)
-	RemoveDefinition(ctx context.Context, id string) error
-	ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
-	GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (*types.ProcessInstance, error)
+	DeployDefinition(ctx context.Context, name string, description string, metadata map[string]string, content string) (*types.Definition, error)
+	ListDefinitions(ctx context.Context, options ...ListDefinitionsOption) ([]*types.Definition, int64, error)
+	GetDefinition(ctx context.Context, id int64, version uint64) (*types.Definition, error)
+	RemoveDefinition(ctx context.Context, id int64) error
+	ExecuteDefinition(ctx context.Context, id int64, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
 }
 
 type bpmnRPC struct {
@@ -55,7 +51,7 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, body []byte) (*types.Definition, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, description string, metadata map[string]string, content string) (*types.Definition, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -68,14 +64,11 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, body []byt
 		}
 	}
 
-	var definitions schema.Definitions
-	if err := xml.Unmarshal([]byte(body), &definitions); err != nil {
-		return nil, errors.Wrap(ErrBadFormatDefinitions, err.Error())
-	}
-
 	r := &pb.DeployDefinitionRequest{
-		Name: name,
-		//Content: body,
+		Name:        name,
+		Description: description,
+		Metadata:    metadata,
+		Content:     content,
 	}
 	resp, err := bc.remoteClient(conn).DeployDefinition(ctx, r, bc.callOpts...)
 	if err != nil {
@@ -85,23 +78,30 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, body []byt
 	return resp.Definition, nil
 }
 
-type ListDefinitionOption func(request *pb.ListDefinitionRequest)
+type ListDefinitionsOption func(request *pb.ListDefinitionsRequest)
 
-func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionOption) ([]*types.Definition, error) {
+func ListWithPagination(page, size int32) ListDefinitionsOption {
+	return func(req *pb.ListDefinitionsRequest) {
+		req.Page = page
+		req.Size = size
+	}
+}
+
+func (bc *bpmnRPC) ListDefinitions(ctx context.Context, options ...ListDefinitionsOption) ([]*types.Definition, int64, error) {
 	conn := bc.client.conn
-	in := pb.ListDefinitionRequest{}
+	in := pb.ListDefinitionsRequest{}
 	for _, option := range options {
 		option(&in)
 	}
-	resp, err := bc.remoteClient(conn).ListDefinition(ctx, &in, bc.callOpts...)
+	resp, err := bc.remoteClient(conn).ListDefinitions(ctx, &in, bc.callOpts...)
 	if err != nil {
-		return nil, toErr(ctx, err)
+		return nil, 0, toErr(ctx, err)
 	}
 
-	return resp.Definitions, nil
+	return resp.Definitions, resp.Total, nil
 }
 
-func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version int64) (*types.Definition, error) {
+func (bc *bpmnRPC) GetDefinition(ctx context.Context, id int64, version uint64) (*types.Definition, error) {
 	conn := bc.client.conn
 	in := &pb.GetDefinitionRequest{
 		Id:      id,
@@ -115,7 +115,7 @@ func (bc *bpmnRPC) GetDefinition(ctx context.Context, id string, version int64) 
 	return resp.Definition, nil
 }
 
-func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
+func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id int64) error {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -138,15 +138,15 @@ func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id string) error {
 
 type ExecDefinitionOption func(request *pb.ExecuteDefinitionRequest)
 
-func WithVersion(version uint64) ExecDefinitionOption {
-	return func(req *pb.ExecuteDefinitionRequest) {
-		req.DefinitionVersion = version
-	}
-}
-
 func WithName(name string) ExecDefinitionOption {
 	return func(req *pb.ExecuteDefinitionRequest) {
 		req.Name = name
+	}
+}
+
+func WithVersion(version uint64) ExecDefinitionOption {
+	return func(req *pb.ExecuteDefinitionRequest) {
+		req.DefinitionVersion = version
 	}
 }
 
@@ -156,18 +156,29 @@ func WithHeaders(headers map[string]string) ExecDefinitionOption {
 	}
 }
 
-//func WithProperties(properties map[string]any) ExecDefinitionOption {
-//	return func(req *pb.ExecuteDefinitionRequest) {
-//		if req.Properties == nil {
-//			req.Properties = map[string]*dsypb.Box{}
-//		}
-//		for name, value := range properties {
-//			req.Properties[name] = dsypb.BoxFromAny(value)
-//		}
-//	}
-//}
+func WithProperties(properties map[string][]byte) ExecDefinitionOption {
+	return func(req *pb.ExecuteDefinitionRequest) {
+		if req.Properties == nil {
+			req.Properties = map[string][]byte{}
+		}
+		for name, value := range properties {
+			req.Properties[name] = value
+		}
+	}
+}
 
-func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...ExecDefinitionOption) (*types.ProcessInstance, error) {
+func WithDataObjects(objects map[string][]byte) ExecDefinitionOption {
+	return func(req *pb.ExecuteDefinitionRequest) {
+		if req.Properties == nil {
+			req.Properties = map[string][]byte{}
+		}
+		for name, value := range objects {
+			req.Properties[name] = value
+		}
+	}
+}
+
+func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id int64, options ...ExecDefinitionOption) (*types.ProcessInstance, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -188,33 +199,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id string, options ...
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return resp.Instance, nil
-}
-
-func (bc *bpmnRPC) GetProcessInstance(ctx context.Context, definitionId string, definitionVersion, id uint64) (instance *types.ProcessInstance, err error) {
-	//conn := bc.client.conn
-	//leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if len(leaderEndpoints) > 0 {
-	//	conn, err = bc.client.Dial(leaderEndpoints[0])
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
-	//in := &corev1.GetProcessInstanceRequest{
-	//	DefinitionId:      definitionId,
-	//	DefinitionVersion: definitionVersion,
-	//	Id:                id,
-	//}
-
-	//resp, err := bc.remoteClient(conn).GetProcessInstance(ctx, in, bc.callOpts...)
-	//if err != nil {
-	//	return nil, toErr(ctx, err)
-	//}
-	//return resp.Instance, nil
-	return
+	return resp.Process, nil
 }
 
 func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {

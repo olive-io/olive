@@ -25,6 +25,7 @@ import (
 	"context"
 
 	pb "github.com/olive-io/olive/api/rpc/monpb"
+	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/mon/service/bpmn"
 )
 
@@ -39,27 +40,79 @@ func newBpmn(s *bpmn.Service) *bpmnRPC {
 	return rpc
 }
 
-func (b bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (rpc *bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
+	definition := &types.Definition{
+		Id:          0,
+		Name:        req.Name,
+		Description: req.Description,
+		Metadata:    req.Metadata,
+		Content:     req.Content,
+	}
+
+	var err error
+	definition, err = rpc.s.DeployDefinition(ctx, definition)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.DeployDefinitionResponse{
+		Definition: definition,
+	}
+	return resp, nil
 }
 
-func (b bpmnRPC) ListDefinition(ctx context.Context, req *pb.ListDefinitionRequest) (*pb.ListDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (rpc *bpmnRPC) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (*pb.ListDefinitionsResponse, error) {
+	definitions, total, err := rpc.s.ListDefinitions(ctx, req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.ListDefinitionsResponse{
+		Definitions: definitions,
+		Total:       total,
+	}
+	return resp, nil
 }
 
-func (b bpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (*pb.GetDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (rpc *bpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (*pb.GetDefinitionResponse, error) {
+	definition, err := rpc.s.GetDefinition(ctx, req.Id, req.Version)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.GetDefinitionResponse{
+		Definition: definition,
+	}
+	return resp, nil
 }
 
-func (b bpmnRPC) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (*pb.RemoveDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (rpc *bpmnRPC) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (*pb.RemoveDefinitionResponse, error) {
+	definition, err := rpc.s.RemoveDefinition(ctx, req.Id, req.Version)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.RemoveDefinitionResponse{
+		Definition: definition,
+	}
+	return resp, nil
 }
 
-func (b bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (*pb.ExecuteDefinitionResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (rpc *bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (*pb.ExecuteDefinitionResponse, error) {
+	process := &types.ProcessInstance{
+		Name:     req.Name,
+		Metadata: make(map[string]string),
+		Args: &types.BpmnArgs{
+			Headers:     req.Header,
+			Properties:  req.Properties,
+			DataObjects: req.DataObjects,
+		},
+		DefinitionsId:      req.DefinitionId,
+		DefinitionsVersion: req.DefinitionVersion,
+	}
+	var err error
+	process, err = rpc.s.ExecuteDefinition(ctx, process)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.ExecuteDefinitionResponse{
+		Process: process,
+	}
+	return resp, nil
 }

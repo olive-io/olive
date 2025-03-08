@@ -23,6 +23,7 @@ package api
 
 const (
 	RunnerPrefix     = "/olive/v1/runners"
+	RunnerStatPrefix = "/olive/v1/runnerStat"
 	DefinitionPrefix = "/olive/v1/definitions"
 	ProcessPrefix    = "/olive/v1/processes"
 

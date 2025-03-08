@@ -23,13 +23,15 @@ syntax = "proto3";
 
 package runnerpb;
 
-import "github.com/olive-io/olive/api/types/meta/v1/generated.proto";
-import "github.com/olive-io/olive/api/types/core/v1/generated.proto";
-
-option go_package = "github.com/olive-io/olive/api/runnerpb;runnerpb";
-
+import "types/internal.proto";
+import "types/bpmn.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
+
+option go_package = "github.com/olive-io/olive/api/rpc/runnerpb;runnerpb";
+option java_multiple_files = true;
+option java_package = "io.olive.api.rpc.runnerpb";
+option java_outer_classname = "OliveRPCRunnerPb";
 
 service RunnerRPC {
   rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
@@ -72,48 +74,13 @@ service RunnerRPC {
       body: "*"
     };
   };
-
-  rpc List(ListRequest) returns (ListResponse) {
-    option (google.api.http) = {
-      post: "/v1/objects/list"
-      body: "*"
-    };
-  }
-
-  rpc Get(GetRequest) returns (GetResponse) {
-    option (google.api.http) = {
-      post: "/v1/objects/get"
-      body: "*"
-    };
-  }
-
-  rpc Post(PostRequest) returns (PostResponse) {
-    option (google.api.http) = {
-      post: "/v1/objects/post"
-      body: "*"
-    };
-  }
-
-  rpc Patch(PatchRequest) returns (PatchResponse) {
-    option (google.api.http) = {
-      post: "/v1/objects/patch"
-      body: "*"
-    };
-  }
-
-  rpc Delete(DeleteRequest) returns (DeleteResponse) {
-    option (google.api.http) = {
-      post: "/v1/objects/delete"
-      body: "*"
-    };
-  }
 }
 
 message GetRunnerRequest {}
 
 message GetRunnerResponse {
-  github.com.olive_io.olive.api.types.core.v1.Runner runner = 1;
-  github.com.olive_io.olive.api.types.core.v1.RunnerStatistics statistics = 2;
+  types.Runner runner = 1;
+  types.RunnerStat statistics = 2;
 }
 
 message ListDefinitionsRequest {
@@ -121,7 +88,7 @@ message ListDefinitionsRequest {
 }
 
 message ListDefinitionsResponse {
-  github.com.olive_io.olive.api.types.core.v1.DefinitionList list = 1;
+  types.Definition list = 1;
 }
 
 message GetDefinitionRequest {
@@ -130,7 +97,7 @@ message GetDefinitionRequest {
 }
 
 message GetDefinitionResponse {
-  github.com.olive_io.olive.api.types.core.v1.Definition definition = 1;
+  types.Definition definition = 1;
 }
 
 message ListProcessInstancesRequest {
@@ -139,7 +106,7 @@ message ListProcessInstancesRequest {
 }
 
 message ListProcessInstancesResponse {
-  github.com.olive_io.olive.api.types.core.v1.ProcessInstanceList list = 1;
+  repeated types.Definition definitions = 1;
 }
 
 message GetProcessInstanceRequest {
@@ -149,7 +116,7 @@ message GetProcessInstanceRequest {
 }
 
 message GetProcessInstanceResponse {
-  github.com.olive_io.olive.api.types.core.v1.ProcessInstance instance = 1;
+  types.ProcessInstance instance = 1;
 }
 
 message RunProcessInstanceRequest {
@@ -164,39 +131,6 @@ message RunProcessInstanceRequest {
 }
 
 message RunProcessInstanceResponse {
-  github.com.olive_io.olive.api.types.core.v1.ProcessInstance instance = 1;
+  types.ProcessInstance instance = 1;
 }
 
-message ListRequest {
-  github.com.olive_io.olive.api.types.meta.v1.ListOptions options = 1;
-}
-
-message ListResponse {
-  github.com.olive_io.olive.api.types.meta.v1.Result result = 1;
-}
-
-message GetRequest {
-  github.com.olive_io.olive.api.types.meta.v1.GetOptions options = 1;
-}
-
-message GetResponse {
-  github.com.olive_io.olive.api.types.meta.v1.Result result = 1;
-}
-
-message PostRequest {
-  github.com.olive_io.olive.api.types.meta.v1.PostOptions options = 1;
-}
-
-message PostResponse {}
-
-message PatchRequest {
-  github.com.olive_io.olive.api.types.meta.v1.PatchOptions options = 1;
-}
-
-message PatchResponse {}
-
-message DeleteRequest {
-  github.com.olive_io.olive.api.types.meta.v1.DeleteOptions options = 1;
-}
-
-message DeleteResponse {}

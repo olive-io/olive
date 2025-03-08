@@ -24,6 +24,9 @@ syntax = "proto3";
 package types;
 
 option go_package = "github.com/olive-io/olive/api/types;types";
+option java_multiple_files = true;
+option java_package = "io.olive.api.types";
+option java_outer_classname = "OliveTypes";
 
 message ResponseHeader {
   uint64 clusterID = 1;
@@ -85,7 +88,7 @@ message Runner {
 }
 
 message RunnerStat {
-  string name = 1;
+  uint64 id = 1;
 
   double cpuUsed = 2;
 

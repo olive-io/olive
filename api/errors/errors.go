@@ -19,24 +19,50 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-syntax = "proto3";
+package errors
 
-package errors;
+import (
+	"encoding/json"
+)
 
-option go_package = "github.com/olive-io/olive/api/errors;errors";
-option java_multiple_files = true;
-option java_package = "io.olive.api.errors";
-option java_outer_classname = "OliveErrors";
-
-enum Code {
-  Ok = 0;
-  Unknown = 1;
-  Internal = 2;
-  NotReady = 3;
+func (e *Error) Error() string {
+	data, _ := json.Marshal(e)
+	return string(data)
 }
 
-message Error {
-  Code code = 1;
-  string message = 2;
-  string detail = 3;
+func NewErr(code Code, detail string) *Error {
+	return &Error{
+		Code:    code,
+		Message: code.String(),
+		Detail:  detail,
+	}
+}
+
+func ErrUnknown(detail string) *Error {
+	return NewErr(Code_Unknown, detail)
+}
+
+func ErrInternal(detail string) *Error {
+	return NewErr(Code_Internal, detail)
+}
+
+func ErrNotReady(detail string) *Error {
+	return NewErr(Code_NotReady, detail)
+}
+
+func ParseErr(err error) *Error {
+	switch e := err.(type) {
+	case *Error:
+		if e.Code == Code_Ok {
+			return nil
+		}
+		return e
+	default:
+		var ee *Error
+		if e1 := json.Unmarshal([]byte(err.Error()), &ee); e1 == nil {
+			return ee
+		}
+
+		return ErrUnknown(err.Error())
+	}
 }

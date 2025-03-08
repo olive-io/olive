@@ -9,6 +9,21 @@ LDFLAGS=-X $(GIT_VERSION).GitCommit=$(GIT_COMMIT) -X $(GIT_VERSION).GitTag=$(GIT
 IMAGE_TAG=$(GIT_TAG)-$(GIT_COMMIT)
 ROOT=github.com/olive-io/olive
 
+ifeq ($(GOHOSTOS), windows)
+        #the `find.exe` is different from `find` in bash/shell.
+        #to see https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/find.
+        #changed to use git-bash.exe to run find cli or other cli friendly, caused of every developer has a Git.
+        #Git_Bash= $(subst cmd\,bin\bash.exe,$(dir $(shell where git)))
+        Git_Bash=$(subst \,/,$(subst cmd\,bin\bash.exe,$(dir $(shell where git))))
+        TYPES_PROTO_FILES=$(shell $(Git_Bash) -c "find api/types -name *.proto")
+        RPC_PROTO_FILES=$(shell $(Git_Bash) -c "find api/rpc -name *.proto")
+else
+        TYPES_PROTO_FILES=$(shell find api/types -name *.proto)
+        RPC_PROTO_FILES=$(shell find api/rpc -name *.proto)
+endif
+
+
+
 all: build
 
 vendor:
@@ -21,6 +36,14 @@ lint:
 	golint -set_exit_status ./..
 
 install:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	go install github.com/google/wire/cmd/wire@latest
+
 
 genclients:
 	cd api && ./hack/update-codegen.sh
@@ -34,12 +57,25 @@ proto:
 	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/planepb/rpc.proto && \
 	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/runnerpb/rpc.proto
 
+apis:
+	protoc --proto_path=./api --go_out=paths=source_relative:./api api/errors/errors.proto
+	protoc --proto_path=./api \
+			--proto_path=./third_party \
+			--go_out=paths=source_relative:./api \
+			$(TYPES_PROTO_FILES)
+	protoc --proto_path=./api \
+    		--proto_path=./third_party \
+    		--go_out=paths=source_relative:./api \
+    		--go-grpc_out=paths=source_relative:./api \
+    		--grpc-gateway_out=paths=source_relative:./api \
+    		$(RPC_PROTO_FILES)
+
+
 generate:
-	cd $(GOPATH)/src && \
-	protoc --go_out=. --go_opt=paths=source_relative github.com/olive-io/olive/api/errors/errors.proto && \
-    protoc --go_out=. --go_opt=paths=source_relative github.com/olive-io/olive/api/types/internal.proto && \
-    protoc --go_out=. --go_opt=paths=source_relative github.com/olive-io/olive/api/types/bpmn.proto && \
-	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/monpb/rpc.proto
+	protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/errors/errors.proto && \
+    protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/types/internal.proto && \
+    protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/types/bpmn.proto && \
+	protoc -I -I ./api -I ./third_party  --go_out=. --go_opt=paths=source_relative:./api --go-grpc_out=. --go-grpc_opt=paths=source_relative:./api --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/monpb/rpc.proto
 #	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/runnerpb/rpc.proto
 #
 #	goimports -w api/*/**.go

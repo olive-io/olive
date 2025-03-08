@@ -19,31 +19,35 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package rpctypes
+package scheduler
 
 import (
-	"testing"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"google.golang.org/protobuf/proto"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/olive-io/olive/api/types"
 )
 
-func TestConvert(t *testing.T) {
-	e1 := status.New(codes.InvalidArgument, "olive: key is not provided").Err()
-	e2 := ErrGRPCEmptyKey
-	e3 := ErrEmptyKey
+func parseRunnerKV(kv *mvccpb.KeyValue) (*types.Runner, error) {
+	var runner types.Runner
+	err := proto.Unmarshal(kv.Value, &runner)
+	return &runner, err
+}
 
-	if e1.Error() != e2.Error() {
-		t.Fatalf("expected %q == %q", e1.Error(), e2.Error())
-	}
-	if ev1, ok := status.FromError(e1); ok && ev1.Code() != e3.(OliveError).Code() {
-		t.Fatalf("expected them to be equal, got %v / %v", ev1.Code(), e3.(OliveError).Code())
-	}
+func parseStatKV(kv *mvccpb.KeyValue) (*types.RunnerStat, error) {
+	var stat types.RunnerStat
+	err := proto.Unmarshal(kv.Value, &stat)
+	return &stat, err
+}
 
-	if e1.Error() == e3.Error() {
-		t.Fatalf("expected %q != %q", e1.Error(), e3.Error())
-	}
-	if ev2, ok := status.FromError(e2); ok && ev2.Code() != e3.(OliveError).Code() {
-		t.Fatalf("expected them to be equal, got %v / %v", ev2.Code(), e3.(OliveError).Code())
-	}
+func parsePSnapKV(kv *mvccpb.KeyValue) (*types.ProcessSnapshot, error) {
+	var ps types.ProcessSnapshot
+	err := proto.Unmarshal(kv.Value, &ps)
+	return &ps, err
+}
+
+func parseProcessKV(kv *mvccpb.KeyValue) (*types.ProcessInstance, error) {
+	var pi types.ProcessInstance
+	err := proto.Unmarshal(kv.Value, &pi)
+	return &pi, err
 }

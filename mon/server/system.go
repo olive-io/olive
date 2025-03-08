@@ -51,14 +51,34 @@ func (rpc *systemRPC) GetCluster(ctx context.Context, req *pb.GetClusterRequest)
 	return resp, nil
 }
 
-func (rpc *systemRPC) Registry(ctx context.Context, req *pb.RegistryRequest) (*pb.RegistryResponse, error) {
-	runner, err := rpc.s.Registry(ctx, req.Runner, req.Stat)
+func (rpc *systemRPC) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	runner, err := rpc.s.Register(ctx, req.Runner)
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.RegistryResponse{
+	resp := &pb.RegisterResponse{
 		Runner: runner,
 	}
+	return resp, nil
+}
+
+func (rpc *systemRPC) Disregister(ctx context.Context, req *pb.DisregisterRequest) (*pb.DisregisterResponse, error) {
+	runner, err := rpc.s.Disregister(ctx, req.Runner)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.DisregisterResponse{
+		Runner: runner,
+	}
+	return resp, nil
+}
+
+func (rpc *systemRPC) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
+	err := rpc.s.Heartbeat(ctx, req.Stat)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.HeartbeatResponse{}
 	return resp, nil
 }
 
