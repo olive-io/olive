@@ -4,8 +4,6 @@ use (
 	.
 	api
 	client
-	gateway
 	mon
 	pkg
-	runner
 )
