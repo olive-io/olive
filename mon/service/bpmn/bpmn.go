@@ -70,7 +70,9 @@ func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idu
 }
 
 func (s *Service) DeployDefinition(ctx context.Context, definition *types.Definition) (*types.Definition, error) {
-	definition.Id = int64(s.idGen.Next())
+	if definition.Id == 0 {
+		definition.Id = int64(s.idGen.Next())
+	}
 	definition.Timestamp = time.Now().Unix()
 
 	var err error
@@ -83,6 +85,9 @@ func (s *Service) DeployDefinition(ctx context.Context, definition *types.Defini
 }
 
 func (s *Service) ListDefinitions(ctx context.Context, page, size int32) ([]*types.Definition, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
 	definitions, total, err := s.ds.ListDefinitions(ctx, page, size)
 	if err != nil {
 		return nil, total, err

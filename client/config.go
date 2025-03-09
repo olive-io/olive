@@ -21,8 +21,25 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package client
 
-import clientv3 "go.etcd.io/etcd/client/v3"
+import (
+	"time"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
+)
+
+const (
+	DefaultDialTimeout = time.Second * 30
+)
 
 type Config struct {
 	clientv3.Config
+}
+
+func NewConfig(endpoints []string) *Config {
+	cfg := clientv3.Config{
+		Endpoints:   endpoints,
+		DialTimeout: DefaultDialTimeout,
+	}
+
+	return &Config{cfg}
 }

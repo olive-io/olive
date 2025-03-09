@@ -250,10 +250,11 @@ service BpmnRPC {
 }
 
 message DeployDefinitionRequest {
-  string name = 1;
-  string description = 2;
-  map<string, string> metadata = 3;
-  string content = 4;
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  map<string, string> metadata = 4;
+  string content = 5;
 }
 
 message DeployDefinitionResponse {

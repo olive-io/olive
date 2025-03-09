@@ -31,7 +31,7 @@ import (
 )
 
 type BpmnRPC interface {
-	DeployDefinition(ctx context.Context, name string, description string, metadata map[string]string, content string) (*types.Definition, error)
+	DeployDefinition(ctx context.Context, id int64, name string, description string, metadata map[string]string, content string) (*types.Definition, error)
 	ListDefinitions(ctx context.Context, options ...ListDefinitionsOption) ([]*types.Definition, int64, error)
 	GetDefinition(ctx context.Context, id int64, version uint64) (*types.Definition, error)
 	RemoveDefinition(ctx context.Context, id int64) error
@@ -51,7 +51,7 @@ func NewBpmnRPC(c *Client) BpmnRPC {
 	return api
 }
 
-func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, description string, metadata map[string]string, content string) (*types.Definition, error) {
+func (bc *bpmnRPC) DeployDefinition(ctx context.Context, id int64, name string, description string, metadata map[string]string, content string) (*types.Definition, error) {
 	conn := bc.client.conn
 	leaderEndpoints, err := bc.client.leaderEndpoints(ctx)
 	if err != nil {
@@ -62,15 +62,17 @@ func (bc *bpmnRPC) DeployDefinition(ctx context.Context, name string, descriptio
 		if err != nil {
 			return nil, err
 		}
+		defer conn.Close()
 	}
 
-	r := &pb.DeployDefinitionRequest{
+	req := &pb.DeployDefinitionRequest{
+		Id:          id,
 		Name:        name,
 		Description: description,
 		Metadata:    metadata,
 		Content:     content,
 	}
-	resp, err := bc.remoteClient(conn).DeployDefinition(ctx, r, bc.callOpts...)
+	resp, err := bc.remoteClient(conn).DeployDefinition(ctx, req, bc.callOpts...)
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}

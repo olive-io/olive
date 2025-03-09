@@ -47,23 +47,24 @@ type Client struct {
 	callOpts []grpc.CallOption
 }
 
-func New(cfg Config) (*Client, error) {
+func New(cfg *Config) (*Client, error) {
 	if len(cfg.Endpoints) == 0 {
 		return nil, ErrNoAvailableEndpoints
 	}
 
-	return newClient(&cfg)
+	return newClient(cfg)
 }
 
 func newClient(cfg *Config) (*Client, error) {
-	etcd, err := clientv3.New(cfg.Config)
+	etcdClient, err := clientv3.New(cfg.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	client := &Client{
-		Client:   etcd,
-		conn:     etcd.ActiveConnection(),
+		Client:   etcdClient,
+		cfg:      cfg,
+		conn:     etcdClient.ActiveConnection(),
 		callOpts: defaultCallOpts,
 	}
 
@@ -97,13 +98,13 @@ func (c *Client) ActiveEtcdClient() *clientv3.Client {
 }
 
 func (c *Client) leaderEndpoints(ctx context.Context) ([]string, error) {
-	meta, err := c.GetCluster(ctx)
+	monitor, err := c.GetCluster(ctx)
 	if err != nil {
 		return nil, err
 	}
 	endpoints := make([]string, 0)
-	for _, member := range meta.Members {
-		if member.Id == meta.Leader {
+	for _, member := range monitor.Members {
+		if member.Id == monitor.Leader {
 			endpoints = member.ClientUrls
 			break
 		}

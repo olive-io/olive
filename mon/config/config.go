@@ -182,9 +182,9 @@ func (cfg *Config) configFromCmdLine() error {
 	var err error
 
 	cfg.Config.ListenPeerUrls = flags.UniqueURLsFromFlag(cfg.fs, "listen-peer-urls")
-	cfg.Config.AdvertisePeerUrls = flags.UniqueURLsFromFlag(cfg.fs, "initial-advertise-peer-urls")
+	cfg.Config.AdvertisePeerUrls = flags.UniqueURLsFromFlag(cfg.fs, "listen-peer-urls")
 	cfg.Config.ListenClientUrls = flags.UniqueURLsFromFlag(cfg.fs, "listen-client-urls")
-	cfg.Config.AdvertiseClientUrls = flags.UniqueURLsFromFlag(cfg.fs, "advertise-client-urls")
+	cfg.Config.AdvertiseClientUrls = flags.UniqueURLsFromFlag(cfg.fs, "listen-client-urls")
 
 	cfg.Config.MaxConcurrentStreams, err = cfg.fs.GetUint32("max-concurrent-streams")
 	if err != nil {

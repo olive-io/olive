@@ -42,7 +42,7 @@ func newBpmn(s *bpmn.Service) *bpmnRPC {
 
 func (rpc *bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
 	definition := &types.Definition{
-		Id:          0,
+		Id:          req.Id,
 		Name:        req.Name,
 		Description: req.Description,
 		Metadata:    req.Metadata,

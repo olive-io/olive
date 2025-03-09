@@ -220,10 +220,6 @@ func (ds *DefinitionStorage) ListDefinitions(ctx context.Context, page, size int
 		}
 	}
 
-	if iter.Key() == nil {
-		return nil, total, nil
-	}
-
 	definitions := make([]*types.Definition, 0, size)
 
 	pos := int32(0)
