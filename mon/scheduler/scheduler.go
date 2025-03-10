@@ -30,6 +30,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	rbt "github.com/emirpasic/gods/trees/redblacktree"
+	"github.com/emirpasic/gods/utils"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
@@ -41,7 +43,41 @@ import (
 	"github.com/olive-io/olive/pkg/queue"
 )
 
-const processSchPrefix = "/olive/mon/schedule/process"
+const (
+	processSchPrefix = "/olive/mon/schedule/process"
+	// processInterval means the interval of *types.ProcessInstance from olive-mon scheduled
+	// until olive-runner executes
+	processInterval = time.Minute
+)
+
+var (
+	gs   Scheduler
+	once sync.Once
+)
+
+// StartScheduler start global Scheduler
+func StartScheduler(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, notifier leader.Notifier) error {
+	var err error
+	once.Do(func() {
+		gs, err = New(lg, v3cli, notifier)
+		if err != nil {
+			return
+		}
+
+		err = gs.Start(ctx)
+	})
+	return err
+}
+
+// AddProcess add bpmn process for global Scheduler
+func AddProcess(ctx context.Context, pi *types.ProcessInstance) {
+	gs.AddProcess(ctx, pi)
+}
+
+// NextOne returns the *types.Runner with the highest score from global scheduler
+func NextOne(ctx context.Context) (*types.Runner, bool) {
+	return gs.NextOne(ctx)
+}
 
 type Process struct {
 	*types.ProcessSnapshot
@@ -79,6 +115,9 @@ type scheduler struct {
 	smu       sync.RWMutex
 	snapshots map[uint64]*snapshot
 
+	pmu         sync.RWMutex
+	processTree *rbt.Tree
+
 	processQ *queue.SyncPriorityQueue[*Process]
 }
 
@@ -98,6 +137,8 @@ func New(lg *zap.Logger, v3cli *clientv3.Client, notifier leader.Notifier) (Sche
 
 		snapshots: make(map[uint64]*snapshot),
 
+		processTree: rbt.NewWith(utils.Int64Comparator),
+
 		processQ: processQ,
 	}
 
@@ -106,10 +147,9 @@ func New(lg *zap.Logger, v3cli *clientv3.Client, notifier leader.Notifier) (Sche
 
 func (sc *scheduler) AddProcess(ctx context.Context, pi *types.ProcessInstance) {
 	ps := pi.ToSnapshot()
+	sc.saveProcessSnapshot(ctx, ps)
 	if sc.isLeader() {
 		sc.processQ.Push(NewProcess(ps))
-	} else {
-		sc.addProcessSnapshot(ctx, ps)
 	}
 }
 
@@ -141,6 +181,7 @@ func (sc *scheduler) NextOne(ctx context.Context) (*types.Runner, bool) {
 func (sc *scheduler) Start(ctx context.Context) error {
 	go sc.watchRunners(ctx)
 	go sc.process(ctx)
+	go sc.watchProcess(ctx)
 	return nil
 }
 
@@ -149,8 +190,8 @@ func (sc *scheduler) process(ctx context.Context) {
 	defer cancel()
 
 	interval := time.Millisecond * 50
-	tick := time.NewTicker(interval)
-	defer tick.Stop()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
 	for {
 		if !sc.waitLeaderLoop(ctx) {
@@ -164,16 +205,17 @@ func (sc *scheduler) process(ctx context.Context) {
 
 		sc.leaderFlag.Store(true)
 
-		tick.Reset(interval)
+		ticker.Reset(interval)
 
 		sc.fetchPrepares(ctx)
 
 		opts := []clientv3.OpOption{
 			clientv3.WithPrefix(),
+			clientv3.WithPrevKV(),
 		}
 
-		prefix := processSchPrefix
-		w := sc.v3cli.Watch(ctx, prefix, opts...)
+		key := processSchPrefix
+		w := sc.v3cli.Watch(ctx, key, opts...)
 
 	LOOP:
 		for {
@@ -182,11 +224,6 @@ func (sc *scheduler) process(ctx context.Context) {
 				return
 
 			case <-sc.notifier.ChangeNotify():
-				// follow to leader
-				if sc.waitLeaderLoop(ctx) {
-					sc.lg.Info("become the new term leader, fetch all prepare process")
-					sc.fetchPrepares(ctx)
-				}
 				break LOOP
 
 			case wch, ok := <-w:
@@ -199,12 +236,31 @@ func (sc *scheduler) process(ctx context.Context) {
 				}
 
 				for _, ev := range wch.Events {
-					switch ev.Type {
-					case mvccpb.PUT:
+					switch {
+					case ev.Type == mvccpb.PUT && ev.IsCreate():
+						// this event from other olive-mon node
+						ps, err := parsePSnapKV(ev.Kv)
+						if err == nil {
+							sc.pmu.RLock()
+							_, found := sc.processTree.Get(ps.Id)
+							sc.pmu.RUnlock()
+							if !found {
+								sc.processQ.Push(NewProcess(ps))
+							}
+						}
+					case ev.Type == mvccpb.DELETE:
+						ps, err := parsePSnapKV(ev.Kv)
+						if err == nil {
+							sc.pmu.Lock()
+							sc.processTree.Remove(ps.Id)
+							sc.pmu.Unlock()
+
+							sc.processQ.Remove(ps.Id)
+						}
 					}
 				}
 
-			case <-tick.C:
+			case <-ticker.C:
 
 				pv, exists := sc.processQ.Pop()
 				if !exists {
@@ -228,13 +284,124 @@ func (sc *scheduler) process(ctx context.Context) {
 
 				ps := process.ProcessSnapshot
 				ps.Status = types.ProcessStatus_Ready
-				sc.removeProcessSnapshot(ctx, ps)
+				ps.ReadyAt = time.Now().UnixNano()
+				sc.saveProcessSnapshot(ctx, ps)
+
+				// saves scheduled ProcessSnapshot
+				sc.pmu.Lock()
+				sc.processTree.Put(ps.Id, ps)
+				sc.pmu.Unlock()
 			}
 		}
 	}
 }
 
-func (sc *scheduler) addProcessSnapshot(ctx context.Context, ps *types.ProcessSnapshot) {
+// watchProcess watches events of *types.ProcessInstance
+func (sc *scheduler) watchProcess(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	interval := time.Second * 30
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		if !sc.waitLeaderLoop(ctx) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			continue
+		}
+
+		ticker.Reset(interval)
+
+		opts := []clientv3.OpOption{
+			clientv3.WithPrefix(),
+			clientv3.WithPrevKV(),
+		}
+
+		key := api.ProcessPrefix
+		w := sc.v3cli.Watch(ctx, key, opts...)
+
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case <-sc.notifier.ChangeNotify():
+				break LOOP
+
+			case wch, ok := <-w:
+				if !ok {
+					break LOOP
+				}
+
+				if wch.Err() != nil {
+					break LOOP
+				}
+
+				for _, ev := range wch.Events {
+					switch {
+					case ev.Type == mvccpb.PUT && ev.IsModify():
+						pi, err := parseProcessKV(ev.Kv)
+						if err == nil {
+							if pi.Executed() {
+								// reallocates ProcessInstance to another olive-runner
+								sc.pmu.Lock()
+								sc.processTree.Remove(pi.Id)
+								sc.pmu.Unlock()
+							}
+							if pi.Finished() {
+								sc.removeProcessSnapshot(ctx, pi.ToSnapshot())
+							}
+						}
+					case ev.Type == mvccpb.DELETE:
+						pi, err := parseProcessKV(ev.PrevKv)
+						if err == nil {
+							sc.pmu.Lock()
+							sc.processTree.Remove(pi.Id)
+							sc.pmu.Unlock()
+						}
+					}
+				}
+
+			case <-ticker.C:
+
+				sc.pmu.RLock()
+				values := sc.processTree.Values()
+				sc.pmu.RUnlock()
+
+				for _, ev := range values {
+					ps, ok := ev.(*types.ProcessSnapshot)
+					if !ok {
+						continue
+					}
+
+					if ps.ExecuteExpired(processInterval) {
+						sc.lg.Info("discovery a expired process, dispatches another runner",
+							zap.Int64("process", ps.Id))
+						newSnap := &types.ProcessSnapshot{
+							Id:       ps.Id,
+							Priority: ps.Priority,
+							Status:   types.ProcessStatus_Prepare,
+						}
+
+						sc.pmu.Lock()
+						sc.processTree.Remove(ps.Id)
+						sc.pmu.Unlock()
+
+						sc.processQ.Push(NewProcess(newSnap))
+					}
+				}
+			}
+		}
+	}
+}
+
+func (sc *scheduler) saveProcessSnapshot(ctx context.Context, ps *types.ProcessSnapshot) {
 	value, err := proto.Marshal(ps)
 	if err != nil {
 		return
@@ -299,7 +466,8 @@ func (sc *scheduler) fetchPrepares(ctx context.Context) {
 }
 
 func (sc *scheduler) dispatchEvent(ctx context.Context, runner uint64, event *types.RunnerEvent) {
-	key := path.Join(api.RunnerTopic, fmt.Sprintf("%d", runner))
+	ts := time.Now().UnixNano()
+	key := path.Join(api.RunnerTopic, fmt.Sprintf("%d", runner), fmt.Sprintf("%d", ts))
 	value, err := proto.Marshal(event)
 	if err != nil {
 		sc.lg.Error("failed to marshal event", zap.Error(err))

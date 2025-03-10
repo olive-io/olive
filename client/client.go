@@ -33,7 +33,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Client provides and manages an olive-meta client session.
+// Client provides and manages an olive-mon client session.
 type Client struct {
 	BpmnRPC
 	ClusterRPC

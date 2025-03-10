@@ -31,33 +31,24 @@ import (
 	"github.com/olive-io/olive/api/types"
 )
 
-type (
-	Member                types.Member
-	MemberListResponse    pb.MemberListResponse
-	MemberAddResponse     pb.MemberAddResponse
-	MemberRemoveResponse  pb.MemberRemoveResponse
-	MemberUpdateResponse  pb.MemberUpdateResponse
-	MemberPromoteResponse pb.MemberPromoteResponse
-)
-
 type ClusterRPC interface {
 	// MemberList lists the current cluster membership.
-	MemberList(ctx context.Context) (*MemberListResponse, error)
+	MemberList(ctx context.Context) (*types.ResponseHeader, []*types.Member, error)
 
 	// MemberAdd adds a new member into the cluster.
-	MemberAdd(ctx context.Context, peerAddrs []string) (*MemberAddResponse, error)
+	MemberAdd(ctx context.Context, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error)
 
 	// MemberAddAsLearner adds a new learner member into the cluster.
-	MemberAddAsLearner(ctx context.Context, peerAddrs []string) (*MemberAddResponse, error)
+	MemberAddAsLearner(ctx context.Context, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error)
 
 	// MemberRemove removes an existing member from the cluster.
-	MemberRemove(ctx context.Context, id uint64) (*MemberRemoveResponse, error)
+	MemberRemove(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error)
 
 	// MemberUpdate updates the peer addresses of the member.
-	MemberUpdate(ctx context.Context, id uint64, peerAddrs []string) (*MemberUpdateResponse, error)
+	MemberUpdate(ctx context.Context, id uint64, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error)
 
 	// MemberPromote promotes a member from raft learner (non-voting) to raft voting member.
-	MemberPromote(ctx context.Context, id uint64) (*MemberPromoteResponse, error)
+	MemberPromote(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error)
 }
 
 type cluster struct {
@@ -73,23 +64,23 @@ func NewCluster(c *Client) ClusterRPC {
 	return api
 }
 
-func NewClusterFromClusterClient(remote pb.ClusterClient, c *Client) ClusterRPC {
-	api := &cluster{remote: remote}
-	if c != nil {
-		api.callOpts = c.callOpts
+func (c *cluster) MemberAdd(ctx context.Context, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := c.memberAdd(ctx, peerAddrs, false)
+	if err != nil {
+		return nil, nil, toErr(ctx, err)
 	}
-	return api
+	return resp.Header, resp.Members, nil
 }
 
-func (c *cluster) MemberAdd(ctx context.Context, peerAddrs []string) (*MemberAddResponse, error) {
-	return c.memberAdd(ctx, peerAddrs, false)
+func (c *cluster) MemberAddAsLearner(ctx context.Context, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := c.memberAdd(ctx, peerAddrs, true)
+	if err != nil {
+		return nil, nil, toErr(ctx, err)
+	}
+	return resp.Header, resp.Members, nil
 }
 
-func (c *cluster) MemberAddAsLearner(ctx context.Context, peerAddrs []string) (*MemberAddResponse, error) {
-	return c.memberAdd(ctx, peerAddrs, true)
-}
-
-func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner bool) (*MemberAddResponse, error) {
+func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner bool) (*pb.MemberAddResponse, error) {
 	// fail-fast before panic in rafthttp
 	if _, err := v3types.NewURLs(peerAddrs); err != nil {
 		return nil, err
@@ -103,47 +94,47 @@ func (c *cluster) memberAdd(ctx context.Context, peerAddrs []string, isLearner b
 	if err != nil {
 		return nil, toErr(ctx, err)
 	}
-	return (*MemberAddResponse)(resp), nil
+	return resp, nil
 }
 
-func (c *cluster) MemberRemove(ctx context.Context, id uint64) (*MemberRemoveResponse, error) {
+func (c *cluster) MemberRemove(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
 	r := &pb.MemberRemoveRequest{ID: id}
 	resp, err := c.remote.MemberRemove(ctx, r, c.callOpts...)
 	if err != nil {
-		return nil, toErr(ctx, err)
+		return nil, nil, toErr(ctx, err)
 	}
-	return (*MemberRemoveResponse)(resp), nil
+	return resp.Header, resp.Members, nil
 }
 
-func (c *cluster) MemberUpdate(ctx context.Context, id uint64, peerAddrs []string) (*MemberUpdateResponse, error) {
+func (c *cluster) MemberUpdate(ctx context.Context, id uint64, peerAddrs []string) (*types.ResponseHeader, []*types.Member, error) {
 	// fail-fast before panic in rafthttp
 	if _, err := v3types.NewURLs(peerAddrs); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// it is safe to retry on update.
 	r := &pb.MemberUpdateRequest{ID: id, PeerURLs: peerAddrs}
 	resp, err := c.remote.MemberUpdate(ctx, r, c.callOpts...)
-	if err == nil {
-		return (*MemberUpdateResponse)(resp), nil
+	if err != nil {
+		return nil, nil, toErr(ctx, err)
 	}
-	return nil, toErr(ctx, err)
+	return resp.Header, resp.Members, nil
 }
 
-func (c *cluster) MemberList(ctx context.Context) (*MemberListResponse, error) {
+func (c *cluster) MemberList(ctx context.Context) (*types.ResponseHeader, []*types.Member, error) {
 	// it is safe to retry on list.
 	resp, err := c.remote.MemberList(ctx, &pb.MemberListRequest{Linearizable: true}, c.callOpts...)
-	if err == nil {
-		return (*MemberListResponse)(resp), nil
+	if err != nil {
+		return nil, nil, toErr(ctx, err)
 	}
-	return nil, toErr(ctx, err)
+	return resp.Header, resp.Members, nil
 }
 
-func (c *cluster) MemberPromote(ctx context.Context, id uint64) (*MemberPromoteResponse, error) {
+func (c *cluster) MemberPromote(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
 	r := &pb.MemberPromoteRequest{ID: id}
 	resp, err := c.remote.MemberPromote(ctx, r, c.callOpts...)
 	if err != nil {
-		return nil, toErr(ctx, err)
+		return nil, nil, toErr(ctx, err)
 	}
-	return (*MemberPromoteResponse)(resp), nil
+	return resp.Header, resp.Members, nil
 }

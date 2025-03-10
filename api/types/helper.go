@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package types
 
 import (
+	"time"
+
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 )
 
@@ -50,4 +52,35 @@ func (x *ProcessInstance) ToSnapshot() *ProcessSnapshot {
 		Status:   x.Status,
 	}
 	return snapshot
+}
+
+// Finished returns true if Status equals ProcessStatus_Ok, ProcessStatus_Failed.
+func (x *ProcessInstance) Finished() bool {
+	switch x.Status {
+	case ProcessStatus_Ok,
+		ProcessStatus_Failed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Executed returns true if Status equals ProcessStatus_Running, ProcessStatus_Ok, ProcessStatus_Failed.
+func (x *ProcessInstance) Executed() bool {
+	switch x.Status {
+	case ProcessStatus_Running,
+		ProcessStatus_Ok,
+		ProcessStatus_Failed:
+		return true
+	default:
+		return false
+	}
+}
+
+func (x *ProcessSnapshot) ExecuteExpired(interval time.Duration) bool {
+	if x.ReadyAt == 0 {
+		return false
+	}
+	deadline := x.ReadyAt + interval.Nanoseconds()
+	return deadline < time.Now().UnixNano()
 }

@@ -38,6 +38,10 @@ func newSystem(s *system.Service) *systemRPC {
 	return &systemRPC{s: s}
 }
 
+func (rpc *systemRPC) Ping(ctx context.Context, request *pb.PingRequest) (*pb.PingResponse, error) {
+	return &pb.PingResponse{}, nil
+}
+
 func (rpc *systemRPC) GetCluster(ctx context.Context, req *pb.GetClusterRequest) (*pb.GetClusterResponse, error) {
 	header, monitor, err := rpc.s.GetCluster(ctx)
 	if err != nil {

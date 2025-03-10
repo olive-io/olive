@@ -1,0 +1,73 @@
+package server
+
+import (
+	"context"
+
+	pb "github.com/olive-io/olive/api/rpc/runnerpb"
+	"github.com/olive-io/olive/runner/gather"
+	"github.com/olive-io/olive/runner/scheduler"
+	"github.com/olive-io/olive/runner/storage"
+)
+
+type GRPCRunnerServer struct {
+	pb.UnimplementedRunnerRPCServer
+
+	scheduler *scheduler.Scheduler
+	gather    *gather.Gather
+	bs        storage.Storage
+}
+
+func NewGRPCRunnerServer(scheduler *scheduler.Scheduler, gather *gather.Gather, bs storage.Storage) *GRPCRunnerServer {
+	s := &GRPCRunnerServer{
+		scheduler: scheduler,
+		gather:    gather,
+		bs:        bs,
+	}
+
+	return s
+}
+
+func (s *GRPCRunnerServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (resp *pb.GetRunnerResponse, err error) {
+	resp = &pb.GetRunnerResponse{}
+	resp.Runner = s.gather.GetRunner()
+	resp.Statistics = s.gather.GetStat()
+	return resp, err
+}
+
+func (s *GRPCRunnerServer) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (resp *pb.ListDefinitionsResponse, err error) {
+	resp = &pb.ListDefinitionsResponse{}
+
+	resp.Definitions, err = s.scheduler.ListDefinition(ctx, req.Id)
+	return
+}
+
+func (s *GRPCRunnerServer) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (resp *pb.GetDefinitionResponse, err error) {
+	resp = &pb.GetDefinitionResponse{}
+
+	resp.Definition, err = s.scheduler.GetDefinition(ctx, req.Id, req.Version)
+	return
+}
+
+func (s *GRPCRunnerServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
+	resp = &pb.ListProcessInstancesResponse{}
+
+	resp.Instances, err = s.scheduler.ListProcess(ctx, req.DefinitionId, req.DefinitionVersion)
+	return
+}
+
+func (s *GRPCRunnerServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
+	resp = &pb.GetProcessInstanceResponse{}
+
+	resp.Instance, err = s.scheduler.GetProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
+	return
+}
+
+func (s *GRPCRunnerServer) RunProcessInstance(ctx context.Context, req *pb.RunProcessInstanceRequest) (resp *pb.RunProcessInstanceResponse, err error) {
+	resp = &pb.RunProcessInstanceResponse{}
+
+	headers := req.Headers
+	properties := req.Properties
+	dataObjects := req.DataObjects
+	resp.Instance, err = s.scheduler.RunProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Content, req.Process, req.InstanceName, headers, properties, dataObjects)
+	return
+}

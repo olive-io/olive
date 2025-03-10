@@ -136,6 +136,11 @@ message MemberPromoteResponse {
 }
 
 service SystemRPC {
+  rpc Ping(PingRequest) returns (PingResponse) {
+    option (google.api.http) = {
+      get: "/v1/ping"
+    };
+  }
   rpc GetCluster(GetClusterRequest) returns (GetClusterResponse) {
     option (google.api.http) = {
       get: "/v1/cluster"
@@ -173,6 +178,10 @@ service SystemRPC {
     };
   };
 }
+
+message PingRequest {}
+
+message PingResponse {}
 
 message GetClusterRequest {}
 

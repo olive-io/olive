@@ -45,12 +45,10 @@ type Service struct {
 	v3cli *clientv3.Client
 	idGen *idutil.Generator
 
-	sch scheduler.Scheduler
-
 	ds *DefinitionStorage
 }
 
-func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator, sch scheduler.Scheduler) (*Service, error) {
+func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator) (*Service, error) {
 
 	ds, err := NewDefinitionStorage(ctx, v3cli)
 	if err != nil {
@@ -62,7 +60,6 @@ func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idu
 		lg:    lg,
 		v3cli: v3cli,
 		idGen: idGen,
-		sch:   sch,
 		ds:    ds,
 	}
 
@@ -135,7 +132,7 @@ func (s *Service) ExecuteDefinition(ctx context.Context, process *types.ProcessI
 	if err != nil {
 		return nil, err
 	}
-	s.sch.AddProcess(ctx, process)
+	scheduler.AddProcess(ctx, process)
 
 	return process, nil
 }

@@ -58,8 +58,9 @@ func (s *snapshot) Active() bool {
 	if s.stat == nil && s.stat.Timestamp == 0 {
 		return false
 	}
-	heartbeat := time.Millisecond * time.Duration(s.HeartbeatMs)
-	return s.stat.Timestamp+heartbeat.Nanoseconds() > time.Now().UnixNano()
+	heartbeat := time.Millisecond * time.Duration(s.HeartbeatMs+30)
+	expired := s.stat.Timestamp + heartbeat.Nanoseconds()
+	return expired > time.Now().UnixNano()
 }
 
 func (s *snapshot) DeepCopy() *snapshot {
@@ -106,7 +107,7 @@ func (sc *scheduler) updateSnapshot(runner *types.Runner, stat *types.RunnerStat
 		id = stat.Id
 	}
 
-	snap, ok := sc.snapshots[runner.Id]
+	snap, ok := sc.snapshots[id]
 	if !ok {
 		return
 	}
@@ -180,6 +181,9 @@ func (sc *scheduler) watchRunners(ctx context.Context) {
 					case clientv3.EventTypePut:
 						stat, err := parseStatKV(ev.Kv)
 						if err == nil {
+							if stat.Timestamp == 0 {
+								stat.Timestamp = time.Now().UnixNano()
+							}
 							sc.updateSnapshot(new(types.Runner), stat)
 						}
 					}

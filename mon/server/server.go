@@ -33,7 +33,6 @@ import (
 
 	pb "github.com/olive-io/olive/api/rpc/monpb"
 	"github.com/olive-io/olive/mon/config"
-	"github.com/olive-io/olive/mon/scheduler"
 	"github.com/olive-io/olive/mon/service/bpmn"
 	"github.com/olive-io/olive/mon/service/cluster"
 	"github.com/olive-io/olive/mon/service/system"
@@ -44,7 +43,6 @@ func ServersRegister(
 	cfg *config.Config,
 	lg *zap.Logger,
 	v3cli *clientv3.Client,
-	sch scheduler.Scheduler,
 ) (map[string]http.Handler, func(gs *grpc.Server), error) {
 
 	handlers := map[string]http.Handler{
@@ -61,7 +59,7 @@ func ServersRegister(
 		return nil, nil, errors.Wrap(err, "create system service")
 	}
 
-	bpmnService, err := bpmn.New(ctx, lg, v3cli, cfg.NewIdGenerator(), sch)
+	bpmnService, err := bpmn.New(ctx, lg, v3cli, cfg.NewIdGenerator())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create bpmn service")
 	}

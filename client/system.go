@@ -31,6 +31,7 @@ import (
 )
 
 type SystemRPC interface {
+	Ping(ctx context.Context) error
 	GetCluster(ctx context.Context) (*types.Monitor, error)
 	Register(ctx context.Context, runner *types.Runner) (*types.Runner, error)
 	Disregister(ctx context.Context, runner *types.Runner) (*types.Runner, error)
@@ -53,6 +54,12 @@ func NewSystemRPC(c *Client) SystemRPC {
 		api.callOpts = c.callOpts
 	}
 	return api
+}
+
+func (rpc *systemRPC) Ping(ctx context.Context) error {
+	in := &pb.PingRequest{}
+	_, err := rpc.remote.Ping(ctx, in, rpc.callOpts...)
+	return toErr(ctx, err)
 }
 
 func (rpc *systemRPC) GetCluster(ctx context.Context) (*types.Monitor, error) {

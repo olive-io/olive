@@ -47,8 +47,6 @@ type Monitor struct {
 	etcd     *embed.Etcd
 	v3cli    *clientv3.Client
 	notifier leader.Notifier
-
-	sch scheduler.Scheduler
 }
 
 func New(cfg config.Config) (*Monitor, error) {
@@ -78,7 +76,7 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	cfg := mon.cfg
 
 	mon.v3cli = new(clientv3.Client)
-	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli, mon.sch)
+	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli)
 	if err != nil {
 		return err
 	}
@@ -97,15 +95,9 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	leader.InitNotifier(etcd.Server)
 	mon.etcd = etcd
 
-	sch, err := scheduler.New(lg, mon.v3cli, mon.notifier)
-	if err != nil {
-		return errors.Wrap(err, "create scheduler")
+	if err = scheduler.StartScheduler(ctx, lg, mon.v3cli, mon.notifier); err != nil {
+		return errors.Wrap(err, "start global scheduler")
 	}
-
-	if err = sch.Start(ctx); err != nil {
-		return errors.Wrap(err, "start scheduler")
-	}
-	mon.sch = sch
 
 	mon.IEmbedServer.Destroy(mon.destroy)
 

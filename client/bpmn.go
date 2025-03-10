@@ -85,6 +85,9 @@ type ListDefinitionsOption func(request *pb.ListDefinitionsRequest)
 func ListWithPagination(page, size int32) ListDefinitionsOption {
 	return func(req *pb.ListDefinitionsRequest) {
 		req.Page = page
+		if req.Page <= 0 {
+			req.Page = 1
+		}
 		req.Size = size
 	}
 }
@@ -128,6 +131,7 @@ func (bc *bpmnRPC) RemoveDefinition(ctx context.Context, id int64) error {
 		if err != nil {
 			return err
 		}
+		defer conn.Close()
 	}
 
 	in := &pb.RemoveDefinitionRequest{Id: id}
@@ -191,6 +195,7 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id int64, options ...E
 		if err != nil {
 			return nil, err
 		}
+		defer conn.Close()
 	}
 	in := &pb.ExecuteDefinitionRequest{DefinitionId: id}
 	for _, option := range options {

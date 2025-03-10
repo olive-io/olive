@@ -35,7 +35,7 @@ type Config struct {
 	clientv3.Config
 }
 
-func NewConfig(endpoints []string) *Config {
+func NewConfig(endpoints ...string) *Config {
 	cfg := clientv3.Config{
 		Endpoints:   endpoints,
 		DialTimeout: DefaultDialTimeout,

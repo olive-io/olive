@@ -89,6 +89,10 @@ func RetrySystemClient(conn *grpc.ClientConn) pb.SystemRPCClient {
 	}
 }
 
+func (rmc *retrySystemClient) Ping(ctx context.Context, in *pb.PingRequest, opts ...grpc.CallOption) (*pb.PingResponse, error) {
+	return rmc.rpc.Ping(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
 func (rmc *retrySystemClient) GetCluster(ctx context.Context, in *pb.GetClusterRequest, opts ...grpc.CallOption) (resp *pb.GetClusterResponse, err error) {
 	return rmc.rpc.GetCluster(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

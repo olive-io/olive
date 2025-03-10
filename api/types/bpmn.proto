@@ -28,6 +28,30 @@ option java_multiple_files = true;
 option java_package = "io.olive.api.types";
 option java_outer_classname = "OliveTypes";
 
+enum FlowNodeType {
+  UnknownNode = 0;
+  StartEvent = 1;
+  EndEvent = 2;
+  BoundaryEvent = 3;
+  IntermediateCatchEvent = 4;
+
+  Task = 11;
+  SendTask = 12;
+  ReceiveTask = 13;
+  ServiceTask = 14;
+  UserTask = 15;
+  ScriptTask = 16;
+  ManualTask = 17;
+  CallActivity = 18;
+  BusinessRuleTask = 19;
+  SubProcess = 20;
+
+  EventBasedGateway = 31;
+  ExclusiveGateway = 32;
+  InclusiveGateway = 33;
+  ParallelGateway = 34;
+}
+
 // Definition bpmn Definition
 message Definition {
   int64 id = 1;
@@ -54,7 +78,7 @@ message BpmnArgs {
 }
 
 message FlowNode {
-  string type = 1;
+  FlowNodeType type = 1;
 
   string id = 2;
 }
@@ -82,11 +106,13 @@ message FlowNodeStat {
 }
 
 enum ProcessStatus {
+  // to be 'Prepare' where ProcessInstance created
   Prepare = 0;
+  // to be 'Ready' where olive-mon scheduled
   Ready = 1;
   Running = 2;
-  Failed = 3;
-  Finished = 4;
+  Ok = 3;
+  Failed = 4;
 }
 
 message ProcessInstance {
@@ -129,4 +155,6 @@ message ProcessSnapshot {
   int64 id = 1;
   int64 priority = 2;
   ProcessStatus status = 3;
+  // olive-mon schedule timestamp
+  int64 readyAt = 4;
 }

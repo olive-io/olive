@@ -6,4 +6,5 @@ use (
 	client
 	mon
 	pkg
+	runner
 )
