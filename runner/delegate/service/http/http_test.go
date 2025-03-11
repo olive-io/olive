@@ -14,17 +14,11 @@ func TestDelegateForHttp(t *testing.T) {
 
 	headers := map[string]string{
 		"Content-Type": "application/json",
-		"ov:method":    "POST",
-		"ov:url":       "http://localhost:5050/",
+		"ov:method":    "GET",
+		"ov:url":       "http://localhost:8000/auth/users",
 	}
 
-	properties := map[string]any{
-		"a": 1,
-		"b": "hello",
-		"c": map[string]interface{}{
-			"name": "lack",
-		},
-	}
+	properties := map[string]any{}
 
 	req := &delegate.Request{
 		Headers:     headers,
@@ -39,5 +33,5 @@ func TestDelegateForHttp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	log.Fatalf("result: %v", resp.Result)
+	log.Printf("result: %v\n", resp.Result)
 }

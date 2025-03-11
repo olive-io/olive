@@ -256,6 +256,16 @@ service BpmnRPC {
       body: "*"
     };
   };
+  rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
+    option (google.api.http) = {
+      get: "/v1/processes/{id}"
+    };
+  }
+  rpc RemoveProcess(RemoveProcessRequest) returns (RemoveProcessResponse) {
+    option (google.api.http) = {
+      delete: "/v1/processes/{id}"
+    };
+  }
 }
 
 message DeployDefinitionRequest {
@@ -309,4 +319,20 @@ message ExecuteDefinitionRequest {
 
 message ExecuteDefinitionResponse {
   types.ProcessInstance process = 1;
+}
+
+message GetProcessRequest {
+  int64 id = 1;
+}
+
+message GetProcessResponse {
+  types.ProcessInstance instance = 1;
+}
+
+message RemoveProcessRequest {
+  int64 id = 1;
+}
+
+message RemoveProcessResponse {
+  types.ProcessInstance instance = 1;
 }

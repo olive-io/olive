@@ -120,14 +120,7 @@ message GetProcessInstanceResponse {
 }
 
 message RunProcessInstanceRequest {
-  int64 definitionId = 1;
-  uint64 definitionVersion = 2;
-  string content = 3;
-  string process = 4;
-  string instanceName = 5;
-  map<string, string> headers = 6;
-  map<string, bytes> properties = 7;
-  map<string, bytes> dataObjects = 8;
+  types.ProcessInstance instance = 1;
 }
 
 message RunProcessInstanceResponse {

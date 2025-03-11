@@ -63,11 +63,13 @@ func (s *GRPCRunnerServer) GetProcessInstance(ctx context.Context, req *pb.GetPr
 }
 
 func (s *GRPCRunnerServer) RunProcessInstance(ctx context.Context, req *pb.RunProcessInstanceRequest) (resp *pb.RunProcessInstanceResponse, err error) {
-	resp = &pb.RunProcessInstanceResponse{}
 
-	headers := req.Headers
-	properties := req.Properties
-	dataObjects := req.DataObjects
-	resp.Instance, err = s.scheduler.RunProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Content, req.Process, req.InstanceName, headers, properties, dataObjects)
+	err = s.scheduler.RunProcess(ctx, req.Instance)
+	if err != nil {
+		return
+	}
+	resp = &pb.RunProcessInstanceResponse{
+		Instance: req.Instance,
+	}
 	return
 }

@@ -55,8 +55,7 @@ func RegisterServer(ctx context.Context, cfg *config.Config, sch *scheduler.Sche
 		return nil, err
 	}
 
-	mux.Handle(
-		"/v1/",
+	mux.Handle("/v1/",
 		wsproxy.WebsocketProxy(
 			gwmux,
 			wsproxy.WithRequestMutator(

@@ -370,6 +370,7 @@ func (ds *DefinitionStorage) fetchAllDefinitions(ctx context.Context) {
 			dfv = newDef(definition.Id)
 		}
 		dfv.PushVersion(definition.Version)
+		dvs[definition.Id] = dfv
 	}
 
 	for _, dv := range dvs {

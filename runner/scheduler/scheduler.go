@@ -26,8 +26,10 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/olive-io/bpmn/schema"
 	"github.com/olive-io/bpmn/v2"
 	"github.com/olive-io/bpmn/v2/pkg/data"
 	"github.com/olive-io/bpmn/v2/pkg/tracing"
@@ -76,6 +78,10 @@ type Scheduler struct {
 
 	pool *ants.Pool
 
+	smu         sync.RWMutex
+	subscribers map[int64]WatchChan
+	sid         *atomic.Int64
+
 	done chan struct{}
 }
 
@@ -107,7 +113,11 @@ func NewScheduler(cfg *Config) (*Scheduler, error) {
 		bs:       cfg.Storage,
 		processQ: pq,
 		pool:     pool,
-		done:     make(chan struct{}, 1),
+
+		subscribers: make(map[int64]WatchChan),
+		sid:         &atomic.Int64{},
+
+		done: make(chan struct{}, 1),
 	}
 
 	return sche, nil
@@ -137,57 +147,68 @@ func (s *Scheduler) Stop() error {
 	return nil
 }
 
-func (s *Scheduler) RunProcess(
-	ctx context.Context,
-	definitionId int64,
-	definitionVersion uint64,
-	content string,
-	process string,
-	instanceName string,
-	headers map[string]string,
-	properties map[string][]byte,
-	dataObjects map[string][]byte,
-) (*types.ProcessInstance, error) {
+func (s *Scheduler) RunProcess(ctx context.Context, pi *types.ProcessInstance) error {
 
-	err := s.saveDefinition(ctx, definitionId, instanceName, definitionVersion, content)
+	if _, err := schema.Parse([]byte(pi.DefinitionsContent)); err != nil {
+		return err
+	}
+
+	if pi.Id == 0 {
+		pi.Id = int64(s.idGen.Next())
+	}
+
+	if pi.DefinitionsId == 0 {
+		pi.DefinitionsId = int64(s.idGen.Next())
+	}
+	if pi.DefinitionsVersion == 0 {
+		pi.DefinitionsVersion = 1
+	}
+
+	definition := &types.Definition{
+		Id:        pi.DefinitionsId,
+		Metadata:  map[string]string{},
+		Content:   pi.DefinitionsContent,
+		Version:   pi.DefinitionsVersion,
+		Timestamp: time.Now().UnixNano(),
+	}
+	err := s.saveDefinition(ctx, definition)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	instance := &types.ProcessInstance{
-		Name: instanceName,
-		Args: &types.BpmnArgs{
-			Headers:     headers,
-			Properties:  properties,
-			DataObjects: dataObjects,
-		},
-		DefinitionsId:      definitionId,
-		DefinitionsVersion: definitionVersion,
-		DefinitionsProcess: process,
-		DefinitionsContent: content,
-		Context: &types.ProcessContext{
+	if pi.Metadata == nil {
+		pi.Metadata = map[string]string{}
+	}
+	if pi.Args == nil {
+		pi.Args = &types.BpmnArgs{
+			Headers:     map[string]string{},
+			Properties:  make(map[string][]byte),
 			DataObjects: make(map[string][]byte),
+		}
+	}
+	if pi.Context == nil {
+		pi.Context = &types.ProcessContext{
 			Variables:   make(map[string][]byte),
-		},
-		FlowNodes:       make([]*types.FlowNode, 0),
-		FlowNodeStatMap: make(map[string]*types.FlowNodeStat),
-		Attempts:        0,
-		StartAt:         0,
-		EndAt:           0,
-		Status:          types.ProcessStatus_Ready,
-		Message:         "",
+			DataObjects: make(map[string][]byte),
+		}
+	}
+	if pi.FlowNodes == nil {
+		pi.FlowNodes = []*types.FlowNode{}
+	}
+	if pi.FlowNodeStatMap == nil {
+		pi.FlowNodeStatMap = map[string]*types.FlowNodeStat{}
 	}
 
-	if err = s.saveProcess(ctx, instance); err != nil {
-		return nil, err
+	if err = s.saveProcess(ctx, pi); err != nil {
+		return err
 	}
 
-	item := &ProcessItem{instance}
+	item := &ProcessItem{pi}
 
-	s.logger.Info("process push to scheduler queue", zap.String("name", instance.Name))
+	s.logger.Info("process push to scheduler queue", zap.String("name", pi.Name))
 	s.processQ.Push(item)
 
-	return instance, nil
+	return nil
 }
 
 func (s *Scheduler) process() {
@@ -320,7 +341,7 @@ func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
 
 				var results map[string]any
 				var outs map[string]any
-				results, outs, err = s.taskDelegate(taskCtx, activity, headers, properties, objects)
+				results, outs, err = s.taskDelegate(taskCtx, activity, headers, properties, objects, zapFields...)
 
 				doOpts := []bpmn.DoOption{}
 				if len(results) > 0 {
@@ -418,9 +439,33 @@ func (s *Scheduler) taskDelegate(
 	headers map[string]string,
 	properties map[string]any,
 	dataObjects map[string]any,
+	zapFields ...zap.Field,
 ) (map[string]any, map[string]any, error) {
 
+	var err error
+	lg := s.logger
+
+	element := activity.Element()
+
+	fields := []zap.Field{}
+	if eid, ok := element.Id(); ok {
+		fields = append(fields, zap.String("task.id", *eid))
+	}
+	if ename, ok := element.Name(); ok {
+		fields = append(fields, zap.String("task.name", *ename))
+	}
+	fields = append(fields, zapFields...)
+
 	taskType := flowType(activity.Element())
+	lg.Info(fmt.Sprintf("%s started", taskType), fields...)
+	defer func() {
+		if err != nil {
+			lg.Info(fmt.Sprintf("%s failed", taskType), append(fields, zap.Error(err))...)
+		} else {
+			lg.Error(fmt.Sprintf("%s successful", taskType), fields...)
+		}
+	}()
+
 	var subType string
 	if extension, found := activity.Element().ExtensionElements(); found {
 		if field := extension.TaskDefinitionField; field != nil {
@@ -433,9 +478,11 @@ func (s *Scheduler) taskDelegate(
 	}
 
 	url := theme.String()
-	dg, err := delegate.GetDelegate(url)
+	var dg delegate.Delegate
+	dg, err = delegate.GetDelegate(url)
 	if err != nil {
-		return nil, nil, fmt.Errorf("match delegate %s: %w", url, err)
+		err = fmt.Errorf("match delegate %s: %w", url, err)
+		return nil, nil, err
 	}
 
 	timeout := bpmn.FetchTaskTimeout(activity.Element())
@@ -449,7 +496,8 @@ func (s *Scheduler) taskDelegate(
 		Timeout:     timeout,
 	}
 
-	resp, err := dg.Call(ctx, req)
+	var resp *delegate.Response
+	resp, err = dg.Call(ctx, req)
 	if err != nil {
 		return nil, nil, err
 	}

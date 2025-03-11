@@ -185,9 +185,7 @@ func (cfg *Config) HeartbeatInterval() time.Duration {
 }
 
 func (cfg *Config) IdGenerator() *idutil.Generator {
-	table := crc32.NewIEEE()
-	table.Write([]byte(cfg.Name))
-	return idutil.NewGenerator(uint16(table.Sum32()), time.Now())
+	return idutil.NewGenerator(uint16(crc32.ChecksumIEEE([]byte(cfg.Name))), time.Now())
 }
 
 func (cfg *Config) configFromCmdLine() error {

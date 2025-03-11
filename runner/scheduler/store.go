@@ -77,19 +77,14 @@ func (s *Scheduler) GetDefinition(ctx context.Context, id int64, version uint64)
 	return definition, nil
 }
 
-func (s *Scheduler) saveDefinition(ctx context.Context, id int64, name string, version uint64, content string) error {
-	if version != 0 {
-		version = 1
-	}
-	definition := &types.Definition{
-		Id:       id,
-		Name:     name,
-		Metadata: map[string]string{},
-		Content:  content,
-		Version:  version,
+func (s *Scheduler) saveDefinition(ctx context.Context, definition *types.Definition) error {
+	if definition.Version != 0 {
+		definition.Version = 1
 	}
 
-	key := path.Join(api.DefinitionPrefix, strconv.FormatInt(id, 10), fmt.Sprintf("%d", version))
+	key := path.Join(api.DefinitionPrefix,
+		strconv.FormatInt(definition.Id, 10),
+		fmt.Sprintf("%d", definition.Version))
 	err := s.bs.Put(ctx, key, definition)
 	if err != nil {
 		return err

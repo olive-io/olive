@@ -88,10 +88,21 @@ func TestProcess_Run(t *testing.T) {
 	delegate.Init(delegate.NewConfig())
 
 	ctx := context.TODO()
-	headers := map[string]string{}
-	properties := map[string][]byte{}
-	dataObjects := map[string][]byte{}
-	instance, err := sch.RunProcess(ctx, 1, 1, string(bpmn), "", "test process", headers, properties, dataObjects)
+	instance := &types.ProcessInstance{
+		Id:       1,
+		Name:     "test process",
+		Metadata: map[string]string{},
+		Args: &types.BpmnArgs{
+			Headers:     map[string]string{},
+			Properties:  make(map[string][]byte),
+			DataObjects: make(map[string][]byte),
+		},
+		DefinitionsId:      1,
+		DefinitionsVersion: 1,
+		DefinitionsContent: string(bpmn),
+	}
+
+	err = sch.RunProcess(ctx, instance)
 	if err != nil {
 		t.Fatalf("could not run instance: %v", err)
 	}

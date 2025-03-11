@@ -147,3 +147,11 @@ func (rbc *retryBpmnClient) RemoveDefinition(ctx context.Context, in *pb.RemoveD
 func (rbc *retryBpmnClient) ExecuteDefinition(ctx context.Context, in *pb.ExecuteDefinitionRequest, opts ...grpc.CallOption) (*pb.ExecuteDefinitionResponse, error) {
 	return rbc.bc.ExecuteDefinition(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
+
+func (rbc *retryBpmnClient) GetProcess(ctx context.Context, in *pb.GetProcessRequest, opts ...grpc.CallOption) (*pb.GetProcessResponse, error) {
+	return rbc.bc.GetProcess(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
+func (rbc *retryBpmnClient) RemoveProcess(ctx context.Context, in *pb.RemoveProcessRequest, opts ...grpc.CallOption) (*pb.RemoveProcessResponse, error) {
+	return rbc.bc.RemoveProcess(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}

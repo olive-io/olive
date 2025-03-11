@@ -105,15 +105,10 @@ message RunnerStat {
   uint64 bpmnTasks = 8;
 }
 
-enum EventType {
-  ExecuteProcess = 0;
-}
-
-message ExecuteProcessEvent {
+message ExecuteProcessMsg {
   int64 process = 1;
 }
 
 message RunnerEvent {
-  EventType type = 1;
-  ExecuteProcessEvent executeProcess = 2;
+  ExecuteProcessMsg executeProcess = 1;
 }

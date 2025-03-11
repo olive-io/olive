@@ -13,8 +13,8 @@ func TestDelegateForGRPC_Call(t *testing.T) {
 	grpc := &DelegateForGRPC{}
 
 	headers := map[string]string{
-		"ov:host": "localhost:50051",
-		"ov:name": "helloworld.Greeter.SayHello",
+		"ov:host": "localhost:9000",
+		"ov:name": "helloworld.v1.UserService/ListUsers",
 	}
 
 	properties := map[string]any{

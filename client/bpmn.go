@@ -36,6 +36,8 @@ type BpmnRPC interface {
 	GetDefinition(ctx context.Context, id int64, version uint64) (*types.Definition, error)
 	RemoveDefinition(ctx context.Context, id int64) error
 	ExecuteDefinition(ctx context.Context, id int64, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
+	GetProcess(ctx context.Context, id int64) (*types.ProcessInstance, error)
+	RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error)
 }
 
 type bpmnRPC struct {
@@ -207,6 +209,26 @@ func (bc *bpmnRPC) ExecuteDefinition(ctx context.Context, id int64, options ...E
 		return nil, toErr(ctx, err)
 	}
 	return resp.Process, nil
+}
+
+func (bc *bpmnRPC) GetProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
+	conn := bc.client.conn
+	in := &pb.GetProcessRequest{Id: id}
+	resp, err := bc.remoteClient(conn).GetProcess(ctx, in, bc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return resp.Instance, nil
+}
+
+func (bc *bpmnRPC) RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
+	conn := bc.client.conn
+	in := &pb.RemoveProcessRequest{Id: id}
+	resp, err := bc.remoteClient(conn).RemoveProcess(ctx, in, bc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return resp.Instance, nil
 }
 
 func (bc *bpmnRPC) remoteClient(conn *grpc.ClientConn) pb.BpmnRPCClient {

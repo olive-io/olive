@@ -116,3 +116,25 @@ func (rpc *bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefini
 	}
 	return resp, nil
 }
+
+func (rpc *bpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {
+	instance, err := rpc.s.GetProcess(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.GetProcessResponse{
+		Instance: instance,
+	}
+	return resp, nil
+}
+
+func (rpc *bpmnRPC) RemoveProcess(ctx context.Context, req *pb.RemoveProcessRequest) (*pb.RemoveProcessResponse, error) {
+	instance, err := rpc.s.RemoveProcess(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.RemoveProcessResponse{
+		Instance: instance,
+	}
+	return resp, nil
+}

@@ -136,3 +136,37 @@ func (s *Service) ExecuteDefinition(ctx context.Context, process *types.ProcessI
 
 	return process, nil
 }
+
+func (s *Service) GetProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
+	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", id))
+	resp, err := s.v3cli.Get(ctx, key, clientv3.WithSerializable())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Kvs) == 0 {
+		return nil, fmt.Errorf("process not found")
+	}
+
+	var process types.ProcessInstance
+	err = proto.Unmarshal(resp.Kvs[0].Value, &process)
+	if err != nil {
+		return nil, err
+	}
+	return &process, nil
+}
+
+func (s *Service) RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
+	instance, err := s.GetProcess(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", id))
+	_, err = s.v3cli.Delete(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	return instance, nil
+}

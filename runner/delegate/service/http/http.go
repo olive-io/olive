@@ -35,6 +35,7 @@ import (
 
 	json "github.com/bytedance/sonic"
 
+	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/runner/delegate"
 )
 
@@ -50,7 +51,7 @@ func New() *DelegateForHttp {
 
 func (dh *DelegateForHttp) GetTheme() delegate.Theme {
 	return delegate.Theme{
-		Major: corev1.ServiceTask,
+		Major: types.FlowNodeType_ServiceTask,
 		Minor: "http",
 	}
 }

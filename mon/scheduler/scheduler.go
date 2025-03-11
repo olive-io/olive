@@ -275,8 +275,7 @@ func (sc *scheduler) process(ctx context.Context) {
 				}
 
 				event := &types.RunnerEvent{
-					Type: types.EventType_ExecuteProcess,
-					ExecuteProcess: &types.ExecuteProcessEvent{
+					ExecuteProcess: &types.ExecuteProcessMsg{
 						Process: process.ID(),
 					},
 				}
@@ -381,7 +380,7 @@ func (sc *scheduler) watchProcess(ctx context.Context) {
 					}
 
 					if ps.ExecuteExpired(processInterval) {
-						sc.lg.Info("discovery a expired process, dispatches another runner",
+						sc.lg.Info("discovery an expired process, dispatches another runner",
 							zap.Int64("process", ps.Id))
 						newSnap := &types.ProcessSnapshot{
 							Id:       ps.Id,
