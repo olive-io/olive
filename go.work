@@ -1,0 +1,10 @@
+go 1.23.7
+
+use (
+	.
+	api
+	client
+	mon
+	pkg
+	runner
+)

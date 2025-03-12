@@ -1,0 +1,160 @@
+/*
+Copyright 2025 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package types;
+
+option go_package = "github.com/olive-io/olive/api/types;types";
+option java_multiple_files = true;
+option java_package = "io.olive.api.types";
+option java_outer_classname = "OliveTypes";
+
+enum FlowNodeType {
+  UnknownNode = 0;
+  StartEvent = 1;
+  EndEvent = 2;
+  BoundaryEvent = 3;
+  IntermediateCatchEvent = 4;
+
+  Task = 11;
+  SendTask = 12;
+  ReceiveTask = 13;
+  ServiceTask = 14;
+  UserTask = 15;
+  ScriptTask = 16;
+  ManualTask = 17;
+  CallActivity = 18;
+  BusinessRuleTask = 19;
+  SubProcess = 20;
+
+  EventBasedGateway = 31;
+  ExclusiveGateway = 32;
+  InclusiveGateway = 33;
+  ParallelGateway = 34;
+}
+
+// Definition bpmn Definition
+message Definition {
+  int64 id = 1;
+
+  string name = 2;
+
+  string description = 3;
+
+  map<string, string> metadata = 4;
+
+  string content = 5;
+
+  uint64 version = 6;
+
+  int64 timestamp = 21;
+}
+
+message BpmnArgs {
+  map<string, string> headers = 1;
+
+  map<string, bytes> properties = 2;
+
+  map<string, bytes> dataObjects = 3;
+}
+
+message FlowNode {
+  FlowNodeType type = 1;
+
+  string id = 2;
+}
+
+message ProcessContext {
+  map<string, bytes> variables = 1;
+
+  map<string, bytes> dataObjects = 2;
+}
+
+message FlowNodeStat {
+  string id = 1;
+
+  string name = 2;
+
+  ProcessContext context = 3;
+
+  int32 retries = 4;
+
+  string message = 5;
+
+  int64 startTime = 6;
+
+  int64 endTime = 7;
+}
+
+enum ProcessStatus {
+  // to be 'Prepare' where Process created
+  Prepare = 0;
+  // to be 'Ready' where olive-mon scheduled
+  Ready = 1;
+  Running = 2;
+  Ok = 3;
+  Failed = 4;
+}
+
+message Process {
+  int64 id = 1;
+
+  string name = 2;
+
+  map<string, string> metadata = 3;
+
+  int64 priority = 4;
+
+  BpmnArgs args = 5;
+
+  int64 definitionsId = 6;
+
+  uint64 definitionsVersion = 7;
+
+  string definitionsProcess = 8;
+
+  string definitionsContent = 9;
+
+  ProcessContext context = 10;
+
+  repeated FlowNode flowNodes = 11;
+
+  map<string, FlowNodeStat> flowNodeStatMap = 12;
+
+  int32 attempts = 13;
+
+  int64 startAt = 21;
+
+  int64 endAt = 22;
+
+  ProcessStatus status = 23;
+
+  string message = 24;
+}
+
+message ProcessSnapshot {
+  int64 id = 1;
+  int64 priority = 2;
+  ProcessStatus status = 3;
+  // olive-mon schedule timestamp
+  int64 readyAt = 4;
+}

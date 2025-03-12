@@ -1,0 +1,129 @@
+/*
+Copyright 2023 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package runnerpb;
+
+import "types/internal.proto";
+import "types/bpmn.proto";
+// for grpc-gateway
+import "google/api/annotations.proto";
+
+option go_package = "github.com/olive-io/olive/api/rpc/runnerpb;runnerpb";
+option java_multiple_files = true;
+option java_package = "io.olive.api.rpc.runnerpb";
+option java_outer_classname = "OliveRPCRunnerPb";
+
+service RunnerRPC {
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runner"
+    };
+  };
+
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/list"
+      body: "*"
+    };
+  };
+
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions/get"
+      body: "*"
+    };
+  };
+
+  rpc ListProcess(ListProcessRequest) returns (ListProcessResponse) {
+    option (google.api.http) = {
+      post: "/v1/process/list"
+      body: "*"
+    };
+  };
+
+  rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
+    option (google.api.http) = {
+      post: "/v1/process/get"
+      body: "*"
+    };
+  };
+
+  rpc RunProcess(RunProcessRequest) returns (RunProcessResponse) {
+    option (google.api.http) = {
+      post: "/v1/process/run"
+      body: "*"
+    };
+  };
+}
+
+message GetRunnerRequest {}
+
+message GetRunnerResponse {
+  types.Runner runner = 1;
+  types.RunnerStat statistics = 2;
+}
+
+message ListDefinitionsRequest {
+  int64 id = 1;
+}
+
+message ListDefinitionsResponse {
+  repeated types.Definition definitions = 1;
+}
+
+message GetDefinitionRequest {
+  int64 id = 1;
+  uint64 version = 2;
+}
+
+message GetDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+message ListProcessRequest {
+  int64 definitionId = 1;
+  uint64 definitionVersion = 2;
+}
+
+message ListProcessResponse {
+  repeated types.Process processes = 1;
+}
+
+message GetProcessRequest {
+  int64 definitionId = 1;
+  uint64 definitionVersion = 2;
+  int64 id = 3;
+}
+
+message GetProcessResponse {
+  types.Process process = 1;
+}
+
+message RunProcessRequest {
+  types.Process process = 1;
+}
+
+message RunProcessResponse {
+  types.Process process = 1;
+}
+
