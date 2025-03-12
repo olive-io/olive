@@ -35,7 +35,7 @@ type SystemRPC interface {
 	GetCluster(ctx context.Context) (*types.Monitor, error)
 	Register(ctx context.Context, runner *types.Runner) (*types.Runner, error)
 	Disregister(ctx context.Context, runner *types.Runner) (*types.Runner, error)
-	Heartbeat(ctx context.Context, stat *types.RunnerStat) error
+	Heartbeat(ctx context.Context, stat *types.RunnerStat) (*types.ResponseHeader, error)
 	ListRunners(ctx context.Context) ([]*types.Runner, error)
 	GetRunner(ctx context.Context, id uint64) (*types.Runner, *types.RunnerStat, error)
 }
@@ -93,12 +93,15 @@ func (rpc *systemRPC) Disregister(ctx context.Context, runner *types.Runner) (*t
 	return resp.Runner, nil
 }
 
-func (rpc *systemRPC) Heartbeat(ctx context.Context, stat *types.RunnerStat) error {
+func (rpc *systemRPC) Heartbeat(ctx context.Context, stat *types.RunnerStat) (*types.ResponseHeader, error) {
 	in := &pb.HeartbeatRequest{
 		Stat: stat,
 	}
-	_, err := rpc.remote.Heartbeat(ctx, in, rpc.callOpts...)
-	return toErr(ctx, err)
+	resp, err := rpc.remote.Heartbeat(ctx, in, rpc.callOpts...)
+	if err != nil {
+		return nil, toErr(ctx, err)
+	}
+	return resp.Header, nil
 }
 
 func (rpc *systemRPC) ListRunners(ctx context.Context) ([]*types.Runner, error) {

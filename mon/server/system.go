@@ -78,11 +78,13 @@ func (rpc *systemRPC) Disregister(ctx context.Context, req *pb.DisregisterReques
 }
 
 func (rpc *systemRPC) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
-	err := rpc.s.Heartbeat(ctx, req.Stat)
+	header, err := rpc.s.Heartbeat(ctx, req.Stat)
 	if err != nil {
 		return nil, err
 	}
-	resp := &pb.HeartbeatResponse{}
+	resp := &pb.HeartbeatResponse{
+		Header: header,
+	}
 	return resp, nil
 }
 

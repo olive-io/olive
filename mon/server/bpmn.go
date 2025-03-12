@@ -41,14 +41,7 @@ func newBpmn(s *bpmn.Service) *bpmnRPC {
 }
 
 func (rpc *bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
-	definition := &types.Definition{
-		Id:          req.Id,
-		Name:        req.Name,
-		Description: req.Description,
-		Metadata:    req.Metadata,
-		Content:     req.Content,
-	}
-
+	definition := req.Definition
 	var err error
 	definition, err = rpc.s.DeployDefinition(ctx, definition)
 	if err != nil {
@@ -95,7 +88,7 @@ func (rpc *bpmnRPC) RemoveDefinition(ctx context.Context, req *pb.RemoveDefiniti
 }
 
 func (rpc *bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (*pb.ExecuteDefinitionResponse, error) {
-	process := &types.ProcessInstance{
+	process := &types.Process{
 		Name:     req.Name,
 		Metadata: make(map[string]string),
 		Args: &types.BpmnArgs{
@@ -117,19 +110,31 @@ func (rpc *bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefini
 	return resp, nil
 }
 
+func (rpc *bpmnRPC) ListProcess(ctx context.Context, req *pb.ListProcessRequest) (*pb.ListProcessResponse, error) {
+	processes, total, err := rpc.s.ListProcess(ctx, req.Definition, req.Version, req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.ListProcessResponse{
+		Processes: processes,
+		Total:     total,
+	}
+	return resp, nil
+}
+
 func (rpc *bpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {
-	instance, err := rpc.s.GetProcess(ctx, req.Id)
+	process, err := rpc.s.GetProcess(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.GetProcessResponse{
-		Instance: instance,
+		Process: process,
 	}
 	return resp, nil
 }
 
 func (rpc *bpmnRPC) UpdateProcess(ctx context.Context, req *pb.UpdateProcessRequest) (*pb.UpdateProcessResponse, error) {
-	err := rpc.s.UpdateProcess(ctx, req.Instance)
+	err := rpc.s.UpdateProcess(ctx, req.Process)
 	if err != nil {
 		return nil, err
 	}
@@ -138,12 +143,12 @@ func (rpc *bpmnRPC) UpdateProcess(ctx context.Context, req *pb.UpdateProcessRequ
 }
 
 func (rpc *bpmnRPC) RemoveProcess(ctx context.Context, req *pb.RemoveProcessRequest) (*pb.RemoveProcessResponse, error) {
-	instance, err := rpc.s.RemoveProcess(ctx, req.Id)
+	process, err := rpc.s.RemoveProcess(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.RemoveProcessResponse{
-		Instance: instance,
+		Process: process,
 	}
 	return resp, nil
 }

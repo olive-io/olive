@@ -45,7 +45,7 @@ import (
 
 const (
 	processSchPrefix = "/olive/mon/schedule/process"
-	// processInterval means the interval of *types.ProcessInstance from olive-mon scheduled
+	// processInterval means the interval of *types.Process from olive-mon scheduled
 	// until olive-runner executes
 	processInterval = time.Minute
 )
@@ -70,7 +70,7 @@ func StartScheduler(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client,
 }
 
 // AddProcess add bpmn process for global Scheduler
-func AddProcess(ctx context.Context, pi *types.ProcessInstance) {
+func AddProcess(ctx context.Context, pi *types.Process) {
 	gs.AddProcess(ctx, pi)
 }
 
@@ -99,7 +99,7 @@ func DefaultProcessStore(p *Process) int64 {
 }
 
 type Scheduler interface {
-	AddProcess(ctx context.Context, pi *types.ProcessInstance)
+	AddProcess(ctx context.Context, pi *types.Process)
 	NextOne(ctx context.Context) (*types.Runner, bool)
 	Start(ctx context.Context) error
 }
@@ -145,7 +145,7 @@ func New(lg *zap.Logger, v3cli *clientv3.Client, notifier leader.Notifier) (Sche
 	return sch, nil
 }
 
-func (sc *scheduler) AddProcess(ctx context.Context, pi *types.ProcessInstance) {
+func (sc *scheduler) AddProcess(ctx context.Context, pi *types.Process) {
 	ps := pi.ToSnapshot()
 	sc.saveProcessSnapshot(ctx, ps)
 	if sc.isLeader() {
@@ -249,7 +249,7 @@ func (sc *scheduler) process(ctx context.Context) {
 							}
 						}
 					case ev.Type == mvccpb.DELETE:
-						ps, err := parsePSnapKV(ev.Kv)
+						ps, err := parsePSnapKV(ev.PrevKv)
 						if err == nil {
 							sc.pmu.Lock()
 							sc.processTree.Remove(ps.Id)
@@ -290,7 +290,7 @@ func (sc *scheduler) process(ctx context.Context) {
 	}
 }
 
-// watchProcess watches events of *types.ProcessInstance
+// watchProcess watches events of *types.Process
 func (sc *scheduler) watchProcess(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -343,7 +343,7 @@ func (sc *scheduler) watchProcess(ctx context.Context) {
 						pi, err := parseProcessKV(ev.Kv)
 						if err == nil {
 							if pi.Executed() {
-								// reallocates ProcessInstance to another olive-runner
+								// reallocates Process to another olive-runner
 								sc.pmu.Lock()
 								sc.processTree.Remove(pi.Id)
 								sc.pmu.Unlock()

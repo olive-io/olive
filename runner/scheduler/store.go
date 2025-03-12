@@ -107,7 +107,7 @@ func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 	}
 
 	for _, kv := range resp.Kvs {
-		var instance types.ProcessInstance
+		var instance types.Process
 		if err := json.Unmarshal(kv.Value, &instance); err != nil {
 			continue
 		}
@@ -121,9 +121,9 @@ func (s *Scheduler) undoneTasks(ctx context.Context) []*ProcessItem {
 	return items
 }
 
-func (s *Scheduler) ListProcess(ctx context.Context, definition int64, version uint64) ([]*types.ProcessInstance, error) {
+func (s *Scheduler) ListProcess(ctx context.Context, definition int64, version uint64) ([]*types.Process, error) {
 
-	instances := make([]*types.ProcessInstance, 0)
+	instances := make([]*types.Process, 0)
 	key := api.ProcessPrefix
 	if definition != 0 {
 		key = path.Join(key, fmt.Sprintf("%d", definition))
@@ -138,7 +138,7 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition int64, version u
 	if err != nil {
 		return nil, err
 	}
-	err = storage.NewUnmarshaler[*types.ProcessInstance](resp).SliceTo(&instances)
+	err = storage.NewUnmarshaler[*types.Process](resp).SliceTo(&instances)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *Scheduler) ListProcess(ctx context.Context, definition int64, version u
 	return instances, nil
 }
 
-func (s *Scheduler) GetProcess(ctx context.Context, definition int64, version uint64, id int64) (*types.ProcessInstance, error) {
+func (s *Scheduler) GetProcess(ctx context.Context, definition int64, version uint64, id int64) (*types.Process, error) {
 	identify := fmt.Sprintf("%d/%d/%d", definition, version, id)
 
 	key := api.ProcessPrefix
@@ -156,7 +156,7 @@ func (s *Scheduler) GetProcess(ctx context.Context, definition int64, version ui
 		return nil, err
 	}
 
-	pi := new(types.ProcessInstance)
+	pi := new(types.Process)
 	err = resp.Unmarshal(pi)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (s *Scheduler) GetProcess(ctx context.Context, definition int64, version ui
 	return pi, nil
 }
 
-func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInstance) error {
+func (s *Scheduler) saveProcess(ctx context.Context, instance *types.Process) error {
 	if instance.StartAt == 0 {
 		instance.StartAt = time.Now().UnixNano()
 	}
@@ -181,7 +181,7 @@ func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInst
 		return err
 	}
 
-	copied := proto.Clone(instance).(*types.ProcessInstance)
+	copied := proto.Clone(instance).(*types.Process)
 	event := &Event{
 		UpdateProcess: &UpdateProcess{Process: copied},
 	}
@@ -190,7 +190,7 @@ func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInst
 	return nil
 }
 
-func (s *Scheduler) finishProcess(ctx context.Context, instance *types.ProcessInstance, err error) error {
+func (s *Scheduler) finishProcess(ctx context.Context, instance *types.Process, err error) error {
 	instance.EndAt = time.Now().UnixNano()
 	if err != nil {
 		instance.Status = types.ProcessStatus_Failed

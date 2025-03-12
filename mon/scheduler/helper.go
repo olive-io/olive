@@ -46,8 +46,8 @@ func parsePSnapKV(kv *mvccpb.KeyValue) (*types.ProcessSnapshot, error) {
 	return &ps, err
 }
 
-func parseProcessKV(kv *mvccpb.KeyValue) (*types.ProcessInstance, error) {
-	var pi types.ProcessInstance
+func parseProcessKV(kv *mvccpb.KeyValue) (*types.Process, error) {
+	var pi types.Process
 	err := proto.Unmarshal(kv.Value, &pi)
 	return &pi, err
 }

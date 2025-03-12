@@ -48,28 +48,28 @@ func (s *GRPCRunnerServer) GetDefinition(ctx context.Context, req *pb.GetDefinit
 	return
 }
 
-func (s *GRPCRunnerServer) ListProcessInstances(ctx context.Context, req *pb.ListProcessInstancesRequest) (resp *pb.ListProcessInstancesResponse, err error) {
-	resp = &pb.ListProcessInstancesResponse{}
+func (s *GRPCRunnerServer) ListProcess(ctx context.Context, req *pb.ListProcessRequest) (resp *pb.ListProcessResponse, err error) {
+	resp = &pb.ListProcessResponse{}
 
-	resp.Instances, err = s.scheduler.ListProcess(ctx, req.DefinitionId, req.DefinitionVersion)
+	resp.Processes, err = s.scheduler.ListProcess(ctx, req.DefinitionId, req.DefinitionVersion)
 	return
 }
 
-func (s *GRPCRunnerServer) GetProcessInstance(ctx context.Context, req *pb.GetProcessInstanceRequest) (resp *pb.GetProcessInstanceResponse, err error) {
-	resp = &pb.GetProcessInstanceResponse{}
+func (s *GRPCRunnerServer) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (resp *pb.GetProcessResponse, err error) {
+	resp = &pb.GetProcessResponse{}
 
-	resp.Instance, err = s.scheduler.GetProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
+	resp.Process, err = s.scheduler.GetProcess(ctx, req.DefinitionId, req.DefinitionVersion, req.Id)
 	return
 }
 
-func (s *GRPCRunnerServer) RunProcessInstance(ctx context.Context, req *pb.RunProcessInstanceRequest) (resp *pb.RunProcessInstanceResponse, err error) {
+func (s *GRPCRunnerServer) RunProcess(ctx context.Context, req *pb.RunProcessRequest) (resp *pb.RunProcessResponse, err error) {
 
-	err = s.scheduler.RunProcess(ctx, req.Instance)
+	err = s.scheduler.RunProcess(ctx, req.Process)
 	if err != nil {
 		return
 	}
-	resp = &pb.RunProcessInstanceResponse{
-		Instance: req.Instance,
+	resp = &pb.RunProcessResponse{
+		Process: req.Process,
 	}
 	return
 }

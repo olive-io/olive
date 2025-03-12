@@ -26,7 +26,7 @@ import (
 )
 
 type UpdateProcess struct {
-	Process *types.ProcessInstance
+	Process *types.Process
 }
 
 type Event struct {

@@ -106,7 +106,7 @@ message FlowNodeStat {
 }
 
 enum ProcessStatus {
-  // to be 'Prepare' where ProcessInstance created
+  // to be 'Prepare' where Process created
   Prepare = 0;
   // to be 'Ready' where olive-mon scheduled
   Ready = 1;
@@ -115,7 +115,7 @@ enum ProcessStatus {
   Failed = 4;
 }
 
-message ProcessInstance {
+message Process {
   int64 id = 1;
 
   string name = 2;

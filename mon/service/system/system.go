@@ -135,20 +135,20 @@ func (s *Service) Disregister(ctx context.Context, runner *types.Runner) (*types
 	return runner, nil
 }
 
-func (s *Service) Heartbeat(ctx context.Context, stat *types.RunnerStat) error {
+func (s *Service) Heartbeat(ctx context.Context, stat *types.RunnerStat) (*types.ResponseHeader, error) {
 	statKey := path.Join(api.RunnerStatPrefix, fmt.Sprintf("%d", stat.Id))
 	statBytes, err := proto.Marshal(stat)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	opts := []clientv3.OpOption{}
-	_, err = s.v3cli.Put(ctx, statKey, string(statBytes), opts...)
+	resp, err := s.v3cli.Put(ctx, statKey, string(statBytes), opts...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return types.PbToHeader(resp.Header), nil
 }
 
 func (s *Service) ListRunners(ctx context.Context) ([]*types.Runner, error) {

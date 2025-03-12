@@ -46,7 +46,7 @@ import (
 var ErrStopped = errors.New("scheduler stopped")
 
 type ProcessItem struct {
-	*types.ProcessInstance
+	*types.Process
 }
 
 func (item *ProcessItem) ID() int64 {
@@ -192,7 +192,7 @@ func (s *Scheduler) closeAllSubscribers() {
 	s.smu.Unlock()
 }
 
-func (s *Scheduler) RunProcess(ctx context.Context, pi *types.ProcessInstance) error {
+func (s *Scheduler) RunProcess(ctx context.Context, pi *types.Process) error {
 
 	if _, err := schema.Parse([]byte(pi.DefinitionsContent)); err != nil {
 		return err
@@ -283,14 +283,14 @@ func (s *Scheduler) process() {
 			continue
 		}
 
-		err := s.pool.Submit(s.buildProcessTask(item.ProcessInstance))
+		err := s.pool.Submit(s.buildProcessTask(item.Process))
 		if err != nil {
 			s.logger.Sugar().Errorf("submit process: %v", err)
 		}
 	}
 }
 
-func (s *Scheduler) buildProcessTask(instance *types.ProcessInstance) func() {
+func (s *Scheduler) buildProcessTask(instance *types.Process) func() {
 	return func() {
 		s.wg.Add(1)
 

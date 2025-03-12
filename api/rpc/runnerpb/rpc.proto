@@ -54,21 +54,21 @@ service RunnerRPC {
     };
   };
 
-  rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {
+  rpc ListProcess(ListProcessRequest) returns (ListProcessResponse) {
     option (google.api.http) = {
       post: "/v1/process/list"
       body: "*"
     };
   };
 
-  rpc GetProcessInstance(GetProcessInstanceRequest) returns (GetProcessInstanceResponse) {
+  rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
     option (google.api.http) = {
       post: "/v1/process/get"
       body: "*"
     };
   };
 
-  rpc RunProcessInstance(RunProcessInstanceRequest) returns (RunProcessInstanceResponse) {
+  rpc RunProcess(RunProcessRequest) returns (RunProcessResponse) {
     option (google.api.http) = {
       post: "/v1/process/run"
       body: "*"
@@ -100,30 +100,30 @@ message GetDefinitionResponse {
   types.Definition definition = 1;
 }
 
-message ListProcessInstancesRequest {
+message ListProcessRequest {
   int64 definitionId = 1;
   uint64 definitionVersion = 2;
 }
 
-message ListProcessInstancesResponse {
-  repeated types.ProcessInstance instances = 1;
+message ListProcessResponse {
+  repeated types.Process processes = 1;
 }
 
-message GetProcessInstanceRequest {
+message GetProcessRequest {
   int64 definitionId = 1;
   uint64 definitionVersion = 2;
   int64 id = 3;
 }
 
-message GetProcessInstanceResponse {
-  types.ProcessInstance instance = 1;
+message GetProcessResponse {
+  types.Process process = 1;
 }
 
-message RunProcessInstanceRequest {
-  types.ProcessInstance instance = 1;
+message RunProcessRequest {
+  types.Process process = 1;
 }
 
-message RunProcessInstanceResponse {
-  types.ProcessInstance instance = 1;
+message RunProcessResponse {
+  types.Process process = 1;
 }
 

@@ -78,7 +78,7 @@ func NewConfig() *Config {
 }
 
 func (cfg *Config) newFlags() *pflag.FlagSet {
-	fs := pflag.NewFlagSet("meta", pflag.ExitOnError)
+	fs := pflag.NewFlagSet("mon", pflag.ExitOnError)
 	// member
 	fs.StringVar(&cfg.Config.Name, "name", DefaultName,
 		"Human-readable name for this member.")

@@ -38,35 +38,35 @@ func (r *Runner) handleEvent(ctx context.Context, event *types.RunnerEvent) {
 
 func (r *Runner) handleExecuteProcess(ctx context.Context, msg *types.ExecuteProcessMsg) {
 	lg := r.Logger()
-	instance, err := r.oct.GetProcess(ctx, msg.Process)
+	process, err := r.oct.GetProcess(ctx, msg.Process)
 	if err != nil {
 		lg.Error("get process", zap.Int64("process", msg.Process), zap.Error(err))
 		return
 	}
-	if instance.Finished() {
+	if process.Finished() {
 		return
 	}
 
-	if len(instance.DefinitionsContent) == 0 {
-		definition, err := r.oct.GetDefinition(ctx, instance.DefinitionsId, instance.DefinitionsVersion)
+	if len(process.DefinitionsContent) == 0 {
+		definition, err := r.oct.GetDefinition(ctx, process.DefinitionsId, process.DefinitionsVersion)
 		if err != nil {
 			lg.Error("get definition",
-				zap.Int64("id", instance.DefinitionsId),
-				zap.Uint64("version", instance.DefinitionsVersion),
+				zap.Int64("id", process.DefinitionsId),
+				zap.Uint64("version", process.DefinitionsVersion),
 				zap.Error(err))
 			return
 		}
-		instance.DefinitionsContent = definition.Content
+		process.DefinitionsContent = definition.Content
 	}
 
-	if err = r.sch.RunProcess(ctx, instance); err != nil {
+	if err = r.sch.RunProcess(ctx, process); err != nil {
 		lg.Error("run process", zap.Int64("process", msg.Process), zap.Error(err))
 		return
 	}
 
 	lg.Info("start running process",
-		zap.Int64("id", instance.Id),
-		zap.String("name", instance.Name),
-		zap.Int64("definition", instance.DefinitionsId),
-		zap.Uint64("version", instance.DefinitionsVersion))
+		zap.Int64("id", process.Id),
+		zap.String("name", process.Name),
+		zap.Int64("definition", process.DefinitionsId),
+		zap.Uint64("version", process.DefinitionsVersion))
 }

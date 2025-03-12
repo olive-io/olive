@@ -210,7 +210,9 @@ message HeartbeatRequest {
   types.RunnerStat stat = 1;
 }
 
-message HeartbeatResponse {}
+message HeartbeatResponse {
+  types.ResponseHeader header = 1;
+}
 
 message ListRunnersRequest {}
 
@@ -256,6 +258,11 @@ service BpmnRPC {
       body: "*"
     };
   };
+  rpc ListProcess(ListProcessRequest) returns (ListProcessResponse) {
+    option (google.api.http) = {
+      get: "/v1/processes"
+    };
+  }
   rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
     option (google.api.http) = {
       get: "/v1/processes/{id}"
@@ -275,11 +282,7 @@ service BpmnRPC {
 }
 
 message DeployDefinitionRequest {
-  int64 id = 1;
-  string name = 2;
-  string description = 3;
-  map<string, string> metadata = 4;
-  string content = 5;
+  types.Definition definition = 1;
 }
 
 message DeployDefinitionResponse {
@@ -324,7 +327,19 @@ message ExecuteDefinitionRequest {
 }
 
 message ExecuteDefinitionResponse {
-  types.ProcessInstance process = 1;
+  types.Process process = 1;
+}
+
+message ListProcessRequest {
+  int64 definition = 1;
+  uint64 version = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message ListProcessResponse {
+  repeated types.Process processes = 1;
+  int64 total = 2;
 }
 
 message GetProcessRequest {
@@ -332,11 +347,11 @@ message GetProcessRequest {
 }
 
 message GetProcessResponse {
-  types.ProcessInstance instance = 1;
+  types.Process process = 1;
 }
 
 message UpdateProcessRequest {
-  types.ProcessInstance instance = 1;
+  types.Process process = 1;
 }
 
 message UpdateProcessResponse {}
@@ -346,5 +361,5 @@ message RemoveProcessRequest {
 }
 
 message RemoveProcessResponse {
-  types.ProcessInstance instance = 1;
+  types.Process process = 1;
 }

@@ -128,20 +128,20 @@ func (c *Client) GetDefinition(ctx context.Context, id int64, version uint64) (*
 	return resp.Definition, nil
 }
 
-func (c *Client) ListProcessInstances(ctx context.Context, definition int64, version uint64) ([]*types.ProcessInstance, error) {
+func (c *Client) ListProcess(ctx context.Context, definition int64, version uint64) ([]*types.Process, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
 	}
 
 	cc := pb.NewRunnerRPCClient(conn)
-	in := &pb.ListProcessInstancesRequest{
+	in := &pb.ListProcessRequest{
 		DefinitionId:      definition,
 		DefinitionVersion: version,
 	}
 	options := c.getCallOptions()
 
-	resp, err := cc.ListProcessInstances(ctx, in, options...)
+	resp, err := cc.ListProcess(ctx, in, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,21 +149,21 @@ func (c *Client) ListProcessInstances(ctx context.Context, definition int64, ver
 	return resp.Instances, nil
 }
 
-func (c *Client) GetProcessInstance(ctx context.Context, definition int64, version uint64, id int64) (*types.ProcessInstance, error) {
+func (c *Client) GetProcess(ctx context.Context, definition int64, version uint64, id int64) (*types.Process, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
 	}
 
 	cc := pb.NewRunnerRPCClient(conn)
-	in := &pb.GetProcessInstanceRequest{
+	in := &pb.GetProcessRequest{
 		DefinitionId:      definition,
 		DefinitionVersion: version,
 		Id:                id,
 	}
 	options := c.getCallOptions()
 
-	resp, err := cc.GetProcessInstance(ctx, in, options...)
+	resp, err := cc.GetProcess(ctx, in, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (c *Client) GetProcessInstance(ctx context.Context, definition int64, versi
 	return resp.Instance, nil
 }
 
-func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstanceRequest) (*types.ProcessInstance, error) {
+func (c *Client) RunProcess(ctx context.Context, in *pb.RunProcessRequest) (*types.Process, error) {
 	conn, err := c.newConn()
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstan
 	cc := pb.NewRunnerRPCClient(conn)
 	options := c.getCallOptions()
 
-	resp, err := cc.RunProcessInstance(ctx, in, options...)
+	resp, err := cc.RunProcess(ctx, in, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,17 +188,17 @@ func (c *Client) RunProcessInstance(ctx context.Context, in *pb.RunProcessInstan
 	return resp.Instance, nil
 }
 
-func (c *Client) BuildProcessInstance() *processBuilder {
+func (c *Client) BuildProcess() *processBuilder {
 	builder := &processBuilder{
-		RunProcessInstanceRequest: &pb.RunProcessInstanceRequest{},
-		cc:                        c,
+		RunProcessRequest: &pb.RunProcessRequest{},
+		cc:                c,
 	}
 
 	return builder
 }
 
 type processBuilder struct {
-	*pb.RunProcessInstanceRequest
+	*pb.RunProcessRequest
 
 	cc *Client
 }
@@ -241,8 +241,8 @@ func (b *processBuilder) SetDataObjects(dataObjects map[string]any) *processBuil
 	return b
 }
 
-func (b *processBuilder) Do(ctx context.Context) (*types.ProcessInstance, error) {
-	return b.cc.RunProcessInstance(ctx, b.RunProcessInstanceRequest)
+func (b *processBuilder) Do(ctx context.Context) (*types.Process, error) {
+	return b.cc.RunProcess(ctx, b.RunProcessRequest)
 }
 
 func marshalValue(v any) []byte {

@@ -31,6 +31,7 @@ func PbToHeader(header *etcdserverpb.ResponseHeader) *ResponseHeader {
 	return &ResponseHeader{
 		ClusterID: header.ClusterId,
 		MemberID:  header.MemberId,
+		Revision:  header.Revision,
 		RaftTerm:  header.RaftTerm,
 	}
 }
@@ -45,7 +46,7 @@ func PbToMember(member *etcdserverpb.Member) *Member {
 	}
 }
 
-func (x *ProcessInstance) ToSnapshot() *ProcessSnapshot {
+func (x *Process) ToSnapshot() *ProcessSnapshot {
 	snapshot := &ProcessSnapshot{
 		Id:       x.Id,
 		Priority: x.Priority,
@@ -55,7 +56,7 @@ func (x *ProcessInstance) ToSnapshot() *ProcessSnapshot {
 }
 
 // Finished returns true if Status equals ProcessStatus_Ok, ProcessStatus_Failed.
-func (x *ProcessInstance) Finished() bool {
+func (x *Process) Finished() bool {
 	switch x.Status {
 	case ProcessStatus_Ok,
 		ProcessStatus_Failed:
@@ -66,7 +67,7 @@ func (x *ProcessInstance) Finished() bool {
 }
 
 // Executed returns true if Status equals ProcessStatus_Running, ProcessStatus_Ok, ProcessStatus_Failed.
-func (x *ProcessInstance) Executed() bool {
+func (x *Process) Executed() bool {
 	switch x.Status {
 	case ProcessStatus_Running,
 		ProcessStatus_Ok,

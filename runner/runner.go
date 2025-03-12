@@ -294,36 +294,36 @@ func (r *Runner) process() {
 		zap.String("memory", humanize.IBytes(runner.Memory)),
 		zap.String("version", runner.Version))
 
-	opts := []clientv3.OpOption{
-		clientv3.WithPrefix(),
-		clientv3.WithSerializable(),
-		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
-	}
-
-	rev := r.getRev()
-	if rev != 0 {
-		opts = append(opts, clientv3.WithRev(rev))
-	}
-
-	prefix := path.Join(api.RunnerTopic, fmt.Sprintf("%d", runner.Id))
-	resp, err := r.oct.Get(ctx, prefix, opts...)
-	if err != nil {
-		lg.Error("get runner topic", zap.Error(err))
-	} else {
-		for _, kv := range resp.Kvs {
-			re, e1 := parseEventKV(kv)
-			if e1 == nil {
-				r.handleEvent(ctx, re)
-			}
-			r.setRev(kv.ModRevision)
-		}
-	}
-
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 
 		ticker.Reset(interval)
+
+		opts := []clientv3.OpOption{
+			clientv3.WithPrefix(),
+			clientv3.WithSerializable(),
+			clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
+		}
+
+		rev := r.getRev()
+		if rev != 0 {
+			opts = append(opts, clientv3.WithRev(rev))
+		}
+
+		prefix := path.Join(api.RunnerTopic, fmt.Sprintf("%d", runner.Id))
+		resp, err := r.oct.Get(ctx, prefix, opts...)
+		if err != nil {
+			lg.Error("get runner topic", zap.Error(err))
+		} else {
+			for _, kv := range resp.Kvs {
+				re, e1 := parseEventKV(kv)
+				if e1 == nil {
+					r.handleEvent(ctx, re)
+				}
+				r.setRev(kv.ModRevision)
+			}
+		}
 
 		rev = r.getRev()
 		wopts := []clientv3.OpOption{
@@ -344,9 +344,14 @@ func (r *Runner) process() {
 				return
 			case <-ticker.C:
 				stat := r.gather.GetStat()
-				err = r.oct.Heartbeat(ctx, stat)
+				header, err := r.oct.Heartbeat(ctx, stat)
 				if err != nil {
 					lg.Error("olive-runner update runner stat", zap.Error(err))
+				} else {
+					if header.Revision < r.getRev() {
+						r.setRev(0)
+						break LOOP
+					}
 				}
 
 			case wch, ok := <-tw:

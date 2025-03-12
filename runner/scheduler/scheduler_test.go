@@ -88,7 +88,7 @@ func TestProcess_Run(t *testing.T) {
 	delegate.Init(delegate.NewConfig())
 
 	ctx := context.TODO()
-	instance := &types.ProcessInstance{
+	instance := &types.Process{
 		Id:       1,
 		Name:     "test process",
 		Metadata: map[string]string{},

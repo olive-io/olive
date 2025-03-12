@@ -59,7 +59,7 @@ func ServersRegister(
 		return nil, nil, errors.Wrap(err, "create system service")
 	}
 
-	bpmnService, err := bpmn.New(ctx, lg, v3cli, cfg.NewIdGenerator())
+	bpmnService, err := bpmn.New(ctx, cfg, lg, v3cli, cfg.NewIdGenerator())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create bpmn service")
 	}

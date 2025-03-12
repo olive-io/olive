@@ -31,7 +31,8 @@ option java_outer_classname = "OliveTypes";
 message ResponseHeader {
   uint64 clusterID = 1;
   uint64 memberID = 2;
-  uint64 raftTerm = 3;
+  int64  revision = 3;
+  uint64 raftTerm = 4;
 }
 
 message Member {

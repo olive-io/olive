@@ -34,6 +34,7 @@ import (
 
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/mon/config"
 	"github.com/olive-io/olive/mon/scheduler"
 )
 
@@ -48,9 +49,9 @@ type Service struct {
 	ds *DefinitionStorage
 }
 
-func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator) (*Service, error) {
+func New(ctx context.Context, cfg *config.Config, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator) (*Service, error) {
 
-	ds, err := NewDefinitionStorage(ctx, v3cli)
+	ds, err := NewDefinitionStorage(ctx, v3cli, cfg.Dir)
 	if err != nil {
 		return nil, err
 	}
@@ -117,19 +118,13 @@ func (s *Service) RemoveDefinition(ctx context.Context, id int64, version uint64
 	return definition, nil
 }
 
-func (s *Service) ExecuteDefinition(ctx context.Context, process *types.ProcessInstance) (*types.ProcessInstance, error) {
+func (s *Service) ExecuteDefinition(ctx context.Context, process *types.Process) (*types.Process, error) {
 
 	process.Id = int64(s.idGen.Next())
 	process.Priority = 1
 	process.Status = types.ProcessStatus_Prepare
 
-	data, err := proto.Marshal(process)
-	if err != nil {
-		return nil, err
-	}
-	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", process.Id))
-	_, err = s.v3cli.Put(ctx, key, string(data))
-	if err != nil {
+	if err := s.ds.AddProcess(ctx, process); err != nil {
 		return nil, err
 	}
 	scheduler.AddProcess(ctx, process)
@@ -137,7 +132,15 @@ func (s *Service) ExecuteDefinition(ctx context.Context, process *types.ProcessI
 	return process, nil
 }
 
-func (s *Service) GetProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
+func (s *Service) ListProcess(ctx context.Context, definition int64, version uint64, page, size int32) ([]*types.Process, int64, error) {
+	processes, total, err := s.ds.ListProcess(ctx, definition, version, page, size)
+	if err != nil {
+		return nil, total, err
+	}
+	return processes, total, nil
+}
+
+func (s *Service) GetProcess(ctx context.Context, id int64) (*types.Process, error) {
 	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", id))
 	resp, err := s.v3cli.Get(ctx, key, clientv3.WithSerializable())
 	if err != nil {
@@ -148,7 +151,7 @@ func (s *Service) GetProcess(ctx context.Context, id int64) (*types.ProcessInsta
 		return nil, fmt.Errorf("process not found")
 	}
 
-	var process types.ProcessInstance
+	var process types.Process
 	err = proto.Unmarshal(resp.Kvs[0].Value, &process)
 	if err != nil {
 		return nil, err
@@ -156,31 +159,22 @@ func (s *Service) GetProcess(ctx context.Context, id int64) (*types.ProcessInsta
 	return &process, nil
 }
 
-func (s *Service) UpdateProcess(ctx context.Context, process *types.ProcessInstance) error {
-	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", process.Id))
-	data, err := proto.Marshal(process)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.v3cli.Put(ctx, key, string(data))
-	if err != nil {
+func (s *Service) UpdateProcess(ctx context.Context, process *types.Process) error {
+	if err := s.ds.AddProcess(ctx, process); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *Service) RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
-	instance, err := s.GetProcess(ctx, id)
+func (s *Service) RemoveProcess(ctx context.Context, id int64) (*types.Process, error) {
+	process, err := s.GetProcess(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", id))
-	_, err = s.v3cli.Delete(ctx, key)
-	if err != nil {
+	if err := s.ds.removeProcess(ctx, process); err != nil {
 		return nil, err
 	}
 
-	return instance, nil
+	return process, nil
 }
