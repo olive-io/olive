@@ -51,8 +51,13 @@ func (q *PriorityQueue[T]) Push(val T) {
 		value: val,
 		fn:    q.scoreFn,
 	}
-	heap.Push(&q.pq, it)
-	q.store[val.ID()] = it
+	if v, ok := q.store[val.ID()]; ok {
+		v.value = val
+		q.pq.update(v, val, q.scoreFn)
+	} else {
+		heap.Push(&q.pq, it)
+		q.store[val.ID()] = it
+	}
 }
 
 func (q *PriorityQueue[T]) Pop() (any, bool) {

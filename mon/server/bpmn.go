@@ -128,6 +128,15 @@ func (rpc *bpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (
 	return resp, nil
 }
 
+func (rpc *bpmnRPC) UpdateProcess(ctx context.Context, req *pb.UpdateProcessRequest) (*pb.UpdateProcessResponse, error) {
+	err := rpc.s.UpdateProcess(ctx, req.Instance)
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.UpdateProcessResponse{}
+	return resp, nil
+}
+
 func (rpc *bpmnRPC) RemoveProcess(ctx context.Context, req *pb.RemoveProcessRequest) (*pb.RemoveProcessResponse, error) {
 	instance, err := rpc.s.RemoveProcess(ctx, req.Id)
 	if err != nil {

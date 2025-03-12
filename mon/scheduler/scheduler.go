@@ -285,11 +285,6 @@ func (sc *scheduler) process(ctx context.Context) {
 				ps.Status = types.ProcessStatus_Ready
 				ps.ReadyAt = time.Now().UnixNano()
 				sc.saveProcessSnapshot(ctx, ps)
-
-				// saves scheduled ProcessSnapshot
-				sc.pmu.Lock()
-				sc.processTree.Put(ps.Id, ps)
-				sc.pmu.Unlock()
 			}
 		}
 	}
@@ -401,6 +396,11 @@ func (sc *scheduler) watchProcess(ctx context.Context) {
 }
 
 func (sc *scheduler) saveProcessSnapshot(ctx context.Context, ps *types.ProcessSnapshot) {
+	// saves scheduled ProcessSnapshot
+	sc.pmu.Lock()
+	sc.processTree.Put(ps.Id, ps)
+	sc.pmu.Unlock()
+
 	value, err := proto.Marshal(ps)
 	if err != nil {
 		return

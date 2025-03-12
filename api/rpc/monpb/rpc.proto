@@ -261,6 +261,12 @@ service BpmnRPC {
       get: "/v1/processes/{id}"
     };
   }
+  rpc UpdateProcess(UpdateProcessRequest) returns (UpdateProcessResponse) {
+    option (google.api.http) = {
+      patch: "/v1/processes"
+      body: "*"
+    };
+  }
   rpc RemoveProcess(RemoveProcessRequest) returns (RemoveProcessResponse) {
     option (google.api.http) = {
       delete: "/v1/processes/{id}"
@@ -328,6 +334,12 @@ message GetProcessRequest {
 message GetProcessResponse {
   types.ProcessInstance instance = 1;
 }
+
+message UpdateProcessRequest {
+  types.ProcessInstance instance = 1;
+}
+
+message UpdateProcessResponse {}
 
 message RemoveProcessRequest {
   int64 id = 1;

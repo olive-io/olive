@@ -29,6 +29,7 @@ import (
 	"time"
 
 	json "github.com/bytedance/sonic"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/types"
@@ -179,6 +180,12 @@ func (s *Scheduler) saveProcess(ctx context.Context, instance *types.ProcessInst
 	if err := s.bs.Put(ctx, key, instance); err != nil {
 		return err
 	}
+
+	copied := proto.Clone(instance).(*types.ProcessInstance)
+	event := &Event{
+		UpdateProcess: &UpdateProcess{Process: copied},
+	}
+	s.publish(event)
 
 	return nil
 }

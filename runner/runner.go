@@ -127,6 +127,7 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 	r.Destroy(r.destroy)
 	r.GoAttach(r.buildMonClient)
 	r.GoAttach(r.process)
+	r.GoAttach(r.transmit)
 
 	<-stopc
 
@@ -372,6 +373,26 @@ func (r *Runner) process() {
 						r.handleEvent(r.ctx, re)
 					}
 				}
+			}
+		}
+	}
+}
+
+func (r *Runner) transmit() {
+
+	sw := r.sch.Subscribe(3)
+	for {
+		select {
+		case <-r.StoppingNotify():
+			return
+		case event, ok := <-sw:
+			if !ok {
+				return
+			}
+
+			switch {
+			case event.UpdateProcess != nil:
+				_ = r.oct.UpdateProcess(r.ctx, event.UpdateProcess.Process)
 			}
 		}
 	}

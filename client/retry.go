@@ -152,6 +152,10 @@ func (rbc *retryBpmnClient) GetProcess(ctx context.Context, in *pb.GetProcessReq
 	return rbc.bc.GetProcess(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }
 
+func (rbc *retryBpmnClient) UpdateProcess(ctx context.Context, in *pb.UpdateProcessRequest, opts ...grpc.CallOption) (*pb.UpdateProcessResponse, error) {
+	return rbc.bc.UpdateProcess(ctx, in, append(opts, withRetryPolicy(repeatable))...)
+}
+
 func (rbc *retryBpmnClient) RemoveProcess(ctx context.Context, in *pb.RemoveProcessRequest, opts ...grpc.CallOption) (*pb.RemoveProcessResponse, error) {
 	return rbc.bc.RemoveProcess(ctx, in, append(opts, withRetryPolicy(repeatable))...)
 }

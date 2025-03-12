@@ -156,6 +156,20 @@ func (s *Service) GetProcess(ctx context.Context, id int64) (*types.ProcessInsta
 	return &process, nil
 }
 
+func (s *Service) UpdateProcess(ctx context.Context, process *types.ProcessInstance) error {
+	key := path.Join(api.ProcessPrefix, fmt.Sprintf("%d", process.Id))
+	data, err := proto.Marshal(process)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.v3cli.Put(ctx, key, string(data))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Service) RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {
 	instance, err := s.GetProcess(ctx, id)
 	if err != nil {

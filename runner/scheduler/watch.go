@@ -33,4 +33,4 @@ type Event struct {
 	UpdateProcess *UpdateProcess
 }
 
-type WatchChan <-chan *Event
+type WatchChan chan *Event

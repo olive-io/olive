@@ -37,6 +37,7 @@ type BpmnRPC interface {
 	RemoveDefinition(ctx context.Context, id int64) error
 	ExecuteDefinition(ctx context.Context, id int64, options ...ExecDefinitionOption) (*types.ProcessInstance, error)
 	GetProcess(ctx context.Context, id int64) (*types.ProcessInstance, error)
+	UpdateProcess(ctx context.Context, instance *types.ProcessInstance) error
 	RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error)
 }
 
@@ -219,6 +220,16 @@ func (bc *bpmnRPC) GetProcess(ctx context.Context, id int64) (*types.ProcessInst
 		return nil, toErr(ctx, err)
 	}
 	return resp.Instance, nil
+}
+
+func (bc *bpmnRPC) UpdateProcess(ctx context.Context, instance *types.ProcessInstance) error {
+	conn := bc.client.conn
+	in := &pb.UpdateProcessRequest{Instance: instance}
+	_, err := bc.remoteClient(conn).UpdateProcess(ctx, in, bc.callOpts...)
+	if err != nil {
+		return toErr(ctx, err)
+	}
+	return nil
 }
 
 func (bc *bpmnRPC) RemoveProcess(ctx context.Context, id int64) (*types.ProcessInstance, error) {

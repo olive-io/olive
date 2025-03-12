@@ -43,6 +43,9 @@ func (r *Runner) handleExecuteProcess(ctx context.Context, msg *types.ExecutePro
 		lg.Error("get process", zap.Int64("process", msg.Process), zap.Error(err))
 		return
 	}
+	if instance.Finished() {
+		return
+	}
 
 	if len(instance.DefinitionsContent) == 0 {
 		definition, err := r.oct.GetDefinition(ctx, instance.DefinitionsId, instance.DefinitionsVersion)

@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/olive-io/bpmn/schema"
@@ -79,8 +78,7 @@ type Scheduler struct {
 	pool *ants.Pool
 
 	smu         sync.RWMutex
-	subscribers map[int64]WatchChan
-	sid         *atomic.Int64
+	subscribers []WatchChan
 
 	done chan struct{}
 }
@@ -114,8 +112,7 @@ func NewScheduler(cfg *Config) (*Scheduler, error) {
 		processQ: pq,
 		pool:     pool,
 
-		subscribers: make(map[int64]WatchChan),
-		sid:         &atomic.Int64{},
+		subscribers: make([]WatchChan, 0),
 
 		done: make(chan struct{}, 1),
 	}
@@ -140,11 +137,59 @@ func (s *Scheduler) Stop() error {
 	default:
 	}
 
+	s.closeAllSubscribers()
+
 	s.cancel()
 	s.wg.Wait()
 	close(s.done)
 
 	return nil
+}
+
+func (s *Scheduler) Subscribe(size int) WatchChan {
+	if size <= 0 {
+		size = 1
+	}
+	wch := make(WatchChan, size)
+	select {
+	case <-s.ctx.Done():
+		close(wch)
+		return wch
+	default:
+	}
+
+	s.smu.Lock()
+	s.subscribers = append(s.subscribers, wch)
+	s.smu.Unlock()
+	return wch
+}
+
+func (s *Scheduler) publish(event *Event) {
+	select {
+	case <-s.ctx.Done():
+		return
+	default:
+	}
+
+	s.smu.RLock()
+	for _, wch := range s.subscribers {
+		wch <- event
+	}
+	s.smu.RUnlock()
+}
+
+func (s *Scheduler) closeAllSubscribers() {
+	select {
+	case <-s.ctx.Done():
+		return
+	default:
+	}
+
+	s.smu.Lock()
+	for _, wch := range s.subscribers {
+		close(wch)
+	}
+	s.smu.Unlock()
 }
 
 func (s *Scheduler) RunProcess(ctx context.Context, pi *types.ProcessInstance) error {
