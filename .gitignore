@@ -13,23 +13,22 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-*.bak
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
-# Go workspace file
-go.work
-go.work.sum
 
 .idea
 .vscode
 .DS_Store
 
 _output
-/testdata
-vendor
+testdata
+/vendor
 dist
 dist/
-release/
-bin/
+bin
+
+*.pb.go
+*.pb.gw.go
+
