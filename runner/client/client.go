@@ -146,7 +146,7 @@ func (c *Client) ListProcess(ctx context.Context, definition int64, version uint
 		return nil, err
 	}
 
-	return resp.Instances, nil
+	return resp.Processes, nil
 }
 
 func (c *Client) GetProcess(ctx context.Context, definition int64, version uint64, id int64) (*types.Process, error) {
@@ -168,7 +168,7 @@ func (c *Client) GetProcess(ctx context.Context, definition int64, version uint6
 		return nil, err
 	}
 
-	return resp.Instance, nil
+	return resp.Process, nil
 }
 
 func (c *Client) RunProcess(ctx context.Context, in *pb.RunProcessRequest) (*types.Process, error) {
@@ -185,13 +185,17 @@ func (c *Client) RunProcess(ctx context.Context, in *pb.RunProcessRequest) (*typ
 		return nil, err
 	}
 
-	return resp.Instance, nil
+	return resp.Process, nil
 }
 
 func (c *Client) BuildProcess() *processBuilder {
 	builder := &processBuilder{
-		RunProcessRequest: &pb.RunProcessRequest{},
-		cc:                c,
+		RunProcessRequest: &pb.RunProcessRequest{
+			Process: &types.Process{
+				Args: &types.BpmnArgs{},
+			},
+		},
+		cc: c,
 	}
 
 	return builder
@@ -204,39 +208,39 @@ type processBuilder struct {
 }
 
 func (b *processBuilder) SetDefinition(id int64, version uint64) *processBuilder {
-	b.DefinitionId = id
-	b.DefinitionVersion = version
+	b.Process.DefinitionsId = id
+	b.Process.DefinitionsVersion = version
 	return b
 }
 
 func (b *processBuilder) SetBpmn(content string) *processBuilder {
-	b.Content = content
+	b.Process.DefinitionsContent = content
 	return b
 }
 
 func (b *processBuilder) SetName(name string) *processBuilder {
-	b.InstanceName = name
+	b.Process.Name = name
 	return b
 }
 
 func (b *processBuilder) SetHeaders(headers map[string]string) *processBuilder {
-	b.Headers = headers
+	b.Process.Args.Headers = headers
 	return b
 }
 
 func (b *processBuilder) SetProperties(properties map[string]any) *processBuilder {
-	b.Properties = map[string][]byte{}
+	b.Process.Args.Properties = map[string][]byte{}
 	for k, v := range properties {
-		b.Properties[k] = marshalValue(v)
+		b.Process.Args.Properties[k] = marshalValue(v)
 	}
 
 	return b
 }
 
 func (b *processBuilder) SetDataObjects(dataObjects map[string]any) *processBuilder {
-	b.DataObjects = map[string][]byte{}
+	b.Process.Args.DataObjects = map[string][]byte{}
 	for k, v := range dataObjects {
-		b.DataObjects[k] = marshalValue(v)
+		b.Process.Args.DataObjects[k] = marshalValue(v)
 	}
 	return b
 }

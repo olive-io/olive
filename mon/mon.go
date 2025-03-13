@@ -56,10 +56,8 @@ func New(cfg config.Config) (*Monitor, error) {
 
 	s := &Monitor{
 		IEmbedServer: embedServer,
-
-		cfg: cfg,
-
-		lg: lg,
+		cfg:          cfg,
+		lg:           lg,
 	}
 
 	return s, nil

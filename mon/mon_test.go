@@ -30,19 +30,19 @@ import (
 	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
-func TestNewOliveMetaServer(t *testing.T) {
+func TestNewOliveMonServer(t *testing.T) {
 	cfg, cancel := config.TestConfig()
 	if !assert.NoError(t, cfg.Validate()) {
 		return
 	}
 	defer cancel()
 
-	s, err := NewPlane(cfg)
+	s, err := New(cfg)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	err = s.Start(genericserver.SetupSignalHandler())
+	err = s.Start(genericserver.SetupSignalContext())
 	if !assert.NoError(t, err) {
 		return
 	}
