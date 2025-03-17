@@ -30,27 +30,28 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 
-	"github.com/olive-io/olive/api/rpc/runnerpb"
+	"github.com/olive-io/olive/client"
+	"github.com/olive-io/olive/console/config"
+	"github.com/olive-io/olive/console/dao"
 	genericserver "github.com/olive-io/olive/pkg/server"
-	"github.com/olive-io/olive/runner/config"
-	"github.com/olive-io/olive/runner/gather"
-	"github.com/olive-io/olive/runner/scheduler"
-	"github.com/olive-io/olive/runner/storage"
 )
 
-func RegisterServer(ctx context.Context, cfg *config.Config, sch *scheduler.Scheduler, gather *gather.Gather, bs storage.Storage) (http.Handler, error) {
+func RegisterServer(ctx context.Context, cfg *config.Config, v3cli *client.Client) (http.Handler, error) {
+
+	if err := dao.Init(cfg); err != nil {
+		return nil, err
+	}
+
 	sopts := []grpc.ServerOption{}
 	gs := grpc.NewServer(sopts...)
 
 	muxOpts := []gwrt.ServeMuxOption{}
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
-	runnerRPC := NewGRPCRunnerServer(sch, gather, bs)
-	runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
-
-	if err := runnerpb.RegisterRunnerRPCHandlerServer(ctx, gwmux, runnerRPC); err != nil {
-		return nil, err
-	}
+	//runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
+	//if err := runnerpb.RegisterRunnerRPCHandlerServer(ctx, gwmux, runnerRPC); err != nil {
+	//	return nil, err
+	//}
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())

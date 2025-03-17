@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The olive Authors
+Copyright 2025 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -27,18 +27,18 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/olive-io/olive/console"
+	"github.com/olive-io/olive/console/config"
 	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/olive-io/olive/pkg/version"
-	"github.com/olive-io/olive/runner"
-	"github.com/olive-io/olive/runner/config"
 )
 
-func NewRunnerCommand(stdout, stderr io.Writer) *cobra.Command {
+func NewConsoleCommand(stdout, stderr io.Writer) *cobra.Command {
 	cfg := config.NewConfig()
 
 	app := &cobra.Command{
-		Use:     "olive-runner",
-		Short:   "bpmn runner of olive cloud",
+		Use:     "olive-console",
+		Short:   "the user manager component of olive cloud",
 		Version: version.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cfg.Parse(); err != nil {
@@ -74,7 +74,7 @@ func setup(cfg config.Config) error {
 		return err
 	}
 
-	server, err := runner.NewRunner(&cfg)
+	server, err := console.New(&cfg)
 	if err != nil {
 		return err
 	}

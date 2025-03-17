@@ -4,6 +4,7 @@ use (
 	.
 	api
 	client
+	console
 	mon
 	pkg
 	runner

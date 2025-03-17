@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The olive Authors
+Copyright 2025 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -23,14 +23,8 @@ package config
 
 import (
 	"errors"
-	"fmt"
-	"hash/crc32"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/spf13/pflag"
-	"go.etcd.io/etcd/pkg/v3/idutil"
 
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/pkg/cli/flags"
@@ -38,20 +32,11 @@ import (
 )
 
 var (
-	DefaultEndpoints         = []string{"http://127.0.0.1:4379"}
-	DefaultSchedulerPoolSize = 100
+	DefaultEndpoints = []string{"http://127.0.0.1:4379"}
 )
 
 const (
-	DefaultName      = "runner"
-	DefaultDataDir   = "default"
-	DefaultCacheSize = 4 * 1024 * 1024
-
-	DefaultStorageGCInterval = time.Minute * 10
-
-	DefaultListenURL = "http://127.0.0.1:5380"
-
-	DefaultHeartbeatMs = 5000
+	DefaultListenURL = "http://127.0.0.1:8080"
 )
 
 type Config struct {
@@ -61,19 +46,9 @@ type Config struct {
 
 	Client client.Config
 
-	Name string
+	DSN string
 
-	DataDir   string
-	CacheSize uint64
-	// StorageGCInterval is the maximum gc time for storage kv database.
-	StorageGCInterval time.Duration
-
-	AdvertiseURL string
-	ListenURL    string
-
-	HeartbeatMs int64
-
-	SchedulerPoolSize int
+	ListenURL string
 }
 
 func NewConfig() *Config {
@@ -89,21 +64,19 @@ func NewConfig() *Config {
 
 		Client: clientCfg,
 
-		Name:      DefaultName,
-		DataDir:   DefaultDataDir,
-		CacheSize: DefaultCacheSize,
-
-		StorageGCInterval: DefaultStorageGCInterval,
-
-		SchedulerPoolSize: DefaultSchedulerPoolSize,
-
-		AdvertiseURL: DefaultListenURL,
-		ListenURL:    DefaultListenURL,
-		HeartbeatMs:  DefaultHeartbeatMs,
+		ListenURL: DefaultListenURL,
 	}
 	cfg.fs = cfg.newFlagSet()
 
 	return &cfg
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.DSN == "" {
+		return errors.New("dsn is required")
+	}
+
+	return nil
 }
 
 func (cfg *Config) FlagSet() *pflag.FlagSet {
@@ -111,20 +84,14 @@ func (cfg *Config) FlagSet() *pflag.FlagSet {
 }
 
 func (cfg *Config) newFlagSet() *pflag.FlagSet {
-	fs := pflag.NewFlagSet("runner", pflag.ExitOnError)
+	fs := pflag.NewFlagSet("console", pflag.ExitOnError)
 
-	// Runner
-	fs.StringVar(&cfg.Name, "name", cfg.Name, "The unique name of the runner.")
-	fs.StringVar(&cfg.DataDir, "data-dir", cfg.DataDir, "Path to the data directory.")
+	// Console
 	fs.StringArrayVar(&cfg.Client.Endpoints, "endpoints", cfg.Client.Endpoints, "Set gRPC endpoints to connect the cluster of olive-mon")
-	fs.StringVar(&cfg.AdvertiseURL, "advertise-url", cfg.AdvertiseURL, "Set advertise URL to listen on for grpc traffic.")
 	fs.StringVar(&cfg.ListenURL, "listen-url", cfg.ListenURL, "Set the URL to listen on for grpc traffic.")
 
-	// Storage
-	fs.DurationVar(&cfg.StorageGCInterval, "storage-gc-interval", cfg.StorageGCInterval, "the interval time for storage gc.")
-
-	// Scheduler
-	fs.IntVar(&cfg.SchedulerPoolSize, "scheduler-pool-size", cfg.SchedulerPoolSize, "the size of the scheduler work pool.")
+	// Database
+	fs.StringVar(&cfg.DSN, "db-dsn", cfg.DSN, "Set the database connection string.")
 
 	// logging
 	fs.Var(flags.NewUniqueStringsValue(logutil.DefaultLogOutput), "log-outputs",
@@ -147,24 +114,6 @@ func (cfg *Config) Parse() error {
 	return cfg.configFromCmdLine()
 }
 
-func (cfg *Config) Validate() error {
-	stat, err := os.Stat(cfg.DataDir)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-
-		if err = os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
-			return err
-		}
-	}
-	if stat != nil && !stat.IsDir() {
-		return fmt.Errorf("data-dir is not a directory")
-	}
-
-	return nil
-}
-
 func (cfg *Config) setupLogging() error {
 	if err := cfg.SetupLogging(); err != nil {
 		return err
@@ -178,16 +127,4 @@ func (cfg *Config) setupLogging() error {
 
 func (cfg *Config) configFromCmdLine() error {
 	return nil
-}
-
-func (cfg *Config) DBDir() string {
-	return filepath.Join(cfg.DataDir, "db")
-}
-
-func (cfg *Config) HeartbeatInterval() time.Duration {
-	return time.Duration(cfg.HeartbeatMs) * time.Millisecond
-}
-
-func (cfg *Config) IdGenerator() *idutil.Generator {
-	return idutil.NewGenerator(uint16(crc32.ChecksumIEEE([]byte(cfg.Name))), time.Now())
 }

@@ -96,12 +96,9 @@ func NewRunner(cfg *config.Config) (*Runner, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	embedServer := genericserver.NewEmbedServer(lg)
 	runner := &Runner{
 		IEmbedServer: embedServer,
-		ctx:          ctx,
-		cancel:       cancel,
 		cfg:          cfg,
 
 		clientReady: make(chan struct{}, 1),
@@ -116,7 +113,8 @@ func (r *Runner) Logger() *zap.Logger {
 	return r.cfg.GetLogger()
 }
 
-func (r *Runner) Start(stopc <-chan struct{}) error {
+func (r *Runner) Start(ctx context.Context) error {
+	r.ctx, r.cancel = context.WithCancel(ctx)
 	if err := r.start(); err != nil {
 		return err
 	}
@@ -129,7 +127,7 @@ func (r *Runner) Start(stopc <-chan struct{}) error {
 	r.GoAttach(r.process)
 	r.GoAttach(r.transmit)
 
-	<-stopc
+	<-ctx.Done()
 
 	return r.stop()
 }
@@ -265,6 +263,23 @@ LOOP:
 
 	r.Logger().Info("ready to connect olive-mon cluster")
 	close(r.clientReady)
+}
+
+func (r *Runner) stop() error {
+	r.IEmbedServer.Shutdown()
+	err := r.serve.Shutdown(r.ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Runner) destroy() {
+	r.cancel()
+
+	if err := r.sch.Stop(); err != nil {
+		r.Logger().Error("stop scheduler", zap.Error(err))
+	}
 }
 
 func (r *Runner) process() {
@@ -403,15 +418,6 @@ func (r *Runner) transmit() {
 	}
 }
 
-func (r *Runner) stop() error {
-	r.IEmbedServer.Shutdown()
-	err := r.serve.Shutdown(r.ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *Runner) getRev() int64 {
 	key := curRevKey
 
@@ -431,12 +437,4 @@ func (r *Runner) setRev(rev int64) {
 
 	key := curRevKey
 	_ = r.bs.Put(r.ctx, key, value)
-}
-
-func (r *Runner) destroy() {
-	r.cancel()
-
-	if err := r.sch.Stop(); err != nil {
-		r.Logger().Error("stop scheduler", zap.Error(err))
-	}
 }

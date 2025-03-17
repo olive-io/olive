@@ -1,0 +1,171 @@
+/*
+Copyright 2023 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package rpc.consolepb;
+
+import "types/internal.proto";
+import "types/bpmn.proto";
+// for grpc-gateway
+import "google/api/annotations.proto";
+// for openapi
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/olive-io/olive/api/rpc/consolepb;consolepb";
+option java_multiple_files = true;
+option java_package = "io.olive.api.rpc.consolepb";
+option java_outer_classname = "OliveRPCConsolePb";
+
+option (openapi.v3.document) = {
+  components: {
+    security_schemes: {
+      additional_properties: {
+        name: "bearerAuth"
+        value: {
+          security_scheme: {
+            type: "http",
+            scheme: "bearer",
+            bearer_format: "JWT"
+          }
+        }
+      }
+    }
+  }
+};
+
+service BpmnService {
+  rpc ListDefinitions(ListDefinitionsRequest) returns (ListDefinitionsResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Definitions:list"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Definitions:get"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
+    option (google.api.http) = {
+      post: "/v1/definitions"
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["User:post"],
+            }
+          }
+        }
+      ]
+    };
+  }
+}
+
+message ListDefinitionsRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message ListDefinitionsResponse {
+  repeated types.Definition definitions = 1;
+  int64 total = 2;
+}
+
+message GetDefinitionRequest {
+  int64 id = 1;
+  uint64 version = 2;
+}
+
+message GetDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+message DeployDefinitionRequest {
+  types.Definition definition = 1;
+}
+
+message DeployDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+service AuthService {
+
+}
+
+service SystemService {
+  rpc ListRunners(ListRunnersRequest) returns (ListRunnersResponse) {
+    option (google.api.http) = {
+      get: "/v1/runners"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Runners:get"],
+            }
+          }
+        }
+      ]
+    };
+  }
+}
+
+message ListRunnersRequest {}
+
+message ListRunnersResponse {
+  repeated types.Runner runner = 1;
+}

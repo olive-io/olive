@@ -5,12 +5,14 @@ go 1.23.7
 replace (
 	github.com/olive-io/olive/api => ./api
 	github.com/olive-io/olive/client => ./client
+	github.com/olive-io/olive/console => ./console
 	github.com/olive-io/olive/mon => ./mon
 	github.com/olive-io/olive/pkg => ./pkg
 	github.com/olive-io/olive/runner => ./runner
 )
 
 require (
+	github.com/olive-io/olive/console v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/mon v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/pkg v0.1.1
 	github.com/olive-io/olive/runner v0.0.0-00010101000000-000000000000

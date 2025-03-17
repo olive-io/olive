@@ -75,7 +75,7 @@ func NewDefinitionStorage(ctx context.Context, v3cli *clientv3.Client, workdir s
 
 	dsn := sqlite.Open(filepath.Join(workdir, "mon.db?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"))
 	db, err := gorm.Open(dsn, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "open database")

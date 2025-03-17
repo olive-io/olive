@@ -17,9 +17,11 @@ ifeq ($(GOHOSTOS), windows)
         Git_Bash=$(subst \,/,$(subst cmd\,bin\bash.exe,$(dir $(shell where git))))
         TYPES_PROTO_FILES=$(shell $(Git_Bash) -c "find api/types -name *.proto")
         RPC_PROTO_FILES=$(shell $(Git_Bash) -c "find api/rpc -name *.proto")
+        OPENAPI_PROTO_FILES=$(shell $(Git_Bash) -c "find api/rpc/consolepb -name *.proto")
 else
         TYPES_PROTO_FILES=$(shell find api/types -name *.proto)
         RPC_PROTO_FILES=$(shell find api/rpc -name *.proto)
+        OPENAPI_PROTO_FILES=$(shell find api/rpc/consolepb -name *.proto)
 endif
 
 
@@ -45,9 +47,6 @@ install:
 	go install github.com/google/wire/cmd/wire@latest
 
 
-genclients:
-	cd api && ./hack/update-codegen.sh
-
 proto:
 	goproto-gen -p github.com/olive-io/olive/api/types/meta/v1
 	goproto-gen --metadata-packages github.com/olive-io/olive/api/types/meta/v1 -p github.com/olive-io/olive/api/types/core/v1
@@ -67,8 +66,12 @@ apis:
     		--proto_path=./third_party \
     		--go_out=paths=source_relative:./api \
     		--go-grpc_out=paths=source_relative:./api \
+    		--validate_out=paths=source_relative,lang=go:. \
     		--grpc-gateway_out=paths=source_relative:./api \
     		$(RPC_PROTO_FILES)
+	protoc --proto_path=./api \
+			--proto_path=./third_party \
+			--openapi_out=fq_schema_naming=true,title="olive",description="olive OpenAPI3.0 Document",version=$(GIT_TAG),default_response=false:./docs $(OPENAPI_PROTO_FILES)
 
 
 generate:
