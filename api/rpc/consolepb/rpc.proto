@@ -103,7 +103,83 @@ service BpmnService {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["User:post"],
+              value: ["Definitions:post"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc DeleteDefinition(DeleteDefinitionRequest) returns (DeleteDefinitionResponse) {
+    option (google.api.http) = {
+      delete: "/v1/definitions/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Definitions:delete"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc ListProcesses(ListProcessesRequest) returns (ListProcessesResponse) {
+    option (google.api.http) = {
+      get: "/v1/processes"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Process:list"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc GetProcess(GetProcessRequest) returns (GetProcessResponse) {
+    option (google.api.http) = {
+      get: "/v1/processes/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Process:get"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc DeleteProcess(DeleteProcessRequest) returns (DeleteProcessResponse) {
+    option (google.api.http) = {
+      delete: "/v1/processes/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Process:delete"],
             }
           }
         }
@@ -139,6 +215,44 @@ message DeployDefinitionResponse {
   types.Definition definition = 1;
 }
 
+message DeleteDefinitionRequest {
+  int64 id = 1;
+  uint64 version = 2;
+}
+
+message DeleteDefinitionResponse {
+  types.Definition definition = 1;
+}
+
+message ListProcessesRequest {
+  int32 page = 1;
+  int32 size = 2;
+  int64 definition = 3;
+  uint64 version = 4;
+  string status = 5;
+}
+
+message ListProcessesResponse {
+  repeated types.Process processes = 1;
+  int64 total = 2;
+}
+
+message GetProcessRequest {
+  int64 id = 1;
+}
+
+message GetProcessResponse {
+  types.Process process = 1;
+}
+
+message DeleteProcessRequest {
+  int64 id = 1;
+}
+
+message DeleteProcessResponse {
+  types.Process process = 1;
+}
+
 service AuthService {
 
 }
@@ -155,7 +269,26 @@ service SystemService {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["Runners:get"],
+              value: ["Runner:list"],
+            }
+          }
+        }
+      ]
+    };
+  }
+
+  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
+    option (google.api.http) = {
+      get: "/v1/runners/{id}"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["Runner:get"],
             }
           }
         }
@@ -168,4 +301,12 @@ message ListRunnersRequest {}
 
 message ListRunnersResponse {
   repeated types.Runner runner = 1;
+}
+
+message GetRunnerRequest {
+  int64 id = 1;
+}
+
+message GetRunnerResponse {
+  types.Runner runner = 1;
 }
