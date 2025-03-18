@@ -25,18 +25,22 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 
+	"github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/dao"
+	"github.com/olive-io/olive/console/docs"
+	"github.com/olive-io/olive/console/service/bpmn"
 	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
-func RegisterServer(ctx context.Context, cfg *config.Config, v3cli *client.Client) (http.Handler, error) {
+func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client) (http.Handler, error) {
 
 	if err := dao.Init(cfg); err != nil {
 		return nil, err
@@ -48,15 +52,20 @@ func RegisterServer(ctx context.Context, cfg *config.Config, v3cli *client.Clien
 	muxOpts := []gwrt.ServeMuxOption{}
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
-	//runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
-	//if err := runnerpb.RegisterRunnerRPCHandlerServer(ctx, gwmux, runnerRPC); err != nil {
-	//	return nil, err
-	//}
+	bpmnService, err := bpmn.NewBpmn(ctx, cfg, oct)
+	if err != nil {
+		return nil, err
+	}
+	bpmnRPC := NewBpmnRPC(bpmnService)
+	consolepb.RegisterBpmnRPCServer(gs, bpmnRPC)
+	if err := consolepb.RegisterBpmnRPCHandlerServer(ctx, gwmux, bpmnRPC); err != nil {
+		return nil, err
+	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
+	serveMux := mux.NewRouter()
+	serveMux.Handle("/metrics", promhttp.Handler())
 
-	mux.Handle("/v1/",
+	serveMux.Handle("/v1/",
 		wsproxy.WebsocketProxy(
 			gwmux,
 			wsproxy.WithRequestMutator(
@@ -70,8 +79,21 @@ func RegisterServer(ctx context.Context, cfg *config.Config, v3cli *client.Clien
 		),
 	)
 
+	serveMux.HandleFunc("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		openapiYAML, _ := docs.GetOpenYAML()
+		w.WriteHeader(http.StatusOK)
+		w.Write(openapiYAML)
+	})
+
+	pattern := "/swagger-ui/"
+	swaggerFs, err := docs.GetSwagger()
+	if err != nil {
+		return nil, err
+	}
+	serveMux.PathPrefix(pattern).Handler(http.StripPrefix(pattern, http.FileServer(http.FS(swaggerFs))))
+
 	root := http.NewServeMux()
-	root.Handle("/", mux)
+	root.Handle("/", serveMux)
 
 	handler := genericserver.HybridHandler(gs, root)
 

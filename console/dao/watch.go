@@ -19,15 +19,40 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package model
+package dao
 
 import (
-	"gorm.io/gorm"
+	"context"
+
+	"github.com/olive-io/olive/console/model"
 )
 
-type Model struct {
-	ID        uint           `json:"id" gorm:"primarykey"`
-	CreatedAt uint64         `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt uint64         `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+type WatchDao struct{}
+
+func NewWatch() *WatchDao {
+	dao := &WatchDao{}
+	return dao
+}
+
+func (dao *WatchDao) GetRev(ctx context.Context) int64 {
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+
+	rev := &model.WatchRev{}
+	if err := tx.First(&rev).Error; err != nil {
+		return 0
+	}
+	return rev.Revision
+}
+
+func (dao *WatchDao) SetRev(ctx context.Context, rev int64) error {
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+
+	if err := tx.Save(&model.WatchRev{ID: 1, Revision: rev}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (dao *WatchDao) Target() *model.WatchRev {
+	return new(model.WatchRev)
 }

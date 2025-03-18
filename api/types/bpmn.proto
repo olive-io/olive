@@ -106,13 +106,14 @@ message FlowNodeStat {
 }
 
 enum ProcessStatus {
+  UnknownStatus = 0;
   // to be 'Prepare' where Process created
-  Prepare = 0;
+  Prepare = 1;
   // to be 'Ready' where olive-mon scheduled
-  Ready = 1;
-  Running = 2;
-  Ok = 3;
-  Failed = 4;
+  Ready = 2;
+  Running = 3;
+  Ok = 4;
+  Failed = 5;
 }
 
 message Process {

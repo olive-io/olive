@@ -289,14 +289,10 @@ message DeployDefinitionResponse {
   types.Definition definition = 1;
 }
 
-message ListDefinitionsRequest {
-  int32 page = 1;
-  int32 size = 2;
-}
+message ListDefinitionsRequest {}
 
 message ListDefinitionsResponse {
   repeated types.Definition definitions = 1;
-  int64 total = 2;
 }
 
 message GetDefinitionRequest {
@@ -330,16 +326,10 @@ message ExecuteDefinitionResponse {
   types.Process process = 1;
 }
 
-message ListProcessRequest {
-  int64 definition = 1;
-  uint64 version = 2;
-  int32 page = 3;
-  int32 size = 4;
-}
+message ListProcessRequest {}
 
 message ListProcessResponse {
   repeated types.Process processes = 1;
-  int64 total = 2;
 }
 
 message GetProcessRequest {

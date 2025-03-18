@@ -82,16 +82,13 @@ func (s *Service) DeployDefinition(ctx context.Context, definition *types.Defini
 	return definition, nil
 }
 
-func (s *Service) ListDefinitions(ctx context.Context, page, size int32) ([]*types.Definition, int64, error) {
-	if page <= 0 {
-		page = 1
-	}
-	definitions, total, err := s.ds.ListDefinitions(ctx, page, size)
+func (s *Service) ListDefinitions(ctx context.Context) ([]*types.Definition, error) {
+	definitions, err := s.ds.ListDefinitions(ctx)
 	if err != nil {
-		return nil, total, err
+		return nil, err
 	}
 
-	return definitions, total, nil
+	return definitions, nil
 }
 
 func (s *Service) GetDefinition(ctx context.Context, id int64, version uint64) (*types.Definition, error) {
@@ -132,12 +129,12 @@ func (s *Service) ExecuteDefinition(ctx context.Context, process *types.Process)
 	return process, nil
 }
 
-func (s *Service) ListProcess(ctx context.Context, definition int64, version uint64, page, size int32) ([]*types.Process, int64, error) {
-	processes, total, err := s.ds.ListProcess(ctx, definition, version, page, size)
+func (s *Service) ListProcess(ctx context.Context) ([]*types.Process, error) {
+	processes, err := s.ds.ListProcess(ctx)
 	if err != nil {
-		return nil, total, err
+		return nil, err
 	}
-	return processes, total, nil
+	return processes, nil
 }
 
 func (s *Service) GetProcess(ctx context.Context, id int64) (*types.Process, error) {
@@ -172,7 +169,7 @@ func (s *Service) RemoveProcess(ctx context.Context, id int64) (*types.Process, 
 		return nil, err
 	}
 
-	if err := s.ds.removeProcess(ctx, process); err != nil {
+	if err := s.ds.RemoveProcess(ctx, process); err != nil {
 		return nil, err
 	}
 

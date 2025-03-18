@@ -33,6 +33,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/olive-io/olive/console/config"
+	"github.com/olive-io/olive/console/model"
 )
 
 var (
@@ -67,6 +68,16 @@ func Init(cfg *config.Config) error {
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
 		if err != nil {
+			return
+		}
+
+		if err = gdb.AutoMigrate(&model.Definition{}); err != nil {
+			return
+		}
+		if err = gdb.AutoMigrate(&model.Process{}); err != nil {
+			return
+		}
+		if err = gdb.AutoMigrate(&model.WatchRev{}); err != nil {
 			return
 		}
 	})

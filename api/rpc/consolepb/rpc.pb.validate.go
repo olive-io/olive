@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	types "github.com/olive-io/olive/api/types"
 )
 
 // ensure the imports are used
@@ -33,6 +35,8 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = types.ProcessStatus(0)
 )
 
 // Validate checks the field values on ListDefinitionsRequest with the rules
@@ -57,10 +61,10 @@ func (m *ListDefinitionsRequest) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetPage() <= 0 {
+	if m.GetPage() < -1 {
 		err := ListDefinitionsRequestValidationError{
 			field:  "Page",
-			reason: "value must be greater than 0",
+			reason: "value must be greater than or equal to -1",
 		}
 		if !all {
 			return err

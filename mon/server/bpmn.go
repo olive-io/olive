@@ -54,13 +54,12 @@ func (rpc *bpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefiniti
 }
 
 func (rpc *bpmnRPC) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (*pb.ListDefinitionsResponse, error) {
-	definitions, total, err := rpc.s.ListDefinitions(ctx, req.Page, req.Size)
+	definitions, err := rpc.s.ListDefinitions(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.ListDefinitionsResponse{
 		Definitions: definitions,
-		Total:       total,
 	}
 	return resp, nil
 }
@@ -111,13 +110,12 @@ func (rpc *bpmnRPC) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefini
 }
 
 func (rpc *bpmnRPC) ListProcess(ctx context.Context, req *pb.ListProcessRequest) (*pb.ListProcessResponse, error) {
-	processes, total, err := rpc.s.ListProcess(ctx, req.Definition, req.Version, req.Page, req.Size)
+	processes, err := rpc.s.ListProcess(ctx)
 	if err != nil {
 		return nil, err
 	}
 	resp := &pb.ListProcessResponse{
 		Processes: processes,
-		Total:     total,
 	}
 	return resp, nil
 }

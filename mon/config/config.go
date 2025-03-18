@@ -36,11 +36,9 @@ import (
 )
 
 const (
-	DefaultName                   = "default"
-	DefaultListenerClientAddress  = "http://localhost:4379"
-	DefaultListenerPeerAddress    = "http://localhost:4380"
-	DefaultRegionLimit            = 100
-	DefaultRegionDefinitionsLimit = 500
+	DefaultName                  = "default"
+	DefaultListenerClientAddress = "http://localhost:4379"
+	DefaultListenerPeerAddress   = "http://localhost:4380"
 )
 
 type Config struct {
@@ -48,11 +46,6 @@ type Config struct {
 
 	fs           *pflag.FlagSet
 	clusterState *flags.SelectiveStringValue
-
-	// The maximum number of regions in a runner
-	RegionLimit int
-	// The maximum number of bpmn definitions in a region
-	RegionDefinitionsLimit int
 }
 
 func NewConfig() *Config {
@@ -69,8 +62,6 @@ func NewConfig() *Config {
 			embed.ClusterStateFlagNew,
 			embed.ClusterStateFlagExisting,
 		),
-		RegionLimit:            DefaultRegionLimit,
-		RegionDefinitionsLimit: DefaultRegionDefinitionsLimit,
 	}
 	cfg.fs = cfg.newFlags()
 
@@ -133,10 +124,6 @@ func (cfg *Config) newFlags() *pflag.FlagSet {
 
 	fs.StringVar(&cfg.Config.AutoCompactionRetention, "auto-compaction-retention", "0", "Auto compaction retention for mvcc key value store. 0 means disable auto compaction.")
 	fs.StringVar(&cfg.Config.AutoCompactionMode, "auto-compaction-mode", "periodic", "interpret 'auto-compaction-retention' one of: periodic|revision. 'periodic' for duration based retention, defaulting to hours if no time unit is provided (e.g. '5m'). 'revision' for revision number based retention.")
-
-	// region
-	fs.IntVar(&cfg.RegionLimit, "region-limit", cfg.RegionLimit, "Sets the maximum number of regions in a runner")
-	fs.IntVar(&cfg.RegionDefinitionsLimit, "region-definitions-limit", cfg.RegionDefinitionsLimit, "Sets the maximum number of bpmn definitions in a region")
 
 	// logging
 	fs.StringVar(&cfg.Config.Logger, "logger", "zap",

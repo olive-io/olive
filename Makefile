@@ -66,12 +66,12 @@ apis:
     		--proto_path=./third_party \
     		--go_out=paths=source_relative:./api \
     		--go-grpc_out=paths=source_relative:./api \
-    		--validate_out=paths=source_relative,lang=go:. \
+    		--validate_out=paths=source_relative,lang=go:./api \
     		--grpc-gateway_out=paths=source_relative:./api \
     		$(RPC_PROTO_FILES)
 	protoc --proto_path=./api \
 			--proto_path=./third_party \
-			--openapi_out=fq_schema_naming=true,title="olive",description="olive OpenAPI3.0 Document",version=$(GIT_TAG),default_response=false:./docs $(OPENAPI_PROTO_FILES)
+			--openapi_out=fq_schema_naming=true,title="olive",description="olive OpenAPI3.0 Document",version=$(GIT_TAG),default_response=false:./console/docs $(OPENAPI_PROTO_FILES)
 
 
 generate:
