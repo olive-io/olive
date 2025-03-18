@@ -32,4 +32,5 @@ openapi.yaml
 
 *.pb.go
 *.pb.gw.go
+*.pb.validate.go
 
