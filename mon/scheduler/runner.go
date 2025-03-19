@@ -154,13 +154,13 @@ func (sc *scheduler) watchRunners(ctx context.Context) {
 				for _, ev := range ch.Events {
 					switch ev.Type {
 					case clientv3.EventTypePut:
-						runner, err := parseRunnerKV(ev.Kv)
+						runner, err := types.RunnerFromKV(ev.Kv)
 						if err == nil {
 							sc.addSnapshot(newSnapshot(runner, new(types.RunnerStat)))
 						}
 
 					case clientv3.EventTypeDelete:
-						runner, err := parseRunnerKV(ev.PrevKv)
+						runner, err := types.RunnerFromKV(ev.PrevKv)
 						if err == nil {
 							sc.removeSnapshot(runner.Id)
 						}
@@ -179,7 +179,7 @@ func (sc *scheduler) watchRunners(ctx context.Context) {
 				for _, ev := range ch.Events {
 					switch ev.Type {
 					case clientv3.EventTypePut:
-						stat, err := parseStatKV(ev.Kv)
+						stat, err := types.StatFromKV(ev.Kv)
 						if err == nil {
 							if stat.Timestamp == 0 {
 								stat.Timestamp = time.Now().UnixNano()

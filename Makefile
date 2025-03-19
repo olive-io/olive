@@ -48,15 +48,6 @@ install:
 	go install github.com/google/wire/cmd/wire@latest
 
 
-proto:
-	goproto-gen -p github.com/olive-io/olive/api/types/meta/v1
-	goproto-gen --metadata-packages github.com/olive-io/olive/api/types/meta/v1 -p github.com/olive-io/olive/api/types/core/v1
-	deepcopy-gen --bounding-dirs github.com/olive-io/olive/api/types/meta/v1,github.com/olive-io/olive/api/types/core/v1
-
-	cd $(GOPATH)/src && \
-	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/planepb/rpc.proto && \
-	protoc -I . -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/runnerpb/rpc.proto
-
 apis:
 	protoc --proto_path=./api --go_out=paths=source_relative:./api api/errors/errors.proto
 	protoc --proto_path=./api \
@@ -74,20 +65,6 @@ apis:
 			--proto_path=./third_party \
 			--openapi_out=fq_schema_naming=true,title="olive",description="olive OpenAPI3.0 Document",version=$(GIT_TAG),default_response=false:./console/docs $(OPENAPI_PROTO_FILES)
 
-
-generate:
-	protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/errors/errors.proto && \
-    protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/types/internal.proto && \
-    protoc -I ./api --go_out=. --go_opt=paths=source_relative:./api github.com/olive-io/olive/api/types/bpmn.proto && \
-	protoc -I -I ./api -I ./third_party  --go_out=. --go_opt=paths=source_relative:./api --go-grpc_out=. --go-grpc_opt=paths=source_relative:./api --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/monpb/rpc.proto
-#	protoc -I. -I github.com/googleapis/googleapis --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative github.com/olive-io/olive/api/rpc/runnerpb/rpc.proto
-#
-#	goimports -w api/*/**.go
-#	sed -i.bak 's/json:"ref,omitempty"/json:"$$ref,omitempty"/g' api/discoverypb/openapi.pb.go
-#	sed -i.bak 's/json:"applicationJson,omitempty"/json:"application\/json,omitempty"/g' api/discoverypb/openapi.pb.go
-#	sed -i.bak 's/json:"applicationXml,omitempty"/json:"application\/xml,omitempty"/g' api/discoverypb/openapi.pb.go
-#	sed -i.bak 's/json:"applicationYaml,omitempty"/json:"application\/yaml,omitempty"/g' api/discoverypb/openapi.pb.go
-#	rm -fr api/*/**swagger.json api/*/**.bak
 
 docker:
 

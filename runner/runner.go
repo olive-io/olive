@@ -29,9 +29,11 @@ import (
 	"net/http"
 	urlpkg "net/url"
 	"path"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/olive-io/olive/api/types"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
@@ -64,7 +66,8 @@ type Runner struct {
 	oct         *client.Client
 	clientReady chan struct{}
 
-	bs storage.Storage
+	bs       storage.Storage
+	watchRev atomic.Int64
 
 	// bpmn process scheduler
 	sch *scheduler.Scheduler
@@ -318,12 +321,11 @@ func (r *Runner) process() {
 		opts := []clientv3.OpOption{
 			clientv3.WithPrefix(),
 			clientv3.WithSerializable(),
-			clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
 		}
 
 		rev := r.getRev()
 		if rev != 0 {
-			opts = append(opts, clientv3.WithRev(rev))
+			opts = append(opts, clientv3.WithMinModRev(rev+1))
 		}
 
 		prefix := path.Join(api.RunnerTopic, fmt.Sprintf("%d", runner.Id))
@@ -332,7 +334,7 @@ func (r *Runner) process() {
 			lg.Error("get runner topic", zap.Error(err))
 		} else {
 			for _, kv := range resp.Kvs {
-				re, e1 := parseEventKV(kv)
+				re, e1 := types.EventFromKV(kv)
 				if e1 == nil {
 					r.handleEvent(ctx, re)
 				}
@@ -347,7 +349,7 @@ func (r *Runner) process() {
 			clientv3.WithFilterDelete(),
 		}
 		if rev != 0 {
-			wopts = append(wopts, clientv3.WithRev(rev))
+			wopts = append(wopts, clientv3.WithRev(rev+1))
 		}
 
 		tw := r.oct.Watch(ctx, prefix, wopts...)
@@ -385,7 +387,7 @@ func (r *Runner) process() {
 					if event.Type == mvccpb.PUT && event.IsCreate() {
 						// deletes topic message
 						_, _ = r.oct.Delete(ctx, string(event.Kv.Key))
-						re, e1 := parseEventKV(event.Kv)
+						re, e1 := types.EventFromKV(event.Kv)
 						if e1 != nil {
 							continue
 						}
@@ -419,6 +421,10 @@ func (r *Runner) transmit() {
 }
 
 func (r *Runner) getRev() int64 {
+	if value := r.watchRev.Load(); value != 0 {
+		return value
+	}
+
 	key := curRevKey
 
 	resp, _ := r.bs.Get(r.ctx, key)
@@ -428,13 +434,21 @@ func (r *Runner) getRev() int64 {
 
 	value := resp.Kvs[0].Value
 	value = value[:8]
-	return int64(binary.LittleEndian.Uint64(value))
+	rev := int64(binary.LittleEndian.Uint64(value))
+	r.watchRev.Store(rev)
+	return rev
 }
 
 func (r *Runner) setRev(rev int64) {
+	if rev < r.watchRev.Load() {
+		return
+	}
+
 	value := make([]byte, 8)
 	binary.LittleEndian.PutUint64(value, uint64(rev))
 
 	key := curRevKey
 	_ = r.bs.Put(r.ctx, key, value)
+
+	r.watchRev.Store(rev)
 }

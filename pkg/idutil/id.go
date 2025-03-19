@@ -43,12 +43,12 @@ type Generator struct {
 	rev    int64
 }
 
-func NewGenerator(ctx context.Context, key string, client *clientv3.Client) (*Generator, error) {
+func NewGenerator(ctx context.Context, lg *zap.Logger, key string, client *clientv3.Client) (*Generator, error) {
 	g := &Generator{
 		ctx:    ctx,
 		key:    key,
 		client: client,
-		lg:     client.GetLogger(),
+		lg:     lg,
 	}
 	err := g.load()
 	if err != nil {
@@ -76,21 +76,37 @@ func (g *Generator) Start() {
 }
 
 func (g *Generator) watching() {
-	wch := g.client.Watch(g.ctx, g.key)
+	ctx := context.Background()
 	for {
-		select {
-		case <-g.ctx.Done():
-			return
-		case ch := <-wch:
-			if ch.IsProgressNotify() || ch.Canceled {
-				break
-			}
 
-			for _, event := range ch.Events {
-				if event.Kv.ModRevision > atomic.LoadInt64(&g.rev) {
-					val := event.Kv.Value[0:8]
-					g.id = binary.LittleEndian.Uint64(val)
-					atomic.StoreInt64(&g.rev, event.Kv.ModRevision)
+		rev := atomic.LoadInt64(&g.rev)
+		wopts := []clientv3.OpOption{
+			clientv3.WithPrevKV(),
+			clientv3.WithFilterDelete(),
+			clientv3.WithMinModRev(rev + 1),
+		}
+		wch := g.client.Watch(ctx, g.key, wopts...)
+
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ch := <-wch:
+				if ch.IsProgressNotify() || ch.Canceled {
+					break LOOP
+				}
+
+				for _, event := range ch.Events {
+					switch {
+					case event.Type == clientv3.EventTypePut:
+						if event.Kv.ModRevision > atomic.LoadInt64(&g.rev) {
+							val := event.Kv.Value[0:8]
+							id := binary.LittleEndian.Uint64(val)
+							atomic.StoreUint64(&g.id, id)
+							atomic.StoreInt64(&g.rev, event.Kv.ModRevision)
+						}
+					}
 				}
 			}
 		}
@@ -115,6 +131,7 @@ func (g *Generator) set(id uint64) error {
 	if err != nil {
 		return err
 	}
+	atomic.StoreUint64(&g.id, id)
 	atomic.StoreInt64(&g.rev, resp.Header.Revision)
 
 	return nil
@@ -129,7 +146,8 @@ func (g *Generator) load() error {
 		return nil
 	}
 	val := resp.Kvs[0].Value[0:8]
-	g.id = binary.LittleEndian.Uint64(val)
+	id := binary.LittleEndian.Uint64(val)
+	atomic.StoreUint64(&g.id, id)
 	atomic.StoreInt64(&g.rev, resp.Header.Revision)
 	return nil
 }

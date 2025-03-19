@@ -25,6 +25,14 @@ import (
 	"encoding/json"
 )
 
+type ValidationError interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+}
+
 func (e *Error) Error() string {
 	data, _ := json.Marshal(e)
 	return string(data)
@@ -50,6 +58,10 @@ func ErrNotReady(detail string) *Error {
 	return NewErr(Code_NotReady, detail)
 }
 
+func ErrBadRequest(detail string) *Error {
+	return NewErr(Code_BadRequest, detail)
+}
+
 func ParseErr(err error) *Error {
 	switch e := err.(type) {
 	case *Error:
@@ -57,6 +69,8 @@ func ParseErr(err error) *Error {
 			return nil
 		}
 		return e
+	case ValidationError:
+		return ErrBadRequest(e.Reason())
 	default:
 		var ee *Error
 		if e1 := json.Unmarshal([]byte(err.Error()), &ee); e1 == nil {

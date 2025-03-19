@@ -197,6 +197,7 @@ func (s *Scheduler) finishProcess(ctx context.Context, instance *types.Process, 
 		instance.Message = err.Error()
 	} else {
 		instance.Status = types.ProcessStatus_Ok
+		instance.Message = ""
 	}
 	return s.saveProcess(ctx, instance)
 }

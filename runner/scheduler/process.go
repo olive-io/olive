@@ -106,28 +106,36 @@ func (p *Process) Run(handler ProcessHandler) error {
 		p.cancel()
 	}()
 
+	var err error
 	for _, instance := range p.instances {
-		if err := instance.StartAll(); err != nil {
+		if err = instance.StartAll(); err != nil {
 			return err
 		}
 
 	LOOP:
 		for {
-			wrapped, ok := <-traces
-			if !ok {
-				break LOOP
-			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case wrapped, ok := <-traces:
+				if !ok {
+					break LOOP
+				}
 
-			trace := tracing.Unwrap(wrapped)
+				trace := tracing.Unwrap(wrapped)
 
-			handler(trace, instance.Locator())
-			if _, ok := trace.(bpmn.CeaseFlowTrace); ok {
-				break LOOP
+				handler(trace, instance.Locator())
+				switch tv := trace.(type) {
+				case bpmn.ErrorTrace:
+					err = tv.Error
+				case bpmn.CeaseFlowTrace:
+					break LOOP
+				}
 			}
 		}
 
 		instance.WaitUntilComplete(ctx)
 	}
 
-	return nil
+	return err
 }

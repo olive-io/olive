@@ -74,7 +74,7 @@ func (mon *Monitor) Start(ctx context.Context) error {
 	cfg := mon.cfg
 
 	mon.v3cli = new(clientv3.Client)
-	handlers, register, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli)
+	handlers, register, startFn, err := server.ServersRegister(ctx, &cfg, lg, mon.v3cli)
 	if err != nil {
 		return err
 	}
@@ -95,6 +95,10 @@ func (mon *Monitor) Start(ctx context.Context) error {
 
 	if err = scheduler.StartScheduler(ctx, lg, mon.v3cli, mon.notifier); err != nil {
 		return errors.Wrap(err, "start global scheduler")
+	}
+
+	if err := startFn(); err != nil {
+		return errors.Wrap(err, "start internal services")
 	}
 
 	mon.IEmbedServer.Destroy(mon.destroy)

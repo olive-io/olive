@@ -27,6 +27,7 @@ import (
 
 	"github.com/gorilla/mux"
 	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
@@ -37,7 +38,6 @@ import (
 	"github.com/olive-io/olive/console/dao"
 	"github.com/olive-io/olive/console/docs"
 	"github.com/olive-io/olive/console/service/bpmn"
-	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client) (http.Handler, error) {
@@ -91,11 +91,9 @@ func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client)
 		return nil, err
 	}
 	serveMux.PathPrefix(pattern).Handler(http.StripPrefix(pattern, http.FileServer(http.FS(swaggerFs))))
+	serveMux.PathPrefix("/").Handler(gwmux)
 
-	root := http.NewServeMux()
-	root.Handle("/", serveMux)
-
-	handler := genericserver.HybridHandler(gs, root)
+	handler := genericserver.HybridHandler(gs, serveMux)
 
 	return handler, nil
 }

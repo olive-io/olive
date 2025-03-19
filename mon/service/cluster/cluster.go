@@ -47,13 +47,17 @@ func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client) (*Service,
 	return s, nil
 }
 
-func (rpc *Service) MemberAdd(ctx context.Context, peers []string, isLearner bool) (*types.ResponseHeader, *types.Member, []*types.Member, error) {
+func (s *Service) Start() error {
+	return nil
+}
+
+func (s *Service) MemberAdd(ctx context.Context, peers []string, isLearner bool) (*types.ResponseHeader, *types.Member, []*types.Member, error) {
 	var resp *clientv3.MemberAddResponse
 	var err error
 	if isLearner {
-		resp, err = rpc.v3cli.MemberAddAsLearner(ctx, peers)
+		resp, err = s.v3cli.MemberAddAsLearner(ctx, peers)
 	} else {
-		resp, err = rpc.v3cli.MemberAdd(ctx, peers)
+		resp, err = s.v3cli.MemberAdd(ctx, peers)
 	}
 	if err != nil {
 		return nil, nil, nil, err
@@ -67,8 +71,8 @@ func (rpc *Service) MemberAdd(ctx context.Context, peers []string, isLearner boo
 	return types.PbToHeader(resp.Header), types.PbToMember(resp.Member), members, nil
 }
 
-func (rpc *Service) MemberRemove(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
-	resp, err := rpc.v3cli.MemberRemove(ctx, id)
+func (s *Service) MemberRemove(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := s.v3cli.MemberRemove(ctx, id)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,8 +84,8 @@ func (rpc *Service) MemberRemove(ctx context.Context, id uint64) (*types.Respons
 	return types.PbToHeader(resp.Header), members, nil
 }
 
-func (rpc *Service) MemberUpdate(ctx context.Context, id uint64, peers []string) (*types.ResponseHeader, []*types.Member, error) {
-	resp, err := rpc.v3cli.MemberUpdate(ctx, id, peers)
+func (s *Service) MemberUpdate(ctx context.Context, id uint64, peers []string) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := s.v3cli.MemberUpdate(ctx, id, peers)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,8 +97,8 @@ func (rpc *Service) MemberUpdate(ctx context.Context, id uint64, peers []string)
 	return types.PbToHeader(resp.Header), members, nil
 }
 
-func (rpc *Service) MemberList(ctx context.Context) (*types.ResponseHeader, []*types.Member, error) {
-	resp, err := rpc.v3cli.MemberList(ctx)
+func (s *Service) MemberList(ctx context.Context) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := s.v3cli.MemberList(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -105,8 +109,8 @@ func (rpc *Service) MemberList(ctx context.Context) (*types.ResponseHeader, []*t
 	return types.PbToHeader(resp.Header), members, nil
 }
 
-func (rpc *Service) MemberPromote(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
-	resp, err := rpc.v3cli.MemberPromote(ctx, id)
+func (s *Service) MemberPromote(ctx context.Context, id uint64) (*types.ResponseHeader, []*types.Member, error) {
+	resp, err := s.v3cli.MemberPromote(ctx, id)
 	if err != nil {
 		return nil, nil, err
 	}

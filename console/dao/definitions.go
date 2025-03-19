@@ -84,6 +84,25 @@ func (dao *DefinitionDao) AddDefinition(ctx context.Context, definition *types.D
 	return nil
 }
 
+func (dao *DefinitionDao) UpdateDefinition(ctx context.Context, definition *types.Definition) error {
+	md := &model.Definition{
+		DefinitionID: definition.Id,
+		Version:      definition.Version,
+	}
+
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+	if definition.Id != 0 {
+		tx = tx.Where("definition_id = ?", definition.Id)
+	}
+	if definition.Version != 0 {
+		tx = tx.Where("version = ?", definition.Version)
+	}
+	if err := tx.Updates(md).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (dao *DefinitionDao) DeleteDefinition(ctx context.Context, definitionID int64, version uint64) error {
 
 	result := model.NewListResult[model.Process](-1, 10)
@@ -96,7 +115,7 @@ func (dao *DefinitionDao) DeleteDefinition(ctx context.Context, definitionID int
 	}
 
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
-	err := tx.Delete("definition_id = ? AND version = ?", definitionID, version).Error
+	err := tx.Where("definition_id = ? AND version = ?", definitionID, version).Delete(&model.Definition{}).Error
 	if err != nil {
 		return err
 	}

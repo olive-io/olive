@@ -24,11 +24,14 @@ package bpmn
 import (
 	"context"
 
+	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/client"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/dao"
 	"github.com/olive-io/olive/console/model"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 type Service struct {
@@ -57,6 +60,7 @@ func NewBpmn(ctx context.Context, cfg *config.Config, oct *client.Client) (*Serv
 		watchDao:      watchDao,
 	}
 
+	go s.process()
 	return s, nil
 }
 
@@ -72,7 +76,7 @@ func (s *Service) ListDefinitions(ctx context.Context, page, size int32) (*model
 	for _, item := range mr.List {
 		definition, err := s.oct.GetDefinition(ctx, item.DefinitionID, item.Version)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		result.List = append(result.List, definition)
 	}
@@ -139,7 +143,7 @@ func (s *Service) ListProcesses(ctx context.Context, page, size int32, definitio
 	for _, item := range mr.List {
 		process, err := s.oct.GetProcess(ctx, item.ProcessID)
 		if err != nil {
-			return nil, err
+			continue
 		}
 		result.List = append(result.List, process)
 	}
@@ -167,7 +171,7 @@ func (s *Service) DeleteProcess(ctx context.Context, id int64) (*types.Process, 
 		return nil, err
 	}
 
-	process, err = s.oct.RemoveProcess(ctx, id)
+	process, err = s.oct.RemoveProcess(ctx, process.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -181,11 +185,140 @@ func (s *Service) DeleteProcess(ctx context.Context, id int64) (*types.Process, 
 }
 
 func (s *Service) process() {
+	ctx, cancel := context.WithCancel(s.ctx)
+	defer cancel()
+
+	rev := s.watchDao.GetRev(ctx)
+
+	opts := []clientv3.OpOption{
+		clientv3.WithPrefix(),
+		clientv3.WithMinModRev(rev + 1),
+		clientv3.WithSerializable(),
+	}
+
+	currentRev := int64(0)
+	resp, _ := s.oct.Get(ctx, api.DefinitionPrefix, opts...)
+	if resp != nil {
+		for _, kv := range resp.Kvs {
+			definition, err := types.DefinitionFromKV(kv)
+			if err != nil {
+				continue
+			}
+			_ = s.definitionDao.AddDefinition(ctx, definition)
+		}
+	}
+
+	resp, _ = s.oct.Get(ctx, api.ProcessPrefix, opts...)
+	if resp != nil {
+		for _, kv := range resp.Kvs {
+			process, err := types.ProcessFromKV(kv)
+			if err != nil {
+				continue
+			}
+			currentRev = kv.ModRevision
+			_ = s.processDao.AddProcess(ctx, process)
+		}
+	}
+
+	_ = s.watchDao.SetRev(ctx, currentRev)
 
 	for {
-		select {
-		case <-s.ctx.Done():
-			return
+
+		rev = s.watchDao.GetRev(ctx)
+		wopts := []clientv3.OpOption{
+			clientv3.WithPrefix(),
+			clientv3.WithPrevKV(),
+		}
+		if rev != 0 {
+			wopts = append(wopts, clientv3.WithRev(rev+1))
+		}
+
+		dw := s.oct.Watch(ctx, api.DefinitionPrefix, wopts...)
+
+		pw := s.oct.Watch(ctx, api.ProcessPrefix, wopts...)
+
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case wch, ok := <-dw:
+				if !ok {
+					break LOOP
+				}
+				if werr := wch.Err(); werr != nil {
+					break LOOP
+				}
+
+				for _, event := range wch.Events {
+					if modRev := event.Kv.ModRevision; modRev > rev {
+						s.watchDao.SetRev(ctx, modRev)
+					}
+
+					switch {
+					case event.Type == mvccpb.PUT:
+						kv := event.Kv
+						_ = s.watchDao.SetRev(ctx, kv.ModRevision)
+						definition, e1 := types.DefinitionFromKV(kv)
+						if e1 != nil {
+							continue
+						}
+
+						if event.IsCreate() {
+							_ = s.definitionDao.AddDefinition(ctx, definition)
+						} else {
+							_ = s.definitionDao.UpdateDefinition(ctx, definition)
+						}
+					case event.Type == mvccpb.DELETE:
+						kv := event.PrevKv
+						_ = s.watchDao.SetRev(ctx, kv.ModRevision)
+						definition, e1 := types.DefinitionFromKV(kv)
+						if e1 != nil {
+							continue
+						}
+						_ = s.definitionDao.DeleteDefinition(ctx, definition.Id, definition.Version)
+					}
+				}
+
+			case wch, ok := <-pw:
+				if !ok {
+					break LOOP
+				}
+				if werr := wch.Err(); werr != nil {
+					break LOOP
+				}
+
+				for _, event := range wch.Events {
+					if modRev := event.Kv.ModRevision; modRev > rev {
+						s.watchDao.SetRev(ctx, modRev)
+					}
+
+					switch {
+					case event.Type == mvccpb.PUT:
+						kv := event.Kv
+						_ = s.watchDao.SetRev(ctx, kv.ModRevision)
+						process, e1 := types.ProcessFromKV(kv)
+						if e1 != nil {
+							continue
+						}
+
+						if event.IsCreate() {
+							_ = s.processDao.AddProcess(ctx, process)
+						} else {
+							_ = s.processDao.UpdateProcess(ctx, process)
+						}
+
+					case event.Type == mvccpb.DELETE:
+						kv := event.PrevKv
+						_ = s.watchDao.SetRev(ctx, kv.ModRevision)
+						process, e1 := types.ProcessFromKV(kv)
+						if e1 != nil {
+							continue
+						}
+						_ = s.processDao.DeleteProcess(ctx, process.Id)
+					}
+				}
+			}
 		}
 	}
 }

@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"path"
 
-	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/protobuf/proto"
 
@@ -94,7 +93,7 @@ func (ds *DefinitionStorage) GetDefinition(ctx context.Context, id int64, versio
 		return nil, err
 	}
 
-	definition, err := parseDefinition(resp.Kvs[0])
+	definition, err := types.DefinitionFromKV(resp.Kvs[0])
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (ds *DefinitionStorage) ListDefinitions(ctx context.Context) ([]*types.Defi
 
 	definitions := make([]*types.Definition, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		definition, err := parseDefinition(kv)
+		definition, err := types.DefinitionFromKV(kv)
 		if err != nil {
 			continue
 		}
@@ -157,7 +156,7 @@ func (ds *DefinitionStorage) ListProcess(ctx context.Context) ([]*types.Process,
 
 	processes := make([]*types.Process, 0, len(resp.Kvs))
 	for _, kv := range resp.Kvs {
-		process, err := parseProcess(kv)
+		process, err := types.ProcessFromKV(kv)
 		if err != nil {
 			continue
 		}
@@ -231,20 +230,4 @@ func (ds *DefinitionStorage) getDefinitionLastVersion(ctx context.Context, id in
 	}
 	kv := resp.Kvs[0]
 	return binary.LittleEndian.Uint64(kv.Value[:8])
-}
-
-func parseDefinition(kv *mvccpb.KeyValue) (*types.Definition, error) {
-	var definition types.Definition
-	if err := proto.Unmarshal(kv.Value, &definition); err != nil {
-		return nil, err
-	}
-	return &definition, nil
-}
-
-func parseProcess(kv *mvccpb.KeyValue) (*types.Process, error) {
-	var process types.Process
-	if err := proto.Unmarshal(kv.Value, &process); err != nil {
-		return nil, err
-	}
-	return &process, nil
 }

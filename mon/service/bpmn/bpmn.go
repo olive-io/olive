@@ -67,6 +67,10 @@ func New(ctx context.Context, cfg *config.Config, lg *zap.Logger, v3cli *clientv
 	return s, nil
 }
 
+func (s *Service) Start() error {
+	return nil
+}
+
 func (s *Service) DeployDefinition(ctx context.Context, definition *types.Definition) (*types.Definition, error) {
 	if definition.Id == 0 {
 		definition.Id = int64(s.idGen.Next())
@@ -120,6 +124,11 @@ func (s *Service) ExecuteDefinition(ctx context.Context, process *types.Process)
 	process.Id = int64(s.idGen.Next())
 	process.Priority = 1
 	process.Status = types.ProcessStatus_Prepare
+
+	_, err := s.GetDefinition(ctx, process.DefinitionsId, process.DefinitionsVersion)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := s.ds.AddProcess(ctx, process); err != nil {
 		return nil, err

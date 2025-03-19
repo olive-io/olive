@@ -43,7 +43,7 @@ func ServersRegister(
 	cfg *config.Config,
 	lg *zap.Logger,
 	v3cli *clientv3.Client,
-) (map[string]http.Handler, func(gs *grpc.Server), error) {
+) (map[string]http.Handler, func(gs *grpc.Server), func() error, error) {
 
 	handlers := map[string]http.Handler{
 		"/metrics": promhttp.Handler(),
@@ -51,17 +51,17 @@ func ServersRegister(
 
 	clusterService, err := cluster.New(ctx, lg, v3cli)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create cluster service")
+		return nil, nil, nil, errors.Wrap(err, "create cluster service")
 	}
 
-	systemService, err := system.New(ctx, lg, v3cli, cfg.NewIdGenerator())
+	systemService, err := system.New(ctx, lg, v3cli)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create system service")
+		return nil, nil, nil, errors.Wrap(err, "create system service")
 	}
 
 	bpmnService, err := bpmn.New(ctx, cfg, lg, v3cli, cfg.NewIdGenerator())
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create bpmn service")
+		return nil, nil, nil, errors.Wrap(err, "create bpmn service")
 	}
 
 	register := func(gs *grpc.Server) {
@@ -70,5 +70,19 @@ func ServersRegister(
 		pb.RegisterBpmnRPCServer(gs, newBpmn(bpmnService))
 	}
 
-	return handlers, register, nil
+	startFn := func() error {
+		if err := clusterService.Start(); err != nil {
+			return errors.Wrap(err, "start cluster")
+		}
+		if err := systemService.Start(); err != nil {
+			return errors.Wrap(err, "start system")
+		}
+		if err := bpmnService.Start(); err != nil {
+			return errors.Wrap(err, "start bpmn")
+		}
+		
+		return nil
+	}
+
+	return handlers, register, startFn, nil
 }

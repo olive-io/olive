@@ -81,20 +81,6 @@ func (dao *ProcessDao) GetProcess(ctx context.Context, id int64) (*model.Process
 	return mp, nil
 }
 
-func (dao *ProcessDao) UpdateProcess(ctx context.Context, process *types.Process) error {
-	mp := &model.Process{
-		DefinitionID: process.DefinitionsId,
-		Version:      process.DefinitionsVersion,
-		Status:       process.Status,
-	}
-
-	tx := GetSession().WithContext(ctx).Model(dao.Target())
-	if err := tx.Where("process_id = ?", process.Id).Updates(mp).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
 func (dao *ProcessDao) AddProcess(ctx context.Context, process *types.Process) error {
 	mp := &model.Process{
 		ProcessID:    process.Id,
@@ -110,9 +96,23 @@ func (dao *ProcessDao) AddProcess(ctx context.Context, process *types.Process) e
 	return nil
 }
 
+func (dao *ProcessDao) UpdateProcess(ctx context.Context, process *types.Process) error {
+	mp := &model.Process{
+		DefinitionID: process.DefinitionsId,
+		Version:      process.DefinitionsVersion,
+		Status:       process.Status,
+	}
+
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+	if err := tx.Where("process_id = ?", process.Id).Updates(mp).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (dao *ProcessDao) DeleteProcess(ctx context.Context, id int64) error {
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
-	if err := tx.Delete("process_id = ?", id).Error; err != nil {
+	if err := tx.Where("process_id = ?", id).Delete(&model.Process{}).Error; err != nil {
 		return err
 	}
 

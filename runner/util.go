@@ -20,18 +20,3 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package runner
-
-import (
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	"google.golang.org/protobuf/proto"
-
-	"github.com/olive-io/olive/api/types"
-)
-
-func parseEventKV(kv *mvccpb.KeyValue) (*types.RunnerEvent, error) {
-	var re types.RunnerEvent
-	if err := proto.Unmarshal(kv.Value, &re); err != nil {
-		return nil, err
-	}
-	return &re, nil
-}

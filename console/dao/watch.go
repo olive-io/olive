@@ -23,34 +23,57 @@ package dao
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/olive-io/olive/console/model"
 )
 
-type WatchDao struct{}
+type WatchDao struct {
+	currRev atomic.Int64
+}
 
 func NewWatch() *WatchDao {
-	dao := &WatchDao{}
+	dao := &WatchDao{
+		currRev: atomic.Int64{},
+	}
 	return dao
 }
 
 func (dao *WatchDao) GetRev(ctx context.Context) int64 {
+	current := dao.currRev.Load()
+	if current != 0 {
+		return current
+	}
+
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 
 	rev := &model.WatchRev{}
-	if err := tx.First(&rev).Error; err != nil {
-		return 0
+	if err := tx.Where("id = ?", 1).First(&rev).Error; err != nil {
+		tx := GetSession().WithContext(ctx).Model(dao.Target())
+		rev = &model.WatchRev{ID: 1, Revision: 0}
+		tx.Create(rev)
 	}
+	dao.currRev.Store(current)
 	return rev.Revision
 }
 
 func (dao *WatchDao) SetRev(ctx context.Context, rev int64) error {
+	if rev < dao.currRev.Load() {
+		return nil
+	}
+
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 
-	if err := tx.Save(&model.WatchRev{ID: 1, Revision: rev}).Error; err != nil {
+	if err := tx.Where("id = ?", 1).Updates(&model.WatchRev{Revision: rev}).Error; err != nil {
 		return err
 	}
+
+	dao.currRev.Store(rev)
 	return nil
+}
+
+func (dao *WatchDao) Clear(ctx context.Context) error {
+	return dao.SetRev(ctx, 0)
 }
 
 func (dao *WatchDao) Target() *model.WatchRev {

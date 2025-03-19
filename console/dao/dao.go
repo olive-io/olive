@@ -65,7 +65,7 @@ func Init(cfg *config.Config) error {
 		}
 
 		gdb, err = gorm.Open(dialector, &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
+			Logger: logger.Default.LogMode(logger.Info),
 		})
 		if err != nil {
 			return
@@ -91,7 +91,7 @@ func GetDB() *gorm.DB {
 
 func GetSession(cfg ...*gorm.Session) *gorm.DB {
 	sc := &gorm.Session{}
-	if cfg == nil || len(cfg) != 0 {
+	if cfg != nil && len(cfg) != 0 {
 		sc = cfg[0]
 	}
 	return gdb.Session(sc)

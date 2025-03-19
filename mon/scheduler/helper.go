@@ -20,34 +20,3 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 package scheduler
-
-import (
-	"go.etcd.io/etcd/api/v3/mvccpb"
-	"google.golang.org/protobuf/proto"
-
-	"github.com/olive-io/olive/api/types"
-)
-
-func parseRunnerKV(kv *mvccpb.KeyValue) (*types.Runner, error) {
-	var runner types.Runner
-	err := proto.Unmarshal(kv.Value, &runner)
-	return &runner, err
-}
-
-func parseStatKV(kv *mvccpb.KeyValue) (*types.RunnerStat, error) {
-	var stat types.RunnerStat
-	err := proto.Unmarshal(kv.Value, &stat)
-	return &stat, err
-}
-
-func parsePSnapKV(kv *mvccpb.KeyValue) (*types.ProcessSnapshot, error) {
-	var ps types.ProcessSnapshot
-	err := proto.Unmarshal(kv.Value, &ps)
-	return &ps, err
-}
-
-func parseProcessKV(kv *mvccpb.KeyValue) (*types.Process, error) {
-	var pi types.Process
-	err := proto.Unmarshal(kv.Value, &pi)
-	return &pi, err
-}

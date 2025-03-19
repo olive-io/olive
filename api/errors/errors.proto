@@ -33,10 +33,12 @@ enum Code {
   Unknown = 1;
   Internal = 2;
   NotReady = 3;
+  BadRequest = 4;
 }
 
 message Error {
   Code code = 1;
   string message = 2;
   string detail = 3;
+  string cause = 4;
 }

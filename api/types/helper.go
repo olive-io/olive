@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	"google.golang.org/protobuf/proto"
 )
 
 func PbToHeader(header *etcdserverpb.ResponseHeader) *ResponseHeader {
@@ -84,4 +86,52 @@ func (x *ProcessSnapshot) ExecuteExpired(interval time.Duration) bool {
 	}
 	deadline := x.ReadyAt + interval.Nanoseconds()
 	return deadline < time.Now().UnixNano()
+}
+
+func EventFromKV(kv *mvccpb.KeyValue) (*RunnerEvent, error) {
+	var x RunnerEvent
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func DefinitionFromKV(kv *mvccpb.KeyValue) (*Definition, error) {
+	var x Definition
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func ProcessFromKV(kv *mvccpb.KeyValue) (*Process, error) {
+	var x Process
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func ProcessSnapshotFromKV(kv *mvccpb.KeyValue) (*ProcessSnapshot, error) {
+	var x ProcessSnapshot
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func RunnerFromKV(kv *mvccpb.KeyValue) (*Runner, error) {
+	var x Runner
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
+}
+
+func StatFromKV(kv *mvccpb.KeyValue) (*RunnerStat, error) {
+	var x RunnerStat
+	if err := proto.Unmarshal(kv.Value, &x); err != nil {
+		return nil, err
+	}
+	return &x, nil
 }

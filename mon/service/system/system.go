@@ -27,8 +27,8 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/olive-io/olive/pkg/idutil"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/pkg/v3/idutil"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,7 +38,10 @@ import (
 	"github.com/olive-io/olive/api/types"
 )
 
-const prefix = api.RunnerPrefix
+const (
+	prefix   = api.RunnerPrefix
+	idPrefix = "/api/v1/rid"
+)
 
 type Service struct {
 	ctx context.Context
@@ -48,15 +51,25 @@ type Service struct {
 	idGen *idutil.Generator
 }
 
-func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client, idGen *idutil.Generator) (*Service, error) {
+func New(ctx context.Context, lg *zap.Logger, v3cli *clientv3.Client) (*Service, error) {
+
 	s := &Service{
 		ctx:   ctx,
 		lg:    lg,
 		v3cli: v3cli,
-		idGen: idGen,
 	}
 
 	return s, nil
+}
+
+func (s *Service) Start() error {
+	idGen, err := idutil.NewGenerator(s.ctx, s.lg, idPrefix, s.v3cli)
+	if err != nil {
+		return err
+	}
+	s.idGen = idGen
+
+	return nil
 }
 
 func (s *Service) GetCluster(ctx context.Context) (*types.ResponseHeader, *types.Monitor, error) {

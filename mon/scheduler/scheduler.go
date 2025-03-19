@@ -239,7 +239,7 @@ func (sc *scheduler) process(ctx context.Context) {
 					switch {
 					case ev.Type == mvccpb.PUT && ev.IsCreate():
 						// this event from other olive-mon node
-						ps, err := parsePSnapKV(ev.Kv)
+						ps, err := types.ProcessSnapshotFromKV(ev.Kv)
 						if err == nil {
 							sc.pmu.RLock()
 							_, found := sc.processTree.Get(ps.Id)
@@ -249,7 +249,7 @@ func (sc *scheduler) process(ctx context.Context) {
 							}
 						}
 					case ev.Type == mvccpb.DELETE:
-						ps, err := parsePSnapKV(ev.PrevKv)
+						ps, err := types.ProcessSnapshotFromKV(ev.PrevKv)
 						if err == nil {
 							sc.pmu.Lock()
 							sc.processTree.Remove(ps.Id)
@@ -340,7 +340,7 @@ func (sc *scheduler) watchProcess(ctx context.Context) {
 				for _, ev := range wch.Events {
 					switch {
 					case ev.Type == mvccpb.PUT && ev.IsModify():
-						pi, err := parseProcessKV(ev.Kv)
+						pi, err := types.ProcessFromKV(ev.Kv)
 						if err == nil {
 							if pi.Executed() {
 								// reallocates Process to another olive-runner
@@ -353,7 +353,7 @@ func (sc *scheduler) watchProcess(ctx context.Context) {
 							}
 						}
 					case ev.Type == mvccpb.DELETE:
-						pi, err := parseProcessKV(ev.PrevKv)
+						pi, err := types.ProcessFromKV(ev.PrevKv)
 						if err == nil {
 							sc.pmu.Lock()
 							sc.processTree.Remove(pi.Id)
@@ -438,7 +438,7 @@ func (sc *scheduler) fetchPrepares(ctx context.Context) {
 	}
 
 	for _, kv := range resp.Kvs {
-		ps, err := parsePSnapKV(kv)
+		ps, err := types.ProcessSnapshotFromKV(kv)
 		if err != nil {
 			continue
 		}
@@ -452,7 +452,7 @@ func (sc *scheduler) fetchPrepares(ctx context.Context) {
 		if err != nil {
 			continue
 		}
-		pi, err := parseProcessKV(resp.Kvs[0])
+		pi, err := types.ProcessFromKV(resp.Kvs[0])
 		if err != nil {
 			continue
 		}

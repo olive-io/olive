@@ -29,6 +29,7 @@ import (
 
 	"go.etcd.io/etcd/server/v3/embed"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/v3client"
+	"go.uber.org/zap"
 )
 
 func newEtcd() (*embed.Etcd, func()) {
@@ -55,13 +56,17 @@ func TestNewGenerator(t *testing.T) {
 
 	key := path.Join("/", "runner", "id")
 
-	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	gen, err := NewGenerator(context.Background(), zap.NewNop(), key, v3client.New(etcd.Server))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	id := gen.Next()
+	t.Logf("id: %d\n", id)
 	id2 := gen.Next()
+	t.Logf("id2: %d\n", id2)
+	id3 := gen.Next()
+	t.Logf("id3: %d\n", id3)
 	if id == id2 {
 		t.Errorf("generate the same id %x", id)
 	}
@@ -73,7 +78,7 @@ func BenchmarkNext(b *testing.B) {
 
 	key := path.Join("/", "runner", "id")
 
-	gen, err := NewGenerator(context.Background(), key, v3client.New(etcd.Server))
+	gen, err := NewGenerator(context.Background(), zap.NewNop(), key, v3client.New(etcd.Server))
 	if err != nil {
 		panic(err)
 	}
