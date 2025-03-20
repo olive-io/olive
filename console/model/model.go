@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package model
 
 import (
+	"github.com/golang-jwt/jwt/v4"
+
 	"github.com/olive-io/olive/api/types"
 )
 
@@ -73,4 +75,10 @@ type WatchRev struct {
 	ID uint64 `json:"id" gorm:"column:id;primarykey"`
 
 	Revision int64 `json:"revision" gorm:"column:revision"`
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
+	Id     int64  `json:"id"`
+	Secret string `json:"secret"`
 }

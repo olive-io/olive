@@ -32,6 +32,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/model"
 )
@@ -80,6 +81,13 @@ func Init(cfg *config.Config) error {
 		if err = gdb.AutoMigrate(&model.WatchRev{}); err != nil {
 			return
 		}
+
+		if err = gdb.AutoMigrate(&types.Role{}); err != nil {
+			return
+		}
+		if err = gdb.AutoMigrate(&types.User{}); err != nil {
+			return
+		}
 	})
 
 	return err
@@ -93,6 +101,11 @@ func GetSession(cfg ...*gorm.Session) *gorm.DB {
 	sc := &gorm.Session{}
 	if cfg != nil && len(cfg) != 0 {
 		sc = cfg[0]
+	} else {
+		sc = &gorm.Session{
+			NewDB:       true,
+			Initialized: true,
+		}
 	}
 	return gdb.Session(sc)
 }

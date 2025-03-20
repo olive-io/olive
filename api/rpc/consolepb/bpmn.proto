@@ -23,7 +23,6 @@ syntax = "proto3";
 
 package rpc.consolepb;
 
-import "types/internal.proto";
 import "types/bpmn.proto";
 // for validate
 import "validate/validate.proto";
@@ -66,7 +65,7 @@ service BpmnRPC {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["Definitions:list"],
+              value: ["Definition:list"],
             }
           }
         }
@@ -85,7 +84,7 @@ service BpmnRPC {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["Definitions:get"],
+              value: ["Definition:get"],
             }
           }
         }
@@ -105,7 +104,7 @@ service BpmnRPC {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["Definitions:post"],
+              value: ["Definition:post"],
             }
           }
         }
@@ -124,7 +123,7 @@ service BpmnRPC {
           additional_properties: {
             name: "bearerAuth",
             value: {
-              value: ["Definitions:delete"],
+              value: ["Definition:delete"],
             }
           }
         }
@@ -240,7 +239,7 @@ message ListProcessesResponse {
 }
 
 message GetProcessRequest {
-  int64 id = 1;
+  int64 id = 1 [(validate.rules).int64 = {gt: 0}];
 }
 
 message GetProcessResponse {
@@ -248,67 +247,9 @@ message GetProcessResponse {
 }
 
 message DeleteProcessRequest {
-  int64 id = 1;
+  int64 id = 1 [(validate.rules).int64 = {gt: 0}];
 }
 
 message DeleteProcessResponse {
   types.Process process = 1;
-}
-
-service SystemRPC {
-  rpc ListRunners(ListRunnersRequest) returns (ListRunnersResponse) {
-    option (google.api.http) = {
-      get: "/v1/runners"
-    };
-
-    option (openapi.v3.operation) = {
-      security: [
-        {
-          additional_properties: {
-            name: "bearerAuth",
-            value: {
-              value: ["Runner:list"],
-            }
-          }
-        }
-      ]
-    };
-  }
-
-  rpc GetRunner(GetRunnerRequest) returns (GetRunnerResponse) {
-    option (google.api.http) = {
-      get: "/v1/runners/{id}"
-    };
-
-    option (openapi.v3.operation) = {
-      security: [
-        {
-          additional_properties: {
-            name: "bearerAuth",
-            value: {
-              value: ["Runner:get"],
-            }
-          }
-        }
-      ]
-    };
-  }
-}
-
-message ListRunnersRequest {}
-
-message ListRunnersResponse {
-  repeated types.Runner runner = 1;
-}
-
-message GetRunnerRequest {
-  int64 id = 1;
-}
-
-message GetRunnerResponse {
-  types.Runner runner = 1;
-}
-
-service AuthRPC {
-
 }

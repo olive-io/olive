@@ -27,7 +27,6 @@ import (
 
 	"github.com/gorilla/mux"
 	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	genericserver "github.com/olive-io/olive/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
@@ -37,12 +36,28 @@ import (
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/dao"
 	"github.com/olive-io/olive/console/docs"
+	"github.com/olive-io/olive/console/service/auth"
 	"github.com/olive-io/olive/console/service/bpmn"
+	"github.com/olive-io/olive/console/service/system"
+	genericserver "github.com/olive-io/olive/pkg/server"
 )
 
 func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client) (http.Handler, error) {
 
 	if err := dao.Init(cfg); err != nil {
+		return nil, err
+	}
+
+	bpmnService, err := bpmn.NewBpmn(ctx, cfg, oct)
+	if err != nil {
+		return nil, err
+	}
+	systemService, err := system.NewSystem(ctx, cfg, oct)
+	if err != nil {
+		return nil, err
+	}
+	authService, err := auth.NewAuth(ctx, cfg, oct)
+	if err != nil {
 		return nil, err
 	}
 
@@ -52,13 +67,21 @@ func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client)
 	muxOpts := []gwrt.ServeMuxOption{}
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
-	bpmnService, err := bpmn.NewBpmn(ctx, cfg, oct)
-	if err != nil {
-		return nil, err
-	}
 	bpmnRPC := NewBpmnRPC(bpmnService)
 	consolepb.RegisterBpmnRPCServer(gs, bpmnRPC)
 	if err := consolepb.RegisterBpmnRPCHandlerServer(ctx, gwmux, bpmnRPC); err != nil {
+		return nil, err
+	}
+
+	systemRPC := NewSystemRPC(systemService)
+	consolepb.RegisterSystemRPCServer(gs, systemRPC)
+	if err := consolepb.RegisterSystemRPCHandlerServer(ctx, gwmux, systemRPC); err != nil {
+		return nil, err
+	}
+
+	authRPC := NewAuthRPC(authService)
+	consolepb.RegisterAuthRPCServer(gs, authRPC)
+	if err := consolepb.RegisterAuthRPCHandlerServer(ctx, gwmux, authRPC); err != nil {
 		return nil, err
 	}
 

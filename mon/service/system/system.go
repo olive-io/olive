@@ -27,12 +27,13 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/olive-io/olive/pkg/idutil"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/olive-io/olive/pkg/idutil"
 
 	"github.com/olive-io/olive/api"
 	"github.com/olive-io/olive/api/types"
@@ -201,11 +202,11 @@ func (s *Service) GetRunner(ctx context.Context, id uint64) (*types.Runner, *typ
 		return nil, nil, err
 	}
 
-	if resp.Kvs == nil || len(resp.Kvs) == 0 {
+	if resp == nil || len(resp.Kvs) == 0 {
 		return nil, nil, status.New(codes.NotFound, "runner not found").Err()
 	}
 
-	var runner *types.Runner
+	runner := new(types.Runner)
 	if err = proto.Unmarshal(resp.Kvs[0].Value, runner); err != nil {
 		return nil, nil, err
 	}
@@ -219,7 +220,7 @@ func (s *Service) GetRunner(ctx context.Context, id uint64) (*types.Runner, *typ
 		return nil, nil, status.New(codes.NotFound, "stat not found").Err()
 	}
 
-	var stat *types.RunnerStat
+	stat := new(types.RunnerStat)
 	if err = proto.Unmarshal(resp.Kvs[0].Value, stat); err != nil {
 		return nil, nil, err
 	}

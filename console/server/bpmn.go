@@ -24,12 +24,12 @@ package server
 import (
 	"context"
 
-	"github.com/olive-io/olive/api/rpc/consolepb"
+	pb "github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/console/service/bpmn"
 )
 
 type BpmnRPC struct {
-	consolepb.UnimplementedBpmnRPCServer
+	pb.UnimplementedBpmnRPCServer
 
 	s *bpmn.Service
 }
@@ -38,7 +38,7 @@ func NewBpmnRPC(s *bpmn.Service) *BpmnRPC {
 	return &BpmnRPC{s: s}
 }
 
-func (rpc *BpmnRPC) ListDefinitions(ctx context.Context, req *consolepb.ListDefinitionsRequest) (*consolepb.ListDefinitionsResponse, error) {
+func (rpc *BpmnRPC) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (*pb.ListDefinitionsResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -46,14 +46,14 @@ func (rpc *BpmnRPC) ListDefinitions(ctx context.Context, req *consolepb.ListDefi
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.ListDefinitionsResponse{
+	resp := &pb.ListDefinitionsResponse{
 		Definitions: result.List,
 		Total:       result.Total,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) GetDefinition(ctx context.Context, req *consolepb.GetDefinitionRequest) (*consolepb.GetDefinitionResponse, error) {
+func (rpc *BpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (*pb.GetDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -63,13 +63,13 @@ func (rpc *BpmnRPC) GetDefinition(ctx context.Context, req *consolepb.GetDefinit
 		return nil, err
 	}
 
-	resp := &consolepb.GetDefinitionResponse{
+	resp := &pb.GetDefinitionResponse{
 		Definition: definition,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) DeployDefinition(ctx context.Context, req *consolepb.DeployDefinitionRequest) (*consolepb.DeployDefinitionResponse, error) {
+func (rpc *BpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -77,13 +77,13 @@ func (rpc *BpmnRPC) DeployDefinition(ctx context.Context, req *consolepb.DeployD
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.DeployDefinitionResponse{
+	resp := &pb.DeployDefinitionResponse{
 		Definition: definition,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) DeleteDefinition(ctx context.Context, req *consolepb.DeleteDefinitionRequest) (*consolepb.DeleteDefinitionResponse, error) {
+func (rpc *BpmnRPC) DeleteDefinition(ctx context.Context, req *pb.DeleteDefinitionRequest) (*pb.DeleteDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -92,13 +92,13 @@ func (rpc *BpmnRPC) DeleteDefinition(ctx context.Context, req *consolepb.DeleteD
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.DeleteDefinitionResponse{
+	resp := &pb.DeleteDefinitionResponse{
 		Definition: definition,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) ListProcesses(ctx context.Context, req *consolepb.ListProcessesRequest) (*consolepb.ListProcessesResponse, error) {
+func (rpc *BpmnRPC) ListProcesses(ctx context.Context, req *pb.ListProcessesRequest) (*pb.ListProcessesResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -107,14 +107,14 @@ func (rpc *BpmnRPC) ListProcesses(ctx context.Context, req *consolepb.ListProces
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.ListProcessesResponse{
+	resp := &pb.ListProcessesResponse{
 		Processes: result.List,
 		Total:     result.Total,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) GetProcess(ctx context.Context, req *consolepb.GetProcessRequest) (*consolepb.GetProcessResponse, error) {
+func (rpc *BpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -123,13 +123,13 @@ func (rpc *BpmnRPC) GetProcess(ctx context.Context, req *consolepb.GetProcessReq
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.GetProcessResponse{
+	resp := &pb.GetProcessResponse{
 		Process: process,
 	}
 	return resp, nil
 }
 
-func (rpc *BpmnRPC) DeleteProcess(ctx context.Context, req *consolepb.DeleteProcessRequest) (*consolepb.DeleteProcessResponse, error) {
+func (rpc *BpmnRPC) DeleteProcess(ctx context.Context, req *pb.DeleteProcessRequest) (*pb.DeleteProcessResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (rpc *BpmnRPC) DeleteProcess(ctx context.Context, req *consolepb.DeleteProc
 	if err != nil {
 		return nil, err
 	}
-	resp := &consolepb.DeleteProcessResponse{
+	resp := &pb.DeleteProcessResponse{
 		Process: process,
 	}
 	return resp, nil

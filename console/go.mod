@@ -11,6 +11,7 @@ replace (
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/glebarez/sqlite v1.11.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/olive-io/olive/api v0.1.2
@@ -19,6 +20,8 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/pflag v1.0.6
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
+	go.etcd.io/etcd/api/v3 v3.5.13
+	go.etcd.io/etcd/client/v3 v3.5.13
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.70.0
 	gorm.io/driver/mysql v1.5.7
@@ -60,9 +63,8 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.13 // indirect
+	github.com/srikrsna/protoc-gen-gotag v1.0.2 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
-	go.etcd.io/etcd/client/v3 v3.5.13 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect

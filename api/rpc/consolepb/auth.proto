@@ -1,0 +1,86 @@
+/*
+Copyright 2023 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package rpc.consolepb;
+
+import "types/auth.proto";
+// for validate
+import "validate/validate.proto";
+// for grpc-gateway
+import "google/api/annotations.proto";
+// for openapi
+import "openapi/v3/annotations.proto";
+
+option go_package = "github.com/olive-io/olive/api/rpc/consolepb;consolepb";
+option java_multiple_files = true;
+option java_package = "io.olive.api.rpc.consolepb";
+option java_outer_classname = "OliveRPCConsolePb";
+
+service AuthRPC {
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/login"
+      body: "*"
+    };
+  }
+
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/v1/register"
+      body: "*"
+    };
+
+    option (openapi.v3.operation) = {
+      security: [
+        {
+          additional_properties: {
+            name: "bearerAuth",
+            value: {
+              value: ["User:register"],
+            }
+          }
+        }
+      ]
+    };
+  }
+}
+
+message LoginRequest {
+  string username = 1 [(validate.rules).string = {min_len: 1}];
+  string password = 2 [(validate.rules).string = {min_len: 1}];
+}
+
+message LoginResponse {
+  types.Token token = 1;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  string email = 3 [(validate.rules).string = {email: true}];
+  string phone = 4;
+}
+
+message RegisterResponse {
+  types.User user = 1;
+}

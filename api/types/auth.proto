@@ -1,0 +1,83 @@
+/*
+Copyright 2025 The olive Authors
+
+This program is offered under a commercial and under the AGPL license.
+For AGPL licensing, see below.
+
+AGPL licensing:
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+syntax = "proto3";
+
+package types;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/olive-io/olive/api/types;types";
+option java_multiple_files = true;
+option java_package = "io.olive.api.types";
+option java_outer_classname = "OliveTypes";
+
+enum AuthStatus {
+  AuthUnknown = 0;
+  AuthEnable = 1;
+  AuthDisable = 2;
+}
+
+message Endpoint {
+  string id = 1;
+  string summary = 2;
+  string description = 3;
+  string httpMethod = 4;
+  string url = 5;
+  string operation = 6;
+  string security = 7;
+}
+
+message User {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
+  int64 updateAt = 3 [(tagger.tags) = "gorm:\"autoUpdateTime\""];
+
+  string username = 4 [(tagger.tags) = "gorm:\"uniqueIndex\""];
+  string hash_password = 5;
+  string nickname = 6;
+  string email = 7;
+  string mobile = 8;
+
+  AuthStatus status = 9;
+
+  int64 roleId = 10;
+}
+
+message Role {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
+  int64 updateAt = 3 [(tagger.tags) = "gorm:\"autoUpdateTime\""];
+
+  string name = 4 [(tagger.tags) = "gorm:\"uniqueIndex\""];
+  string desc = 5;
+}
+
+message Token {
+  string token = 1;
+  int64 timestamp = 2;
+  int64 expiredAt = 3;
+  bool enable = 4;
+  int64 userId = 5;
+  int64 user = 6;
+  int64 role = 7;
+}
+

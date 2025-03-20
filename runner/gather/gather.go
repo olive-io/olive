@@ -131,12 +131,9 @@ func (d *Gather) GetStat() *types.RunnerStat {
 		Timestamp:     time.Now().UnixNano(),
 	}
 	interval := time.Millisecond * 300
-	percents, err := cpu.Percent(interval, false)
-	if err == nil {
-		rs.CpuUsed = percents[0] * float64(d.runner.Cpu)
-	}
+	percents, _ := cpu.Percent(interval, false)
 	if len(percents) > 0 {
-		rs.CpuUsed = percents[0] * float64(d.runner.Cpu)
+		rs.CpuUsed = percents[0] * float64(d.runner.Cpu) / 100
 	}
 
 	vm, err := mem.VirtualMemory()
