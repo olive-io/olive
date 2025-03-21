@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/olive-io/olive/api/rpc/runnerpb"
 	genericserver "github.com/olive-io/olive/pkg/server"
@@ -47,6 +48,7 @@ func RegisterServer(ctx context.Context, cfg *config.Config, sch *scheduler.Sche
 
 	runnerRPC := NewGRPCRunnerServer(sch, gather, bs)
 	runnerpb.RegisterRunnerRPCServer(gs, runnerRPC)
+	reflection.Register(gs)
 
 	if err := runnerpb.RegisterRunnerRPCHandlerServer(ctx, gwmux, runnerRPC); err != nil {
 		return nil, err

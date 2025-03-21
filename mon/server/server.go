@@ -30,6 +30,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	pb "github.com/olive-io/olive/api/rpc/monpb"
 	"github.com/olive-io/olive/mon/config"
@@ -68,6 +69,7 @@ func ServersRegister(
 		pb.RegisterClusterServer(gs, newCluster(clusterService))
 		pb.RegisterSystemRPCServer(gs, newSystem(systemService))
 		pb.RegisterBpmnRPCServer(gs, newBpmn(bpmnService))
+		reflection.Register(gs)
 	}
 
 	startFn := func() error {
@@ -80,7 +82,7 @@ func ServersRegister(
 		if err := bpmnService.Start(); err != nil {
 			return errors.Wrap(err, "start bpmn")
 		}
-		
+
 		return nil
 	}
 

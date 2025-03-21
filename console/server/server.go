@@ -33,6 +33,7 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/client"
@@ -75,6 +76,7 @@ func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client)
 	consolepb.RegisterBpmnRPCServer(gs, NewBpmnRPC(bpmnService))
 	consolepb.RegisterSystemRPCServer(gs, NewSystemRPC(systemService))
 	consolepb.RegisterAuthRPCServer(gs, NewAuthRPC(authService))
+	reflection.Register(gs)
 
 	dialOpts := []grpc.DialOption{
 		grpc.WithCredentialsBundle(insecure.NewBundle()),
