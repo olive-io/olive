@@ -65,8 +65,19 @@ func Init(cfg *config.Config) error {
 			return
 		}
 
+		mode := logger.Silent
+		switch cfg.LogLevel {
+		case "debug":
+			mode = logger.Info
+		case "warn":
+			mode = logger.Warn
+		case "error":
+			mode = logger.Error
+		default:
+			mode = logger.Silent
+		}
 		gdb, err = gorm.Open(dialector, &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: logger.Default.LogMode(mode),
 		})
 		if err != nil {
 			return
