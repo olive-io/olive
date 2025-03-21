@@ -89,6 +89,6 @@ func RequestForReadyc() error {
 	case <-readyc:
 		return nil
 	default:
-		return apiErr.ErrNotReady("server is not ready for requesting")
+		return apiErr.NewInternal("server is not ready for requesting")
 	}
 }

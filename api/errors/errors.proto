@@ -23,6 +23,8 @@ syntax = "proto3";
 
 package errors;
 
+import "google/protobuf/any.proto";
+
 option go_package = "github.com/olive-io/olive/api/errors;errors";
 option java_multiple_files = true;
 option java_package = "io.olive.api.errors";
@@ -32,13 +34,21 @@ enum Code {
   Ok = 0;
   Unknown = 1;
   Internal = 2;
-  NotReady = 3;
-  BadRequest = 4;
+  BadRequest = 3;
+  Unauthorized = 4;
+  Forbidden = 5;
+  NotFound = 6;
+  Conflict = 7;
+  TooManyRequests = 8;
+  ClientClosed = 9;
+  NotImplemented = 10;
+  Unavailable = 11;
+  GatewayTimeout = 12;
 }
 
 message Error {
   Code code = 1;
   string message = 2;
   string detail = 3;
-  string cause = 4;
+  repeated google.protobuf.Any causes = 4;
 }

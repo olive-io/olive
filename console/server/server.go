@@ -24,12 +24,15 @@ package server
 import (
 	"context"
 	"net/http"
+	urlpkg "net/url"
 
+	"github.com/cockroachdb/errors"
 	"github.com/gorilla/mux"
 	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/client"
@@ -56,32 +59,44 @@ func RegisterServer(ctx context.Context, cfg *config.Config, oct *client.Client)
 	if err != nil {
 		return nil, err
 	}
-	authService, err := auth.NewAuth(ctx, cfg, oct)
+	authService, interceptor, err := auth.NewAuth(ctx, cfg, oct)
 	if err != nil {
 		return nil, err
 	}
 
-	sopts := []grpc.ServerOption{}
+	sopts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(interceptor),
+	}
 	gs := grpc.NewServer(sopts...)
 
 	muxOpts := []gwrt.ServeMuxOption{}
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
-	bpmnRPC := NewBpmnRPC(bpmnService)
-	consolepb.RegisterBpmnRPCServer(gs, bpmnRPC)
-	if err := consolepb.RegisterBpmnRPCHandlerServer(ctx, gwmux, bpmnRPC); err != nil {
-		return nil, err
+	consolepb.RegisterBpmnRPCServer(gs, NewBpmnRPC(bpmnService))
+	consolepb.RegisterSystemRPCServer(gs, NewSystemRPC(systemService))
+	consolepb.RegisterAuthRPCServer(gs, NewAuthRPC(authService))
+
+	dialOpts := []grpc.DialOption{
+		grpc.WithCredentialsBundle(insecure.NewBundle()),
 	}
 
-	systemRPC := NewSystemRPC(systemService)
-	consolepb.RegisterSystemRPCServer(gs, systemRPC)
-	if err := consolepb.RegisterSystemRPCHandlerServer(ctx, gwmux, systemRPC); err != nil {
-		return nil, err
+	url, err := urlpkg.Parse(cfg.ListenURL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid listen url: %s", cfg.ListenURL)
+	}
+	endpoint := url.Host
+	conn, err := grpc.NewClient(endpoint, dialOpts...)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating grpc connection")
 	}
 
-	authRPC := NewAuthRPC(authService)
-	consolepb.RegisterAuthRPCServer(gs, authRPC)
-	if err := consolepb.RegisterAuthRPCHandlerServer(ctx, gwmux, authRPC); err != nil {
+	if err := consolepb.RegisterBpmnRPCHandler(ctx, gwmux, conn); err != nil {
+		return nil, err
+	}
+	if err := consolepb.RegisterSystemRPCHandler(ctx, gwmux, conn); err != nil {
+		return nil, err
+	}
+	if err := consolepb.RegisterAuthRPCHandler(ctx, gwmux, conn); err != nil {
 		return nil, err
 	}
 

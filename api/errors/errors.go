@@ -23,6 +23,11 @@ package errors
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type ValidationError interface {
@@ -33,12 +38,39 @@ type ValidationError interface {
 	ErrorName() string
 }
 
+func (e *Error) WithCause(value proto.Message) *Error {
+	cause, _ := anypb.New(value)
+	if cause != nil {
+		e.Causes = append(e.Causes, cause)
+	}
+	return e
+}
+
 func (e *Error) Error() string {
 	data, _ := json.Marshal(e)
 	return string(data)
 }
 
-func NewErr(code Code, detail string) *Error {
+func (e *Error) Err() error {
+	if e.Code == Code_Ok {
+		return nil
+	}
+	return e
+}
+
+// ToStatus converts Error to grpc Status
+func (e *Error) ToStatus() *status.Status {
+	s := status.New(e.Code.ToGrpcCode(), e.Detail)
+	for _, cause := range e.Causes {
+		rs, err := s.WithDetails(cause)
+		if err != nil {
+			s = rs
+		}
+	}
+	return s
+}
+
+func New(code Code, detail string) *Error {
 	return &Error{
 		Code:    code,
 		Message: code.String(),
@@ -46,37 +78,119 @@ func NewErr(code Code, detail string) *Error {
 	}
 }
 
-func ErrUnknown(detail string) *Error {
-	return NewErr(Code_Unknown, detail)
+func Newf(code Code, format string, args ...interface{}) *Error {
+	return New(code, fmt.Sprintf(format, args...))
 }
 
-func ErrInternal(detail string) *Error {
-	return NewErr(Code_Internal, detail)
+func NewOk() *Error {
+	return New(Code_Ok, "")
 }
 
-func ErrNotReady(detail string) *Error {
-	return NewErr(Code_NotReady, detail)
+func NewUnknown(detail string) *Error {
+	return New(Code_Unknown, detail)
 }
 
-func ErrBadRequest(detail string) *Error {
-	return NewErr(Code_BadRequest, detail)
+func NewUnknownf(format string, args ...interface{}) *Error {
+	return Newf(Code_Unknown, format, args...)
 }
 
-func ParseErr(err error) *Error {
+func NewInternal(detail string) *Error {
+	return New(Code_Internal, detail)
+}
+
+func NewInternalf(format string, args ...interface{}) *Error {
+	return Newf(Code_Internal, format, args...)
+}
+
+func NewBadRequest(detail string) *Error {
+	return New(Code_BadRequest, detail)
+}
+
+func NewBadRequestf(detail string) *Error {
+	return Newf(Code_BadRequest, detail)
+}
+
+func NewUnauthorized(detail string) *Error {
+	return New(Code_Unauthorized, detail)
+}
+
+func NewUnauthorizedf(detail string) *Error {
+	return Newf(Code_Unauthorized, detail)
+}
+
+func NewForbidden(detail string) *Error {
+	return New(Code_Forbidden, detail)
+}
+
+func NewForbiddenf(detail string) *Error {
+	return Newf(Code_Forbidden, detail)
+}
+
+func NewNotFound(detail string) *Error {
+	return New(Code_NotFound, detail)
+}
+
+func NewNotFoundf(detail string) *Error {
+	return Newf(Code_NotFound, detail)
+}
+
+func NewConflict(detail string) *Error {
+	return New(Code_Conflict, detail)
+}
+
+func NewConflictf(detail string) *Error {
+	return Newf(Code_Conflict, detail)
+}
+
+func NewTooManyRequests(detail string) *Error {
+	return New(Code_TooManyRequests, detail)
+}
+
+func NewClientClosed(detail string) *Error {
+	return New(Code_ClientClosed, detail)
+}
+
+func NewNotImplemented(detail string) *Error {
+	return New(Code_NotImplemented, detail)
+}
+
+func NewUnavailable(detail string) *Error {
+	return New(Code_Unavailable, detail)
+}
+
+func NewGatewayTimeout(detail string) *Error {
+	return New(Code_GatewayTimeout, detail)
+}
+
+func NewGatewayTimeoutf(detail string) *Error {
+	return Newf(Code_GatewayTimeout, detail)
+}
+
+// FromStatus converts grpc Status to Error
+func FromStatus(s *status.Status) *Error {
+	e := New(FromGrpcCode(s.Code()), s.Message())
+	for _, detail := range s.Details() {
+		value, ok := detail.(*anypb.Any)
+		if ok {
+			e = e.WithCause(value)
+		}
+	}
+	return e
+}
+
+// Parse converts error to *Error
+func Parse(err error) *Error {
 	switch e := err.(type) {
 	case *Error:
-		if e.Code == Code_Ok {
-			return nil
-		}
 		return e
 	case ValidationError:
-		return ErrBadRequest(e.Reason())
+		return NewBadRequest(e.Reason())
 	default:
 		var ee *Error
 		if e1 := json.Unmarshal([]byte(err.Error()), &ee); e1 == nil {
 			return ee
 		}
 
-		return ErrUnknown(err.Error())
+		return NewUnknown(err.Error())
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/client"
@@ -42,7 +43,7 @@ type Service struct {
 	userDao *dao.UserDao
 }
 
-func NewAuth(ctx context.Context, cfg *config.Config, oct *client.Client) (*Service, error) {
+func NewAuth(ctx context.Context, cfg *config.Config, oct *client.Client) (*Service, grpc.UnaryServerInterceptor, error) {
 
 	userDao := dao.NewUser()
 	s := &Service{
@@ -53,7 +54,7 @@ func NewAuth(ctx context.Context, cfg *config.Config, oct *client.Client) (*Serv
 		userDao: userDao,
 	}
 
-	return s, nil
+	return s, s.Check, nil
 }
 
 func (s *Service) Login(ctx context.Context, username string, password string) (*types.Token, error) {
@@ -64,4 +65,8 @@ func (s *Service) Login(ctx context.Context, username string, password string) (
 func (s *Service) Register(ctx context.Context, username, password, email, phone string) (*types.User, error) {
 	user := &types.User{}
 	return user, nil
+}
+
+func (s *Service) Check(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	return handler(ctx, req)
 }
