@@ -77,7 +77,6 @@ message Token {
   int64 expiredAt = 3;
   bool enable = 4;
   int64 userId = 5;
-  int64 user = 6;
-  int64 role = 7;
+  int64 roleId = 7;
 }
 
