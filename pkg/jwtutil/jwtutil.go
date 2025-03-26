@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package jwtutil
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -90,4 +91,24 @@ func ParseToken(token string) (*Claims, error) {
 		return nil, fmt.Errorf("token is expired")
 	}
 	return claims, nil
+}
+
+type TokenCtx struct {
+	*types.User `json:"user"`
+	Role        *types.Role `json:"role"`
+}
+
+var tokenKey = "tokenKey"
+
+func SetTokenCtx(ctx context.Context, tc *TokenCtx) context.Context {
+	return context.WithValue(ctx, tokenKey, tc)
+}
+
+func GetTokenCtx(ctx context.Context) (*TokenCtx, bool) {
+	value := ctx.Value(tokenKey)
+	tc, ok := value.(*TokenCtx)
+	if !ok {
+		return nil, false
+	}
+	return tc, true
 }

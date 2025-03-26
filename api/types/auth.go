@@ -26,6 +26,11 @@ import (
 	"encoding/hex"
 )
 
+const (
+	AdminRole = "administrator"
+	AdminUser = "admin"
+)
+
 func (u *User) SetPassword(password string) {
 	sha := sha512.New()
 	sha.Write([]byte(password))

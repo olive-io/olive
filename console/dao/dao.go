@@ -32,6 +32,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	apiErr "github.com/olive-io/olive/api/errors"
 	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/console/config"
 	"github.com/olive-io/olive/console/model"
@@ -119,4 +120,15 @@ func GetSession(cfg ...*gorm.Session) *gorm.DB {
 		}
 	}
 	return gdb.Session(sc)
+}
+
+func parseErr(err error) *apiErr.Error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return apiErr.NewNotFound("resource not found")
+	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return apiErr.NewConflict("resource already exists")
+	}
+
+	return apiErr.NewInternal(err.Error())
 }

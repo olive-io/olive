@@ -24,6 +24,7 @@ package server
 import (
 	"context"
 
+	apiErr "github.com/olive-io/olive/api/errors"
 	pb "github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/console/service/auth"
 )
@@ -41,12 +42,12 @@ func NewAuthRPC(s *auth.Service) *AuthRPC {
 
 func (rpc *AuthRPC) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	token, err := rpc.s.Login(ctx, req.Username, req.Password)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.LoginResponse{
 		Token: token,
@@ -56,11 +57,11 @@ func (rpc *AuthRPC) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginR
 
 func (rpc *AuthRPC) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	user, err := rpc.s.Register(ctx, req.Username, req.Password, req.Email, req.Phone)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.RegisterResponse{
 		User: user,

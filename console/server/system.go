@@ -24,6 +24,7 @@ package server
 import (
 	"context"
 
+	apiErr "github.com/olive-io/olive/api/errors"
 	pb "github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/console/service/system"
 )
@@ -41,11 +42,11 @@ func NewSystemRPC(s *system.Service) *SystemRPC {
 
 func (rpc *SystemRPC) ListRunners(ctx context.Context, req *pb.ListRunnersRequest) (*pb.ListRunnersResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	runners, err := rpc.s.ListRunners(ctx)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.ListRunnersResponse{
 		Runners: runners,
@@ -55,11 +56,11 @@ func (rpc *SystemRPC) ListRunners(ctx context.Context, req *pb.ListRunnersReques
 
 func (rpc *SystemRPC) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.GetRunnerResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	runner, stat, err := rpc.s.GetRunner(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.GetRunnerResponse{
 		Runner: runner,
@@ -70,12 +71,12 @@ func (rpc *SystemRPC) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (
 
 func (rpc *SystemRPC) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	result, err := rpc.s.ListUsers(ctx, req.Page, req.Size, req.Name, req.Email, req.Mobile)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.ListUsersResponse{
 		Users: result.List,

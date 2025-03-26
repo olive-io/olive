@@ -23,59 +23,47 @@ package dao
 
 import (
 	"context"
-	"sync/atomic"
 
+	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/console/model"
 )
 
-type WatchDao struct {
-	currRev atomic.Int64
-}
+type RoleDao struct{}
 
-func NewWatch() *WatchDao {
-	dao := &WatchDao{
-		currRev: atomic.Int64{},
-	}
+func NewRole() *RoleDao {
+	dao := &RoleDao{}
 	return dao
 }
 
-func (dao *WatchDao) GetRev(ctx context.Context) int64 {
-	current := dao.currRev.Load()
-	if current != 0 {
-		return current
-	}
-
+func (dao *RoleDao) ListRoles(ctx context.Context, result *model.ListResult[types.Role], name string) error {
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 
-	rev := &model.WatchRev{}
-	if err := tx.Where("id = ?", 1).First(&rev).Error; err != nil {
-		tx := GetSession().WithContext(ctx).Model(dao.Target())
-		rev = &model.WatchRev{ID: 1, Revision: 0}
-		tx.Create(rev)
-	}
-	dao.currRev.Store(current)
-	return rev.Revision
-}
-
-func (dao *WatchDao) SetRev(ctx context.Context, rev int64) error {
-	if rev < dao.currRev.Load() {
-		return nil
+	if len(name) != 0 {
+		tx = tx.Where("name LIKE ?", "%"+name+"%")
 	}
 
-	tx := GetSession().WithContext(ctx).Model(dao.Target())
+	if result.Page != -1 {
+		offset, limit := result.Limit()
+		tx = tx.Offset(offset).Limit(limit)
+	}
 
-	if err := tx.Where("id = ?", 1).Updates(&model.WatchRev{Revision: rev}).Error; err != nil {
+	if err := tx.Order("id DESC").Find(&result.List).Error; err != nil {
 		return parseErr(err)
 	}
-
-	dao.currRev.Store(rev)
 	return nil
 }
 
-func (dao *WatchDao) Clear(ctx context.Context) error {
-	return dao.SetRev(ctx, 0)
+func (dao *RoleDao) GetById(ctx context.Context, id int64) (*types.Role, error) {
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+
+	user := &types.Role{}
+	err := tx.Where("id = ?", id).First(user).Error
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return user, nil
 }
 
-func (dao *WatchDao) Target() *model.WatchRev {
-	return new(model.WatchRev)
+func (dao *RoleDao) Target() *types.Role {
+	return new(types.Role)
 }

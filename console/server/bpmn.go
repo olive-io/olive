@@ -24,6 +24,7 @@ package server
 import (
 	"context"
 
+	apiErr "github.com/olive-io/olive/api/errors"
 	pb "github.com/olive-io/olive/api/rpc/consolepb"
 	"github.com/olive-io/olive/console/service/bpmn"
 )
@@ -40,11 +41,11 @@ func NewBpmnRPC(s *bpmn.Service) *BpmnRPC {
 
 func (rpc *BpmnRPC) ListDefinitions(ctx context.Context, req *pb.ListDefinitionsRequest) (*pb.ListDefinitionsResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	result, err := rpc.s.ListDefinitions(ctx, req.Page, req.Size)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.ListDefinitionsResponse{
 		Definitions: result.List,
@@ -55,7 +56,7 @@ func (rpc *BpmnRPC) ListDefinitions(ctx context.Context, req *pb.ListDefinitions
 
 func (rpc *BpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequest) (*pb.GetDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	definition, err := rpc.s.GetDefinition(ctx, req.Id, req.Version)
@@ -71,11 +72,11 @@ func (rpc *BpmnRPC) GetDefinition(ctx context.Context, req *pb.GetDefinitionRequ
 
 func (rpc *BpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefinitionRequest) (*pb.DeployDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	definition, err := rpc.s.DeployDefinition(ctx, req.Definition)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.DeployDefinitionResponse{
 		Definition: definition,
@@ -85,12 +86,12 @@ func (rpc *BpmnRPC) DeployDefinition(ctx context.Context, req *pb.DeployDefiniti
 
 func (rpc *BpmnRPC) DeleteDefinition(ctx context.Context, req *pb.DeleteDefinitionRequest) (*pb.DeleteDefinitionResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	definition, err := rpc.s.DeleteDefinition(ctx, req.Id, req.Version)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.DeleteDefinitionResponse{
 		Definition: definition,
@@ -100,12 +101,12 @@ func (rpc *BpmnRPC) DeleteDefinition(ctx context.Context, req *pb.DeleteDefiniti
 
 func (rpc *BpmnRPC) ListProcesses(ctx context.Context, req *pb.ListProcessesRequest) (*pb.ListProcessesResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	result, err := rpc.s.ListProcesses(ctx, req.Page, req.Size, req.Definition, req.Version, req.Status)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.ListProcessesResponse{
 		Processes: result.List,
@@ -116,12 +117,12 @@ func (rpc *BpmnRPC) ListProcesses(ctx context.Context, req *pb.ListProcessesRequ
 
 func (rpc *BpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (*pb.GetProcessResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	process, err := rpc.s.GetProcess(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.GetProcessResponse{
 		Process: process,
@@ -131,12 +132,12 @@ func (rpc *BpmnRPC) GetProcess(ctx context.Context, req *pb.GetProcessRequest) (
 
 func (rpc *BpmnRPC) DeleteProcess(ctx context.Context, req *pb.DeleteProcessRequest) (*pb.DeleteProcessResponse, error) {
 	if err := req.Validate(); err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 
 	process, err := rpc.s.DeleteProcess(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		return nil, apiErr.Parse(err).ToStatus().Err()
 	}
 	resp := &pb.DeleteProcessResponse{
 		Process: process,

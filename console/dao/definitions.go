@@ -41,7 +41,7 @@ func (dao *DefinitionDao) ListDefinitions(ctx context.Context, result *model.Lis
 	tx2 := GetSession().WithContext(ctx).Model(dao.Target())
 
 	if err := tx1.Count(&result.Total).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	if result.Page != -1 {
@@ -49,7 +49,7 @@ func (dao *DefinitionDao) ListDefinitions(ctx context.Context, result *model.Lis
 		tx2 = tx2.Offset(offset).Limit(limit)
 	}
 	if err := tx2.Find(&result.List).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	return nil
@@ -65,7 +65,7 @@ func (dao *DefinitionDao) GetDefinition(ctx context.Context, definitionID int64,
 		tx = tx.Where("version = ?", version)
 	}
 	if err := tx.Order("version DESC").First(md).Error; err != nil {
-		return nil, err
+		return nil, parseErr(err)
 	}
 
 	return md, nil
@@ -79,7 +79,7 @@ func (dao *DefinitionDao) AddDefinition(ctx context.Context, definition *types.D
 
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 	if err := tx.Create(md).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
 }
@@ -98,7 +98,7 @@ func (dao *DefinitionDao) UpdateDefinition(ctx context.Context, definition *type
 		tx = tx.Where("version = ?", definition.Version)
 	}
 	if err := tx.Updates(md).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
 }
@@ -107,7 +107,7 @@ func (dao *DefinitionDao) DeleteDefinition(ctx context.Context, definitionID int
 
 	result := model.NewListResult[model.Process](-1, 10)
 	if err := dao.ListProcess(ctx, definitionID, version, -1, result); err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	if result.Total != 0 {
@@ -117,7 +117,7 @@ func (dao *DefinitionDao) DeleteDefinition(ctx context.Context, definitionID int
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 	err := tx.Where("definition_id = ? AND version = ?", definitionID, version).Delete(&model.Definition{}).Error
 	if err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func (dao *DefinitionDao) ListProcess(ctx context.Context, definitionId int64, v
 	}
 
 	if err := tx1.Count(&result.Total).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	processes := make([]model.Process, 0)
@@ -148,7 +148,7 @@ func (dao *DefinitionDao) ListProcess(ctx context.Context, definitionId int64, v
 		tx2 = tx2.Offset(offset).Limit(limit)
 	}
 	if err := tx2.Order("definition_id DESC").Find(&processes).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	return nil

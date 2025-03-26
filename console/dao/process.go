@@ -55,7 +55,7 @@ func (dao *ProcessDao) ListProcess(ctx context.Context, definitionId int64, vers
 	}
 
 	if err := tx1.Count(&result.Total).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	if result.Page != -1 {
@@ -64,7 +64,7 @@ func (dao *ProcessDao) ListProcess(ctx context.Context, definitionId int64, vers
 	}
 
 	if err := tx2.Order("id DESC").Find(&result.List).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	return nil
@@ -75,7 +75,7 @@ func (dao *ProcessDao) GetProcess(ctx context.Context, id int64) (*model.Process
 
 	mp := &model.Process{}
 	if err := tx.Where("process_id = ?", id).First(mp).Error; err != nil {
-		return nil, err
+		return nil, parseErr(err)
 	}
 
 	return mp, nil
@@ -91,7 +91,7 @@ func (dao *ProcessDao) AddProcess(ctx context.Context, process *types.Process) e
 
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 	if err := tx.Create(mp).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
 }
@@ -105,7 +105,7 @@ func (dao *ProcessDao) UpdateProcess(ctx context.Context, process *types.Process
 
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 	if err := tx.Where("process_id = ?", process.Id).Updates(mp).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (dao *ProcessDao) UpdateProcess(ctx context.Context, process *types.Process
 func (dao *ProcessDao) DeleteProcess(ctx context.Context, id int64) error {
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 	if err := tx.Where("process_id = ?", id).Delete(&model.Process{}).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 
 	return nil

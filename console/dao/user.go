@@ -35,11 +35,11 @@ func NewUser() *UserDao {
 	return dao
 }
 
-func (dao *UserDao) ListUsers(ctx context.Context, result *model.ListResult[types.User], name, email, mobile string) error {
+func (dao *UserDao) ListUsers(ctx context.Context, result *model.ListResult[types.User], username, email, mobile string) error {
 	tx := GetSession().WithContext(ctx).Model(dao.Target())
 
-	if len(name) != 0 {
-		tx = tx.Where("name LIKE ?", "%"+name+"%")
+	if len(username) != 0 {
+		tx = tx.Where("username LIKE ?", "%"+username+"%")
 	}
 	if len(email) != 0 {
 		tx = tx.Where("email LIKE ?", "%"+email+"%")
@@ -54,9 +54,34 @@ func (dao *UserDao) ListUsers(ctx context.Context, result *model.ListResult[type
 	}
 
 	if err := tx.Order("id DESC").Find(&result.List).Error; err != nil {
-		return err
+		return parseErr(err)
 	}
 	return nil
+}
+
+func (dao *UserDao) GetBySecret(ctx context.Context, secret string) (*types.User, error) {
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+
+	user := &types.User{}
+	err := tx.Where("username = ?", secret).
+		Or("mobile = ?", secret).
+		Or("email = ?", secret).
+		First(user).Error
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return user, nil
+}
+
+func (dao *UserDao) GetById(ctx context.Context, id int64) (*types.User, error) {
+	tx := GetSession().WithContext(ctx).Model(dao.Target())
+
+	user := &types.User{}
+	err := tx.Where("id = ?", id).First(user).Error
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return user, nil
 }
 
 func (dao *UserDao) Target() *types.User {
