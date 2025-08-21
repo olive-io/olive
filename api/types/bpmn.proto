@@ -60,7 +60,7 @@ message Definitions {
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
-  string name = 3;
+  string uid = 3 [(tagger.tags) = "gorm:\"index\""];
 
   string description = 4;
 
@@ -145,9 +145,13 @@ message FlowNodeActivity {
 
   int32 retries = 6;
 
-  string err_msg = 7;
+  int64 startTime = 7;
 
-  int64 startTime = 8;
+  int64 endTime = 8;
 
-  int64 endTime = 9;
+  int64 process_id = 9 [(tagger.tags) = "gorm:\"index\""];
+
+  ProcessStatus status = 10;
+
+  string err_msg = 11;
 }

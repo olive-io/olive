@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 syntax = "proto3";
 
-package rpc.monpb;
+package rpc.serverpb;
 
 import "types/internal.proto";
 import "types/bpmn.proto";
@@ -128,7 +128,7 @@ message GetRunnerResponse {
 }
 
 service BpmnRPC {
-  rpc DeployDefinition(DeployDefinitionRequest) returns (DeployDefinitionResponse) {
+  rpc DeployDefinition(DeployDefinitionsRequest) returns (DeployDefinitionsResponse) {
     option (google.api.http) = {
       post: "/v1/definitions"
       body: "*"
@@ -139,15 +139,14 @@ service BpmnRPC {
       get: "/v1/definitions"
     };
   };
-  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse) {
+  rpc GetDefinition(GetDefinitionsRequest) returns (GetDefinitionsResponse) {
     option (google.api.http) = {
       get: "/v1/definitions/{id}"
     };
   };
-  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionResponse) {
+  rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionsResponse) {
     option (google.api.http) = {
-      post: "/v1/definitions/remove"
-      body: "*"
+      delete: "/v1/definitions/{id}"
     };
   };
   rpc ExecuteDefinition(ExecuteDefinitionRequest) returns (ExecuteDefinitionResponse) {
@@ -166,40 +165,32 @@ service BpmnRPC {
       get: "/v1/processes/{id}"
     };
   }
-  rpc UpdateProcess(UpdateProcessRequest) returns (UpdateProcessResponse) {
-    option (google.api.http) = {
-      patch: "/v1/processes"
-      body: "*"
-    };
-  }
-  rpc RemoveProcess(RemoveProcessRequest) returns (RemoveProcessResponse) {
-    option (google.api.http) = {
-      delete: "/v1/processes/{id}"
-    };
-  }
 }
 
-message DeployDefinitionRequest {
-  types.Definition definition = 1;
+message DeployDefinitionsRequest {
+  types.Definitions definitions = 1;
 }
 
-message DeployDefinitionResponse {
-  types.Definition definition = 1;
+message DeployDefinitionsResponse {
+  types.Definitions definitions = 1;
 }
 
-message ListDefinitionsRequest {}
+message ListDefinitionsRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
 
 message ListDefinitionsResponse {
-  repeated types.Definition definitions = 1;
+  repeated types.Definitions definitions_list = 1;
 }
 
-message GetDefinitionRequest {
+message GetDefinitionsRequest {
   int64 id = 1;
   uint64 version = 2;
 }
 
-message GetDefinitionResponse {
-  types.Definition definition = 1;
+message GetDefinitionsResponse {
+  types.Definitions definitions = 1;
 }
 
 message RemoveDefinitionRequest {
@@ -207,14 +198,14 @@ message RemoveDefinitionRequest {
   uint64 version = 2;
 }
 
-message RemoveDefinitionResponse {
-  types.Definition definition = 1;
+message RemoveDefinitionsResponse {
+  types.Definitions definitions = 1;
 }
 
 message ExecuteDefinitionRequest {
   string name = 1;
-  int64 definitionId = 2;
-  uint64 definitionVersion = 3;
+  int64 definitionsId = 2;
+  uint64 definitionsVersion = 3;
   map<string, string> header = 4;
   map<string, bytes> properties = 5;
   map<string, bytes> dataObjects = 6;
@@ -236,18 +227,5 @@ message GetProcessRequest {
 
 message GetProcessResponse {
   types.Process process = 1;
-}
-
-message UpdateProcessRequest {
-  types.Process process = 1;
-}
-
-message UpdateProcessResponse {}
-
-message RemoveProcessRequest {
-  int64 id = 1;
-}
-
-message RemoveProcessResponse {
-  types.Process process = 1;
+  types.FlowNodeActivity activities = 2;
 }
