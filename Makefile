@@ -50,7 +50,6 @@ install:
 
 
 apis:
-	protoc --proto_path=./api --go_out=paths=source_relative:./api api/errors/errors.proto
 	protoc --proto_path=./api \
 			--proto_path=./third_party \
 			--go_out=paths=source_relative:./api \

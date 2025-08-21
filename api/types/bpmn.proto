@@ -23,6 +23,8 @@ syntax = "proto3";
 
 package types;
 
+import "tagger/tagger.proto";
+
 option go_package = "github.com/olive-io/olive/api/types;types";
 option java_multiple_files = true;
 option java_package = "io.olive.api.types";
@@ -53,20 +55,22 @@ enum FlowNodeType {
 }
 
 // Definition bpmn Definition
-message Definition {
-  int64 id = 1;
+message Definitions {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
-  string name = 2;
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
-  string description = 3;
+  string name = 3;
 
-  map<string, string> metadata = 4;
+  string description = 4;
 
-  string content = 5;
+  map<string, string> metadata = 5 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  uint64 version = 6;
+  string content = 6;
 
-  int64 timestamp = 21;
+  uint64 version = 7;
+
+  bool isExecute = 8;
 }
 
 message BpmnArgs {
@@ -77,10 +81,49 @@ message BpmnArgs {
   map<string, bytes> dataObjects = 3;
 }
 
-message FlowNode {
-  FlowNodeType type = 1;
+enum ProcessStatus {
+  UnknownStatus = 0;
+  // to be 'Prepare' where Process created
+  Prepare = 1;
+  // to be 'Ready' where olive-server scheduled
+  Ready = 2;
+  Running = 3;
+  Ok = 4;
+  Failed = 5;
+}
 
-  string id = 2;
+message Process {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
+
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
+
+  string name = 3;
+
+  map<string, string> metadata = 4 [(tagger.tags) = "gorm:\"serializer:json\""];
+
+  int64 priority = 5;
+
+  BpmnArgs args = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
+
+  int64 definitionsId = 7;
+
+  uint64 definitionsVersion = 8;
+
+  string definitionsProcess = 9;
+
+  string definitionsContent = 10;
+
+  ProcessContext context = 11 [(tagger.tags) = "gorm:\"serializer:json\""];
+
+  int32 attempts = 12;
+
+  int64 startAt = 13;
+
+  int64 endAt = 14;
+
+  ProcessStatus status = 15;
+
+  string err_msg = 16;
 }
 
 message ProcessContext {
@@ -89,73 +132,22 @@ message ProcessContext {
   map<string, bytes> dataObjects = 2;
 }
 
-message FlowNodeStat {
-  string id = 1;
+message FlowNodeActivity {
+  string id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
-  string name = 2;
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
-  ProcessContext context = 3;
+  string name = 3;
 
-  int32 retries = 4;
+  FlowNodeType flow_type = 4;
 
-  string message = 5;
+  ProcessContext context = 5 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  int64 startTime = 6;
+  int32 retries = 6;
 
-  int64 endTime = 7;
-}
+  string err_msg = 7;
 
-enum ProcessStatus {
-  UnknownStatus = 0;
-  // to be 'Prepare' where Process created
-  Prepare = 1;
-  // to be 'Ready' where olive-mon scheduled
-  Ready = 2;
-  Running = 3;
-  Ok = 4;
-  Failed = 5;
-}
+  int64 startTime = 8;
 
-message Process {
-  int64 id = 1;
-
-  string name = 2;
-
-  map<string, string> metadata = 3;
-
-  int64 priority = 4;
-
-  BpmnArgs args = 5;
-
-  int64 definitionsId = 6;
-
-  uint64 definitionsVersion = 7;
-
-  string definitionsProcess = 8;
-
-  string definitionsContent = 9;
-
-  ProcessContext context = 10;
-
-  repeated FlowNode flowNodes = 11;
-
-  map<string, FlowNodeStat> flowNodeStatMap = 12;
-
-  int32 attempts = 13;
-
-  int64 startAt = 21;
-
-  int64 endAt = 22;
-
-  ProcessStatus status = 23;
-
-  string message = 24;
-}
-
-message ProcessSnapshot {
-  int64 id = 1;
-  int64 priority = 2;
-  ProcessStatus status = 3;
-  // olive-mon schedule timestamp
-  int64 readyAt = 4;
+  int64 endTime = 9;
 }
