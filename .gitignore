@@ -30,7 +30,7 @@ dist/
 bin
 openapi.yaml
 
-*.pb.go
+api/rpc/**/*.pb.go
 *.pb.gw.go
 *.pb.validate.go
 
