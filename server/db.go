@@ -19,16 +19,31 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package main
+package server
 
 import (
-	"os"
+	"path/filepath"
+	"time"
 
-	"github.com/olive-io/olive/pkg/cliutil"
-	"github.com/olive-io/olive/server/cmd/app"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func main() {
-	cmd := app.NewRootCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(cmd))
+func openLocalDB(dataDir string) (*gorm.DB, error) {
+	dbPath := filepath.Join(dataDir, "olive.db")
+	dbPath += "?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	// 设置数据库连接池参数
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	return db, nil
 }

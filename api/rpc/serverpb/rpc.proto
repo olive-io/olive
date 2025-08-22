@@ -28,6 +28,8 @@ import "types/bpmn.proto";
 // for grpc-gateway
 import "google/api/annotations.proto";
 
+import "validate/validate.proto";
+
 option go_package = "github.com/olive-io/olive/api/rpc/serverpb;serverpb";
 option java_multiple_files = true;
 option java_package = "io.olive.api.rpc.serverpb";
@@ -139,9 +141,14 @@ service BpmnRPC {
       get: "/v1/definitions"
     };
   };
-  rpc GetDefinition(GetDefinitionsRequest) returns (GetDefinitionsResponse) {
+  rpc GetDefinitions(GetDefinitionsRequest) returns (GetDefinitionsResponse) {
     option (google.api.http) = {
       get: "/v1/definitions/{id}"
+    };
+  };
+  rpc GetDefinitionsSnapshots(GetDefinitionsSnapshotsRequest) returns (GetDefinitionsSnapshotsResponse) {
+    option (google.api.http) = {
+      get: "/v1/definitions/{id}/snapshots"
     };
   };
   rpc RemoveDefinition(RemoveDefinitionRequest) returns (RemoveDefinitionsResponse) {
@@ -168,7 +175,11 @@ service BpmnRPC {
 }
 
 message DeployDefinitionsRequest {
-  types.Definitions definitions = 1;
+  map<string, string> metadata = 1;
+
+  bytes content = 2;
+
+  string description = 3 [(validate.rules).string.min_len = 10];
 }
 
 message DeployDefinitionsResponse {
@@ -176,12 +187,13 @@ message DeployDefinitionsResponse {
 }
 
 message ListDefinitionsRequest {
-  int32 page = 1;
-  int32 size = 2;
+  int32 page = 1 [(validate.rules).int32.gt = 0];
+  int32 size = 2 [(validate.rules).int32.gt = 0];
 }
 
 message ListDefinitionsResponse {
   repeated types.Definitions definitions_list = 1;
+  int64 total = 2;
 }
 
 message GetDefinitionsRequest {
@@ -191,6 +203,17 @@ message GetDefinitionsRequest {
 
 message GetDefinitionsResponse {
   types.Definitions definitions = 1;
+}
+
+message GetDefinitionsSnapshotsRequest {
+  int64 id = 1;
+  int32 page = 2 [(validate.rules).int32.gt = 0];
+  int32 size = 3 [(validate.rules).int32.gt = 0];
+}
+
+message GetDefinitionsSnapshotsResponse {
+  repeated types.DefinitionsSnapshot snapshots = 1;
+  int64 total = 2;
 }
 
 message RemoveDefinitionRequest {
@@ -215,10 +238,14 @@ message ExecuteDefinitionResponse {
   types.Process process = 1;
 }
 
-message ListProcessRequest {}
+message ListProcessRequest {
+  int32 page = 1 [(validate.rules).int32.gt = 0];
+  int32 size = 2 [(validate.rules).int32.gt = 0];
+}
 
 message ListProcessResponse {
   repeated types.Process processes = 1;
+  int64 total = 2;
 }
 
 message GetProcessRequest {
@@ -227,5 +254,5 @@ message GetProcessRequest {
 
 message GetProcessResponse {
   types.Process process = 1;
-  types.FlowNodeActivity activities = 2;
+  repeated types.FlowNode activities = 2;
 }

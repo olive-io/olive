@@ -23,21 +23,51 @@ package version
 
 import (
 	"fmt"
-
-	"github.com/coreos/go-semver/semver"
+	"runtime"
+	"strings"
 )
 
 var (
-	Version    = "0.1.0"
-	APIVersion = "unknown"
-
-	// GitSHA Git SHA Value will be set during build
-	GitSHA = "Not provided (use ./build instead of go build)"
+	GitSHA    = "build ./build.sh"
+	GitTag    = ""
+	BuildDate = ""
 )
 
-func init() {
-	ver, err := semver.NewVersion(Version)
-	if err == nil {
-		APIVersion = fmt.Sprintf("%d.%d", ver.Major, ver.Minor)
+func ReleaseVersion() string {
+	var version string
+
+	if GitTag != "" {
+		version = GitTag
 	}
+
+	if GitSHA != "" {
+		version += fmt.Sprintf("-%s", GitSHA)
+	}
+
+	if BuildDate != "" {
+		version += fmt.Sprintf("-%s", BuildDate)
+	}
+
+	if version == "" {
+		version = "latest"
+	}
+
+	return version
+}
+
+func GoV() string {
+	v := strings.TrimPrefix(runtime.Version(), "go")
+	if strings.Count(v, ".") > 1 {
+		v = v[:strings.LastIndex(v, ".")]
+	}
+	return v
+}
+
+func GetVersionTemplate() string {
+	var tpl string
+	tpl += fmt.Sprintf("maco Version: %s\n", GitTag)
+	tpl += fmt.Sprintf("Git SHA: %s\n", GitSHA)
+	tpl += fmt.Sprintf("Go Version: %s\n", runtime.Version())
+	tpl += fmt.Sprintf("Go OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+	return tpl
 }

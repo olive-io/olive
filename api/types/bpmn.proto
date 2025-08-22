@@ -24,11 +24,16 @@ syntax = "proto3";
 package types;
 
 import "tagger/tagger.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/olive-io/olive/api/types;types";
 option java_multiple_files = true;
 option java_package = "io.olive.api.types";
 option java_outer_classname = "OliveTypes";
+option (gogoproto.goproto_unkeyed_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.goproto_sizecache_all) = false;
+option (gogoproto.goproto_getters_all) = false;
 
 enum FlowNodeType {
   UnknownNode = 0;
@@ -54,8 +59,28 @@ enum FlowNodeType {
   ParallelGateway = 34;
 }
 
-// Definition bpmn Definition
+// Definitions bpmn Definition
 message Definitions {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
+
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
+
+  int64 updateAt = 3 [(tagger.tags) = "gorm:\"autoUpdateTime\""];
+
+  string uid = 4 [(tagger.tags) = "gorm:\"index\""];
+
+  string description = 5;
+
+  map<string, string> metadata = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
+
+  string content = 7;
+
+  uint64 version = 8;
+
+  bool isExecute = 9;
+}
+
+message DefinitionsSnapshot {
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
@@ -69,8 +94,6 @@ message Definitions {
   string content = 6;
 
   uint64 version = 7;
-
-  bool isExecute = 8;
 }
 
 message BpmnArgs {
@@ -82,14 +105,16 @@ message BpmnArgs {
 }
 
 enum ProcessStatus {
-  UnknownStatus = 0;
+  Unknown = 0;
   // to be 'Prepare' where Process created
   Prepare = 1;
   // to be 'Ready' where olive-server scheduled
   Ready = 2;
-  Running = 3;
-  Ok = 4;
-  Failed = 5;
+  Commit = 3;
+  Destroy = 4;
+  Rollback = 5;
+  Failed = 6;
+  Success = 7;
 }
 
 message Process {
@@ -97,33 +122,35 @@ message Process {
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
-  string name = 3;
+  int64 updateAt = 3 [(tagger.tags) = "gorm:\"autoUpdateTime\""];
 
-  map<string, string> metadata = 4 [(tagger.tags) = "gorm:\"serializer:json\""];
+  string name = 4;
 
-  int64 priority = 5;
+  map<string, string> metadata = 5 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  BpmnArgs args = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
+  int64 priority = 6;
 
-  int64 definitionsId = 7;
+  BpmnArgs args = 7 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  uint64 definitionsVersion = 8;
+  int64 definitionsId = 8;
 
-  string definitionsProcess = 9;
+  uint64 definitionsVersion = 9;
 
-  string definitionsContent = 10;
+  string definitionsProcess = 10;
 
-  ProcessContext context = 11 [(tagger.tags) = "gorm:\"serializer:json\""];
+  string definitionsContent = 11;
 
-  int32 attempts = 12;
+  ProcessContext context = 12 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  int64 startAt = 13;
+  int32 attempts = 13;
 
-  int64 endAt = 14;
+  int64 startAt = 14;
 
-  ProcessStatus status = 15;
+  int64 endAt = 15;
 
-  string err_msg = 16;
+  ProcessStatus status = 16;
+
+  string err_msg = 17;
 }
 
 message ProcessContext {
@@ -132,26 +159,37 @@ message ProcessContext {
   map<string, bytes> dataObjects = 2;
 }
 
-message FlowNodeActivity {
+message FlowNode {
+  enum FlowNodeState {
+    Unknown = 0;
+    Commit = 1;
+    Destroy = 2;
+    Rollback = 3;
+    Failed = 4;
+    Success = 5;
+  }
+
   string id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
   string name = 3;
 
-  FlowNodeType flow_type = 4;
+  string flow_id = 4;
 
-  ProcessContext context = 5 [(tagger.tags) = "gorm:\"serializer:json\""];
+  FlowNodeType flow_type = 5;
 
-  int32 retries = 6;
+  ProcessContext context = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  int64 startTime = 7;
+  int32 retries = 7;
 
-  int64 endTime = 8;
+  int64 startTime = 8;
 
-  int64 process_id = 9 [(tagger.tags) = "gorm:\"index\""];
+  int64 endTime = 9;
 
-  ProcessStatus status = 10;
+  int64 process_id = 10 [(tagger.tags) = "gorm:\"index\""];
 
-  string err_msg = 11;
+  FlowNodeState state = 11;
+
+  string err_msg = 12;
 }

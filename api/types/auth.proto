@@ -24,11 +24,16 @@ syntax = "proto3";
 package types;
 
 import "tagger/tagger.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/olive-io/olive/api/types;types";
 option java_multiple_files = true;
 option java_package = "io.olive.api.types";
 option java_outer_classname = "OliveTypes";
+option (gogoproto.goproto_unkeyed_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.goproto_sizecache_all) = false;
+option (gogoproto.goproto_getters_all) = false;
 
 enum AuthStatus {
   AuthUnknown = 0;

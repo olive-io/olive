@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The olive Authors
+Copyright 2023 The olive Authors
 
 This program is offered under a commercial and under the AGPL license.
 For AGPL licensing, see below.
@@ -19,16 +19,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package main
+package signal
 
 import (
 	"os"
-
-	"github.com/olive-io/olive/pkg/cliutil"
-	"github.com/olive-io/olive/server/cmd/app"
 )
 
-func main() {
-	cmd := app.NewRootCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(cmd))
-}
+var shutdownSignals = []os.Signal{os.Interrupt}

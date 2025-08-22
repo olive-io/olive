@@ -23,10 +23,17 @@ syntax = "proto3";
 
 package types;
 
+import "tagger/tagger.proto";
+import "gogoproto/gogo.proto";
+
 option go_package = "github.com/olive-io/olive/api/types;types";
 option java_multiple_files = true;
 option java_package = "io.olive.api.types";
 option java_outer_classname = "OliveTypes";
+option (gogoproto.goproto_unkeyed_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.goproto_sizecache_all) = false;
+option (gogoproto.goproto_getters_all) = false;
 
 message ResponseHeader {
   uint64 clusterID = 1;
@@ -65,7 +72,7 @@ message Monitor {
 
 // Runner means olive-runner, the runner component of olive system
 message Runner {
-  uint64 id = 1;
+  uint64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
   // Name is the human-readable name of the runner.
   string name = 2;

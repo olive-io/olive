@@ -1,6 +1,6 @@
 module github.com/olive-io/olive/runner
 
-go 1.23
+go 1.23.7
 
 replace (
 	github.com/olive-io/olive/api => ../api

@@ -19,16 +19,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package main
+package dao
 
 import (
-	"os"
+	"errors"
 
-	"github.com/olive-io/olive/pkg/cliutil"
-	"github.com/olive-io/olive/server/cmd/app"
+	"gorm.io/gorm"
 )
 
-func main() {
-	cmd := app.NewRootCommand(os.Stdout, os.Stderr)
-	os.Exit(cliutil.Run(cmd))
+func IsNotFound(err error) bool {
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }
