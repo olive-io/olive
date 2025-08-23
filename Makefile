@@ -39,7 +39,7 @@ lint:
 
 install:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install github.com/gogo/protobuf/protoc-gen-gogofast@latest
+	go install github.com/gogo/protobuf/protoc-gen-gofast@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.0
 	go install github.com/srikrsna/protoc-gen-gotag@latest

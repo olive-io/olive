@@ -14,10 +14,12 @@ require (
 	github.com/olive-io/bpmn/schema v1.5.1
 	github.com/olive-io/olive/api v0.0.0-00010101000000-000000000000
 	github.com/olive-io/olive/pkg v0.0.0-00010101000000-000000000000
+	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/prometheus/client_golang v1.23.0
 	github.com/spf13/cobra v1.9.1
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	go.uber.org/zap v1.27.0
+	golang.org/x/net v0.43.0
 	google.golang.org/grpc v1.75.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.1
@@ -52,7 +54,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/arch v0.14.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect

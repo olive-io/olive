@@ -39,14 +39,14 @@ import (
 
 const (
 	DefaultRaftAddr   = "localhost:4540"
-	DefaultDataDir    = "./data"
+	DefaultDataRoot   = "./data"
 	DefaultListenAddr = "localhost:5540"
 )
 
 type ConfigTLS struct {
-	CaFile   string `json:"ca_file" toml:"ca_file"`
-	CertFile string `json:"cert_file" toml:"cert_file"`
-	KeyFile  string `json:"key_file" toml:"key_file"`
+	CaFile   string `json:"ca-file" toml:"ca-file"`
+	CertFile string `json:"cert-file" toml:"cert-file"`
+	KeyFile  string `json:"key-file" toml:"key-file"`
 }
 
 type Config struct {
@@ -56,7 +56,7 @@ type Config struct {
 
 	TLS *ConfigTLS `json:"tls" toml:"tls"`
 
-	DataDir string `json:"data_dir" toml:"data_dir"`
+	DataRoot string `json:"data-root" toml:"data-root"`
 
 	Log *logutil.LogConfig `json:"log" toml:"log"`
 }
@@ -65,7 +65,7 @@ func NewConfig() *Config {
 	lc := logutil.NewLogConfig()
 	cfg := &Config{
 		ListenAddr: DefaultListenAddr,
-		DataDir:    DefaultDataDir,
+		DataRoot:   DefaultDataRoot,
 		Log:        &lc,
 	}
 
@@ -91,24 +91,24 @@ func (cfg *Config) init() error {
 		return fmt.Errorf("init logger: %w", err)
 	}
 
-	if cfg.DataDir == "" {
+	if cfg.DataRoot == "" {
 		home, _ := os.UserHomeDir()
-		cfg.DataDir = filepath.Join(home, ".olive")
-		_ = os.MkdirAll(cfg.DataDir, 0755)
+		cfg.DataRoot = filepath.Join(home, ".olive")
+		_ = os.MkdirAll(cfg.DataRoot, 0755)
 	} else {
-		_, err := os.Stat(cfg.DataDir)
+		_, err := os.Stat(cfg.DataRoot)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return fmt.Errorf("read data root directory: %w", err)
 			}
-			_ = os.MkdirAll(cfg.DataDir, 0755)
+			_ = os.MkdirAll(cfg.DataRoot, 0755)
 		}
-		if strings.HasPrefix(cfg.DataDir, "~") || strings.HasPrefix(cfg.DataDir, "./") {
-			abs, err := filepath.Abs(cfg.DataDir)
+		if strings.HasPrefix(cfg.DataRoot, "~") || strings.HasPrefix(cfg.DataRoot, "./") {
+			abs, err := filepath.Abs(cfg.DataRoot)
 			if err != nil {
 				return fmt.Errorf("get data directory abs path: %w", err)
 			}
-			cfg.DataDir = abs
+			cfg.DataRoot = abs
 		}
 	}
 	return nil

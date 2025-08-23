@@ -40,7 +40,8 @@ var _ pb.BpmnRPCServer = (*bpmnGRPCServer)(nil)
 type bpmnGRPCServer struct {
 	pb.UnimplementedBpmnRPCServer
 
-	lg *zap.Logger
+	ctx context.Context
+	lg  *zap.Logger
 
 	definitionsDao *dao.DefinitionsDao
 	processDao     *dao.ProcessDao
@@ -48,6 +49,7 @@ type bpmnGRPCServer struct {
 
 func newBpmnServer(ctx context.Context, lg *zap.Logger, definitionsDao *dao.DefinitionsDao, processDao *dao.ProcessDao) *bpmnGRPCServer {
 	server := &bpmnGRPCServer{
+		ctx:            ctx,
 		lg:             lg,
 		definitionsDao: definitionsDao,
 		processDao:     processDao,
@@ -100,6 +102,12 @@ func (bgs *bpmnGRPCServer) DeployDefinition(ctx context.Context, req *pb.DeployD
 		if definitions.Id == 0 {
 			definitions.Id = id
 		}
+
+		bgs.lg.Info("deploy definition",
+			zap.String("uid", uid),
+			zap.Uint64("version", definitions.Version),
+		)
+
 		return &pb.DeployDefinitionsResponse{Definitions: definitions}, nil
 	}
 
@@ -110,6 +118,11 @@ func (bgs *bpmnGRPCServer) DeployDefinition(ctx context.Context, req *pb.DeployD
 		definitions.Description = req.Description
 	}
 	definitions.Content = string(req.Content)
+
+	bgs.lg.Info("add definitions snapshot",
+		zap.String("uid", uid),
+		zap.Uint64("version", definitions.Version))
+
 	if err = bgs.definitionsDao.AddSnapshots(ctx, definitions); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -138,7 +151,7 @@ func (bgs *bpmnGRPCServer) ListDefinitions(ctx context.Context, req *pb.ListDefi
 }
 
 func (bgs *bpmnGRPCServer) GetDefinitions(ctx context.Context, req *pb.GetDefinitionsRequest) (*pb.GetDefinitionsResponse, error) {
-	definitions, err := bgs.definitionsDao.GetDefinitions(ctx, req.Id, "")
+	definitions, err := bgs.definitionsDao.GetDefinitions(ctx, 0, req.Uid)
 	if err != nil {
 		if dao.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -168,7 +181,7 @@ func (bgs *bpmnGRPCServer) GetDefinitions(ctx context.Context, req *pb.GetDefini
 }
 
 func (bgs *bpmnGRPCServer) GetDefinitionsSnapshots(ctx context.Context, req *pb.GetDefinitionsSnapshotsRequest) (*pb.GetDefinitionsSnapshotsResponse, error) {
-	snapshots, total, err := bgs.definitionsDao.GetDefinitionsSnapshots(ctx, req.Id, req.Page, req.Size)
+	snapshots, total, err := bgs.definitionsDao.GetDefinitionsSnapshots(ctx, req.Uid, req.Page, req.Size)
 	if err != nil {
 		if dao.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -183,12 +196,12 @@ func (bgs *bpmnGRPCServer) GetDefinitionsSnapshots(ctx context.Context, req *pb.
 	return rsp, nil
 }
 
-func (bgs *bpmnGRPCServer) RemoveDefinition(ctx context.Context, req *pb.RemoveDefinitionRequest) (*pb.RemoveDefinitionsResponse, error) {
+func (bgs *bpmnGRPCServer) RemoveDefinitions(ctx context.Context, req *pb.RemoveDefinitionsRequest) (*pb.RemoveDefinitionsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (bgs *bpmnGRPCServer) ExecuteDefinition(ctx context.Context, req *pb.ExecuteDefinitionRequest) (*pb.ExecuteDefinitionResponse, error) {
+func (bgs *bpmnGRPCServer) ExecuteProcess(ctx context.Context, req *pb.ExecuteProcessRequest) (*pb.ExecuteProcessResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }

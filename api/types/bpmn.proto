@@ -126,31 +126,33 @@ message Process {
 
   string name = 4;
 
-  map<string, string> metadata = 5 [(tagger.tags) = "gorm:\"serializer:json\""];
+  string uid = 5;
 
-  int64 priority = 6;
+  map<string, string> metadata = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  BpmnArgs args = 7 [(tagger.tags) = "gorm:\"serializer:json\""];
+  int64 priority = 7;
 
-  int64 definitionsId = 8;
+  BpmnArgs args = 8 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  uint64 definitionsVersion = 9;
+  int64 definitionsId = 9;
 
-  string definitionsProcess = 10;
+  uint64 definitionsVersion = 10;
 
-  string definitionsContent = 11;
+  string definitionsProcess = 11;
 
-  ProcessContext context = 12 [(tagger.tags) = "gorm:\"serializer:json\""];
+  string definitionsContent = 12;
 
-  int32 attempts = 13;
+  ProcessContext context = 13 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  int64 startAt = 14;
+  int32 attempts = 14;
 
-  int64 endAt = 15;
+  int64 startAt = 15;
 
-  ProcessStatus status = 16;
+  int64 endAt = 16;
 
-  string err_msg = 17;
+  ProcessStatus status = 17;
+
+  string err_msg = 18;
 }
 
 message ProcessContext {

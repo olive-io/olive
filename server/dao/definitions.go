@@ -128,7 +128,7 @@ func (dao *DefinitionsDao) AddSnapshots(ctx context.Context, definitions *types.
 	}
 
 	definitions.Version += 1
-	err = tx.Updates(definitions).Error
+	err = tx.Where("id = ?", definitions.Id).Updates(definitions).Error
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -141,8 +141,8 @@ func (dao *DefinitionsDao) AddSnapshots(ctx context.Context, definitions *types.
 	return nil
 }
 
-func (dao *DefinitionsDao) GetDefinitionsSnapshots(ctx context.Context, id int64, page, size int32) ([]*types.DefinitionsSnapshot, int64, error) {
-	definitions, err := dao.GetDefinitions(ctx, id, "")
+func (dao *DefinitionsDao) GetDefinitionsSnapshots(ctx context.Context, uid string, page, size int32) ([]*types.DefinitionsSnapshot, int64, error) {
+	definitions, err := dao.GetDefinitions(ctx, 0, uid)
 	if err != nil {
 		return nil, 0, err
 	}

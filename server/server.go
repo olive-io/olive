@@ -27,17 +27,24 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	gwrt "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
 	pb "github.com/olive-io/olive/api/rpc/serverpb"
 	"github.com/olive-io/olive/server/dao"
+)
+
+const (
+	DefaultMaxHeaderBytes = 1024 * 1024 * 30
 )
 
 type Server struct {
@@ -74,7 +81,7 @@ func (s *Server) Start(ctx context.Context) error {
 		ReadHeaderTimeout: time.Second * 30,
 		WriteTimeout:      time.Minute,
 		IdleTimeout:       time.Second * 30,
-		MaxHeaderBytes:    1 << 20,
+		MaxHeaderBytes:    DefaultMaxHeaderBytes,
 	}
 
 	ech := make(chan error, 1)
@@ -101,8 +108,8 @@ func (s *Server) Start(ctx context.Context) error {
 func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	lg := s.cfg.Logger()
 
-	dataDir := s.cfg.DataDir
-	db, err := openLocalDB(dataDir)
+	dataDir := s.cfg.DataRoot
+	db, err := openLocalDB(lg, dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("open database on %s: %w", dataDir, err)
 	}
@@ -117,6 +124,7 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	bpmnHandler := newBpmnServer(ctx, lg, definitionsDao, processDao)
+	systemHandler := newSystemGRPCServer(ctx, lg)
 
 	kaep := keepalive.EnforcementPolicy{
 		MinTime:             5 * time.Second,
@@ -141,8 +149,13 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	gwmux := gwrt.NewServeMux(muxOpts...)
 
 	pb.RegisterBpmnRPCServer(gs, bpmnHandler)
-	if err := pb.RegisterBpmnRPCHandlerServer(ctx, gwmux, bpmnHandler); err != nil {
-		return nil, fmt.Errorf("setup olive handler: %w", err)
+	if err = pb.RegisterBpmnRPCHandlerServer(ctx, gwmux, bpmnHandler); err != nil {
+		return nil, fmt.Errorf("setup olive bpmn handler: %w", err)
+	}
+
+	pb.RegisterSystemRPCServer(gs, systemHandler)
+	if err = pb.RegisterSystemRPCHandlerServer(ctx, gwmux, systemHandler); err != nil {
+		return nil, fmt.Errorf("setup olive system handler: %w", err)
 	}
 
 	serveMux := mux.NewRouter()
@@ -170,5 +183,16 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 		),
 	)
 
-	return serveMux, nil
+	return grpcWithHttp(gs, serveMux), nil
+}
+
+func grpcWithHttp(gh *grpc.Server, hh http.Handler) http.Handler {
+	h2s := &http2.Server{}
+	return h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+			gh.ServeHTTP(w, r)
+		} else {
+			hh.ServeHTTP(w, r)
+		}
+	}), h2s)
 }

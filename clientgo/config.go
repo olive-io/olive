@@ -19,4 +19,35 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package server
+package clientgo
+
+import (
+	"time"
+)
+
+const (
+	DefaultTimeout = time.Second * 30
+)
+
+type ConfigTLS struct {
+	CertFile string
+	KeyFile  string
+	CaFile   string
+}
+
+type Config struct {
+	Target         string
+	DialTimeout    time.Duration
+	RequestTimeout time.Duration
+
+	TLS *ConfigTLS
+}
+
+func NewConfig(target string) *Config {
+	opts := &Config{
+		Target:         target,
+		DialTimeout:    DefaultTimeout,
+		RequestTimeout: DefaultTimeout,
+	}
+	return opts
+}

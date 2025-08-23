@@ -122,3 +122,12 @@ func (dao *ProcessDao) ListFlowNodes(ctx context.Context, pid int64) ([]*types.F
 
 	return nodes, nil
 }
+
+func (dao *ProcessDao) SaveFlowNode(ctx context.Context, node *types.FlowNode) error {
+	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.FlowNode{})
+
+	if err := tx.Save(node).Error; err != nil {
+		return err
+	}
+	return nil
+}
