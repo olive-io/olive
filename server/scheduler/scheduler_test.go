@@ -22,24 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package scheduler
 
 import (
-	"runtime"
-
-	"go.uber.org/zap"
+	"testing"
 )
 
-var (
-	DefaultExecutePoolSize = runtime.NumCPU() * 10
-)
-
-type Options struct {
-	Logger          *zap.Logger
-	ExecutePoolSize int
-}
-
-func NewOptions(lg *zap.Logger) *Options {
-	options := &Options{
-		Logger:          lg,
-		ExecutePoolSize: DefaultExecutePoolSize,
-	}
-	return options
+func TestScheduler(t *testing.T) {
 }

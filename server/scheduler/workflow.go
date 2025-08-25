@@ -22,24 +22,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package scheduler
 
 import (
-	"runtime"
+	"context"
 
 	"go.uber.org/zap"
 )
 
-var (
-	DefaultExecutePoolSize = runtime.NumCPU() * 10
-)
+type workflow struct {
+	ctx    context.Context
+	cancel context.CancelFunc
 
-type Options struct {
-	Logger          *zap.Logger
-	ExecutePoolSize int
-}
+	lg *zap.Logger
 
-func NewOptions(lg *zap.Logger) *Options {
-	options := &Options{
-		Logger:          lg,
-		ExecutePoolSize: DefaultExecutePoolSize,
-	}
-	return options
+	sch *Scheduler
+
+	stat *ProcessStat
 }

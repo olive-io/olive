@@ -230,8 +230,8 @@ message ExecuteProcessRequest {
   string definitionsId = 2;
   uint64 definitionsVersion = 3;
   map<string, string> headers = 4;
-  map<string, bytes> properties = 5;
-  map<string, bytes> dataObjects = 6;
+  map<string, string> properties = 5;
+  map<string, string> dataObjects = 6;
 }
 
 message ExecuteProcessResponse {

@@ -99,25 +99,30 @@ message DefinitionsSnapshot {
 message BpmnArgs {
   map<string, string> headers = 1;
 
-  map<string, bytes> properties = 2;
+  map<string, string> properties = 2;
 
-  map<string, bytes> dataObjects = 3;
-}
-
-enum ProcessStatus {
-  Unknown = 0;
-  // to be 'Prepare' where Process created
-  Prepare = 1;
-  // to be 'Ready' where olive-server scheduled
-  Ready = 2;
-  Commit = 3;
-  Destroy = 4;
-  Rollback = 5;
-  Failed = 6;
-  Success = 7;
+  map<string, string> dataObjects = 3;
 }
 
 message Process {
+  enum ProcessStage {
+    // to be 'Prepare' where Process created
+    Prepare = 0;
+    // to be 'Ready' where olive-server scheduled
+    Ready = 1;
+    Commit = 2;
+    Destroy = 3;
+    Rollback = 4;
+    Finish = 5;
+  }
+
+  enum ProcessStatus {
+    Running = 0;
+    Success = 1;
+    Warn = 2;
+    Failed = 3;
+  }
+
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
@@ -150,9 +155,10 @@ message Process {
 
   int64 endAt = 16;
 
-  ProcessStatus status = 17;
+  ProcessStage stage = 17;
+  ProcessStatus status = 18;
 
-  string err_msg = 18;
+  string err_msg = 19;
 }
 
 message ProcessContext {
@@ -162,16 +168,23 @@ message ProcessContext {
 }
 
 message FlowNode {
-  enum FlowNodeState {
+  enum FlowNodeStage {
     Unknown = 0;
-    Commit = 1;
-    Destroy = 2;
-    Rollback = 3;
-    Failed = 4;
-    Success = 5;
+    Ready = 1;
+    Commit = 2;
+    Destroy = 3;
+    Rollback = 4;
+    Finish = 5;
   }
 
-  string id = 1 [(tagger.tags) = "gorm:\"primary\""];
+  enum FlowNodeStatus {
+    Running = 0;
+    Success = 1;
+    Warn = 2;
+    Failed = 3;
+  }
+
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
 
@@ -181,17 +194,25 @@ message FlowNode {
 
   FlowNodeType flow_type = 5;
 
-  ProcessContext context = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
+  map<string, string> headers = 6;
 
-  int32 retries = 7;
+  map<string, string> properties = 7;
 
-  int64 startTime = 8;
+  map<string, string> dataObjects = 8;
 
-  int64 endTime = 9;
+  map<string, string> results = 9;
 
-  int64 process_id = 10 [(tagger.tags) = "gorm:\"index\""];
+  int32 retries = 10;
 
-  FlowNodeState state = 11;
+  int64 startTime = 11;
 
-  string err_msg = 12;
+  int64 endTime = 12;
+
+  int64 process_id = 13 [(tagger.tags) = "gorm:\"index\""];
+
+  FlowNodeStage stage = 14;
+
+  FlowNodeStatus status = 15;
+
+  string err_msg = 16;
 }
