@@ -23,7 +23,7 @@ vendor/
 .DS_Store
 
 _output
-testdata
+/testdata
 /vendor
 dist
 dist/

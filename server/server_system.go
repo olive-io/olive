@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	pb "github.com/olive-io/olive/api/rpc/serverpb"
+	"github.com/olive-io/olive/server/scheduler"
 )
 
 var _ pb.SystemRPCServer = (*systemGRPCServer)(nil)
@@ -36,6 +37,7 @@ type systemGRPCServer struct {
 
 	ctx context.Context
 	lg  *zap.Logger
+	sch *scheduler.Scheduler
 }
 
 func newSystemGRPCServer(ctx context.Context, lg *zap.Logger) *systemGRPCServer {

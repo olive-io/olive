@@ -23,6 +23,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -33,7 +34,17 @@ import (
 type ListProcessOptions struct {
 	DefinitionId       int64
 	definitionsVersion uint64
-	ProcessStatus      types.ProcessStatus
+	ProcessStatus      types.Process_ProcessStatus
+	ProcessStage       types.Process_ProcessStage
+}
+
+func NewListProcessOptions(id int64, version uint64) *ListProcessOptions {
+	return &ListProcessOptions{
+		DefinitionId:       id,
+		definitionsVersion: version,
+		ProcessStage:       -1,
+		ProcessStatus:      -1,
+	}
 }
 
 type ProcessDao struct {
@@ -68,9 +79,12 @@ func (dao *ProcessDao) ListProcesses(ctx context.Context, page, size int32, opti
 			tx = tx.Where("definitions_version = ?", defVersion)
 			countTx = countTx.Where("definitions_version = ?", defVersion)
 		}
-		if status := options.ProcessStatus; status > 0 {
+		if status := options.ProcessStatus; status != -1 {
 			tx = tx.Where("status = ?", status)
 			countTx = countTx.Where("status = ?", status)
+		}
+		if stage := options.ProcessStage; stage != -1 {
+			tx = tx.Where("process_stage = ?", stage)
 		}
 	}
 
@@ -123,10 +137,51 @@ func (dao *ProcessDao) ListFlowNodes(ctx context.Context, pid int64) ([]*types.F
 	return nodes, nil
 }
 
+func (dao *ProcessDao) CreateProcess(ctx context.Context, process *types.Process) error {
+	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.Process{})
+	if err := tx.Create(process).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (dao *ProcessDao) UpdateProcess(ctx context.Context, process *types.Process) error {
+	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.Process{})
+	if err := tx.Where("id = ?", process.Id).Updates(process).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func (dao *ProcessDao) SaveFlowNode(ctx context.Context, node *types.FlowNode) error {
 	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.FlowNode{})
 
-	if err := tx.Save(node).Error; err != nil {
+	if node.FlowId != "" {
+		tx = tx.Where("flow_id = ?", node.FlowId)
+	}
+	if node.ProcessId != 0 {
+		tx = tx.Where("process_id = ?", node.ProcessId)
+	}
+	var target types.FlowNode
+	if err := tx.First(&target).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		tx = dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.FlowNode{})
+		if err = tx.Create(node).Error; err != nil {
+			return err
+		}
+		return nil
+	}
+
+	tx = dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.FlowNode{})
+	if node.FlowId != "" {
+		tx = tx.Where("flow_id = ?", node.FlowId)
+	}
+	if node.ProcessId != 0 {
+		tx = tx.Where("process_id = ?", node.ProcessId)
+	}
+	if err := tx.Updates(node).Error; err != nil {
 		return err
 	}
 	return nil

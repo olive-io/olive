@@ -59,7 +59,7 @@ message Member {
   bool is_leader = 5;
 }
 
-// Monitor means olive-mon, the monitor component of olive system
+// Monitor means olive-server, the monitor component of olive system
 message Monitor {
   uint64 cluster_id = 1;
 
@@ -72,23 +72,34 @@ message Monitor {
 
 // Runner means olive-runner, the runner component of olive system
 message Runner {
+  enum TransportType {
+    GRPCStream = 0;
+    GRPCEcho = 1;
+    Http = 2;
+  }
+
   uint64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
+  // Unique identified by runner
+  string uid = 2;
+
   // Name is the human-readable name of the runner.
-  string name = 2;
+  string name = 3;
 
   // listenURL is the URL the runner is listening on.
-  string listenURL = 3;
+  string listenURL = 4;
 
-  string version = 4;
+  string version = 5;
 
-  int64 heartbeatMs = 5;
+  int64 heartbeatMs = 6;
 
-  string hostname = 6;
+  string hostname = 7;
 
-  map<string, string> metadata = 7;
+  map<string, string> metadata = 8;
 
-  map<string, string> features = 8;
+  map<string, string> features = 9;
+
+  TransportType transport = 10;
 
   uint64 cpu = 11;
 
@@ -98,19 +109,21 @@ message Runner {
 message RunnerStat {
   uint64 id = 1;
 
-  double cpuUsed = 2;
+  string uid = 2;
 
-  double memoryUsed = 3;
+  double cpuUsed = 3;
 
-  string state = 4;
+  double memoryUsed = 4;
 
-  string error = 5;
+  string state = 5;
 
-  int64 timestamp = 6;
+  string error = 6;
 
-  uint64 bpmnProcesses = 7;
+  int64 timestamp = 7;
 
-  uint64 bpmnTasks = 8;
+  uint64 bpmnProcesses = 8;
+
+  uint64 bpmnTasks = 9;
 }
 
 message ExecuteProcessMsg {

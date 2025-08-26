@@ -41,6 +41,7 @@ import (
 
 	pb "github.com/olive-io/olive/api/rpc/serverpb"
 	"github.com/olive-io/olive/server/dao"
+	"github.com/olive-io/olive/server/scheduler"
 )
 
 const (
@@ -123,7 +124,13 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 		return nil, fmt.Errorf("create process dao: %w", err)
 	}
 
-	bpmnHandler := newBpmnServer(ctx, lg, definitionsDao, processDao)
+	schedulerOptions := scheduler.NewOptions(lg)
+	sch, err := scheduler.NewScheduler(ctx, schedulerOptions)
+	if err != nil {
+		return nil, fmt.Errorf("create scheduler: %w", err)
+	}
+
+	bpmnHandler := newBpmnServer(ctx, lg, sch, definitionsDao, processDao)
 	systemHandler := newSystemGRPCServer(ctx, lg)
 
 	kaep := keepalive.EnforcementPolicy{

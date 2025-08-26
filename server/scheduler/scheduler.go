@@ -47,6 +47,8 @@ func (l *antLogger) Printf(format string, args ...any) {
 type ProcessStat struct {
 	*types.Process `json:",inline"`
 
+	Definitions string `json:"definitions"`
+
 	FlowNodes []*types.FlowNode `json:"flowNodes"`
 }
 
@@ -143,15 +145,15 @@ func (sch *Scheduler) Watch(ctx context.Context, id string) *WatchChan {
 
 func (sch *Scheduler) process(ctx context.Context) {
 
-	tick := time.Microsecond * 100
-	timer := time.NewTimer(tick)
+	interval := time.Microsecond * 100
+	timer := time.NewTimer(interval)
 LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			break LOOP
 		case <-timer.C:
-			timer.Reset(tick)
+			timer.Reset(interval)
 
 			sch.tick(ctx)
 		}
@@ -170,15 +172,23 @@ func (sch *Scheduler) tick(ctx context.Context) {
 		return
 	}
 	stat := value.(*ProcessStat)
-	err := sch.executePool.Submit(func() {
-		err := sch.execute(ctx, stat)
+	if stat.Status > types.Process_Running {
+		return
+	}
+
+	var err error
+	defer func() {
 		if err != nil {
+			sch.queue.Push(stat)
+		}
+	}()
+
+	err = sch.executePool.Submit(func() {
+		execErr := sch.execute(ctx, stat)
+		if execErr != nil {
 			//TODO: handle error
 		}
 	})
-	if err != nil {
-		sch.queue.Push(stat)
-	}
 }
 
 func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
@@ -198,21 +208,27 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 		sch.setProcess(stat.Process)
 	}()
 
+	activeStack := make([]*types.FlowNode, 0)
+	nodeMapping := make(map[string]*types.FlowNode)
+	for _, node := range stat.FlowNodes {
+		nodeMapping[node.Name] = node
+	}
+
 	var definitions *schema.Definitions
-	definitions, err = schema.Parse([]byte(stat.DefinitionsContent))
+	definitions, err = schema.Parse([]byte(stat.Definitions))
 	if err != nil {
-		return err
+		return fmt.Errorf("parse definitions: %w", err)
 	}
 
 	options := make([]bpmn.Option, 0)
 	if pctx := stat.Context; pctx != nil {
-		dataObjects := map[string]interface{}{}
+		dataObjects := map[string]any{}
 		for name, dataObject := range pctx.DataObjects {
 			dataObjects[name] = dataObject
 		}
 		options = append(options, bpmn.WithDataObjects(dataObjects))
-		variables := map[string]interface{}{}
-		for name, variable := range dataObjects {
+		variables := map[string]any{}
+		for name, variable := range pctx.Variables {
 			variables[name] = variable
 		}
 		options = append(options, bpmn.WithVariables(variables))
@@ -221,24 +237,60 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 	var bp *bpmn.Process
 	bp, err = sch.engine.NewProcess(definitions, options...)
 	if err != nil {
-		return err
+		return fmt.Errorf("create process: %w", err)
 	}
 
 	pid := bp.Id().String()
-	nodeMapping := make(map[string]*types.FlowNode)
-	for _, node := range stat.FlowNodes {
-		nodeMapping[node.Name] = node
-	}
-
 	traces := bp.Tracer().Subscribe()
 	defer bp.Tracer().Unsubscribe(traces)
 	if err = bp.StartAll(ctx); err != nil {
-		return err
+		return fmt.Errorf("start bpmn process: %w", err)
 	}
 
-	stack := make([]*types.FlowNode, 0)
-	stat.StartAt = time.Now().UnixNano()
-	stat.Status = types.Process_Running
+	defer func() {
+		if err != nil {
+			stat.Stage = types.Process_Rollback
+			sch.setProcess(stat.Process)
+
+			for i := len(activeStack) - 1; i >= 0; i-- {
+				node := activeStack[i]
+				node.Stage = types.FlowNode_Rollback
+				sch.setFlowNode(node)
+
+				lg.Infof("rollback task [%s][%s]", pid, node.FlowId)
+
+				//TODO: do task rollback stage
+			}
+		}
+
+		stat.Stage = types.Process_Destroy
+		sch.setProcess(stat.Process)
+
+		for i := len(activeStack) - 1; i >= 0; i-- {
+			node := activeStack[i]
+			node.Stage = types.FlowNode_Destroy
+			sch.setFlowNode(node)
+
+			lg.Infof("destroy task [%s][%s]", pid, node.FlowId)
+
+			//TODO: do task commit stage
+
+			node.Stage = types.FlowNode_Finish
+			sch.setFlowNode(node)
+		}
+	}()
+
+	if stat.Status != types.Process_Running {
+		stat.Uid = pid
+		stat.StartAt = time.Now().UnixNano()
+
+		if id, ok := bp.Element().Id(); ok {
+			stat.DefinitionsProcess = *id
+		}
+		stat.Status = types.Process_Running
+		sch.setProcess(stat.Process)
+	}
+
 	stat.Stage = types.Process_Commit
 	sch.setProcess(stat.Process)
 
@@ -289,7 +341,21 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 					fid = *id
 				}
 				node, exists := nodeMapping[fid]
-				if exists {
+				if exists && node.EndTime == 0 {
+					node.EndTime = time.Now().UnixNano()
+					node.Stage = types.FlowNode_Finish
+					sch.setFlowNode(node)
+				}
+
+			case bpmn.CompletionTrace:
+				elem := tt.Node
+				var fid string
+				id, ok := elem.Id()
+				if ok {
+					fid = *id
+				}
+				node, exists := nodeMapping[fid]
+				if exists && node.EndTime == 0 {
 					node.EndTime = time.Now().UnixNano()
 					node.Stage = types.FlowNode_Finish
 					sch.setFlowNode(node)
@@ -309,7 +375,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 				if ok {
 					tname = *name
 				}
-				lg.Info("commit task [%s][%s] ", pid, tname)
+				lg.Infof("commit task [%s][%s]", pid, fid)
 
 				flowNode, exists := nodeMapping[fid]
 				if !exists {
@@ -362,7 +428,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 
 					sch.setFlowNode(flowNode)
 
-					stack = append(stack, flowNode)
+					activeStack = append(activeStack, flowNode)
 				} else {
 					tt.Do()
 				}
@@ -383,42 +449,12 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 	select {
 	case <-ctx.Done():
 		err = ctx.Err()
-		return err
+		ctx = context.Background()
 	case err = <-ech:
+	default:
 	}
 
-	if err != nil {
-		stat.Stage = types.Process_Rollback
-		sch.setProcess(stat.Process)
-
-		for i := len(stack) - 1; i >= 0; i-- {
-			node := stack[i]
-			node.Stage = types.FlowNode_Rollback
-			sch.setFlowNode(node)
-
-			lg.Info("rollback task [%s][%s] ", pid, node.Name)
-
-			//TODO: do task rollback stage
-		}
-	}
-
-	stat.Stage = types.Process_Destroy
-	sch.setProcess(stat.Process)
-
-	for i := len(stack) - 1; i >= 0; i-- {
-		node := stack[i]
-		node.Stage = types.FlowNode_Destroy
-		sch.setFlowNode(node)
-
-		lg.Info("destroy task [%s][%s]", pid, node.Name)
-
-		//TODO: do task commit stage
-
-		node.Stage = types.FlowNode_Finish
-		sch.setFlowNode(node)
-	}
-
-	return nil
+	return err
 }
 
 func (sch *Scheduler) destroy() {

@@ -77,6 +77,7 @@ service SystemRPC {
       get: "/v1/runners/{id}"
     };
   };
+  rpc RunnerConnection(stream RunnerConnectionRequest) returns (stream RunnerConnectionResponse) {};
 }
 
 message PingRequest {}
@@ -127,6 +128,24 @@ message GetRunnerRequest {
 message GetRunnerResponse {
   types.Runner runner = 1;
   types.RunnerStat stat = 2;
+}
+
+message CallTaskRequest {}
+
+message CallTaskResponse {}
+
+message RunnerConnectionRequest {
+  RegisterRequest register = 1;
+  DisregisterRequest disregister = 2;
+  HeartbeatRequest heartbeat = 3;
+  CallTaskResponse callTask = 4;
+}
+
+message RunnerConnectionResponse {
+  RegisterResponse register = 1;
+  DisregisterResponse disregister = 2;
+  HeartbeatResponse heartbeat = 3;
+  CallTaskResponse callTask = 4;
 }
 
 service BpmnRPC {
@@ -227,11 +246,12 @@ message RemoveDefinitionsResponse {
 
 message ExecuteProcessRequest {
   string name = 1;
-  string definitionsId = 2;
+  int64 definitionsId = 2;
   uint64 definitionsVersion = 3;
-  map<string, string> headers = 4;
-  map<string, string> properties = 5;
-  map<string, string> dataObjects = 6;
+  int64 priority = 4;
+  map<string, string> headers = 5;
+  map<string, string> properties = 6;
+  map<string, string> dataObjects = 7;
 }
 
 message ExecuteProcessResponse {
@@ -241,6 +261,8 @@ message ExecuteProcessResponse {
 message ListProcessRequest {
   int32 page = 1 [(validate.rules).int32.gt = 0];
   int32 size = 2 [(validate.rules).int32.gt = 0];
+  int64 definitionsId = 3;
+  uint64 definitionsVersion = 4;
 }
 
 message ListProcessResponse {

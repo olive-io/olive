@@ -111,16 +111,17 @@ message Process {
     // to be 'Ready' where olive-server scheduled
     Ready = 1;
     Commit = 2;
-    Destroy = 3;
-    Rollback = 4;
+    Rollback = 3;
+    Destroy = 4;
     Finish = 5;
   }
 
   enum ProcessStatus {
-    Running = 0;
-    Success = 1;
-    Warn = 2;
-    Failed = 3;
+    Waiting = 0;
+    Running = 1;
+    Success = 2;
+    Warn = 3;
+    Failed = 4;
   }
 
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
@@ -139,37 +140,35 @@ message Process {
 
   BpmnArgs args = 8 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  int64 definitionsId = 9;
+  int64 definitionsId = 9 [(tagger.tags) = "gorm:\"index\""];
 
   uint64 definitionsVersion = 10;
 
   string definitionsProcess = 11;
 
-  string definitionsContent = 12;
+  ProcessContext context = 12 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  ProcessContext context = 13 [(tagger.tags) = "gorm:\"serializer:json\""];
+  int32 attempts = 13;
 
-  int32 attempts = 14;
+  int64 startAt = 14;
 
-  int64 startAt = 15;
+  int64 endAt = 15;
 
-  int64 endAt = 16;
+  ProcessStage stage = 16;
+  ProcessStatus status = 17;
 
-  ProcessStage stage = 17;
-  ProcessStatus status = 18;
-
-  string err_msg = 19;
+  string err_msg = 18;
 }
 
 message ProcessContext {
-  map<string, bytes> variables = 1;
+  map<string, string> variables = 1;
 
-  map<string, bytes> dataObjects = 2;
+  map<string, string> dataObjects = 2;
 }
 
 message FlowNode {
   enum FlowNodeStage {
-    Unknown = 0;
+    Prepare = 0;
     Ready = 1;
     Commit = 2;
     Destroy = 3;
@@ -178,10 +177,11 @@ message FlowNode {
   }
 
   enum FlowNodeStatus {
-    Running = 0;
-    Success = 1;
-    Warn = 2;
-    Failed = 3;
+    Waiting = 0;
+    Running = 1;
+    Success = 2;
+    Warn = 3;
+    Failed = 4;
   }
 
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
@@ -194,13 +194,13 @@ message FlowNode {
 
   FlowNodeType flow_type = 5;
 
-  map<string, string> headers = 6;
+  map<string, string> headers = 6 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  map<string, string> properties = 7;
+  map<string, string> properties = 7 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  map<string, string> dataObjects = 8;
+  map<string, string> dataObjects = 8 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  map<string, string> results = 9;
+  map<string, string> results = 9 [(tagger.tags) = "gorm:\"serializer:json\""];
 
   int32 retries = 10;
 

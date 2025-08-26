@@ -44,11 +44,12 @@ type ListDefinitionsOptions struct {
 
 type ExecuteProcessOptions struct {
 	Name               string
-	DefinitionsUid     string
+	DefinitionsId      int64
 	DefinitionsVersion uint64
+	Priority           int64
 	Headers            map[string]string
-	Properties         map[string][]byte
-	DataObjects        map[string][]byte
+	Properties         map[string]string
+	DataObjects        map[string]string
 }
 
 type Client struct {
@@ -198,8 +199,9 @@ func (c *Client) GetDefinitions(ctx context.Context, uid string, version uint64)
 func (c *Client) ExecuteProcess(ctx context.Context, options *ExecuteProcessOptions) (*types.Process, error) {
 	req := &pb.ExecuteProcessRequest{
 		Name:               options.Name,
-		DefinitionsId:      options.DefinitionsUid,
+		DefinitionsId:      options.DefinitionsId,
 		DefinitionsVersion: options.DefinitionsVersion,
+		Priority:           options.Priority,
 		Headers:            options.Headers,
 		Properties:         options.Properties,
 		DataObjects:        options.DataObjects,

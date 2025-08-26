@@ -25,6 +25,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/olive-io/bpmn/schema"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -33,6 +34,7 @@ import (
 	pb "github.com/olive-io/olive/api/rpc/serverpb"
 	"github.com/olive-io/olive/api/types"
 	"github.com/olive-io/olive/server/dao"
+	"github.com/olive-io/olive/server/scheduler"
 )
 
 var _ pb.BpmnRPCServer = (*bpmnGRPCServer)(nil)
@@ -43,18 +45,22 @@ type bpmnGRPCServer struct {
 	ctx context.Context
 	lg  *zap.Logger
 
+	sch *scheduler.Scheduler
+
 	definitionsDao *dao.DefinitionsDao
 	processDao     *dao.ProcessDao
 }
 
-func newBpmnServer(ctx context.Context, lg *zap.Logger, definitionsDao *dao.DefinitionsDao, processDao *dao.ProcessDao) *bpmnGRPCServer {
+func newBpmnServer(ctx context.Context, lg *zap.Logger, sch *scheduler.Scheduler, definitionsDao *dao.DefinitionsDao, processDao *dao.ProcessDao) *bpmnGRPCServer {
+	wch := sch.Watch(ctx, "system")
 	server := &bpmnGRPCServer{
 		ctx:            ctx,
 		lg:             lg,
+		sch:            sch,
 		definitionsDao: definitionsDao,
 		processDao:     processDao,
 	}
-
+	go server.process(wch)
 	return server
 }
 
@@ -151,7 +157,19 @@ func (bgs *bpmnGRPCServer) ListDefinitions(ctx context.Context, req *pb.ListDefi
 }
 
 func (bgs *bpmnGRPCServer) GetDefinitions(ctx context.Context, req *pb.GetDefinitionsRequest) (*pb.GetDefinitionsResponse, error) {
-	definitions, err := bgs.definitionsDao.GetDefinitions(ctx, 0, req.Uid)
+	definitions, err := bgs.getDefinitionsWithVersion(ctx, 0, req.Uid, req.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	rsp := &pb.GetDefinitionsResponse{
+		Definitions: definitions,
+	}
+	return rsp, nil
+}
+
+func (bgs *bpmnGRPCServer) getDefinitionsWithVersion(ctx context.Context, id int64, uid string, version uint64) (*types.Definitions, error) {
+	definitions, err := bgs.definitionsDao.GetDefinitions(ctx, id, uid)
 	if err != nil {
 		if dao.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -159,8 +177,8 @@ func (bgs *bpmnGRPCServer) GetDefinitions(ctx context.Context, req *pb.GetDefini
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if req.Version != definitions.Version {
-		snapshot, err := bgs.definitionsDao.GetSnapshot(ctx, definitions.Uid, req.Version)
+	if version != 0 && definitions.Version != version {
+		snapshot, err := bgs.definitionsDao.GetSnapshot(ctx, definitions.Uid, version)
 		if err != nil {
 			if dao.IsNotFound(err) {
 				return nil, status.Error(codes.NotFound, err.Error())
@@ -173,11 +191,7 @@ func (bgs *bpmnGRPCServer) GetDefinitions(ctx context.Context, req *pb.GetDefini
 		definitions.Content = snapshot.Content
 		definitions.Version = snapshot.Version
 	}
-
-	rsp := &pb.GetDefinitionsResponse{
-		Definitions: definitions,
-	}
-	return rsp, nil
+	return definitions, nil
 }
 
 func (bgs *bpmnGRPCServer) GetDefinitionsSnapshots(ctx context.Context, req *pb.GetDefinitionsSnapshotsRequest) (*pb.GetDefinitionsSnapshotsResponse, error) {
@@ -202,13 +216,52 @@ func (bgs *bpmnGRPCServer) RemoveDefinitions(ctx context.Context, req *pb.Remove
 }
 
 func (bgs *bpmnGRPCServer) ExecuteProcess(ctx context.Context, req *pb.ExecuteProcessRequest) (*pb.ExecuteProcessResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	definitionId := req.DefinitionsId
+	version := req.DefinitionsVersion
+	definitions, err := bgs.getDefinitionsWithVersion(ctx, definitionId, "", version)
+	if err != nil {
+		return nil, err
+	}
+
+	process := &types.Process{
+		Name:     req.Name,
+		Uid:      uuid.New().String(),
+		Metadata: map[string]string{},
+		Priority: req.Priority,
+		Args: &types.BpmnArgs{
+			Headers:     req.Headers,
+			Properties:  req.Properties,
+			DataObjects: req.DataObjects,
+		},
+		DefinitionsId:      definitionId,
+		DefinitionsVersion: version,
+		Context: &types.ProcessContext{
+			Variables:   map[string]string{},
+			DataObjects: map[string]string{},
+		},
+	}
+
+	if err = bgs.processDao.CreateProcess(ctx, process); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	processStat := &scheduler.ProcessStat{
+		Process:     process,
+		Definitions: definitions.Content,
+		FlowNodes:   make([]*types.FlowNode, 0),
+	}
+
+	err = bgs.sch.Execute(processStat)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.ExecuteProcessResponse{Process: process}, nil
 }
 
 func (bgs *bpmnGRPCServer) ListProcess(ctx context.Context, req *pb.ListProcessRequest) (*pb.ListProcessResponse, error) {
 	page, size := req.Page, req.Size
-	options := &dao.ListProcessOptions{}
+	options := dao.NewListProcessOptions(req.DefinitionsId, req.DefinitionsVersion)
 	processes, total, err := bgs.processDao.ListProcesses(ctx, page, size, options)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -241,4 +294,41 @@ func (bgs *bpmnGRPCServer) GetProcess(ctx context.Context, req *pb.GetProcessReq
 		Activities: nodes,
 	}
 	return rsp, nil
+}
+
+func (bgs *bpmnGRPCServer) process(wch *scheduler.WatchChan) {
+	lg := bgs.lg
+	ctx := bgs.ctx
+	for {
+		select {
+		case <-ctx.Done():
+			wch.Close()
+			return
+		default:
+		}
+
+		rsp := wch.Next()
+		if rsp.Err != nil {
+
+		}
+		if p := rsp.Process; p != nil {
+			err := bgs.processDao.UpdateProcess(ctx, p)
+			if err != nil {
+				lg.Error("update process",
+					zap.Int64("id", p.Id),
+					zap.Int64("definitions", p.DefinitionsId),
+					zap.Uint64("version", p.DefinitionsVersion),
+					zap.Error(err))
+			}
+		}
+		if node := rsp.FlowNode; node != nil {
+			err := bgs.processDao.SaveFlowNode(ctx, node)
+			if err != nil {
+				lg.Error("save flow node",
+					zap.Int64("process", node.ProcessId),
+					zap.String("flow", node.Name),
+					zap.Error(err))
+			}
+		}
+	}
 }

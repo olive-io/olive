@@ -96,6 +96,25 @@ func (dao *DefinitionsDao) GetDefinitions(ctx context.Context, id int64, uid str
 	return &definitions, nil
 }
 
+func (dao *DefinitionsDao) GetDefinitionsWithVersion(ctx context.Context, id int64, uid string) (*types.Definitions, error) {
+	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.Definitions{})
+
+	var definitions types.Definitions
+
+	if id != 0 {
+		tx = tx.Where("id = ?", id)
+	}
+	if uid != "" {
+		tx = tx.Where("uid = ?", uid)
+	}
+
+	err := tx.First(&definitions).Error
+	if err != nil {
+		return nil, err
+	}
+	return &definitions, nil
+}
+
 func (dao *DefinitionsDao) CreateDefinitions(ctx context.Context, definitions *types.Definitions) (int64, error) {
 	tx := dao.db.Session(&gorm.Session{}).WithContext(ctx).Model(&types.Definitions{})
 
