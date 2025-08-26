@@ -37,7 +37,9 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/olive-io/olive/api/rpc/serverpb"
 	"github.com/olive-io/olive/server/dao"
@@ -65,7 +67,7 @@ func (s *Server) Start(ctx context.Context) error {
 	lg := s.cfg.Logger()
 
 	listenAddr := cfg.ListenAddr
-	lg.Info("Listening on " + listenAddr)
+	lg.Info("listening on " + listenAddr)
 	ln, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		return fmt.Errorf("listen tcp on %s: %w", listenAddr, err)
@@ -146,7 +148,7 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	sopts := []grpc.ServerOption{
-		//grpc.UnaryInterceptor(interceptor),
+		grpc.UnaryInterceptor(validateInterceptor),
 		grpc.KeepaliveEnforcementPolicy(kaep),
 		grpc.KeepaliveParams(kasp),
 	}
@@ -202,4 +204,13 @@ func grpcWithHttp(gh *grpc.Server, hh http.Handler) http.Handler {
 			hh.ServeHTTP(w, r)
 		}
 	}), h2s)
+}
+
+func validateInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	if impl, ok := req.(interface{ ValidateAll() error }); ok {
+		if err := impl.ValidateAll(); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+	return handler(ctx, req)
 }

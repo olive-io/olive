@@ -82,3 +82,7 @@ func (sgs *systemGRPCServer) GetRunner(ctx context.Context, req *pb.GetRunnerReq
 	//TODO implement me
 	panic("implement me")
 }
+
+func (sgs *systemGRPCServer) RunnerConnection(stream pb.SystemRPC_RunnerConnectionServer) error {
+	return nil
+}
