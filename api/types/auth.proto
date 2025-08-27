@@ -41,16 +41,6 @@ enum AuthStatus {
   AuthDisable = 2;
 }
 
-message Endpoint {
-  string id = 1;
-  string summary = 2;
-  string description = 3;
-  string httpMethod = 4;
-  string url = 5;
-  string operation = 6;
-  string security = 7;
-}
-
 message User {
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
   int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];

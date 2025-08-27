@@ -19,35 +19,49 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-package delegate
+package runner
 
 import (
-	"context"
+	"errors"
 	"time"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
-type Options struct{}
+const (
+	DefaultHeartbeat = time.Second * 30
+)
 
-type Option func(*Options)
+type Config struct {
+	Logger *zap.Logger
 
-type CallOptions struct{}
+	UID  string `json:"uid"`
+	Name string `json:"name"`
 
-type CallOption func(*CallOptions)
-
-type Request struct {
-	Headers     map[string]string
-	Properties  map[string]string
-	DataObjects map[string]string
-	Timeout     time.Duration
+	HeartbeatDuration time.Duration `json:"heartbeat"`
 }
 
-type Response struct {
-	Result      map[string]string
-	DataObjects map[string]string
+func NewConfig(lg *zap.Logger, name string) *Config {
+	cfg := &Config{
+		Logger: lg,
+		UID:    uuid.New().String(),
+		Name:   name,
+
+		HeartbeatDuration: DefaultHeartbeat,
+	}
+	return cfg
 }
 
-type Step interface {
-	Commit(ctx context.Context, req *Request, opts ...CallOption) (*Response, error)
-	Rollback(ctx context.Context, opts ...CallOption) error
-	Destroy(ctx context.Context, opts ...CallOption) error
+func (cfg *Config) Validate() error {
+	if cfg.Logger == nil {
+		return errors.New("missing logger")
+	}
+	if cfg.UID == "" {
+		return errors.New("missing uid")
+	}
+	if cfg.Name == "" {
+		return errors.New("missing name")
+	}
+	return nil
 }

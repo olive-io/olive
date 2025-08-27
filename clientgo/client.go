@@ -141,6 +141,10 @@ func New(cfg *Config) (*Client, error) {
 	return client, nil
 }
 
+func (c *Client) GetConn() *grpc.ClientConn {
+	return c.conn
+}
+
 func (c *Client) Ping(ctx context.Context) error {
 	opts := c.buildCallOptions()
 
@@ -212,6 +216,15 @@ func (c *Client) ExecuteProcess(ctx context.Context, options *ExecuteProcessOpti
 		return nil, parseErr(err)
 	}
 	return rsp.Process, nil
+}
+
+func (c *Client) NewConnection(ctx context.Context) (pb.SystemRPC_RunnerConnectionClient, error) {
+	opts := c.buildCallOptions()
+	stream, err := c.systemClient.RunnerConnection(ctx, opts...)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return stream, nil
 }
 
 func (c *Client) Close() error {

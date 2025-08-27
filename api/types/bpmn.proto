@@ -59,6 +59,37 @@ enum FlowNodeType {
   ParallelGateway = 34;
 }
 
+message Value {
+  enum Type {
+    String = 0;
+    Integer = 1;
+    Float = 2;
+    Boolean = 3;
+    Array = 4;
+    Object = 5;
+  }
+
+  Type type = 1;
+  string value = 2;
+  string default = 3;
+}
+
+message Endpoint {
+  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
+
+  FlowNodeType type = 2;
+  string kind = 3;
+  string name = 4;
+  string description = 5;
+  string url = 6;
+
+  // request data
+  map<string, string> headers = 11;
+  map<string, Value> parameters = 12;
+  // response data
+  map<string, Value> results = 13;
+}
+
 // Definitions bpmn Definition
 message Definitions {
   int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];

@@ -23,31 +23,13 @@ package delegate
 
 import (
 	"context"
-	"time"
+	"net/http"
 )
 
-type Options struct{}
-
-type Option func(*Options)
-
-type CallOptions struct{}
-
-type CallOption func(*CallOptions)
-
-type Request struct {
-	Headers     map[string]string
-	Properties  map[string]string
-	DataObjects map[string]string
-	Timeout     time.Duration
+type Client interface {
+	Call(ctx context.Context)
 }
 
-type Response struct {
-	Result      map[string]string
-	DataObjects map[string]string
-}
-
-type Step interface {
-	Commit(ctx context.Context, req *Request, opts ...CallOption) (*Response, error)
-	Rollback(ctx context.Context, opts ...CallOption) error
-	Destroy(ctx context.Context, opts ...CallOption) error
+type httpConn struct {
+	hc *http.Client
 }

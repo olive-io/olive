@@ -121,9 +121,10 @@ message RunnerStat {
 
   int64 timestamp = 7;
 
-  uint64 bpmnProcesses = 8;
-
-  uint64 bpmnTasks = 9;
+  uint64 steps = 11;
+  uint64 commit_count = 12;
+  uint64 rollback_count = 13;
+  uint64 destroy_count = 14;
 }
 
 message ExecuteProcessMsg {

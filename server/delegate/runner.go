@@ -22,32 +22,43 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package delegate
 
 import (
-	"context"
-	"time"
+	"sync"
+
+	"github.com/olive-io/olive/api/types"
 )
 
-type Options struct{}
+type RunnerMap struct {
+	rmu     sync.RWMutex
+	runners map[uint64]*types.Runner
 
-type Option func(*Options)
-
-type CallOptions struct{}
-
-type CallOption func(*CallOptions)
-
-type Request struct {
-	Headers     map[string]string
-	Properties  map[string]string
-	DataObjects map[string]string
-	Timeout     time.Duration
+	smu   sync.RWMutex
+	stats map[uint64]*types.RunnerStat
 }
 
-type Response struct {
-	Result      map[string]string
-	DataObjects map[string]string
+func NewRunnerMap() *RunnerMap {
+	rm := RunnerMap{
+		runners: make(map[uint64]*types.Runner),
+		stats:   make(map[uint64]*types.RunnerStat),
+	}
+	return &rm
 }
 
-type Step interface {
-	Commit(ctx context.Context, req *Request, opts ...CallOption) (*Response, error)
-	Rollback(ctx context.Context, opts ...CallOption) error
-	Destroy(ctx context.Context, opts ...CallOption) error
+func (rm *RunnerMap) SetRunner(runner *types.Runner) {
+	rm.rmu.Lock()
+	defer rm.rmu.Unlock()
+	rm.runners[runner.Id] = runner
+}
+
+func (rm *RunnerMap) SetStat(stat *types.RunnerStat) {
+	rm.smu.Lock()
+	defer rm.smu.Unlock()
+	rm.stats[stat.Id] = stat
+}
+
+func (rm *RunnerMap) GetRunner(id uint64) (*types.Runner, bool) {
+	rm.rmu.RLock()
+	defer rm.rmu.RUnlock()
+
+	runner, ok := rm.runners[id]
+	return runner, ok
 }
