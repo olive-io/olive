@@ -156,6 +156,19 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (c *Client) Register(ctx context.Context, runner *types.Runner) (*types.Runner, error) {
+	opts := c.buildCallOptions()
+
+	in := &pb.RegisterRequest{
+		Runner: runner,
+	}
+	rsp, err := c.systemClient.Register(ctx, in, opts...)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return rsp.Runner, nil
+}
+
 func (c *Client) DeployDefinitions(ctx context.Context, definitionsXML []byte, desc string, metadata map[string]string) (*types.Definitions, error) {
 	req := &pb.DeployDefinitionsRequest{
 		Metadata:    metadata,

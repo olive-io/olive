@@ -25,24 +25,58 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"reflect"
 
 	"github.com/olive-io/olive/api/types"
-	"github.com/olive-io/olive/pkg/tree"
 )
 
-var router = tree.New[WorkUnit]()
-
-func RegisterWorkUnit(workUnit WorkUnit, opts ...WuOption) {
+// Register registers WorkUnit to Runner
+func (r *Runner) Register(workUnit WorkUnit, opts ...WuOption) {
 	options := NewWuOptions(opts...)
 	url := options.String()
 	unit := &workUnitImpl{
 		options: options,
 		inner:   workUnit,
 	}
-	router.Insert(url, unit)
+	r.workUnitTree.Insert(url, unit)
 }
 
-func GetWorkUnit(opts ...WuOption) (WorkUnit, bool) {
+func (r *Runner) RegisterFunc(fn any, opts ...WuOption) error {
+	rv := reflect.ValueOf(fn)
+	rt := rv.Type()
+	if rt.Kind() != reflect.Func {
+		return fmt.Errorf("fn must be a function")
+	}
+
+	var in reflect.Type
+	hasCtx := false
+	switch rt.NumIn() {
+	case 0:
+	case 1:
+		inType := rt.In(0)
+		if isContext(inType) {
+			hasCtx = true
+		} else {
+			in = inType
+		}
+	case 2:
+		inType := rt.In(0)
+		if isContext(inType) {
+			hasCtx = true
+		}
+		in = rt.In(1)
+	}
+
+	unit := &fnWorkUnit{
+		function: rv,
+		in:       reflect.New(in),
+		hasCtx:   hasCtx,
+	}
+	r.Register(unit, opts...)
+	return nil
+}
+
+func (r *Runner) findWorkUnit(opts ...WuOption) (WorkUnit, bool) {
 	options := NewWuOptions(opts...)
 
 	url := path.Join(options.Type.String())
@@ -52,8 +86,12 @@ func GetWorkUnit(opts ...WuOption) (WorkUnit, bool) {
 	if options.Id != "" {
 		url = options.Id
 	}
-	_, unit, ok := router.LongestPrefix(url)
-	return unit.(*workUnitImpl).inner, ok
+	_, unit, ok := r.workUnitTree.LongestPrefix(url)
+	if !ok {
+		return nil, false
+	}
+	workUnit := reflect.New(reflect.TypeOf(unit)).Interface().(WorkUnit)
+	return workUnit, true
 }
 
 type WuOptions struct {
@@ -103,7 +141,7 @@ func WithID(url string) WuOption {
 }
 
 type WorkUnit interface {
-	Commit(ctx context.Context, request any) (any, error)
+	Commit(ctx context.Context) (any, error)
 	Rollback(ctx context.Context) error
 	Destroy(ctx context.Context) error
 }
@@ -115,9 +153,22 @@ type workUnitImpl struct {
 	inner   WorkUnit
 }
 
-func (w *workUnitImpl) Commit(ctx context.Context, request any) (rsp any, err error) {
+func (w *workUnitImpl) Inject(properties map[string]string) error {
+	err := InjectTypeFields(reflect.ValueOf(w.inner), properties)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *workUnitImpl) Commit(ctx context.Context) (rsp any, err error) {
 	stepCounter.Inc()
 	stepCommitCounter.Inc()
+
+	defer func() {
+		stepCommitCounter.Desc()
+		stepCounter.Desc()
+	}()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -125,10 +176,7 @@ func (w *workUnitImpl) Commit(ctx context.Context, request any) (rsp any, err er
 		}
 	}()
 
-	rsp, err = w.inner.Commit(ctx, request)
-
-	stepCommitCounter.Desc()
-	stepCounter.Desc()
+	rsp, err = w.inner.Commit(ctx)
 	return rsp, err
 }
 
@@ -137,15 +185,17 @@ func (w *workUnitImpl) Rollback(ctx context.Context) (err error) {
 	stepRollbackCounter.Inc()
 
 	defer func() {
+		stepRollbackCounter.Desc()
+		stepCounter.Desc()
+	}()
+
+	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("[%s] rollback panic recovered: %s", w.options.Id, r)
 		}
 	}()
 
 	err = w.inner.Rollback(ctx)
-
-	stepRollbackCounter.Desc()
-	stepCounter.Desc()
 	return err
 }
 
@@ -154,14 +204,64 @@ func (w *workUnitImpl) Destroy(ctx context.Context) (err error) {
 	stepDestroyCounter.Inc()
 
 	defer func() {
+		stepDestroyCounter.Desc()
+		stepCounter.Desc()
+	}()
+
+	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("[%s] destroy panic recovered: %s", w.options.Id, r)
 		}
 	}()
 	err = w.inner.Destroy(ctx)
-
-	stepDestroyCounter.Desc()
-	stepCounter.Desc()
-
 	return err
 }
+
+var _ WorkUnit = (*fnWorkUnit)(nil)
+
+type fnWorkUnit struct {
+	function reflect.Value
+	in       reflect.Value
+	hasCtx   bool
+}
+
+func (wu *fnWorkUnit) Inject(properties map[string]string) error {
+	err := InjectTypeFields(wu.in, properties)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (wu *fnWorkUnit) Commit(ctx context.Context) (out any, err error) {
+	args := make([]reflect.Value, 0)
+	if wu.hasCtx {
+		args = append(args, reflect.ValueOf(ctx))
+	}
+	args = append(args, wu.in)
+	returnValues := wu.function.Call(args)
+
+	switch len(returnValues) {
+	case 0:
+		return map[string]string{}, nil
+	case 1:
+		out = returnValues[0].Interface()
+		if rerr, ok := out.(error); ok {
+			return nil, rerr
+		} else {
+			return out, nil
+		}
+	case 2:
+		out = returnValues[0].Interface()
+		rerr, ok := returnValues[1].Interface().(error)
+		if ok {
+			err = rerr
+		}
+		return out, err
+	}
+	return
+}
+
+func (wu *fnWorkUnit) Rollback(ctx context.Context) error { return nil }
+
+func (wu *fnWorkUnit) Destroy(ctx context.Context) error { return nil }

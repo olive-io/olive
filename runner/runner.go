@@ -24,25 +24,28 @@ package runner
 import (
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"go.uber.org/atomic"
 
 	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/pkg/tree"
 	"github.com/olive-io/olive/pkg/version"
 )
 
 type Runner struct {
 	cfg *Config
 
-	tr *types.Runner
+	tr *atomic.Pointer[types.Runner]
 
-	smu  sync.RWMutex
-	stat *types.RunnerStat
+	stat *atomic.Pointer[types.RunnerStat]
+
+	workUnitTree *tree.Tree[WorkUnit]
 }
 
+// New returns a new Runner
 func New(cfg *Config) (*Runner, error) {
 
 	cpuTotal := uint64(0)
@@ -80,16 +83,21 @@ func New(cfg *Config) (*Runner, error) {
 
 	runner := &Runner{
 		cfg: cfg,
-		tr:  tr,
+		tr:  atomic.NewPointer[types.Runner](tr),
+
+		workUnitTree: tree.New[WorkUnit](),
 	}
+	runner.stat = atomic.NewPointer[types.RunnerStat](runner.generateRunnerStat())
 
 	return runner, nil
 }
 
+// generateRunnerStat returns latest *types.RunnerStat
 func (r *Runner) generateRunnerStat() *types.RunnerStat {
+	tr := r.tr.Load()
 	rs := &types.RunnerStat{
-		Id:            r.tr.Id,
-		Uid:           r.tr.Uid,
+		Id:            tr.Id,
+		Uid:           tr.Uid,
 		Timestamp:     time.Now().UnixNano(),
 		Steps:         uint64(stepCounter.Get()),
 		CommitCount:   uint64(stepCommitCounter.Get()),
@@ -99,22 +107,20 @@ func (r *Runner) generateRunnerStat() *types.RunnerStat {
 	interval := time.Millisecond * 300
 	percents, _ := cpu.Percent(interval, false)
 	if len(percents) > 0 {
-		rs.CpuUsed = percents[0] * float64(r.tr.Cpu) / 100
+		rs.CpuUsed = percents[0] * float64(tr.Cpu) / 100
 	}
 
 	vm, err := mem.VirtualMemory()
 	if err == nil {
-		rs.MemoryUsed = vm.UsedPercent * float64(r.tr.Memory)
+		rs.MemoryUsed = vm.UsedPercent * float64(tr.Memory)
 	}
 
 	return rs
 }
 
 func (r *Runner) GetStat() *types.RunnerStat {
-	r.smu.RLock()
-	defer r.smu.RUnlock()
 	out := new(types.RunnerStat)
-	*out = *r.stat
+	*out = *r.stat.Load()
 	return out
 }
 
@@ -130,9 +136,7 @@ func (r *Runner) process(stop <-chan struct{}) {
 		case <-timer.C:
 			timer.Reset(internal)
 
-			r.smu.Lock()
-			r.stat = r.generateRunnerStat()
-			r.smu.Unlock()
+			r.stat.Store(r.generateRunnerStat())
 		}
 	}
 }
