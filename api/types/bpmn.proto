@@ -75,13 +75,11 @@ message Value {
 }
 
 message Endpoint {
-  int64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
-
-  FlowNodeType type = 2;
-  string kind = 3;
-  string name = 4;
-  string description = 5;
-  string url = 6;
+  FlowNodeType type = 1;
+  string kind = 2;
+  string name = 3;
+  string description = 4;
+  string httpURL = 5;
 
   // request data
   map<string, string> headers = 11;

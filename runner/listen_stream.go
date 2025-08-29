@@ -26,6 +26,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
+	"sort"
 	"sync"
 	"time"
 
@@ -93,7 +95,7 @@ func (st *streamTransport) serve() error {
 		select {
 		case <-st.ctx.Done():
 			st.lg.Info("olive connections disconnected")
-			return nil
+			goto EXIT
 		case <-timer.C:
 		}
 
@@ -105,8 +107,6 @@ func (st *streamTransport) serve() error {
 					st.lg.Error("olive connection is unavailable")
 				} else {
 					st.lg.Error("connects to olive server error", zap.Error(err))
-					//event := &Event{Err: err}
-					//st.ech <- event
 				}
 				st.connected.Store(false)
 				continue
@@ -122,7 +122,7 @@ func (st *streamTransport) serve() error {
 		for {
 			select {
 			case <-ctx.Done():
-				return nil
+				goto EXIT
 			default:
 			}
 
@@ -132,21 +132,21 @@ func (st *streamTransport) serve() error {
 					st.lg.Error("connection is unavailable")
 				} else {
 					st.lg.Error("connect to olive system error", zap.Error(err))
-					//event := &Event{Err: err}
-					//st.ech <- event
 				}
 				st.connected.Store(false)
 				break LOOP
 			}
-
-			//event := &Event{EventType: rsp.Type, Call: rsp.Call}
-			//st.ech <- event
 
 			if req := msg.CallTask; req != nil {
 				rsp := st.doWorkUnit(ctx, req)
 				_ = st.stream.Send(&pb.RunnerConnectionRequest{CallTask: rsp})
 			}
 		}
+	}
+EXIT:
+
+	if derr := st.disconnect(context.Background()); derr != nil {
+		st.lg.Error("olive disconnect error", zap.Error(derr))
 	}
 
 	return nil
@@ -158,20 +158,41 @@ func (st *streamTransport) connect(ctx context.Context) (*types.Runner, error) {
 	if err != nil {
 		return nil, err
 	}
-	st.stream = stream
 
-	runner, err := st.client.Register(ctx, st.runner.tr.Load())
+	runner := st.runner.tr.Load()
+	runner.Transport = types.Runner_GRPCStream
+
+	endpoints := make([]*types.Endpoint, 0)
+	for _, endpoint := range st.runner.endpoints {
+		endpoints = append(endpoints, endpoint)
+	}
+	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].URL() < endpoints[j].URL() })
+
+	runner, err = st.client.Register(ctx, runner, endpoints)
 	if err != nil {
 		return nil, err
 	}
+
+	if err = stream.Send(&pb.RunnerConnectionRequest{
+		Handshake: &pb.HandshakeRequest{Uid: runner.Uid},
+	}); err != nil {
+		return nil, fmt.Errorf("send handshake request: %w", err)
+	}
+	st.stream = stream
 
 	st.lg.Info("connect to olive server succeeded")
 	st.connected.Store(true)
 	return runner, nil
 }
 
-func (st *streamTransport) disconnect() error {
+func (st *streamTransport) disconnect(ctx context.Context) error {
 	st.lg.Info("disconnecting to olive server")
+
+	runner := st.runner.tr.Load()
+	_, err := st.client.Disregister(ctx, runner.Uid)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -182,30 +203,35 @@ func (st *streamTransport) doWorkUnit(ctx context.Context, req *pb.CallTaskReque
 		Id:          sessionId,
 		Results:     map[string]string{},
 		DataObjects: map[string]string{},
+		Uid:         req.Uid,
 	}
 
-	st.lg.Info(fmt.Sprintf("[%d] [%s] work unit [%s]", req.Id, req.Stage.String(), req.Url))
+	st.lg.Info(fmt.Sprintf("[%d] [%s] work unit [%s]", req.Id, req.Stage.String(), req.Name))
+
+	var err error
+	defer func() {
+		if err != nil {
+			rsp.Error = err.Error()
+		}
+	}()
 
 	switch req.Stage {
 	case pb.CallTaskRequest_Commit:
-		options := []WuOption{
+		opts := []WuOption{
 			WithType(req.FlowType),
 			WithKind(req.Kind),
-			WithID(req.Url),
+			WithID(req.Name),
 		}
-		workUnit, ok := st.runner.findWorkUnit(options...)
+		workUnit, ok := st.runner.findWorkUnit(opts...)
 		if !ok {
-			rsp.Error = status.Error(codes.NotFound, "work unit not found").Error()
+			err = status.Error(codes.NotFound, "work unit not found")
 			return rsp
 		}
-		if impl, ok := workUnit.(interface {
-			Inject(map[string]string) error
-		}); ok {
-			err := impl.Inject(req.Properties)
-			if err != nil {
-				rsp.Error = status.Error(codes.InvalidArgument, err.Error()).Error()
-				return rsp
-			}
+		options := workUnit.Options()
+		params := reflect.New(options.Request)
+		if err = InjectTypeFields(params, req.Properties); err != nil {
+			err = status.Error(codes.InvalidArgument, fmt.Sprintf("inject work unit parameters: %v", err))
+			return rsp
 		}
 
 		if len(req.Headers) > 0 {
@@ -214,9 +240,9 @@ func (st *streamTransport) doWorkUnit(ctx context.Context, req *pb.CallTaskReque
 
 		st.addWorkUnit(sessionId, workUnit)
 
-		out, err := workUnit.Commit(ctx)
-		if err != nil {
-			rsp.Error = status.Error(codes.Internal, err.Error()).Error()
+		out, cErr := workUnit.Commit(ctx, params.Interface())
+		if cErr != nil {
+			err = status.Error(codes.Internal, cErr.Error())
 			return rsp
 		}
 
@@ -228,7 +254,7 @@ func (st *streamTransport) doWorkUnit(ctx context.Context, req *pb.CallTaskReque
 
 		workUnit, ok := st.getWorkUnit(sessionId)
 		if ok {
-			if err := workUnit.Rollback(ctx); err != nil {
+			if rerr := workUnit.Rollback(ctx); rerr != nil {
 
 			}
 		}
@@ -237,7 +263,7 @@ func (st *streamTransport) doWorkUnit(ctx context.Context, req *pb.CallTaskReque
 		workUnit, ok := st.getWorkUnit(sessionId)
 		if ok {
 			st.removeWorkUnit(sessionId)
-			if err := workUnit.Destroy(ctx); err != nil {
+			if derr := workUnit.Destroy(ctx); derr != nil {
 
 			}
 		}

@@ -40,7 +40,7 @@ func NewDefinitionsDao(db *gorm.DB) (*DefinitionsDao, error) {
 		&types.DefinitionsSnapshot{},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("auto migrate definitions schemas: %w", err)
+		return nil, fmt.Errorf("auto migrate definitions models: %w", err)
 	}
 
 	dao := &DefinitionsDao{

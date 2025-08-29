@@ -43,6 +43,8 @@ type Runner struct {
 	stat *atomic.Pointer[types.RunnerStat]
 
 	workUnitTree *tree.Tree[WorkUnit]
+
+	endpoints map[string]*types.Endpoint
 }
 
 // New returns a new Runner
@@ -98,7 +100,7 @@ func (r *Runner) generateRunnerStat() *types.RunnerStat {
 	rs := &types.RunnerStat{
 		Id:            tr.Id,
 		Uid:           tr.Uid,
-		Timestamp:     time.Now().UnixNano(),
+		Timestamp:     time.Now().UnixMilli(),
 		Steps:         uint64(stepCounter.Get()),
 		CommitCount:   uint64(stepCommitCounter.Get()),
 		RollbackCount: uint64(stepRollbackCounter.Get()),

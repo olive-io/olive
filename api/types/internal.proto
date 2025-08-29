@@ -80,30 +80,36 @@ message Runner {
 
   uint64 id = 1 [(tagger.tags) = "gorm:\"primary\""];
 
+  int64 createAt = 2 [(tagger.tags) = "gorm:\"autoCreateTime\""];
+
   // Unique identified by runner
-  string uid = 2;
+  string uid = 3;
 
   // Name is the human-readable name of the runner.
-  string name = 3;
+  string name = 4;
 
   // listenURL is the URL the runner is listening on.
-  string listenURL = 4;
+  string listenURL = 5;
 
-  string version = 5;
+  string version = 6;
 
-  int64 heartbeatMs = 6;
+  int64 heartbeatMs = 7;
 
-  string hostname = 7;
+  string hostname = 8;
 
-  map<string, string> metadata = 8;
+  map<string, string> metadata = 9 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  map<string, string> features = 9;
+  map<string, string> features = 10 [(tagger.tags) = "gorm:\"serializer:json\""];
 
-  TransportType transport = 10;
+  TransportType transport = 11;
 
-  uint64 cpu = 11;
+  uint64 cpu = 12;
 
-  uint64 memory = 12;
+  uint64 memory = 13;
+
+  int64 onlineTimestamp = 14;
+  int64 offlineTimestamp = 15;
+  int32 online = 16;
 }
 
 message RunnerStat {

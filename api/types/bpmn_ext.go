@@ -21,6 +21,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package types
 
+import (
+	"path"
+)
+
+func (in *Endpoint) URL() string {
+	url := path.Join(in.Type.String())
+	if in.Kind != "" {
+		url = path.Join(url, in.Kind)
+	}
+	if in.Name != "" {
+		url = path.Join(url, in.Name)
+	}
+	return url
+}
+
 func (in *ProcessContext) DeepCopyInto(out *ProcessContext) {
 	*out = *in
 	for k, v := range in.DataObjects {

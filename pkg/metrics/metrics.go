@@ -71,7 +71,7 @@ func (g *gaugeFunc) Sub(v float64) {
 }
 
 func (g *gaugeFunc) SetToCurrentTime() {
-	g.Set(float64(time.Now().UnixNano()) / 1e9)
+	g.Set(float64(time.Now().Unix()))
 }
 
 func (g *gaugeFunc) Get() float64 {

@@ -156,13 +156,27 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) Register(ctx context.Context, runner *types.Runner) (*types.Runner, error) {
+func (c *Client) Register(ctx context.Context, runner *types.Runner, endpoints []*types.Endpoint) (*types.Runner, error) {
 	opts := c.buildCallOptions()
 
 	in := &pb.RegisterRequest{
-		Runner: runner,
+		Runner:    runner,
+		Endpoints: endpoints,
 	}
 	rsp, err := c.systemClient.Register(ctx, in, opts...)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return rsp.Runner, nil
+}
+
+func (c *Client) Disregister(ctx context.Context, uid string) (*types.Runner, error) {
+	opts := c.buildCallOptions()
+
+	in := &pb.DisregisterRequest{
+		Id: uid,
+	}
+	rsp, err := c.systemClient.Disregister(ctx, in, opts...)
 	if err != nil {
 		return nil, parseErr(err)
 	}

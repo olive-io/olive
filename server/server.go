@@ -125,6 +125,10 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create process dao: %w", err)
 	}
+	runnerDao, err := dao.NewRunnerDao(db)
+	if err != nil {
+		return nil, fmt.Errorf("create runner dao: %w", err)
+	}
 
 	schedulerOptions := scheduler.NewOptions(lg)
 	sch, err := scheduler.NewScheduler(ctx, schedulerOptions)
@@ -133,7 +137,7 @@ func (s *Server) buildHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	bpmnHandler := newBpmnServer(ctx, lg, sch, definitionsDao, processDao)
-	systemHandler := newSystemGRPCServer(ctx, lg)
+	systemHandler := newSystemGRPCServer(ctx, lg, runnerDao)
 
 	kaep := keepalive.EnforcementPolicy{
 		MinTime:             5 * time.Second,

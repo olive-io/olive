@@ -23,31 +23,128 @@ package delegate
 
 import (
 	"context"
-	"time"
+	"crypto/rand"
+	"encoding/binary"
+	"fmt"
+	"sync"
+
+	pb "github.com/olive-io/olive/api/rpc/serverpb"
 )
 
-type Options struct{}
-
-type Option func(*Options)
-
-type CallOptions struct{}
-
-type CallOption func(*CallOptions)
-
-type Request struct {
-	Headers     map[string]string
-	Properties  map[string]string
-	DataObjects map[string]string
-	Timeout     time.Duration
+// This is an application-wide global ID allocator.  Unfortunately we need
+// to have unique IDs globally to permit certain things to work
+// correctly.
+type idAllocator struct {
+	used map[uint64]struct{}
+	next uint64
+	lock sync.Mutex
 }
 
-type Response struct {
-	Result      map[string]string
-	DataObjects map[string]string
+func newIDAllocator() *idAllocator {
+	b := make([]byte, 8)
+	// The following could in theory fail, but in that case
+	// we will wind up with IDs starting at zero.  It should
+	// not happen unless the platform can't get good entropy.
+	_, _ = rand.Read(b)
+	used := make(map[uint64]struct{})
+	next := binary.BigEndian.Uint64(b)
+	alloc := &idAllocator{
+		used: used,
+		next: next,
+	}
+	return alloc
 }
 
-type Step interface {
-	Commit(ctx context.Context, req *Request, opts ...CallOption) (*Response, error)
-	Rollback(ctx context.Context, opts ...CallOption) error
-	Destroy(ctx context.Context, opts ...CallOption) error
+func (alloc *idAllocator) Get() uint64 {
+	alloc.lock.Lock()
+	defer alloc.lock.Unlock()
+	for {
+		id := alloc.next & 0x7fffffff
+		alloc.next++
+		if id == 0 {
+			continue
+		}
+		if _, ok := alloc.used[id]; ok {
+			continue
+		}
+		alloc.used[id] = struct{}{}
+		return id
+	}
+}
+
+func (alloc *idAllocator) Free(id uint64) {
+	alloc.lock.Lock()
+	if _, ok := alloc.used[id]; ok {
+		delete(alloc.used, id)
+	}
+	alloc.lock.Unlock()
+}
+
+type Delegate interface {
+	Call(ctx context.Context, req *pb.CallTaskRequest) (*pb.CallTaskResponse, error)
+}
+
+type StreamPipe struct {
+	ctx      context.Context
+	receiver <-chan *pb.CallTaskResponse
+
+	allocator *idAllocator
+
+	tmu      sync.RWMutex
+	transfer map[uint64]chan *pb.CallTaskResponse
+}
+
+func NewStreamPipe(ctx context.Context, receiver <-chan *pb.CallTaskResponse) *StreamPipe {
+	pipe := &StreamPipe{
+		ctx:       ctx,
+		receiver:  receiver,
+		allocator: newIDAllocator(),
+		tmu:       sync.RWMutex{},
+		transfer:  map[uint64]chan *pb.CallTaskResponse{},
+	}
+	return pipe
+}
+
+func (s *StreamPipe) Call(ctx context.Context, req *pb.CallTaskRequest) (*pb.CallTaskResponse, error) {
+	uid := s.allocator.Get()
+	defer s.allocator.Free(uid)
+
+	req.Uid = uid
+
+	ch := make(chan *pb.CallTaskResponse, 1)
+	s.tmu.Lock()
+	s.transfer[uid] = ch
+	s.tmu.Unlock()
+
+	defer func() {
+		s.tmu.Lock()
+		delete(s.transfer, uid)
+		s.tmu.Unlock()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-s.ctx.Done():
+		return nil, fmt.Errorf("stream is closed")
+	case rsp := <-ch:
+		return rsp, nil
+	}
+}
+
+func (s *StreamPipe) Start() {
+	ctx := s.ctx
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case recv := <-s.receiver:
+			s.tmu.RLock()
+			ch, ok := s.transfer[recv.Uid]
+			s.tmu.RUnlock()
+			if !ok {
+				ch <- recv
+			}
+		}
+	}
 }

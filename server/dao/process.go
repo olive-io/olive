@@ -57,7 +57,7 @@ func NewProcessDao(db *gorm.DB) (*ProcessDao, error) {
 		&types.FlowNode{},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("auto migrate process schemas: %w", err)
+		return nil, fmt.Errorf("auto migrate process models: %w", err)
 	}
 
 	dao := &ProcessDao{

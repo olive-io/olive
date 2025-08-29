@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/olive-io/olive/api/types"
+	"github.com/olive-io/olive/pkg/tree"
 )
 
 var (
@@ -56,16 +57,13 @@ func (e *Endpoint) InsertRunner(runner *Runner) {
 // Router means Endpoint Radix Tree and Synchronous safe.
 type Router struct {
 	mu   sync.RWMutex
-	root *Tree
+	root *tree.Tree[*Endpoint]
 }
 
 func NewRouter() (*Router, error) {
-	return NewRouterWithTree(New())
-}
-
-func NewRouterWithTree(tree *Tree) (*Router, error) {
+	routerTree := tree.New[*Endpoint]()
 	controller := &Router{
-		root: tree,
+		root: routerTree,
 	}
 
 	return controller, nil
@@ -73,6 +71,14 @@ func NewRouterWithTree(tree *Tree) (*Router, error) {
 
 // Insert inserts a endpoint into Router.
 func (r *Router) Insert(url string, endpoint *Endpoint) error {
+	exists, _ := r.Find(url)
+	if exists != nil {
+		for _, runner := range endpoint.Runners {
+			exists.InsertRunner(runner)
+		}
+		endpoint = exists
+	}
+
 	r.mu.Lock()
 	r.root.Insert(url, endpoint)
 	r.mu.Unlock()
@@ -88,5 +94,5 @@ func (r *Router) Find(url string) (*Endpoint, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	return value.(*Endpoint), nil
+	return value, nil
 }

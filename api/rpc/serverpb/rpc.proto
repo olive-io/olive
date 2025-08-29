@@ -93,6 +93,7 @@ message GetClusterResponse {
 
 message RegisterRequest {
   types.Runner runner = 1;
+  repeated types.Endpoint endpoints = 2;
 }
 
 message RegisterResponse {
@@ -100,7 +101,7 @@ message RegisterResponse {
 }
 
 message DisregisterRequest {
-  types.Runner runner = 1;
+  string id = 1;
 }
 
 message DisregisterResponse {
@@ -130,6 +131,12 @@ message GetRunnerResponse {
   types.RunnerStat stat = 2;
 }
 
+message HandshakeRequest {
+  string uid = 1;
+}
+
+message HandshakeResponse {}
+
 message CallTaskRequest {
   enum Stage {
     Commit = 0;
@@ -140,10 +147,13 @@ message CallTaskRequest {
   Stage stage = 2;
   types.FlowNodeType flowType = 3;
   string kind = 4;
-  string url = 5;
+  string name = 5;
   map<string, string> headers = 6;
   map<string, string> properties = 7;
   map<string, string> dataObjects = 8;
+  int64 timeout = 9;
+
+  uint64 uid = 100;
 }
 
 message CallTaskResponse {
@@ -151,14 +161,18 @@ message CallTaskResponse {
   map<string, string> results = 2;
   map<string, string> dataObjects = 3;
   string error = 4;
+
+  uint64 uid = 100;
 }
 
 message RunnerConnectionRequest {
-  CallTaskResponse callTask = 1;
+  HandshakeRequest handshake = 1;
+  CallTaskResponse callTask = 2;
 }
 
 message RunnerConnectionResponse {
-  CallTaskRequest callTask = 1;
+  HandshakeResponse handshake = 1;
+  CallTaskRequest callTask = 2;
 }
 
 service BpmnRPC {

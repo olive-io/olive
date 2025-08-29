@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/olive-io/olive/api/types"
 )
 
 func isContext(rt reflect.Type) bool {
@@ -108,8 +110,11 @@ func InjectTypeFields(vle reflect.Value, items map[string]string) error {
 			continue
 		}
 
-		text, ok := tField.Tag.Lookup("json")
+		text, ok := tField.Tag.Lookup(InjectTag)
 		if !ok {
+			continue
+		}
+		if text == "" || text == "-" {
 			continue
 		}
 
@@ -141,8 +146,11 @@ func ExtractTypeFields(t any) map[string]string {
 			continue
 		}
 
-		text, ok := tField.Tag.Lookup("json")
+		text, ok := tField.Tag.Lookup(InjectTag)
 		if !ok {
+			continue
+		}
+		if text == "" || text == "-" {
 			continue
 		}
 
@@ -151,4 +159,64 @@ func ExtractTypeFields(t any) map[string]string {
 	}
 
 	return results
+}
+
+func GenerateEndpoint(unit WorkUnit, options *WuOptions) *types.Endpoint {
+	endpoint := &types.Endpoint{
+		Type:    options.Type,
+		Kind:    options.Kind,
+		Name:    options.Id,
+		Headers: map[string]string{},
+	}
+
+	endpoint.Parameters = extractValue(options.Request)
+	endpoint.Results = extractValue(options.Response)
+
+	return endpoint
+}
+
+func extractValue(rt reflect.Type) map[string]*types.Value {
+	items := make(map[string]*types.Value)
+
+	for i := 0; i < rt.NumField(); i++ {
+		tField := rt.Field(i)
+		if !tField.IsExported() {
+			continue
+		}
+
+		text, ok := tField.Tag.Lookup(InjectTag)
+		if !ok {
+			continue
+		}
+		if text == "" || text == "-" {
+			continue
+		}
+
+		name := text
+		items[name] = &types.Value{
+			Type: parseValueType(tField.Type),
+		}
+	}
+
+	return items
+}
+
+func parseValueType(rt reflect.Type) types.Value_Type {
+	switch rt.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return types.Value_Integer
+	case reflect.String:
+		return types.Value_String
+	case reflect.Ptr:
+		return parseValueType(rt.Elem())
+	case reflect.Slice, reflect.Array:
+		return types.Value_Array
+	case reflect.Struct, reflect.Map:
+		return types.Value_Object
+	case reflect.Bool:
+		return types.Value_Boolean
+	default:
+		return types.Value_String
+	}
 }

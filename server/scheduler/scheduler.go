@@ -196,7 +196,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 
 	var err error
 	defer func() {
-		stat.EndAt = time.Now().UnixNano()
+		stat.EndAt = time.Now().UnixMilli()
 		stat.Stage = types.Process_Finish
 
 		stat.Status = types.Process_Success
@@ -282,7 +282,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 
 	if stat.Status != types.Process_Running {
 		stat.Uid = pid
-		stat.StartAt = time.Now().UnixNano()
+		stat.StartAt = time.Now().UnixMilli()
 
 		if id, ok := bp.Element().Id(); ok {
 			stat.DefinitionsProcess = *id
@@ -324,7 +324,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 						Name:      fname,
 						FlowId:    fid,
 						FlowType:  parseElementType(elem),
-						StartTime: time.Now().UnixNano(),
+						StartTime: time.Now().UnixMilli(),
 						ProcessId: stat.Id,
 						Stage:     types.FlowNode_Ready,
 					}
@@ -342,7 +342,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 				}
 				node, exists := nodeMapping[fid]
 				if exists && node.EndTime == 0 {
-					node.EndTime = time.Now().UnixNano()
+					node.EndTime = time.Now().UnixMilli()
 					node.Stage = types.FlowNode_Finish
 					sch.setFlowNode(node)
 				}
@@ -356,7 +356,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 				}
 				node, exists := nodeMapping[fid]
 				if exists && node.EndTime == 0 {
-					node.EndTime = time.Now().UnixNano()
+					node.EndTime = time.Now().UnixMilli()
 					node.Stage = types.FlowNode_Finish
 					sch.setFlowNode(node)
 				}
@@ -383,7 +383,7 @@ func (sch *Scheduler) execute(ctx context.Context, stat *ProcessStat) error {
 						Name:      tname,
 						FlowId:    fid,
 						FlowType:  parseTaskType(act.Type()),
-						StartTime: time.Now().UnixNano(),
+						StartTime: time.Now().UnixMilli(),
 						ProcessId: stat.Id,
 						Stage:     types.FlowNode_Commit,
 						Status:    types.FlowNode_Running,

@@ -30,6 +30,8 @@ import (
 	"github.com/olive-io/olive/api/types"
 )
 
+var InjectTag = "ov"
+
 // Register registers WorkUnit to Runner
 func (r *Runner) Register(workUnit WorkUnit, opts ...WuOption) {
 	options := NewWuOptions(opts...)
@@ -39,6 +41,9 @@ func (r *Runner) Register(workUnit WorkUnit, opts ...WuOption) {
 		inner:   workUnit,
 	}
 	r.workUnitTree.Insert(url, unit)
+
+	endpoint := GenerateEndpoint(workUnit, options)
+	r.endpoints[url] = endpoint
 }
 
 func (r *Runner) RegisterFunc(fn any, opts ...WuOption) error {
@@ -67,9 +72,25 @@ func (r *Runner) RegisterFunc(fn any, opts ...WuOption) error {
 		in = rt.In(1)
 	}
 
+	var out reflect.Type
+	switch rt.NumOut() {
+	case 1:
+		outType := rt.Out(0)
+		if !isContext(outType) {
+			out = outType
+		}
+	case 2:
+		outType := rt.Out(0)
+		out = outType
+	}
+
+	options := NewWuOptions(opts...)
+	options.Request = in
+	options.Response = out
+
 	unit := &fnWorkUnit{
+		options:  options,
 		function: rv,
-		in:       reflect.New(in),
 		hasCtx:   hasCtx,
 	}
 	r.Register(unit, opts...)
@@ -100,6 +121,9 @@ type WuOptions struct {
 	Kind string
 
 	Id string
+
+	Request  reflect.Type
+	Response reflect.Type
 }
 
 func (wo *WuOptions) String() string {
@@ -140,8 +164,21 @@ func WithID(url string) WuOption {
 	}
 }
 
+func WithRequest(request any) WuOption {
+	return func(o *WuOptions) {
+		o.Request = reflect.TypeOf(request)
+	}
+}
+
+func WithResponse(response any) WuOption {
+	return func(o *WuOptions) {
+		o.Response = reflect.TypeOf(response)
+	}
+}
+
 type WorkUnit interface {
-	Commit(ctx context.Context) (any, error)
+	Options() *WuOptions
+	Commit(ctx context.Context, req any) (any, error)
 	Rollback(ctx context.Context) error
 	Destroy(ctx context.Context) error
 }
@@ -153,15 +190,11 @@ type workUnitImpl struct {
 	inner   WorkUnit
 }
 
-func (w *workUnitImpl) Inject(properties map[string]string) error {
-	err := InjectTypeFields(reflect.ValueOf(w.inner), properties)
-	if err != nil {
-		return err
-	}
-	return nil
+func (w *workUnitImpl) Options() *WuOptions {
+	return w.options
 }
 
-func (w *workUnitImpl) Commit(ctx context.Context) (rsp any, err error) {
+func (w *workUnitImpl) Commit(ctx context.Context, req any) (rsp any, err error) {
 	stepCounter.Inc()
 	stepCommitCounter.Inc()
 
@@ -176,7 +209,7 @@ func (w *workUnitImpl) Commit(ctx context.Context) (rsp any, err error) {
 		}
 	}()
 
-	rsp, err = w.inner.Commit(ctx)
+	rsp, err = w.inner.Commit(ctx, req)
 	return rsp, err
 }
 
@@ -220,26 +253,22 @@ func (w *workUnitImpl) Destroy(ctx context.Context) (err error) {
 var _ WorkUnit = (*fnWorkUnit)(nil)
 
 type fnWorkUnit struct {
+	options  *WuOptions
 	function reflect.Value
-	in       reflect.Value
 	hasCtx   bool
 }
 
-func (wu *fnWorkUnit) Inject(properties map[string]string) error {
-	err := InjectTypeFields(wu.in, properties)
-	if err != nil {
-		return err
-	}
-	return nil
+func (w *fnWorkUnit) Options() *WuOptions {
+	return w.options
 }
 
-func (wu *fnWorkUnit) Commit(ctx context.Context) (out any, err error) {
+func (w *fnWorkUnit) Commit(ctx context.Context, req any) (out any, err error) {
 	args := make([]reflect.Value, 0)
-	if wu.hasCtx {
+	if w.hasCtx {
 		args = append(args, reflect.ValueOf(ctx))
 	}
-	args = append(args, wu.in)
-	returnValues := wu.function.Call(args)
+	args = append(args, reflect.ValueOf(req))
+	returnValues := w.function.Call(args)
 
 	switch len(returnValues) {
 	case 0:
@@ -262,6 +291,6 @@ func (wu *fnWorkUnit) Commit(ctx context.Context) (out any, err error) {
 	return
 }
 
-func (wu *fnWorkUnit) Rollback(ctx context.Context) error { return nil }
+func (w *fnWorkUnit) Rollback(ctx context.Context) error { return nil }
 
-func (wu *fnWorkUnit) Destroy(ctx context.Context) error { return nil }
+func (w *fnWorkUnit) Destroy(ctx context.Context) error { return nil }

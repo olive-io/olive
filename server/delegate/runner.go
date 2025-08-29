@@ -27,38 +27,63 @@ import (
 	"github.com/olive-io/olive/api/types"
 )
 
-type RunnerMap struct {
+type ClientFactory struct {
 	rmu     sync.RWMutex
 	runners map[uint64]*types.Runner
 
 	smu   sync.RWMutex
 	stats map[uint64]*types.RunnerStat
+
+	pmu   sync.RWMutex
+	pipes map[string]*StreamPipe
 }
 
-func NewRunnerMap() *RunnerMap {
-	rm := RunnerMap{
+func NewFactory() *ClientFactory {
+	rm := ClientFactory{
 		runners: make(map[uint64]*types.Runner),
 		stats:   make(map[uint64]*types.RunnerStat),
+		pipes:   make(map[string]*StreamPipe),
 	}
 	return &rm
 }
 
-func (rm *RunnerMap) SetRunner(runner *types.Runner) {
-	rm.rmu.Lock()
-	defer rm.rmu.Unlock()
-	rm.runners[runner.Id] = runner
+func (cf *ClientFactory) SetRunner(runner *types.Runner) {
+	cf.rmu.Lock()
+	defer cf.rmu.Unlock()
+	cf.runners[runner.Id] = runner
 }
 
-func (rm *RunnerMap) SetStat(stat *types.RunnerStat) {
-	rm.smu.Lock()
-	defer rm.smu.Unlock()
-	rm.stats[stat.Id] = stat
+func (cf *ClientFactory) SetStat(stat *types.RunnerStat) {
+	cf.smu.Lock()
+	defer cf.smu.Unlock()
+	cf.stats[stat.Id] = stat
 }
 
-func (rm *RunnerMap) GetRunner(id uint64) (*types.Runner, bool) {
-	rm.rmu.RLock()
-	defer rm.rmu.RUnlock()
+func (cf *ClientFactory) GetRunner(id uint64) (*types.Runner, bool) {
+	cf.rmu.RLock()
+	defer cf.rmu.RUnlock()
 
-	runner, ok := rm.runners[id]
+	runner, ok := cf.runners[id]
 	return runner, ok
+}
+
+func (cf *ClientFactory) AddPipe(uid string, pipe *StreamPipe) {
+	cf.pmu.Lock()
+	defer cf.pmu.Unlock()
+
+	cf.pipes[uid] = pipe
+}
+
+func (cf *ClientFactory) GetPipe(uid string) (*StreamPipe, bool) {
+	cf.pmu.RLock()
+	defer cf.pmu.RUnlock()
+
+	pipe, ok := cf.pipes[uid]
+	return pipe, ok
+}
+
+func (cf *ClientFactory) RemovePipe(uid string) {
+	cf.pmu.Lock()
+	defer cf.pmu.Unlock()
+	delete(cf.pipes, uid)
 }
